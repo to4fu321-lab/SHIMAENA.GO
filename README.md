@@ -10,6 +10,9 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 
 ![ありがとうカードの試作](docs/design/cards/01-kawaii-citypop.png)
 
+## 公開中のアプリ
+- https://yukikaki-karano-kaihou.vercel.app/ （あそびかた `/rules`・地図 `/map`・デモ操作 `/admin`）
+
 ## デモ動画
 （3分・日本語。提出時に URL を記入）
 

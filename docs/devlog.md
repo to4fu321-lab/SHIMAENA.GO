@@ -62,3 +62,8 @@
 - 次: 11/3（本人が8時間作業）。鍵（Claude API・Neon・LINE・Vercel）がそろった順に T07 から。
 - LINE 公式アカウントのアイコンを作成（docs/design/icon/、640×640、Claude が SVG で描画）
 - アイコンの大人っぽい2案を追加（クルーのエンブレム／夜のネオン）。男子大学生にも刺さる方向
+
+## 11/3（月）朝
+- 本人: LINE 公式アカウント「シマエナGO」（アイコンはクルーのエンブレム案）、プロバイダー「シマエナGO」に Messaging API と LINE ログインのチャネル、Vercel で公開（https://yukikaki-karano-kaihou.vercel.app/）。
+- 確認: 公開版の `/`・`/rules`・`/map`・`/admin` が開き、地図が 50m マスで表示される。
+- 次: LIFF を追加（エンドポイントは公開URLの /map）→ Neon（T07）→ LINE 登録（T08）。
