@@ -114,6 +114,13 @@ create table if not exists demo_state (
   updated_at timestamptz not null default now()
 );
 
+-- LINE の登録会話の途中経過（役割→位置→2問）。終わったら消す。
+create table if not exists line_sessions (
+  line_user_id text primary key,
+  session jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

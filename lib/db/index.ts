@@ -37,10 +37,19 @@ export function splitSql(text: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+async function schemaStatements(): Promise<string[]> {
+  const text = await readFile(path.join(process.cwd(), "db", "schema.sql"), "utf8");
+  return splitSql(text);
+}
+
+/** schema.sql にある表の名前（準備できているかの確認に使う） */
+export function tableNames(statements: string[]): string[] {
+  return statements.map((s) => /^create table if not exists (\w+)/i.exec(s)?.[1]).filter((t): t is string => Boolean(t));
+}
+
 /** db/schema.sql を適用する（何度押しても安全: create table if not exists / on conflict do nothing） */
 export async function applySchema(): Promise<number> {
-  const text = await readFile(path.join(process.cwd(), "db", "schema.sql"), "utf8");
-  const statements = splitSql(text);
+  const statements = await schemaStatements();
   for (const s of statements) await sql().query(s);
   return statements.length;
 }
@@ -83,7 +92,7 @@ export async function seedTown(): Promise<{ participants: number; bases: number 
 
 export type DbStatus =
   | { kind: "none" } // DATABASE_URL なし → メモリ
-  | { kind: "unprepared" } // つながるが表がまだない → /admin のボタンで準備
+  | { kind: "unprepared"; missing: string[] } // つながるが表が足りない → /admin のボタンで準備
   | { kind: "ready"; participants: number }
   | { kind: "error"; message: string };
 
@@ -91,8 +100,11 @@ export type DbStatus =
 export async function dbStatus(): Promise<DbStatus> {
   if (!hasDb()) return { kind: "none" };
   try {
-    const rows = await query<{ ok: string | null }>("select to_regclass('public.demo_state')::text as ok");
-    if (!rows[0]?.ok) return { kind: "unprepared" };
+    const expected = tableNames(await schemaStatements());
+    const rows = await query<{ table_name: string }>("select table_name from information_schema.tables where table_schema = 'public'");
+    const existing = new Set(rows.map((r) => r.table_name));
+    const missing = expected.filter((t) => !existing.has(t));
+    if (missing.length > 0) return { kind: "unprepared", missing };
     const cnt = await query<{ n: string }>("select count(*)::text as n from participants");
     return { kind: "ready", participants: Number(cnt[0]?.n ?? 0) };
   } catch (e) {

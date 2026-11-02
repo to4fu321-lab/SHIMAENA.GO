@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { hasClaudeKey } from "@/lib/claude/client";
+import { hasLineKeys } from "@/lib/line/client";
 import { clockText } from "@/lib/demo/flow";
 import { dbStatus, type DbStatus } from "@/lib/db";
 import { loadDemo } from "@/lib/demo/store";
@@ -67,7 +68,8 @@ async function AdminContent() {
           {m.rollcall.date} ・ 時計 <b className="tabular-nums">{clockText(s.clockMin)}</b> ・ 点呼 <b>{ROLLCALL_TEXT[status]}</b>
         </p>
         <p className="text-sm text-ink/60">
-          司令官: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)}
+          司令官: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
+          {hasLineKeys() ? "設定済み" : "未設定"}
         </p>
       </header>
 
@@ -77,6 +79,7 @@ async function AdminContent() {
           <p className="text-base">
             下のボタンで表を作り、架空の町内データ（参加者12人・拠点8軒）を入れます。何度押しても大丈夫です。
           </p>
+          {db.kind === "unprepared" && <p className="text-sm text-ink/60">足りない表: {db.missing.join("・")}</p>}
           {db.kind === "error" && <p className="text-sm text-[#b00020]">接続エラー: {db.message}</p>}
           <form action={prepareDatabase}>
             <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">DB を準備する</button>
