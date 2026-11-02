@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // ループの自己確認用スクリプト（Node の CommonJS）
+    "scripts/**/*.cjs",
+    ".shots/**",
   ]),
 ]);
 

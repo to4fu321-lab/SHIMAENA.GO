@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check": "eslint && tsc --noEmit && next build",
+    "shot": "node scripts/shot.cjs"
   },
   "dependencies": {
     "next": "16.4.3",

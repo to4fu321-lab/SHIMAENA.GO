@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840" width="600" height="840">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#140a2e"/>
+      <stop offset="0.45" stop-color="#5b1d6e"/>
+      <stop offset="0.75" stop-color="#ff4f8b"/>
+      <stop offset="1" stop-color="#ffb36b"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff176"/>
+      <stop offset="0.6" stop-color="#ff8a5c"/>
+      <stop offset="1" stop-color="#ff3d7f"/>
+    </linearGradient>
+    <linearGradient id="snow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a1550"/>
+      <stop offset="1" stop-color="#0d0620"/>
+    </linearGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.48" stop-color="#9be7ff"/>
+      <stop offset="0.52" stop-color="#1b7fc4"/>
+      <stop offset="1" stop-color="#e6fbff"/>
+    </linearGradient>
+    <filter id="neon" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="2" fill="#000" opacity="0.12"/>
+    </pattern>
+    <clipPath id="sunclip"><circle cx="300" cy="330" r="120"/></clipPath>
+    <clipPath id="pic"><rect x="30" y="30" width="540" height="560" rx="18"/></clipPath>
+  </defs>
+
+  <!-- 台紙 -->
+  <rect width="600" height="840" rx="28" fill="#0b0618"/>
+  <rect x="14" y="14" width="572" height="812" rx="22" fill="none" stroke="#ff4f8b" stroke-width="2"/>
+  <rect x="22" y="22" width="556" height="796" rx="18" fill="none" stroke="#2ee6ff" stroke-width="1" opacity="0.7"/>
+
+  <g clip-path="url(#pic)">
+    <rect x="30" y="30" width="540" height="560" fill="url(#sky)"/>
+    <!-- 星 -->
+    <g fill="#fff">
+      <circle cx="90" cy="90" r="1.8"/><circle cx="170" cy="60" r="1.2"/><circle cx="420" cy="80" r="1.6"/>
+      <circle cx="520" cy="130" r="1.3"/><circle cx="260" cy="110" r="1.1"/><circle cx="480" cy="200" r="1.4"/>
+      <circle cx="70" cy="210" r="1.2"/><circle cx="360" cy="150" r="1"/>
+    </g>
+    <!-- 縞の太陽 -->
+    <g clip-path="url(#sunclip)">
+      <circle cx="300" cy="330" r="120" fill="url(#sun)"/>
+      <g fill="#140a2e">
+        <rect x="150" y="330" width="300" height="6"/>
+        <rect x="150" y="350" width="300" height="9"/>
+        <rect x="150" y="375" width="300" height="12"/>
+        <rect x="150" y="405" width="300" height="16"/>
+        <rect x="150" y="440" width="300" height="22"/>
+      </g>
+    </g>
+    <!-- 遠くの山（ネオン輪郭） -->
+    <path d="M30 420 L130 340 L210 400 L300 330 L390 410 L470 350 L570 420" fill="none" stroke="#2ee6ff" stroke-width="3" filter="url(#neon)"/>
+    <path d="M30 420 L130 340 L210 400 L300 330 L390 410 L470 350 L570 420 L570 460 L30 460 Z" fill="#1b0f3a"/>
+    <!-- 雪原のグリッド -->
+    <rect x="30" y="440" width="540" height="150" fill="url(#snow)"/>
+    <g stroke="#ff4f8b" stroke-width="1.5" opacity="0.9" filter="url(#neon)">
+      <line x1="30" y1="470" x2="570" y2="470"/>
+      <line x1="30" y1="495" x2="570" y2="495"/>
+      <line x1="30" y1="528" x2="570" y2="528"/>
+      <line x1="30" y1="570" x2="570" y2="570"/>
+      <line x1="300" y1="440" x2="300" y2="590"/>
+      <line x1="300" y1="440" x2="120" y2="590"/>
+      <line x1="300" y1="440" x2="480" y2="590"/>
+      <line x1="300" y1="440" x2="-60" y2="590"/>
+      <line x1="300" y1="440" x2="660" y2="590"/>
+      <line x1="300" y1="440" x2="-300" y2="590"/>
+      <line x1="300" y1="440" x2="900" y2="590"/>
+    </g>
+    <!-- 雪かきした道（光る） -->
+    <path d="M270 590 L292 440 L308 440 L330 590 Z" fill="#2ee6ff" opacity="0.85" filter="url(#neon)"/>
+    <!-- シラカバの幹（ヤシの木の代わり） -->
+    <g stroke-linecap="round">
+      <path d="M70 590 L80 300" stroke="#f4f4f4" stroke-width="10"/>
+      <path d="M72 540 h12 M74 480 h12 M76 420 h12 M78 360 h12" stroke="#1b0f3a" stroke-width="4"/>
+      <path d="M530 590 L520 320" stroke="#f4f4f4" stroke-width="9"/>
+      <path d="M528 540 h-12 M526 470 h-12 M524 400 h-12" stroke="#1b0f3a" stroke-width="4"/>
+    </g>
+    <!-- 枝とシマエナガ3羽（シルエット＋ネオン縁） -->
+    <path d="M60 300 Q200 270 380 285 Q470 292 540 318" stroke="#f4f4f4" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <g id="bird">
+      <ellipse cx="0" cy="0" rx="30" ry="26" fill="#fff8f2" stroke="#ff4f8b" stroke-width="3" filter="url(#neon)"/>
+      <circle cx="-8" cy="-4" r="3" fill="#140a2e"/><circle cx="8" cy="-4" r="3" fill="#140a2e"/>
+      <path d="M-3 5 L3 5 L0 9 Z" fill="#140a2e"/>
+      <path d="M20 8 L46 30" stroke="#140a2e" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="-16" cy="9" rx="10" ry="6" fill="#ffd1dc"/>
+    </g>
+    <use href="#bird" x="175" y="258"/>
+    <use href="#bird" x="240" y="254"/>
+    <use href="#bird" x="305" y="256"/>
+    <!-- 走査線 -->
+    <rect x="30" y="30" width="540" height="560" fill="url(#scan)"/>
+  </g>
+
+  <!-- レア度 -->
+  <rect x="380" y="48" width="170" height="34" rx="6" fill="#140a2e" stroke="#2ee6ff" stroke-width="2"/>
+  <text x="465" y="71" font-family="Noto Sans JP, sans-serif" font-size="16" font-weight="700" fill="#2ee6ff" text-anchor="middle" letter-spacing="2">早朝の群れ ★★</text>
+
+  <!-- クロームなタイトル -->
+  <text x="300" y="648" font-family="Noto Sans JP, sans-serif" font-size="40" font-weight="700" fill="url(#chrome)" text-anchor="middle" letter-spacing="6" stroke="#0b0618" stroke-width="1">ASA ROKUJI</text>
+  <text x="300" y="690" font-family="Noto Sans JP, sans-serif" font-size="22" fill="#ffd1dc" text-anchor="middle">朝六時、三人で玄関の道をあけました。</text>
+  <text x="300" y="726" font-family="Noto Sans JP, serif" font-size="19" fill="#9be7ff" text-anchor="middle">「助かりました。お茶でもどうぞ」</text>
+  <line x1="120" y1="752" x2="480" y2="752" stroke="#ff4f8b" stroke-width="1"/>
+  <text x="300" y="782" font-family="Noto Sans JP, sans-serif" font-size="14" fill="#bfa9d9" text-anchor="middle" letter-spacing="1">1986.12.14 ｜ キタキツネ組 × エゾリス組 ｜ 佐藤さん宅</text>
+  <text x="300" y="808" font-family="Noto Sans JP, sans-serif" font-size="13" fill="#ff4f8b" text-anchor="middle" letter-spacing="4">SHIMAENA GO ・ No.007</text>
+</svg>

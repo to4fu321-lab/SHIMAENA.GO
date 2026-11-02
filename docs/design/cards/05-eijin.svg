@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840" width="600" height="840">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b2fa8"/><stop offset="0.65" stop-color="#1f5fe0"/><stop offset="1" stop-color="#5aa9ff"/>
+    </linearGradient>
+    <filter id="stipple" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="7" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.22 0" result="dots"/>
+      <feComposite in="dots" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <clipPath id="pic"><rect x="30" y="30" width="540" height="560"/></clipPath>
+  </defs>
+  <rect width="600" height="840" fill="#fffdf6"/>
+  <g clip-path="url(#pic)">
+    <rect x="30" y="30" width="540" height="560" fill="url(#sky)"/>
+    <!-- 点描の空 -->
+    <rect x="30" y="30" width="540" height="300" fill="#fff" filter="url(#stipple)" opacity="0.35"/>
+    <!-- 雲（平面、白＋影） -->
+    <g>
+      <ellipse cx="420" cy="120" rx="110" ry="28" fill="#dbe9ff"/>
+      <ellipse cx="400" cy="110" rx="90" ry="30" fill="#fff"/><ellipse cx="455" cy="100" rx="50" ry="34" fill="#fff"/>
+      <ellipse cx="120" cy="170" rx="80" ry="20" fill="#dbe9ff"/><ellipse cx="110" cy="160" rx="60" ry="24" fill="#fff"/>
+    </g>
+    <!-- 遠くの時計台風の白い建物 -->
+    <g>
+      <rect x="330" y="300" width="220" height="130" fill="#fff"/>
+      <rect x="330" y="300" width="220" height="130" fill="#dfe8f5" opacity="0.5" clip-path="inset(0 0 0 60%)"/>
+      <rect x="340" y="312" width="200" height="14" fill="#ff2e63"/>
+      <text x="440" y="324" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" fill="#fff" text-anchor="middle" letter-spacing="3">SNOW STATION</text>
+      <g fill="#1f5fe0"><rect x="350" y="345" width="34" height="48"/><rect x="400" y="345" width="34" height="48"/><rect x="450" y="345" width="34" height="48"/><rect x="500" y="345" width="34" height="48"/></g>
+      <path d="M325 300 L440 240 L555 300 Z" fill="#ff2e63"/>
+      <path d="M325 300 L440 240 L555 300" stroke="#fff" stroke-width="10" fill="none" stroke-linejoin="round"/>
+      <!-- 縦看板 -->
+      <rect x="296" y="296" width="34" height="134" fill="#17c964"/>
+      <text x="313" y="306" font-family="Arial Black, sans-serif" font-size="20" font-weight="900" fill="#fff" text-anchor="middle" writing-mode="tb" letter-spacing="3">ENAGA</text>
+      <!-- 矢印看板 -->
+      <path d="M176 400 L282 400 L298 414 L282 428 L176 428 Z" fill="#ff2e63"/>
+      <text x="232" y="419" font-family="Arial Black, sans-serif" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" letter-spacing="1">ROLL CALL 6:30</text>
+    </g>
+    <!-- 雪面（白、くっきり青い影） -->
+    <rect x="30" y="430" width="540" height="160" fill="#ffffff"/>
+    <path d="M30 430 L570 430 L570 450 Q300 470 30 452 Z" fill="#bcd6ff"/>
+    <!-- 道路（アスファルトの青灰） -->
+    <path d="M30 520 L570 500 L570 590 L30 590 Z" fill="#5d6f99"/>
+    <path d="M30 556 L570 538" stroke="#fff" stroke-width="4" stroke-dasharray="28 22"/>
+    <!-- 雪かきした通路 -->
+    <path d="M418 520 L446 432 L478 432 L506 520 Z" fill="#2ad4ff"/>
+    <path d="M478 432 L506 520 L526 520 L492 432 Z" fill="#0b8fd6"/>
+    <!-- 赤い軽トラ（雪を積んだ） -->
+    <g transform="translate(40 470)">
+      <ellipse cx="190" cy="118" rx="200" ry="12" fill="#2d3f72" opacity="0.5"/>
+      <rect x="20" y="40" width="200" height="60" rx="4" fill="#e81e3c"/>
+      <path d="M220 100 L220 30 L290 30 L330 70 L330 100 Z" fill="#e81e3c"/>
+      <path d="M232 38 L284 38 L316 70 L232 70 Z" fill="#9fe3ff"/>
+      <rect x="20" y="30" width="200" height="14" fill="#fff"/>
+      <path d="M24 32 Q120 -34 216 32 Z" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+      <path d="M120 -14 Q170 -10 206 30 L120 30 Z" fill="#bcd6ff"/>
+      <rect x="20" y="86" width="310" height="10" fill="#b5122d"/>
+      <circle cx="70" cy="104" r="20" fill="#1a1a1a"/><circle cx="70" cy="104" r="9" fill="#fff"/>
+      <circle cx="285" cy="104" r="20" fill="#1a1a1a"/><circle cx="285" cy="104" r="9" fill="#fff"/>
+      <rect x="324" y="78" width="8" height="10" fill="#ffd400"/>
+      <path d="M30 52 L210 52" stroke="#fff" stroke-width="3" opacity="0.7"/>
+    </g>
+    <!-- シラカバ（ヤシの木の位置） -->
+    <g>
+      <rect x="500" y="130" width="16" height="310" fill="#fff"/>
+      <g fill="#1a1a1a"><rect x="500" y="170" width="9" height="6"/><rect x="507" y="230" width="9" height="6"/><rect x="500" y="300" width="9" height="6"/><rect x="507" y="370" width="9" height="6"/></g>
+      <path d="M508 130 L470 95 M508 130 L548 100 M508 135 L508 70 M508 150 L462 135 M508 150 L556 138" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <!-- 電線と3羽 -->
+    <path d="M30 200 Q300 170 570 215" stroke="#1a1a1a" stroke-width="4" fill="none"/>
+    <g id="bird">
+      <ellipse cx="0" cy="0" rx="30" ry="26" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+      <circle cx="-8" cy="-4" r="3" fill="#1a1a1a"/><circle cx="8" cy="-4" r="3" fill="#1a1a1a"/>
+      <path d="M-3 5 L3 5 L0 9 Z" fill="#1a1a1a"/>
+      <path d="M22 8 L52 26" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="-16" cy="9" rx="10" ry="6" fill="#ff8fb1"/>
+    </g>
+    <use href="#bird" x="110" y="168"/><use href="#bird" x="178" y="160"/><use href="#bird" x="246" y="158"/>
+    <!-- 飛ぶリボン（鈴木英人のあれ） -->
+    <g fill="none" stroke-linecap="round" stroke-width="9">
+      <path d="M20 120 Q160 60 330 110 T600 90" stroke="#ff2e63"/>
+      <path d="M-10 350 Q120 300 260 340 T560 320" stroke="#ffd400"/>
+      <path d="M200 40 Q320 10 460 60 T620 50" stroke="#2ad4ff"/>
+      <path d="M40 480 Q200 440 360 470" stroke="#17c964" stroke-width="7"/>
+    </g>
+    <!-- 紙吹雪 -->
+    <g>
+      <rect x="90" y="90" width="14" height="14" fill="#ffd400" transform="rotate(20 97 97)"/>
+      <circle cx="360" cy="180" r="7" fill="#ff2e63"/>
+      <rect x="470" y="200" width="12" height="12" fill="#2ad4ff" transform="rotate(-15 476 206)"/>
+      <circle cx="150" cy="300" r="6" fill="#17c964"/>
+      <rect x="300" y="60" width="10" height="24" fill="#fff" transform="rotate(30 305 72)"/>
+      <circle cx="540" cy="60" r="6" fill="#ffd400"/>
+      <rect x="60" y="400" width="12" height="12" fill="#ff2e63" transform="rotate(10 66 406)"/>
+      <circle cx="420" cy="470" r="5" fill="#2ad4ff"/>
+      <rect x="250" y="400" width="10" height="20" fill="#ffd400" transform="rotate(-25 255 410)"/>
+    </g>
+  </g>
+  <rect x="30" y="30" width="540" height="560" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+
+  <!-- レア度 -->
+  <rect x="396" y="46" width="160" height="34" fill="#ffd400" stroke="#1a1a1a" stroke-width="2.5"/>
+  <text x="476" y="70" font-family="Noto Sans JP, sans-serif" font-size="16" font-weight="700" fill="#1a1a1a" text-anchor="middle" letter-spacing="2">早朝の群れ ★★</text>
+
+  <!-- タイトル（筆記体風の英語＋日本語） -->
+  <text x="300" y="650" font-family="Noto Sans JP, sans-serif" font-size="34" font-weight="700" fill="#0b2fa8" text-anchor="middle" letter-spacing="3">玄関までの三十歩</text>
+  <text x="300" y="682" font-family="Georgia, serif" font-style="italic" font-size="20" fill="#ff2e63" text-anchor="middle" letter-spacing="2">Thirty Steps to the Door</text>
+  <text x="60" y="724" font-family="Noto Sans JP, sans-serif" font-size="19" fill="#1a1a1a">田中・鈴木・ゆうき（小5）</text>
+  <text x="60" y="752" font-family="Noto Sans JP, sans-serif" font-size="14" fill="#555" letter-spacing="1">2026.12.14 SAT ｜ キタキツネ組 × エゾリス組</text>
+
+  <!-- 消印（排雪量とシリアル） -->
+  <g transform="translate(486 744) rotate(-12)" opacity="0.92">
+    <circle cx="0" cy="0" r="58" fill="none" stroke="#e81e3c" stroke-width="3"/>
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#e81e3c" stroke-width="1.5"/>
+    <path id="arcT" d="M-46 0 A46 46 0 0 1 46 0" fill="none"/>
+    <path id="arcB" d="M-46 0 A46 46 0 0 0 46 0" fill="none"/>
+    <text font-family="Noto Sans JP, sans-serif" font-size="11" font-weight="700" fill="#e81e3c" letter-spacing="2"><textPath href="#arcT" startOffset="50%" text-anchor="middle">札幌・しらかば町内</textPath></text>
+    <text font-family="Noto Sans JP, sans-serif" font-size="10" font-weight="700" fill="#e81e3c" letter-spacing="2"><textPath href="#arcB" startOffset="50%" text-anchor="middle">SHIMAENA GO</textPath></text>
+    <text x="0" y="-12" font-family="Noto Sans JP, sans-serif" font-size="10" fill="#e81e3c" text-anchor="middle">排雪</text>
+    <text x="0" y="8" font-family="Arial Black, sans-serif" font-size="19" font-weight="900" fill="#e81e3c" text-anchor="middle">720kg</text>
+    <text x="0" y="24" font-family="Noto Sans JP, sans-serif" font-size="9.5" fill="#e81e3c" text-anchor="middle" letter-spacing="1">No.007 / 32</text>
+    <!-- 消印の波線 -->
+    <g stroke="#e81e3c" stroke-width="2.5" fill="none" stroke-linecap="round">
+      <path d="M-134 -24 q12 -6 24 0 t24 0 t24 0"/><path d="M-134 -8 q12 -6 24 0 t24 0 t24 0"/>
+      <path d="M-134 8 q12 -6 24 0 t24 0 t24 0"/><path d="M-134 24 q12 -6 24 0 t24 0 t24 0"/>
+    </g>
+  </g>
+  <text x="60" y="812" font-family="Noto Sans JP, sans-serif" font-size="11" fill="#999" letter-spacing="2">この朝、札幌で 32 枚だけ発行 ・ #シマエナGO</text>
+</svg>

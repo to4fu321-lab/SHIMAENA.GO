@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840" width="600" height="840">
+  <defs>
+    <filter id="paper" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <filter id="grain"><feTurbulence baseFrequency="0.9" numOctaves="2" result="n"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.08"/></feComponentTransfer><feBlend in="SourceGraphic" mode="multiply"/></filter>
+    <clipPath id="pic"><rect x="30" y="30" width="540" height="560" rx="6"/></clipPath>
+  </defs>
+  <rect width="600" height="840" fill="#f4efe6"/>
+  <g clip-path="url(#pic)">
+    <!-- 藍の夜空（一番奥の紙） -->
+    <rect x="30" y="30" width="540" height="560" fill="#1d2b53"/>
+    <circle cx="420" cy="170" r="70" fill="#f4efe6"/>
+    <!-- 山の層（紙を重ねる） -->
+    <path d="M30 380 L120 290 L200 350 L300 260 L400 350 L480 300 L570 370 L570 600 L30 600 Z" fill="#2f4b86" filter="url(#paper)"/>
+    <path d="M30 430 L110 370 L210 420 L300 360 L390 430 L470 390 L570 440 L570 600 L30 600 Z" fill="#5f7fbf" filter="url(#paper)"/>
+    <!-- 家並み（白い紙の切り抜き） -->
+    <g fill="#f4efe6" filter="url(#paper)">
+      <path d="M70 470 L70 430 L105 400 L140 430 L140 470 Z"/>
+      <path d="M430 470 L430 425 L470 390 L510 425 L510 470 Z"/>
+      <rect x="92" y="445" width="12" height="25" fill="#1d2b53"/><rect x="462" y="440" width="12" height="30" fill="#1d2b53"/>
+    </g>
+    <!-- 雪原（白い紙） -->
+    <path d="M30 470 Q300 440 570 475 L570 600 L30 600 Z" fill="#f4efe6" filter="url(#paper)"/>
+    <!-- 道（藍の切り抜き） -->
+    <path d="M262 600 L290 478 L312 478 L340 600 Z" fill="#1d2b53"/>
+    <!-- 枝（藍の紙） -->
+    <path d="M30 150 Q200 120 340 140 Q450 155 570 200" stroke="#1d2b53" stroke-width="16" fill="none" stroke-linecap="round" filter="url(#paper)"/>
+    <path d="M30 150 Q200 120 340 140 Q450 155 570 200" stroke="#f4efe6" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <!-- 3羽（白い紙、目と尾は切り抜き） -->
+    <g id="bird" filter="url(#paper)">
+      <ellipse cx="0" cy="0" rx="34" ry="29" fill="#f4efe6"/>
+      <circle cx="-9" cy="-5" r="3.5" fill="#1d2b53"/><circle cx="9" cy="-5" r="3.5" fill="#1d2b53"/>
+      <path d="M-3 5 L3 5 L0 10 Z" fill="#1d2b53"/>
+      <path d="M26 6 L62 30" stroke="#f4efe6" stroke-width="7" stroke-linecap="round"/>
+    </g>
+    <use href="#bird" x="150" y="118"/><use href="#bird" x="222" y="110"/><use href="#bird" x="294" y="116"/>
+    <!-- 雪（丸い切り抜き） -->
+    <g fill="#f4efe6" opacity="0.9"><circle cx="90" cy="230" r="4"/><circle cx="520" cy="80" r="3"/><circle cx="360" cy="230" r="3.5"/><circle cx="500" cy="300" r="3"/><circle cx="140" cy="330" r="3"/></g>
+    <rect x="30" y="30" width="540" height="560" filter="url(#grain)" fill="#fff" opacity="0.5"/>
+  </g>
+  <rect x="30" y="30" width="540" height="560" rx="6" fill="none" stroke="#1d2b53" stroke-width="3"/>
+  <rect x="384" y="50" width="170" height="32" rx="2" fill="#1d2b53"/>
+  <text x="469" y="72" font-family="Noto Sans JP, serif" font-size="15" font-weight="700" fill="#f4efe6" text-anchor="middle" letter-spacing="2">早朝の群れ ★★</text>
+  <text x="300" y="650" font-family="Noto Sans JP, serif" font-size="34" font-weight="700" fill="#1d2b53" text-anchor="middle" letter-spacing="6">玄関までの三十歩</text>
+  <text x="300" y="680" font-family="Noto Sans JP, serif" font-size="14" fill="#5f7fbf" text-anchor="middle" letter-spacing="4">THIRTY STEPS TO THE DOOR</text>
+  <text x="300" y="722" font-family="Noto Sans JP, serif" font-size="19" fill="#1d2b53" text-anchor="middle">田中・鈴木・ゆうき（小5）</text>
+  <text x="300" y="752" font-family="Noto Sans JP, serif" font-size="17" fill="#2f4b86" text-anchor="middle">排雪 約2.4㎥（軽トラ1台分）</text>
+  <line x1="150" y1="776" x2="450" y2="776" stroke="#1d2b53" stroke-width="1"/>
+  <text x="300" y="800" font-family="Noto Sans JP, serif" font-size="13" fill="#555" text-anchor="middle" letter-spacing="1">2026.12.14 ｜ キタキツネ組 × エゾリス組 ｜ No.007</text>
+</svg>
