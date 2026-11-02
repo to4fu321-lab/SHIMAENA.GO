@@ -1,5 +1,11 @@
 // 重要度・必要人数・小タスク分解（Claude が使えない時の予備にもなる）
-import type { ClearArea, RequesterAnswer, SubTask } from "../types";
+import type { ClearArea, RequesterAnswer, SoloMinutes, SubTask } from "../types";
+
+/** 登録の2問から家のレベルを決める（採点表 data/rubric.json の level と同じ規則） */
+export function levelFromAnswers(solo: SoloMinutes, area: ClearArea): 1 | 2 | 3 {
+  const base = solo === "unknown" ? 2 : solo >= 60 ? 3 : solo >= 30 ? 2 : 1;
+  return Math.min(3, base + (area === "road" ? 1 : 0)) as 1 | 2 | 3;
+}
 
 /**
  * 重要度: レベルが高いほど、「いいえ」ほど、返事がないほど上がる。
