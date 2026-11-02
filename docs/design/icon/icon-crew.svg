@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#2a3c78"/><stop offset="1" stop-color="#0d1330"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="640" height="640" fill="url(#bg)"/>
+  <!-- 雪 -->
+  <g fill="#fff" opacity="0.75">
+    <circle cx="120" cy="170" r="4"/><circle cx="520" cy="140" r="5"/><circle cx="180" cy="470" r="4"/><circle cx="500" cy="480" r="4"/>
+    <circle cx="90" cy="330" r="3"/><circle cx="555" cy="320" r="3"/><circle cx="250" cy="95" r="3"/><circle cx="420" cy="560" r="3"/>
+  </g>
+  <!-- エンブレムの輪 -->
+  <circle cx="320" cy="320" r="252" fill="none" stroke="#7af0d7" stroke-width="5" opacity="0.9" filter="url(#glow)"/>
+  <circle cx="320" cy="320" r="236" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.35"/>
+
+  <!-- 交差したスコップ（クルーの紋章） -->
+  <g stroke-linecap="round" opacity="0.95">
+    <g transform="rotate(-38 320 340)">
+      <rect x="312" y="120" width="16" height="300" rx="6" fill="#c9d4f2"/>
+      <rect x="296" y="112" width="48" height="16" rx="8" fill="#c9d4f2"/>
+      <path d="M282 420 h76 l-10 90 q-28 18 -56 0 z" fill="#8fa4dc"/>
+    </g>
+    <g transform="rotate(38 320 340)">
+      <rect x="312" y="120" width="16" height="300" rx="6" fill="#c9d4f2"/>
+      <rect x="296" y="112" width="48" height="16" rx="8" fill="#c9d4f2"/>
+      <path d="M282 420 h76 l-10 90 q-28 18 -56 0 z" fill="#8fa4dc"/>
+    </g>
+  </g>
+
+  <!-- シマエナガ -->
+  <g transform="translate(320 330)">
+    <ellipse cx="0" cy="0" rx="138" ry="126" fill="#ffffff"/>
+    <!-- ニット帽（3チームの色のライン） -->
+    <path d="M-128 -40 Q-120 -150 0 -158 Q120 -150 128 -40 Z" fill="#1d2550"/>
+    <rect x="-132" y="-58" width="264" height="30" rx="12" fill="#2a3466"/>
+    <rect x="-132" y="-52" width="264" height="5" fill="#2F6FE4"/>
+    <rect x="-132" y="-44" width="264" height="5" fill="#FF8A3D"/>
+    <rect x="-132" y="-36" width="264" height="5" fill="#9B5DE5"/>
+    <circle cx="0" cy="-166" r="20" fill="#1d2550"/>
+    <!-- 目（小さく、まっすぐ） -->
+    <ellipse cx="-42" cy="8" rx="10" ry="12" fill="#0d1330"/><ellipse cx="42" cy="8" rx="10" ry="12" fill="#0d1330"/>
+    <circle cx="-38" cy="3" r="3" fill="#fff"/><circle cx="46" cy="3" r="3" fill="#fff"/>
+    <path d="M-10 38 L10 38 L0 50 Z" fill="#0d1330"/>
+    <!-- ネックウォーマー -->
+    <path d="M-100 82 Q0 128 100 82 L100 112 Q0 158 -100 112 Z" fill="#7af0d7"/>
+  </g>
+
+  <!-- GO（太いイタリック） -->
+  <g filter="url(#glow)">
+    <text x="320" y="555" font-family="Arial Black, Helvetica, sans-serif" font-style="italic" font-weight="900" font-size="64" fill="#ffffff" text-anchor="middle" letter-spacing="6">GO</text>
+  </g>
+</svg>

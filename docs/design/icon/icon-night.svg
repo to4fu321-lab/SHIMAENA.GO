@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1026"/><stop offset="0.7" stop-color="#1a2456"/><stop offset="1" stop-color="#3a2d6e"/>
+    </linearGradient>
+    <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7af0d7" stop-opacity="0"/><stop offset="0.5" stop-color="#7af0d7" stop-opacity="0.55"/><stop offset="1" stop-color="#9B5DE5" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="640" height="640" fill="url(#bg)"/>
+  <!-- オーロラ -->
+  <path d="M-20 200 Q160 110 320 170 T660 140 L660 230 Q480 260 320 220 T-20 270 Z" fill="url(#aurora)" filter="url(#soft)"/>
+  <!-- 星 -->
+  <g fill="#fff"><circle cx="110" cy="90" r="2.5"/><circle cx="210" cy="60" r="2"/><circle cx="470" cy="80" r="2.5"/><circle cx="560" cy="250" r="2"/><circle cx="80" cy="300" r="2"/><circle cx="540" cy="110" r="1.5"/></g>
+  <!-- 雪の地面（グリッド） -->
+  <rect x="0" y="470" width="640" height="170" fill="#141b44"/>
+  <g stroke="#7af0d7" stroke-width="2" opacity="0.55">
+    <line x1="0" y1="500" x2="640" y2="500"/><line x1="0" y1="540" x2="640" y2="540"/><line x1="0" y1="595" x2="640" y2="595"/>
+    <line x1="320" y1="470" x2="320" y2="640"/><line x1="320" y1="470" x2="120" y2="640"/><line x1="320" y1="470" x2="520" y2="640"/>
+    <line x1="320" y1="470" x2="-80" y2="640"/><line x1="320" y1="470" x2="720" y2="640"/>
+  </g>
+  <!-- シマエナガ（白、ネオンの縁取り） -->
+  <g transform="translate(320 345)">
+    <path d="M128 70 L210 140" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+    <ellipse cx="0" cy="0" rx="150" ry="136" fill="#f4f6ff" stroke="#7af0d7" stroke-width="6" filter="url(#glow)"/>
+    <ellipse cx="0" cy="0" rx="150" ry="136" fill="#f4f6ff"/>
+    <!-- ヘッドホン型の耳あて（黒） -->
+    <path d="M-132 -50 Q0 -190 132 -50" stroke="#0b1026" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <rect x="-162" y="-70" width="40" height="72" rx="18" fill="#0b1026"/>
+    <rect x="122" y="-70" width="40" height="72" rx="18" fill="#0b1026"/>
+    <rect x="-156" y="-56" width="8" height="44" rx="4" fill="#7af0d7"/>
+    <rect x="148" y="-56" width="8" height="44" rx="4" fill="#7af0d7"/>
+    <!-- 目（細め、クール） -->
+    <path d="M-62 4 q18 -10 36 0" stroke="#0b1026" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <path d="M26 4 q18 -10 36 0" stroke="#0b1026" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <path d="M-10 32 L10 32 L0 44 Z" fill="#0b1026"/>
+  </g>
+  <!-- GO -->
+  <g filter="url(#glow)">
+    <text x="320" y="130" font-family="Arial Black, Helvetica, sans-serif" font-style="italic" font-weight="900" font-size="80" fill="#ffffff" stroke="#ff4f8b" stroke-width="2" text-anchor="middle" letter-spacing="8">GO</text>
+  </g>
+</svg>
