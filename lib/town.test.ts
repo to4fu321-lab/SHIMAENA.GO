@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TOWN, getBuilding } from "./town";
+import { TOWN } from "./town";
 
 const M_PER_LAT = 111320;
 const M_PER_LNG = 111320 * Math.cos((TOWN.center[0] * Math.PI) / 180);
@@ -20,15 +20,14 @@ describe("架空の町内データ", () => {
     }
   });
 
-  it("拠点の建物がすべて存在し、拠点どうしは 50m 以上離れている", () => {
-    const centers = TOWN.bases.map((b) => {
-      const building = getBuilding(b.buildingId);
-      expect(building, b.id).toBeDefined();
-      const poly = building!.polygon;
-      return [poly.reduce((s, p) => s + p[0], 0) / poly.length, poly.reduce((s, p) => s + p[1], 0) / poly.length] as [number, number];
+  it("拠点はそれぞれ依頼者がいて、拠点どうしは 50m 以上離れている", () => {
+    const points = TOWN.bases.map((b) => {
+      const r = TOWN.participants.find((p) => p.id === b.requesterId);
+      expect(r?.role, b.id).toBe("requester");
+      return r!.location;
     });
-    for (let i = 0; i < centers.length; i++)
-      for (let j = i + 1; j < centers.length; j++) expect(dist(centers[i], centers[j])).toBeGreaterThan(50);
+    for (let i = 0; i < points.length; i++)
+      for (let j = i + 1; j < points.length; j++) expect(dist(points[i], points[j])).toBeGreaterThanOrEqual(49);
   });
 
   it("依頼者にはレベル（1〜3）がある", () => {

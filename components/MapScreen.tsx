@@ -105,6 +105,7 @@ export default function MapScreen({ state }: { state: MorningState }) {
           <li><span className="legend bg-white ring-2 ring-ink/60" />向かっている</li>
           <li><span className="legend bg-ink/70" />完了（チーム色）</li>
           <li><span className="legend bg-[#9AA0AE]" />返事なし</li>
+          <li className="w-full">マスは 50m 四方。どの家かは、割り当てられた人の LINE にだけ届きます。</li>
         </ul>
       </section>
     </div>

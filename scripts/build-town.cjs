@@ -86,7 +86,8 @@ baseBuildings.forEach((b, i) => {
     clearArea: areaList[i],
     level: levelOf(soloList[i], areaList[i]),
   });
-  bases.push({ id: `base${i + 1}`, number: i + 1, requesterId: id, buildingId: b.id });
+  // 拠点は実在の建物と結びつけない。位置は依頼者の 50m マスの中心だけ
+  bases.push({ id: `base${i + 1}`, number: i + 1, requesterId: id });
 });
 helperBuildings.forEach((b, i) => {
   participants.push({

@@ -55,12 +55,14 @@ export interface Building {
   polygon: LatLng[];
 }
 
-/** 拠点 = 依頼者の家。地図上は番号だけを出す */
+/**
+ * 拠点 = 依頼者の家。地図上は「50m マス」と番号だけを出し、どの建物かは出さない。
+ * 正確な場所は、割り当てられた人の LINE にだけ届ける。
+ */
 export interface Base {
   id: string;
   number: number; // 地図に出す番号
   requesterId: string;
-  buildingId: string;
 }
 
 // ---- 点呼 ----
