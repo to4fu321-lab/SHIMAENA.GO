@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check": "eslint && tsc --noEmit && next build",
-    "shot": "node scripts/shot.cjs"
+    "check": "eslint && tsc --noEmit && vitest run --passWithNoTests && next build",
+    "shot": "node scripts/shot.cjs",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "next": "16.4.3",
@@ -23,6 +24,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

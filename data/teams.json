@@ -1,0 +1,5 @@
+[
+  { "id": "salvia", "name": "サルビア", "nameEn": "SALVIA", "color": "#2F6FE4", "colorName": "青" },
+  { "id": "marigold", "name": "マリーゴールド", "nameEn": "MARIGOLD", "color": "#FF8A3D", "colorName": "橙" },
+  { "id": "lupinus", "name": "ルピナス", "nameEn": "LUPINUS", "color": "#9B5DE5", "colorName": "紫" }
+]

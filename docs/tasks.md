@@ -4,7 +4,7 @@
 `🔑` は外部の鍵が必要。鍵がまだなければ飛ばして次へ。
 
 ## 第1段: 土台と地図（鍵なしで進む）
-- [ ] **T01 土台** — `lib/types.ts`（参加者・チーム・拠点・点呼・ミッション・出撃・得点・カードの型）、`data/teams.json`（サルビア／マリーゴールド／ルピナスと色）、`db/schema.sql`、`npm run check`（lint＋型チェック＋テスト＋build）を用意。
+- [x] **T01 土台** — `lib/types.ts`（参加者・チーム・拠点・点呼・ミッション・出撃・得点・カードの型）、`data/teams.json`（サルビア／マリーゴールド／ルピナスと色）、`db/schema.sql`、`npm run check`（lint＋型チェック＋テスト＋build）を用意。
   完了条件: `npm run check` が通る。
 - [ ] **T02 架空の町内データ** — `data/town.json`。札幌の住宅街の一角（公園の近く）の建物の形を OpenStreetMap（Overpass API）から取得し、拠点8軒・参加者12人・3チームを架空で割り当てる。取得できない場合は格子状の架空の家並みを生成する。
   完了条件: 拠点8・参加者12・建物の形がある JSON。実在の氏名・住所なし。出典表記（© OpenStreetMap contributors, ODbL）を README に追記。

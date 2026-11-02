@@ -29,3 +29,9 @@
 
 **次**
 - ループで T01〜T06（鍵なしで進む部分）を進める。本人は Claude API キー・Neon・LINE Developers・Vercel を準備。
+
+## 11/2（日）ループ開始
+- これから: T01 土台（型・チーム定義・DB スキーマ・テストを含む check）
+- T01 完了: 型（lib/types.ts）、チーム定義（サルビア青・マリーゴールド橙・ルピナス紫）、DB スキーマ（db/schema.sql）、テスト（vitest）を用意。`npm run check` は lint・型・テスト・build の4段。
+- 詰まったこと: なし。
+- 次: T02 架空の町内データ（OpenStreetMap の建物の形）。
