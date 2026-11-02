@@ -42,6 +42,11 @@ npm run dev
 ```
 `.env.local` に `ANTHROPIC_API_KEY` などを置きます（リポジトリには含めません）。
 
+## データの出典
+- 地図と建物の形: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）
+- 天気: [Open-Meteo](https://open-meteo.com/)
+- デモの町内「しらかば町内」と登場人物は架空です。建物の形だけを OpenStreetMap から借りています（`scripts/build-town.cjs`）。
+
 ## ルールの遵守
 - 期間中の新規制作のみ。既存コードの流用はありません。
 - デモ用データはすべて架空の人物・場所です。
