@@ -44,6 +44,12 @@ npm install
 npm run dev
 ```
 `.env.local` に `ANTHROPIC_API_KEY` などを置きます（リポジトリには含めません）。
+鍵がない間は、Claude はモック応答、保存はメモリで動きます。
+
+## 公開版（Vercel）の準備
+1. Vercel の環境変数に `DATABASE_URL`（Neon）を入れる。
+2. `/admin` を開き「DB を準備する」を押す（表を作り、架空の町内データを入れる。何度押しても安全）。
+3. 「保存: Neon（参加者 12 人）」と出れば完了。以後、地図とデモ操作の状態は Neon に保存される。
 
 ## データの出典
 - 地図と建物の形: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）

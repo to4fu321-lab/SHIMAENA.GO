@@ -1,0 +1,101 @@
+// Neon（Postgres）への接続。素の SQL だけを使う。サーバー側でだけ使う。
+// DATABASE_URL がない間は使わない（保存はメモリ）。
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { TOWN } from "../town";
+
+export function hasDb(): boolean {
+  return Boolean(process.env.DATABASE_URL);
+}
+
+let sqlFn: NeonQueryFunction<false, false> | undefined;
+function sql(): NeonQueryFunction<false, false> {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL がありません");
+  sqlFn ??= neon(url);
+  return sqlFn;
+}
+
+/** 1つの SQL を実行して行を返す */
+export async function query<T = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> {
+  return (await sql().query(text, params)) as T[];
+}
+
+/**
+ * schema.sql を文ごとに分ける（Neon の HTTP 接続は1回に1文なので）。
+ * `--` のコメントを落とし、`;` で区切る。文字列の中に `;` や `--` を書かない前提。
+ */
+export function splitSql(text: string): string[] {
+  const noComments = text
+    .split("\n")
+    .map((line) => line.replace(/--.*$/, ""))
+    .join("\n");
+  return noComments
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+/** db/schema.sql を適用する（何度押しても安全: create table if not exists / on conflict do nothing） */
+export async function applySchema(): Promise<number> {
+  const text = await readFile(path.join(process.cwd(), "db", "schema.sql"), "utf8");
+  const statements = splitSql(text);
+  for (const s of statements) await sql().query(s);
+  return statements.length;
+}
+
+/** 架空の町内データ（参加者・拠点）を入れる。すでにあれば上書き */
+export async function seedTown(): Promise<{ participants: number; bases: number }> {
+  for (const p of TOWN.participants) {
+    await sql().query(
+      `insert into participants
+         (id, nickname, role, lat, lng, team_id, solo_minutes, clear_area, level, morning_minutes, has_tools)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       on conflict (id) do update set
+         nickname = excluded.nickname, role = excluded.role, lat = excluded.lat, lng = excluded.lng,
+         team_id = excluded.team_id, solo_minutes = excluded.solo_minutes, clear_area = excluded.clear_area,
+         level = excluded.level, morning_minutes = excluded.morning_minutes, has_tools = excluded.has_tools`,
+      [
+        p.id,
+        p.nickname,
+        p.role,
+        p.location[0],
+        p.location[1],
+        p.teamId ?? null,
+        p.soloMinutes == null ? null : String(p.soloMinutes),
+        p.clearArea ?? null,
+        p.level ?? null,
+        p.morningMinutes ?? null,
+        p.hasTools ?? null,
+      ],
+    );
+  }
+  for (const b of TOWN.bases) {
+    await sql().query(
+      `insert into bases (id, number, requester_id) values ($1, $2, $3)
+       on conflict (id) do update set number = excluded.number, requester_id = excluded.requester_id`,
+      [b.id, b.number, b.requesterId],
+    );
+  }
+  return { participants: TOWN.participants.length, bases: TOWN.bases.length };
+}
+
+export type DbStatus =
+  | { kind: "none" } // DATABASE_URL なし → メモリ
+  | { kind: "unprepared" } // つながるが表がまだない → /admin のボタンで準備
+  | { kind: "ready"; participants: number }
+  | { kind: "error"; message: string };
+
+/** いまの DB の様子（/admin に出す） */
+export async function dbStatus(): Promise<DbStatus> {
+  if (!hasDb()) return { kind: "none" };
+  try {
+    const rows = await query<{ ok: string | null }>("select to_regclass('public.demo_state')::text as ok");
+    if (!rows[0]?.ok) return { kind: "unprepared" };
+    const cnt = await query<{ n: string }>("select count(*)::text as n from participants");
+    return { kind: "ready", participants: Number(cnt[0]?.n ?? 0) };
+  } catch (e) {
+    return { kind: "error", message: e instanceof Error ? e.message : String(e) };
+  }
+}

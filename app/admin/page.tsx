@@ -4,11 +4,12 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { hasClaudeKey } from "@/lib/claude/client";
 import { clockText } from "@/lib/demo/flow";
-import { getDemo } from "@/lib/demo/store";
+import { dbStatus, type DbStatus } from "@/lib/db";
+import { loadDemo } from "@/lib/demo/store";
 import { snowHp, teamTotals } from "@/lib/morning";
 import { TEAMS } from "@/lib/teams";
 import { TOWN } from "@/lib/town";
-import { answerRandomly, backToSample, completeOne, rescue, ring, runCommander, startEmptyMorning } from "./actions";
+import { answerRandomly, backToSample, completeOne, prepareDatabase, rescue, ring, runCommander, startEmptyMorning } from "./actions";
 
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
 
@@ -21,6 +22,15 @@ const MISSION_TEXT = {
   done: "完了",
   no_answer: "返事なし",
 } as const;
+
+const STORAGE_TEXT = (db: DbStatus) =>
+  db.kind === "none"
+    ? "メモリ（開発用）"
+    : db.kind === "ready"
+      ? `Neon（参加者 ${db.participants} 人）`
+      : db.kind === "unprepared"
+        ? "Neon（未準備）"
+        : "Neon（接続エラー）";
 
 function Step({ n, label, action, disabled }: { n: string; label: string; action: () => Promise<void>; disabled?: boolean }) {
   return (
@@ -38,7 +48,7 @@ function Step({ n, label, action, disabled }: { n: string; label: string; action
 
 async function AdminContent() {
   await connection();
-  const s = getDemo();
+  const [s, db] = await Promise.all([loadDemo(), dbStatus()]);
   const m = s.morning;
   const totals = teamTotals(m);
   const hp = snowHp(m);
@@ -57,9 +67,22 @@ async function AdminContent() {
           {m.rollcall.date} ・ 時計 <b className="tabular-nums">{clockText(s.clockMin)}</b> ・ 点呼 <b>{ROLLCALL_TEXT[status]}</b>
         </p>
         <p className="text-sm text-ink/60">
-          司令官: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: メモリ（開発用）
+          司令官: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)}
         </p>
       </header>
+
+      {db.kind !== "none" && db.kind !== "ready" && (
+        <section className="space-y-2 rounded-2xl bg-[#fff4d6] p-4 shadow-sm ring-1 ring-ink/10">
+          <h2 className="font-bold">Neon の準備がまだです</h2>
+          <p className="text-base">
+            下のボタンで表を作り、架空の町内データ（参加者12人・拠点8軒）を入れます。何度押しても大丈夫です。
+          </p>
+          {db.kind === "error" && <p className="text-sm text-[#b00020]">接続エラー: {db.message}</p>}
+          <form action={prepareDatabase}>
+            <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">DB を準備する</button>
+          </form>
+        </section>
+      )}
 
       <section className="space-y-2" aria-label="操作">
         <Step n="0" label="まっさらな朝にする（前夜の予告だけ）" action={startEmptyMorning} />

@@ -31,16 +31,11 @@ create table if not exists family_links (
   primary key (family_line_user_id, requester_id)
 );
 
-create table if not exists buildings (
-  id text primary key,
-  polygon jsonb not null          -- [[lat, lng], ...]
-);
-
+-- 拠点 = 依頼者の家。地図には 50m マスと番号だけを出すので、建物との結びつきは持たない。
 create table if not exists bases (
   id text primary key,
   number smallint not null unique,
-  requester_id text not null references participants(id),
-  building_id text not null references buildings(id)
+  requester_id text not null references participants(id)
 );
 
 create table if not exists rollcalls (
@@ -109,6 +104,14 @@ create table if not exists cards (
   team_ids jsonb not null,
   svg text,
   created_at timestamptz not null default now()
+);
+
+-- デモの「朝の状態」をまるごと JSON で持つ（/admin のボタンで動かす分）。
+-- Vercel はリクエストごとに別のサーバーになるので、メモリではなくここに置く。
+create table if not exists demo_state (
+  key text primary key,
+  state jsonb not null,
+  updated_at timestamptz not null default now()
 );
 
 insert into teams (id, name, color) values
