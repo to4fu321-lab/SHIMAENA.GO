@@ -24,7 +24,7 @@ async function waitForServer(url, ms = 30000) {
 
 (async () => {
   fs.mkdirSync(".shots", { recursive: true });
-  const server = spawn("npx", ["next", "start", "-p", String(PORT)], { stdio: "ignore" });
+  const server = spawn(path.join("node_modules", ".bin", "next"), ["start", "-p", String(PORT)], { stdio: "ignore", detached: true });
   try {
     await waitForServer(`http://localhost:${PORT}/`);
     const browser = await chromium.launch();
@@ -38,7 +38,8 @@ async function waitForServer(url, ms = 30000) {
     }
     await browser.close();
   } finally {
-    server.kill();
+    // next はさらに子プロセスを作るので、グループごと止める
+    try { process.kill(-server.pid, "SIGTERM"); } catch {}
   }
 })().catch((e) => {
   console.error(e.message);
