@@ -8,13 +8,25 @@
 Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作品。
 **11月2日〜11月8日の期間中に、このリポジトリ上でゼロから制作しています。**
 
-![ありがとうカードの試作](docs/design/cards/01-kawaii-citypop.png)
+<p>
+<img src="docs/screens/map.png" width="30%" alt="地図: 50m マスがチーム色に塗られていく">
+<img src="docs/screens/card-retrowave.png" width="30%" alt="ありがとうカード（早朝のレア）">
+<img src="docs/screens/cards.png" width="30%" alt="カード帳">
+</p>
 
 ## 公開中のアプリ
-- https://yukikaki-karano-kaihou.vercel.app/ （あそびかた `/rules`・地図 `/map`・デモ操作 `/admin`）
+- https://yukikaki-karano-kaihou.vercel.app/
+
+| 画面 | 何ができるか |
+|---|---|
+| `/rules` あそびかた | 手伝う人は3つだけ、手伝ってほしい人は1つだけ。持ちものと、けがをしないために |
+| `/map` 地図 | 50m マスのぬりえ。得点バーと雪HP。LINE から開くと自分の割り当てと「行く」「終わりました（写真）」「人手が足りない」 |
+| `/cards` カード帳 | その朝だけのカード。正方形と 4:5 で保存 |
+| `/admin` デモ操作 | 前夜の予告 → 点呼 → 回答 → 司令官 → 完了 → 駆けつけ → 日曜のまとめ、をボタンで。DB の準備とリッチメニュー作成も |
+| LINE 公式アカウント | 登録（役割 → 位置情報 → 2問）、点呼、作戦、「行く」、写真で完了、ヘルプ通知、カード、家族への通知、「いまからやる」 |
 
 ## デモ動画
-（3分・日本語。提出時に URL を記入）
+（3分・日本語。提出時に URL を記入。台本は [`docs/demo.md`](docs/demo.md)）
 
 ## 誰の、どんな課題を、どう解決するか
 - **誰の**: 札幌の一軒家にひとりで暮らす高齢者。雪の朝、玄関から道路まで出られない。
@@ -24,14 +36,35 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 ## 仕組み
 詳しくは [`docs/spec.md`](docs/spec.md)。
 
-## 技術
-- Next.js（App Router）/ TypeScript / Tailwind CSS / Vercel / Neon（Postgres）
-- Claude API（レベル判定・司令官・写真確認・カード生成・週末の実況）
-- LINE Messaging API ＋ LIFF
-- Leaflet ＋ OpenStreetMap、Open-Meteo
+## Claude の活用（アプリの中）
+すべて JSON（構造化出力）で受け取り、採点表 [`data/rubric.json`](data/rubric.json) を毎回システムに入れて同じ基準で判定させます。キーがない環境では、同じ形を返す計算（モック）に自動で切り替わるので、審査用のデモはキーなしでも最後まで動きます。
 
-## Claude Code をどう使ったか
-（制作後に記入。スマホから Claude Code に指示するだけで開発しています）
+| 役割 | いつ | 入力 → 出力 | コード |
+|---|---|---|---|
+| レベル判定 | 登録の2問のあと | 「一人だと何分」「どこまで」→ 家のレベル1〜3・必要人数・5分単位の小タスク・本人への一言 | [`lib/claude/level.ts`](lib/claude/level.ts) |
+| 前夜の予告 | 21:00、降雪 5cm 以上 | 予報 → やさしい予告文 | [`lib/claude/announce.ts`](lib/claude/announce.ts) |
+| 司令官 | 6:40 | 予報・点呼の答え・拠点・手伝う人の位置とチーム → 家ごとの重要度・必要人数・割り当て・1人ずつの LINE の文面・町内へのまとめ | [`lib/claude/commander.ts`](lib/claude/commander.ts)（答えは `sanitizePlan` で点検） |
+| 写真確認 | 完了写真が届いたとき | 写真 → 雪が除かれたか・通れるか・凍結が残るか・ひとこと | [`lib/claude/photo.ts`](lib/claude/photo.ts) |
+| カードの文字 | 家が完了したとき | 時刻・人数・雪の量・チーム → デザイン名・英語副題・排雪kg と身近な換算 | [`lib/claude/card.ts`](lib/claude/card.ts) |
+| 週末の実況 | 日曜の夜 | 今週の集計 → 実況文と来週へのひとこと | [`lib/claude/weekly.ts`](lib/claude/weekly.ts) |
+
+- 体調や医療は判断しない（採点表の safety に明記）。返事がない家は「声かけ」を提案するだけ。
+- 絵（カード・リッチメニュー）は画像生成AIを使わず、SVG を図形から組み立てる（[`lib/cards/svg.ts`](lib/cards/svg.ts)）。
+
+## 技術
+- Next.js 16（App Router）/ TypeScript / Tailwind CSS v4 / Vercel（Cron）/ Neon（Postgres、素の SQL）
+- Claude API（Claude Opus 5.5、構造化出力、プロンプトキャッシュ、安全判定で断られたときのサーバー側フォールバック）
+- LINE Messaging API（Webhook・返信・プッシュ・マルチキャスト・リッチメニュー）＋ LIFF
+- Leaflet ＋ OpenStreetMap、Open-Meteo、resvg（SVG → PNG）、vitest（テスト 101 本）
+
+## Claude Code をどう使ったか（スマホだけで開発）
+本人はプログラミング初心者で、開発はすべて **スマホの Claude アプリから Claude Code（クラウド）に日本語で指示するだけ** で進めました。パソコンでコードを書いた時間はありません。
+
+1. **仕様を先に決めた**: 初日に Claude と壁打ちして2案を比べ、[`docs/spec.md`](docs/spec.md) を「仕様の正本」にした。Claude はここに書いてないことを足さず、変えたいときは [`docs/devlog.md`](docs/devlog.md) に「提案」として書いて本人に聞く約束（例: 「建物の形を塗る」→ 50m マスに変更）。
+2. **ループで自走**: [`CLAUDE.md`](CLAUDE.md) に「1回のループで [`docs/tasks.md`](docs/tasks.md) の未完了の一番上のタスクを1つだけ進める → `npm run check`（lint・型・テスト・build）→ スマホ幅のスクショを自分で見て確認 → 1タスク1コミットで push → devlog に3行」という手順を書き、`/loop` で T01 から T13 まで自走させた。鍵（LINE・Neon）が要るところはボタンや環境変数にして、鍵のないセッションでも本番と同じコードが動く形にした。
+3. **本人の役割**: 判断（仕様・デザインの選択）、鍵の準備（LINE Developers・Neon・Vercel の環境変数）、実機での確認、デモ動画。Claude Code からの報告は毎回3行以内（できたこと・見てほしいもの・次）にして、スマホで読める量に。
+4. **企画役のエージェント**: [`.claude/agents/kikaku.md`](.claude/agents/kikaku.md) に「コードは変えず、面白さ・広がる仕組みを調べて提案書を書く」役を置いた。
+5. **記録はすべて公開**: 日ごとの [`docs/devlog.md`](docs/devlog.md)、タスクの順番 [`docs/tasks.md`](docs/tasks.md)、見送った案 [`docs/plan-b-nuisho.md`](docs/plan-b-nuisho.md)、カードやアイコンの試作 [`docs/design/`](docs/design/)。コミット履歴がそのまま制作の記録です。
 
 ## 開発の記録
 - 日々の記録: [`docs/devlog.md`](docs/devlog.md)
@@ -84,9 +117,11 @@ npm run dev
 3. 6:40 の作戦配信は Hobby プラン（cron は1日1回・2本まで）では cron に置いていない。6:40 以降に点呼の答えが届いたとき自動で配信される。Pro なら `vercel.json` に `{ "path": "/api/cron/plan", "schedule": "40 21 * * *" }` を足す。
 4. 同じことは `/admin` のボタンで手動でもできる（デモはこちら）。
 
-## データの出典
+## データと素材の出典
 - 地図と建物の形: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）
 - 天気: [Open-Meteo](https://open-meteo.com/)
+- フォント（カード・メニューの PNG 用）: [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic)（SIL Open Font License 1.1、[`assets/fonts/`](assets/fonts/)）
+- 地図の表示: [Leaflet](https://leafletjs.com/)（BSD-2-Clause）、SVG の PNG 化: [resvg](https://github.com/RazrFalcon/resvg)（MPL-2.0）
 - デモの町内「しらかば町内」と登場人物は架空です。建物の形だけを OpenStreetMap から借りています（`scripts/build-town.cjs`）。
 
 ## ルールの遵守

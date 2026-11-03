@@ -102,3 +102,7 @@
 - 本人にお願い: LINE Developers の LIFF のエンドポイント URL を `https://yukikaki-karano-kaihou.vercel.app/`（ルート）に変える（メニューから /map と /cards を LINE の中で開くため）。`/admin` で「リッチメニューを作る」を押す。
 - 詰まったこと: なし（テスト101本）。
 - 次: T14 仕上げ（スマホ表示の調整、README、デモ撮影の準備）。鍵不要。
+- これから: T14 仕上げ（スマホ表示の確認と調整、README の仕上げ、デモ撮影の台本 docs/demo.md）
+- T14 完了（Claude の分）: 全画面をスマホ幅で確認（トップに「カード帳」を追加）。README を仕上げた: 画面一覧、Claude の活用（6つの役割とコードの場所、採点表、キーなしのモック）、技術、「Claude Code をどう使ったか（スマホだけで開発）」、出典にフォント・Leaflet・resvg。`docs/screens/` にスクショ。`docs/demo.md` に3分の台本（撮影前のチェック、時間ごとの操作と映るもの、逃げ道、提出のチェック、提出文の下書き）。
+- 本人にお願い（残り）: (1) 実機3台の通し確認 (2) デモ動画の撮影（docs/demo.md）と README への URL 記入 (3) 提出（11/8 18:00 まで）。ANTHROPIC_API_KEY が来たら Vercel に入れるだけで本物の Claude に切り替わる。
+- ループはここで止める（tasks.md のタスクはすべて完了）。

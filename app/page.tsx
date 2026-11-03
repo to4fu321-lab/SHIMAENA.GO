@@ -16,6 +16,9 @@ export default function Home() {
         <Link href="/map" className="rounded-2xl bg-ink py-4 text-lg font-bold text-white">
           地図を見る
         </Link>
+        <Link href="/cards" className="rounded-2xl bg-white py-4 text-lg font-bold text-ink ring-2 ring-ink/15">
+          カード帳
+        </Link>
         <Link href="/admin" className="rounded-2xl py-3 text-base text-ink/70 underline">
           デモ操作（審査・撮影用）
         </Link>
