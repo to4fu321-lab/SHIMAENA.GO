@@ -199,3 +199,39 @@ export interface Card {
   teamIds: TeamId[];
   createdAt: string; // ISO
 }
+
+// ---- ソロ出動（v1.3）: 1人でもできる 3〜5分のミッション。羽ポイントはチーム得点と別の「個人の記録」 ----
+/** ソロミッションの種類（bonus_* は連続出動などのごほうび） */
+export type SoloKind =
+  | "patrol" // 雪の状況を見回る（5分・現地）
+  | "report_snow" // 雪の多い場所を報告（5分・現地・写真任意）
+  | "check_spot" // 雪かき可能な場所を確認（5分・現地）
+  | "help_house" // 1軒の雪かきを手伝う（既存のミッション完了で 10羽）
+  | "find_help" // 仲間が必要な家を確認（5分・現地）
+  | "own_house" // 自分の家の雪かき（5分・現地・写真任意）
+  | "check_area" // 地域の状況を確認（3分・オンライン）
+  | "report_online" // 雪の状況を一言で報告（3分・オンライン）
+  | "find_online" // 助けが必要な場所を発見（3分・オンライン）
+  | "bonus_first" // 初回出動
+  | "bonus_streak3" // 3日連続出動
+  | "bonus_streak5"; // 5日連続出動
+
+/** ソロ活動の台帳の1行。date はアプリの「今日」（lib/morning/today.ts）。オンラインの活動は雪かき完了にはしない */
+export interface SoloLog {
+  id: string;
+  participantId: string;
+  date: string; // YYYY-MM-DD
+  kind: SoloKind;
+  onsite: boolean;
+  feathers: number;
+  note?: string;
+  /** Claude のひとこと（30字、キーなしは定型） */
+  hitokoto?: string;
+  /** 写真を Claude が確認できたか（写真任意のミッションだけ） */
+  photoChecked?: boolean;
+  /** 活動した 50m マス（本人の家のマス。現地のときだけ） */
+  cellKey?: string;
+  /** 家の完了（help_house）のとき、そのミッション ID（同じ家で二重に数えない） */
+  missionId?: string;
+  at: string; // ISO
+}

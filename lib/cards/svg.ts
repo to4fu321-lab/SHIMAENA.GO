@@ -10,7 +10,8 @@ export interface CardArt {
   designNameEn: string;
   rarityLabel: string;
   stars: 1 | 2 | 3;
-  members: { name: string; teamId: TeamId }[];
+  /** 並ぶ人。teamId がない人（ソロ出動の依頼者など）は耳あてがうす紫 */
+  members: { name: string; teamId?: TeamId }[];
   date: string; // YYYY-MM-DD
   townName: string;
   snowKg: number;
@@ -19,6 +20,8 @@ export interface CardArt {
   issuedCount: number;
   /** 絵の中の英語のひとこと */
   flavor?: string;
+  /** 消印の真ん中の文字（既定は排雪 kg。ソロ出動のカードは「ソロ」など） */
+  stampText?: string;
 }
 
 export const CARD_W = 600;
@@ -30,7 +33,7 @@ export function escapeXml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c]!);
 }
 
-const teamColor = (id: TeamId) => TEAMS.find((t) => t.id === id)?.color ?? "#8a7bb5";
+const teamColor = (id?: TeamId) => TEAMS.find((t) => t.id === id)?.color ?? "#8a7bb5";
 const teamName = (id: TeamId) => TEAMS.find((t) => t.id === id)?.name ?? id;
 
 const WEEK = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -41,8 +44,8 @@ export function dateLabel(ymd: string): string {
 
 function teamsLabel(members: CardArt["members"]): string {
   const ids: TeamId[] = [];
-  for (const m of members) if (!ids.includes(m.teamId)) ids.push(m.teamId);
-  return ids.map(teamName).join(" × ");
+  for (const m of members) if (m.teamId && !ids.includes(m.teamId)) ids.push(m.teamId);
+  return ids.length > 0 ? ids.map(teamName).join(" × ") : "ソロ出動";
 }
 
 function stars(n: number): string {
@@ -69,7 +72,7 @@ function stamp(art: CardArt, color: string, paper: string): string {
     <path id="aT" d="M-50 0 A50 50 0 0 1 50 0" fill="none"/><path id="aB" d="M-50 0 A50 50 0 0 0 50 0" fill="none"/>
     <text font-family="${JP}" font-size="12" font-weight="700" fill="${color}" letter-spacing="2"><textPath href="#aT" startOffset="50%" text-anchor="middle">${escapeXml(art.townName)}</textPath></text>
     <text font-family="${JP}" font-size="11" font-weight="700" fill="${color}" letter-spacing="2"><textPath href="#aB" startOffset="50%" text-anchor="middle">${escapeXml(art.date.replace(/-/g, "."))}</textPath></text>
-    <text x="0" y="2" font-family="${JP}" font-size="24" font-weight="700" fill="${color}" text-anchor="middle">${art.snowKg}kg</text>
+    <text x="0" y="2" font-family="${JP}" font-size="24" font-weight="700" fill="${color}" text-anchor="middle">${escapeXml(art.stampText ?? `${art.snowKg}kg`)}</text>
     <text x="0" y="24" font-family="${JP}" font-size="13" font-weight="700" fill="${color}" text-anchor="middle" letter-spacing="1">No.${String(art.serial).padStart(3, "0")}/${art.issuedCount}</text>
     <g stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round">
       <path d="M-136 -22 q12 -6 24 0 t24 0 t24 0"/><path d="M-136 -7 q12 -6 24 0 t24 0 t24 0"/><path d="M-136 8 q12 -6 24 0 t24 0 t24 0"/><path d="M-136 23 q12 -6 24 0 t24 0 t24 0"/>
@@ -113,7 +116,7 @@ function info(art: CardArt, c: InfoColors): string {
 }
 
 // ---- 1. かわいいシティポップ（基本） ----
-function kawaiiBird(x: number, y: number, s: number, ear: string): string {
+export function kawaiiBird(x: number, y: number, s: number, ear: string): string {
   return `
   <g transform="translate(${x} ${y}) scale(${s})">
     <ellipse cx="0" cy="40" rx="44" ry="10" fill="#9fb8d8" opacity="0.4"/>

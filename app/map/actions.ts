@@ -6,7 +6,7 @@ import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { completeManually, completeWithPhoto, joinMission, joinNearby, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
-import { isDemoViewer, readViewer, signViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { signViewer, trustedViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export interface ActionResult {
   ok: boolean;
@@ -18,13 +18,6 @@ export interface ActionResult {
 }
 
 const firstText = (messages: { type: string }[]) => (messages[0] as TextMessage | undefined)?.text ?? "";
-
-/** 画面が言う「自分」を信じてよいか: デモの架空の人か、cookie で確かめた本人だけ */
-async function trustedViewer(viewerId: string): Promise<string | null> {
-  if (isDemoViewer(viewerId)) return viewerId;
-  const fromCookie = readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
-  return fromCookie === viewerId ? viewerId : null;
-}
 
 export async function goAction(viewerId: string): Promise<ActionResult> {
   const id = await trustedViewer(viewerId);

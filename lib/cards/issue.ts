@@ -10,7 +10,7 @@ import type { Roster } from "../morning/roster";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { TOWN } from "../town";
-import type { Card, Mission, Sortie } from "../types";
+import type { Card, Mission, Participant, Sortie } from "../types";
 import { decideRarity } from "./rarity";
 import { renderCardBackSvg, renderCardSvg, type CardArt } from "./svg";
 
@@ -122,7 +122,7 @@ export async function issueCardsForMission(
       snowKg: art.snowKg,
       snowKgComparison: art.snowKgComparison,
       memberNames: art.members.map((x) => x.name),
-      teamIds: [...new Set(art.members.map((x) => x.teamId))],
+      teamIds: [...new Set(art.members.flatMap((x) => (x.teamId ? [x.teamId] : [])))],
       createdAt: completedAt,
     };
     const firstFlight = firstFlightIds.includes(m.id);
@@ -149,21 +149,82 @@ export async function issueCardsForMission(
 
 /** 保存してあるカードから、裏面を描くのに要る分だけ CardArt を組み立てる（裏面は人の並びを使わない） */
 export function artFromCard(card: Card, date: string): CardArt {
-  const teamIds = card.teamIds.length > 0 ? card.teamIds : (["salvia"] as const);
+  const teamIds = card.teamIds;
   return {
     style: card.style,
     designName: card.designName,
     designNameEn: card.designNameEn,
     rarityLabel: card.rarityLabel,
     stars: card.stars,
-    members: card.memberNames.map((name, i) => ({ name, teamId: teamIds[i % teamIds.length] })),
+    members: card.memberNames.map((name, i) => ({ name, teamId: teamIds.length > 0 ? teamIds[i % teamIds.length] : undefined })),
     date,
     townName: TOWN.name.replace(/（.*）$/, ""),
     snowKg: card.snowKg,
     snowKgComparison: card.snowKgComparison,
     serial: card.serial,
     issuedCount: card.issuedCount,
+    stampText: card.rollcallId.startsWith("solo-") ? "ソロ" : undefined,
   };
+}
+
+/** ソロ出動のカードの種類: 初回＝かわいい、5日連続＝ドット絵（図鑑の「五日連続の群れ」が埋まる）。カードの種類は増やさない */
+export type SoloCardVariant = "first" | "streak5";
+
+const SOLO_CARD: Record<SoloCardVariant, { style: Card["style"]; designName: string; designNameEn: string; rarityLabel: string; stars: 1 | 2 | 3; flavor: string }> = {
+  first: { style: "kawaii", designName: "はじめてのソロ出動", designNameEn: "First Solo Flight", rarityLabel: "ひとりの群れ", stars: 1, flavor: "Five minutes, one bird" },
+  streak5: { style: "pixel", designName: "五日目のドット", designNameEn: "Day Five, Pixel Perfect", rarityLabel: "五日連続の群れ", stars: 3, flavor: "5 DAYS STREAK" },
+};
+
+/**
+ * ソロ出動のカードを1枚発行する（合成 ID: rollcall は solo-<日付>、mission は solo-<台帳の ID>）。
+ * 朝のカードの通し番号（◯/◯枚）は汚さない。LINE があれば表・裏を送る（初出撃なら歓迎も）。
+ */
+export async function issueSoloCard(
+  p: Participant,
+  opts: { variant: SoloCardVariant; date: string; logId: string; hitokoto: string; missionLabel: string; firstFlight: boolean; at: string },
+): Promise<Card> {
+  const v = SOLO_CARD[opts.variant];
+  const art: CardArt = {
+    style: v.style,
+    designName: v.designName,
+    designNameEn: v.designNameEn,
+    rarityLabel: v.rarityLabel,
+    stars: v.stars,
+    members: [{ name: p.nickname, teamId: p.teamId }],
+    date: opts.date,
+    townName: TOWN.name.replace(/（.*）$/, ""),
+    snowKg: 0,
+    snowKgComparison: "ソロ出動",
+    serial: 1,
+    issuedCount: 1,
+    flavor: v.flavor,
+    stampText: "ソロ",
+  };
+  const card: Card = {
+    id: `c-${randomBytes(6).toString("base64url")}`,
+    recipientId: p.id,
+    rollcallId: `solo-${opts.date}`,
+    missionId: `solo-${opts.logId}`,
+    serial: 1,
+    issuedCount: 1,
+    designName: art.designName,
+    designNameEn: art.designNameEn,
+    rarityLabel: art.rarityLabel,
+    stars: art.stars,
+    style: art.style,
+    snowKg: 0,
+    snowKgComparison: art.snowKgComparison,
+    memberNames: [p.nickname],
+    teamIds: p.teamId ? [p.teamId] : [],
+    createdAt: opts.at,
+  };
+  const svg = renderCardSvg(art);
+  const back = renderCardBackSvg(art, { thanks: opts.hitokoto, subtasks: [`${opts.missionLabel}（ソロ出動）`], firstFlight: opts.firstFlight });
+  await repo().insertCard(card, svg, back);
+  if (p.lineUserId) {
+    await push(p.lineUserId, [...(opts.firstFlight ? [MSG.firstFlight(art.townName)] : []), ...cardImageMessages(card.id)]);
+  }
+  return card;
 }
 
 /**

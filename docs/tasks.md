@@ -71,7 +71,7 @@
 
 ## 第6段: ソロ出動と SNS 拡散（11/3 本人の案3回目＋指示書。計画は本人了承済み）
 得点表（spec 5）・採点表の判定規則・個人順位を出さない方針・約束ごとは変えない。羽ポイントはチーム得点と別の個人の記録。
-- [ ] **T31 ソロの土台** — 型（`SoloLog`）、「今日」の決め方 `lib/morning/today.ts`、`lib/solo/{missions,feathers,ops}.ts`、schema（`solo_logs`・`town_cheers`）、repo（メモリ＋Neon）、`lib/claude/solo.ts`（ひとこと、モック）、ソロカード `issueSoloCard`（初回＝かわいい、5日連続＝ドット絵）、`trustedViewer` を `lib/viewer.ts` に。
+- [x] **T31 ソロの土台** — 型（`SoloLog`）、「今日」の決め方 `lib/morning/today.ts`、`lib/solo/{missions,feathers,ops}.ts`、schema（`solo_logs`・`town_cheers`）、repo（メモリ＋Neon）、`lib/claude/solo.ts`（ひとこと、モック）、ソロカード `issueSoloCard`（初回＝かわいい、5日連続＝ドット絵）、`trustedViewer` を `lib/viewer.ts` に。
   完了条件: テストで 1日1回・連続日数・ボーナス1回だけ・チームなしでも完了・羽がチーム得点に入らない。
 - [ ] **T32 ソロ出動画面 `/solo`** — 今日の自分（羽・連続・次のカード）、ミッション一覧（現地／オンライン、所要時間・難易度・羽）、完了（写真任意）、SoloClear の演出、活動記録、未登録の案内。ホームに「ソロ出動」「5分だけ出動（作戦中なら地図、なければソロ）」。
   完了条件: `/solo?as=h3` で見回りを完了 → 演出 → 2回目は「今日はもう完了」（スクショ）。

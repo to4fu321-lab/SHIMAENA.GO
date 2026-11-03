@@ -3,7 +3,7 @@
 import { hasDb, query } from "../db";
 import type { RegSession } from "../line/registration";
 import { TOWN } from "../town";
-import type { Base, Card, FamilyLink, Participant, TeamId } from "../types";
+import type { Base, Card, FamilyLink, Participant, SoloLog, TeamId } from "../types";
 
 export interface Repo {
   findParticipantByLineUserId(lineUserId: string): Promise<Participant | undefined>;
@@ -28,6 +28,16 @@ export interface Repo {
   listCardsByMission(missionId: string): Promise<Card[]>;
   /** 裏面を作り直す（ありがとう点呼が届いたとき） */
   updateCardBack(id: string, backSvg: string): Promise<void>;
+  /** 発行したカードの総数（公開ページの集計） */
+  countCards(): Promise<number>;
+  // ソロ出動の台帳（v1.3）。同じ人・同じ日・同じ種類（家の完了は missionId ごと）は1回だけ。入れば true
+  insertSoloLog(log: SoloLog): Promise<boolean>;
+  listSoloLogsByParticipant(participantId: string): Promise<SoloLog[]>;
+  /** from 〜 to（両端を含む、YYYY-MM-DD）の全員の台帳 */
+  listSoloLogsBetween(from: string, to: string): Promise<SoloLog[]>;
+  // 町を応援する（SNS 閲覧者、日付ごとの件数）
+  getCheer(date: string): Promise<number>;
+  incrementCheer(date: string): Promise<number>;
 }
 
 // ---- メモリ ----
@@ -37,6 +47,8 @@ interface Mem {
   links: FamilyLink[];
   sessions: Map<string, RegSession>;
   cards: Map<string, { card: Card; svg: string; backSvg: string }>;
+  soloLogs: Map<string, SoloLog>;
+  cheers: Map<string, number>;
 }
 const g = globalThis as { __shimaenaRepo?: Mem };
 function mem(): Mem {
@@ -46,6 +58,8 @@ function mem(): Mem {
     links: [],
     sessions: new Map(),
     cards: new Map(),
+    soloLogs: new Map(),
+    cheers: new Map(),
   };
   return g.__shimaenaRepo;
 }
@@ -122,6 +136,111 @@ export const memoryRepo: Repo = {
   async updateCardBack(id, backSvg) {
     const c = mem().cards.get(id);
     if (c) c.backSvg = backSvg;
+  },
+  async countCards() {
+    return mem().cards.size;
+  },
+  async insertSoloLog(log) {
+    const dup = [...mem().soloLogs.values()].some(
+      (l) => l.participantId === log.participantId && l.date === log.date && l.kind === log.kind && (l.missionId ?? "") === (log.missionId ?? ""),
+    );
+    if (dup || mem().soloLogs.has(log.id)) return false;
+    mem().soloLogs.set(log.id, structuredClone(log));
+    return true;
+  },
+  async listSoloLogsByParticipant(participantId) {
+    return [...mem().soloLogs.values()]
+      .filter((l) => l.participantId === participantId)
+      .sort((a, b) => (a.at < b.at ? -1 : 1))
+      .map((l) => structuredClone(l));
+  },
+  async listSoloLogsBetween(from, to) {
+    return [...mem().soloLogs.values()]
+      .filter((l) => l.date >= from && l.date <= to)
+      .sort((a, b) => (a.at < b.at ? -1 : 1))
+      .map((l) => structuredClone(l));
+  },
+  async getCheer(date) {
+    return mem().cheers.get(date) ?? 0;
+  },
+  async incrementCheer(date) {
+    const n = (mem().cheers.get(date) ?? 0) + 1;
+    mem().cheers.set(date, n);
+    return n;
+  },
+};
+
+// ---- ソロ台帳（Neon） ----
+interface SoloLogRow {
+  id: string;
+  participant_id: string;
+  date: string;
+  kind: SoloLog["kind"];
+  onsite: boolean;
+  feathers: number;
+  note: string | null;
+  hitokoto: string | null;
+  photo_checked: boolean | null;
+  cell_key: string | null;
+  mission_id: string | null;
+  at: string;
+}
+const SOLO_COLS = "id, participant_id, date, kind, onsite, feathers, note, hitokoto, photo_checked, cell_key, mission_id, at";
+function rowToSoloLog(r: SoloLogRow): SoloLog {
+  const l: SoloLog = {
+    id: r.id,
+    participantId: r.participant_id,
+    date: r.date,
+    kind: r.kind,
+    onsite: r.onsite,
+    feathers: Number(r.feathers),
+    at: new Date(r.at).toISOString(),
+  };
+  if (r.note) l.note = r.note;
+  if (r.hitokoto) l.hitokoto = r.hitokoto;
+  if (r.photo_checked != null) l.photoChecked = r.photo_checked;
+  if (r.cell_key) l.cellKey = r.cell_key;
+  if (r.mission_id) l.missionId = r.mission_id;
+  return l;
+}
+
+const dbSoloMethods: Pick<Repo, "countCards" | "insertSoloLog" | "listSoloLogsByParticipant" | "listSoloLogsBetween" | "getCheer" | "incrementCheer"> = {
+  async countCards() {
+    const rows = await query<{ n: string }>("select count(*)::text as n from cards");
+    return Number(rows[0]?.n ?? 0);
+  },
+  async insertSoloLog(log) {
+    // 一意 index（solo_logs_once）に当たれば入らない → false
+    const rows = await query<{ id: string }>(
+      `insert into solo_logs (id, participant_id, date, kind, onsite, feathers, note, hitokoto, photo_checked, cell_key, mission_id, at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       on conflict do nothing returning id`,
+      [
+        log.id, log.participantId, log.date, log.kind, log.onsite, log.feathers, log.note ?? null, log.hitokoto ?? null,
+        log.photoChecked ?? null, log.cellKey ?? null, log.missionId ?? null, log.at,
+      ],
+    );
+    return rows.length > 0;
+  },
+  async listSoloLogsByParticipant(participantId) {
+    const rows = await query<SoloLogRow>(`select ${SOLO_COLS} from solo_logs where participant_id = $1 order by at`, [participantId]);
+    return rows.map(rowToSoloLog);
+  },
+  async listSoloLogsBetween(from, to) {
+    const rows = await query<SoloLogRow>(`select ${SOLO_COLS} from solo_logs where date >= $1 and date <= $2 order by at`, [from, to]);
+    return rows.map(rowToSoloLog);
+  },
+  async getCheer(date) {
+    const rows = await query<{ count: number }>("select count from town_cheers where date = $1", [date]);
+    return Number(rows[0]?.count ?? 0);
+  },
+  async incrementCheer(date) {
+    const rows = await query<{ count: number }>(
+      `insert into town_cheers (date, count) values ($1, 1)
+       on conflict (date) do update set count = town_cheers.count + 1 returning count`,
+      [date],
+    );
+    return Number(rows[0]?.count ?? 0);
   },
 };
 
@@ -239,6 +358,7 @@ const dbCardMethods: Pick<
 
 export const dbRepo: Repo = {
   ...dbCardMethods,
+  ...dbSoloMethods,
   async findParticipantByLineUserId(lineUserId) {
     const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants where line_user_id = $1`, [lineUserId]);
     return rows[0] ? rowToParticipant(rows[0]) : undefined;

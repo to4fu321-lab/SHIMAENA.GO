@@ -79,6 +79,30 @@ create table if not exists line_sessions (
   updated_at timestamptz not null default now()
 );
 
+-- ソロ出動の台帳（v1.3）。羽ポイントはチーム得点（morning_state の scores）とは別の個人の記録。
+-- 同じ人・同じ日・同じ種類は1回だけ（家の完了は mission_id ごと）。
+create table if not exists solo_logs (
+  id text primary key,
+  participant_id text not null references participants(id),
+  date text not null,             -- YYYY-MM-DD（アプリの「今日」）
+  kind text not null,
+  onsite boolean not null,
+  feathers integer not null,
+  note text,
+  hitokoto text,
+  photo_checked boolean,
+  cell_key text,                  -- 50m マス（本人の家のマス）。家の正確な位置は持たない
+  mission_id text,
+  at timestamptz not null default now()
+);
+create unique index if not exists solo_logs_once on solo_logs (participant_id, date, kind, coalesce(mission_id, ''));
+
+-- SNS 閲覧者の「町を応援する」の数（日付ごと）。得点にも羽にも入れない。
+create table if not exists town_cheers (
+  date text primary key,
+  count integer not null default 0
+);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),
