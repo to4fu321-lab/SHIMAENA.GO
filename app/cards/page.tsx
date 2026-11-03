@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import LiffBridge from "@/components/LiffBridge";
 import { loadRoster } from "@/lib/morning/roster";
 import { repo } from "@/lib/repo";
 import { TEAMS } from "@/lib/teams";
@@ -25,6 +26,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
 
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-5 bg-paper px-4 py-5 text-ink">
+      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!as} />
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">
           <span className="text-neon">カード帳</span>

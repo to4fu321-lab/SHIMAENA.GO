@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { judgeLevel } from "../claude/level";
 import { assignTeam, makeLinkCode } from "../game/team";
 import { sniffImageType } from "../image";
-import { answerRollcall, completeWithPhoto, escalateHelpIfDue, joinMission, planIfDue, setGoing } from "../morning/ops";
+import { answerRollcall, completeWithPhoto, escalateHelpIfDue, joinMission, offerTaskNow, planIfDue, setGoing } from "../morning/ops";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import type { FamilyLink, Participant } from "../types";
@@ -116,6 +116,23 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     if (ev.replyToken) await reply(ev.replyToken, messages);
     await planIfDue();
     await escalateHelpIfDue();
+    return;
+  }
+
+  // 「いまからやる」（リッチメニュー／文字）→ 何分？ → 近くの小タスクを1件
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^いまからやる$/.test(ev.message.text.trim())) {
+    if (ev.replyToken) await reply(ev.replyToken, [MSG.nowAsk()]);
+    return;
+  }
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("now:")) {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    const minutes = Number(ev.postback.data.slice(4));
+    const messages = !p
+      ? [MSG.notRegistered()]
+      : minutes === 5 || minutes === 15 || minutes === 30
+        ? await offerTaskNow(p.id, minutes)
+        : [MSG.nowAsk()];
+    if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
 

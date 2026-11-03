@@ -17,10 +17,12 @@ import {
   backToSample,
   completeOne,
   helpNextRing,
+  makeRichMenu,
   prepareDatabase,
   rescue,
   ringNow,
   runCommander,
+  runWeekly,
   startEmptyMorning,
 } from "./actions";
 
@@ -118,10 +120,29 @@ async function AdminContent() {
             ヘルプ通知を次の輪へ（300m → 600m → 1km → サポーター）
           </button>
         </form>
+        <Step n="6" label="日曜の夜: 今週の群れ（実況・称号・シャッフル）" action={runWeekly} />
         <form action={backToSample}>
           <button className="w-full rounded-2xl px-4 py-2 text-sm text-ink/60 underline">朝 7:10 の見本の状態に戻す</button>
         </form>
       </section>
+
+      {s.weekly && (
+        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
+          <h2 className="font-bold">今週の群れ（{s.weekly.weekStart} の週）</h2>
+          <p className="mt-1 text-base">{s.weekly.commentary}</p>
+          <p className="mt-1 text-sm text-ink/70">{s.weekly.nextWeek}</p>
+          <ul className="mt-2 text-base">
+            {s.weekly.ranking.map((t, i) => (
+              <li key={t}>
+                {i + 1}位 <b style={{ color: TEAMS.find((x) => x.id === t)?.color }}>{TEAMS.find((x) => x.id === t)?.name}</b> {s.weekly!.teamTotals[t]} 点
+              </li>
+            ))}
+          </ul>
+          {s.weekly.titles.length > 0 && (
+            <p className="mt-2 text-sm">称号: {s.weekly.titles.map((t) => `${t.nickname}「${t.title}」${t.rareCard ? "（レア確定）" : ""}`).join("、")}</p>
+          )}
+        </section>
+      )}
 
       <section className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
         <h2 className="font-bold">地図を開く（3台のスマホで別の人として）</h2>
@@ -209,6 +230,14 @@ async function AdminContent() {
           </ul>
         </section>
       )}
+
+      <section className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
+        <h2 className="font-bold">LINE のメニュー</h2>
+        <p className="text-sm text-ink/60">地図／カード帳／いまからやる／あそびかた／設定 の5つ。画像は SVG から作る。何度押しても作り直すだけ。</p>
+        <form action={makeRichMenu}>
+          <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">リッチメニューを作る</button>
+        </form>
+      </section>
 
       <section className="rounded-2xl bg-white p-4 text-sm shadow-sm ring-1 ring-ink/10">
         <h2 className="font-bold">記録</h2>

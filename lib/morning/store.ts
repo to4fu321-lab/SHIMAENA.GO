@@ -87,6 +87,55 @@ export async function claimPlanning(): Promise<boolean> {
   }
 }
 
+// ---- 朝の記録（週のまとめ用）: 日付をキーにして残す ----
+const archive = globalThis as { __shimaenaArchive?: Map<string, MorningRecord> };
+function mem(): Map<string, MorningRecord> {
+  archive.__shimaenaArchive ??= new Map();
+  return archive.__shimaenaArchive;
+}
+
+/** 今朝の記録を日付のキーで残す（次の朝を始める前に呼ぶ） */
+export async function archiveMorning(record: MorningRecord): Promise<void> {
+  const key = record.morning.rollcall.date;
+  if (!hasDb()) {
+    mem().set(key, structuredClone(record));
+    return;
+  }
+  try {
+    await query(
+      `insert into morning_state (key, state, updated_at) values ($1, $2::jsonb, now())
+       on conflict (key) do update set state = excluded.state, updated_at = now()`,
+      [key, JSON.stringify(record)],
+    );
+  } catch (e) {
+    fallback(e);
+    mem().set(key, structuredClone(record));
+  }
+}
+
+/** from 〜 to（両端を含む、YYYY-MM-DD）の朝の記録。今朝（current）も日付が合えば入る */
+export async function listMornings(from: string, to: string): Promise<MorningRecord[]> {
+  const byDate = new Map<string, MorningRecord>();
+  if (!hasDb()) {
+    for (const [k, v] of mem()) if (k >= from && k <= to) byDate.set(k, structuredClone(v));
+  } else {
+    try {
+      const rows = await query<{ key: string; state: MorningRecord }>(
+        "select key, state from morning_state where key >= $1 and key <= $2 and key <> $3 order by key",
+        [from, to, KEY],
+      );
+      for (const r of rows) byDate.set(r.key, r.state);
+    } catch (e) {
+      fallback(e);
+      for (const [k, v] of mem()) if (k >= from && k <= to) byDate.set(k, structuredClone(v));
+    }
+  }
+  const current = await loadMorning();
+  const d = current.morning.rollcall.date;
+  if (d >= from && d <= to) byDate.set(d, current);
+  return [...byDate.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([, v]) => v);
+}
+
 export async function resetToSample(): Promise<void> {
   await saveMorning(initial());
 }

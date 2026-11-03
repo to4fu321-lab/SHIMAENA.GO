@@ -1,6 +1,6 @@
 // ヘルプ通知と見守り（spec 4）の「判断」の部分。保存や LINE はしない純粋な関数。
-import { helpTargets, HELP_RADII } from "../game/help";
-import { requiredPeople } from "../game/mission";
+import { distanceM, helpTargets, HELP_RADII } from "../game/help";
+import { SUPPORT_TASKS, requiredPeople } from "../game/mission";
 import type { HelperAnswer, Mission, Participant, RequesterAnswer } from "../types";
 import type { HelpState, MorningRecord } from "./flow";
 import type { Roster } from "./roster";
@@ -54,6 +54,40 @@ export function pickKnockTargets(s: MorningRecord, roster: Roster, m: Mission): 
   const requester = base && roster.participants.find((p) => p.id === base.requesterId);
   if (!requester) return [];
   return helpTargets(requester.location, roster.participants, 0, busyIds(s));
+}
+
+export interface TaskOffer {
+  mission: Mission;
+  label: string;
+  minutes: number;
+  distanceM: number;
+}
+
+/**
+ * 「いまからやる（5／15／30分）」: 近くの小タスクを1件選ぶ（spec 2 日中）。
+ * 人手不足の家を優先し、なければ作業中の家の偵察・補給（5分）。動ける分数に収まるものだけ。
+ */
+export function pickTaskNow(s: MorningRecord, roster: Roster, p: Participant, minutes: 5 | 15 | 30): TaskOffer | null {
+  if (busyIds(s).has(p.id)) return null; // もうどこかに向かっている
+  const candidates: TaskOffer[] = [];
+  for (const m of s.morning.missions) {
+    if (m.status === "done" || m.status === "no_answer") continue;
+    const base = roster.bases.find((b) => b.id === m.baseId);
+    const requester = base && roster.participants.find((x) => x.id === base.requesterId);
+    if (!requester) continue;
+    const d = distanceM(p.location, requester.location);
+    if (d > HELP_RADII[2]) continue;
+    if (m.status === "short" || m.status === "open") {
+      const task = m.subtasks.filter((t) => t.minutes <= minutes).sort((a, b) => b.minutes - a.minutes)[0];
+      if (task) candidates.push({ mission: m, label: task.label, minutes: task.minutes, distanceM: d });
+    } else {
+      const task = SUPPORT_TASKS[0];
+      candidates.push({ mission: m, label: task.label, minutes: task.minutes, distanceM: d });
+    }
+  }
+  const rank = (o: TaskOffer) => (o.mission.status === "short" ? 0 : o.mission.status === "open" ? 1 : 2);
+  candidates.sort((a, b) => rank(a) - rank(b) || a.distanceM - b.distanceM);
+  return candidates[0] ?? null;
 }
 
 export function helpDue(state: HelpState, now: Date): boolean {

@@ -170,6 +170,24 @@ export const MSG = {
   lateRequesterFine: () => text("よかったです。今朝は取り下げました。ゆっくりどうぞ。"),
   lateRequesterShort: () => text("承知しました。近くの人に声をかけて、人を集めます。"),
   lateHelperThanks: () => text("ありがとうございます。人手が足りない家があればお知らせします。"),
+  // ---- 週末と「いまからやる」（spec 2・5・10） ----
+  nowAsk: () =>
+    ask("いまから何分くらい動けますか？近くの小さな仕事を1つ探します。", [
+      { label: "5分", data: "now:5" },
+      { label: "15分", data: "now:15" },
+      { label: "30分", data: "now:30" },
+    ]),
+  nowOffer: (missionId: string, baseNumber: number | string, label: string, minutes: number, distanceM: number) =>
+    ask(`拠点${baseNumber}（約${Math.round(distanceM / 10) * 10}m）で「${label}（${minutes}分）」をお願いできますか？`, [
+      { label: "行く", data: `help:go=${missionId}` },
+      { label: "やめておく", data: "help:no" },
+    ]),
+  nowNothing: () => text("いま近くで手伝える仕事はありません。雪の朝にまたお願いします。"),
+  weeklyToAll: (commentary: string, nextWeek: string) => text(`${commentary}\n\n${nextWeek}`),
+  weeklyTitle: (title: string, rareCard: boolean) =>
+    text(`今週の称号「${title}」をおくります。${rareCard ? "次のカードはレア確定です。" : "来週もよろしくお願いします。"}`),
+  weeklyNewTeam: (teamName: string, colorName: string) => text(`来週のあなたのチームは「${teamName}」（${colorName}）です。`),
+  weeklyFamily: (count: number) => text(`今週は、ご家族の家の雪かきを ${count} 回手伝ってもらいました。`),
   linkedSelf: () => text("紐づけました。雪の朝 6:30 に「今朝、玄関は出られそうですか？」と1回だけ聞きます。"),
   linkedFamily: () => text("家族として紐づけました。雪かきが終わったときや、点呼に返事がないときにお知らせします。"),
 } satisfies Record<string, (...args: never[]) => LineMessage>;

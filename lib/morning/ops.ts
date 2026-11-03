@@ -4,7 +4,9 @@ import { issueCardsForMission } from "../cards/issue";
 import { announceText } from "../claude/announce";
 import { planMorning } from "../claude/commander";
 import { checkPhoto, type PhotoInput } from "../claude/photo";
+import { weeklyText } from "../claude/weekly";
 import { scoreMission } from "../game/score";
+import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstMinutes, jstIso } from "../jst";
 import { getProfileByAccessToken, multicast, push } from "../line/client";
 import { MSG, text } from "../line/messages";
@@ -16,7 +18,7 @@ import type { HelperAnswer, Participant, RequesterAnswer, Role } from "../types"
 import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
-import { claimPlanning, loadMorning, saveMorning } from "./store";
+import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
 import {
   applyLateAnswer,
   goingCount,
@@ -25,6 +27,7 @@ import {
   missingPeople,
   pickHelpTargets,
   pickKnockTargets,
+  pickTaskNow,
   radiusLabel,
   setHelpState,
 } from "./watch";
@@ -32,6 +35,10 @@ import {
 /** 前夜の予告: 今朝の状態を作り直し、LINE のある全員に送る */
 export async function announce(opts: { date: string; forecastCm: number }): Promise<MorningRecord> {
   const current = await loadMorning();
+  // 前の朝の記録は日付で残す（週のまとめに使う）。見本やまっさらな朝は残さない
+  if (current.morning.missions.length > 0 && current.morning.rollcall.date !== opts.date && current.answers.length > 0) {
+    await archiveMorning(current);
+  }
   const announcement = await announceText({ date: opts.date, forecastCm: opts.forecastCm });
   const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement });
   const roster = await loadRoster();
@@ -44,6 +51,8 @@ export async function announce(opts: { date: string; forecastCm: number }): Prom
 
 /** 前夜 21:00 の cron: Open-Meteo を見て、基準を超えていたら予告する */
 export async function checkForecastAndAnnounce(now = new Date()): Promise<{ forecastCm: number; announced: boolean; date: string }> {
+  // 日曜の夜は、先に「今週の群れ」のまとめ（実況・称号・シャッフル）
+  if (new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay() === 0) await weeklyRecap(now);
   const f = await forecastSnowUntilMorning(TOWN.center, now);
   if (f.snowfallCm < SNOW_THRESHOLD_CM) {
     const s = await loadMorning();
@@ -393,6 +402,86 @@ export async function joinMission(participantId: string, missionId: string, now 
   s.log.push(`${p.nickname}さんがヘルプで拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`);
   await saveMorning(s);
   return [MSG.helpJoined(number)];
+}
+
+// ---- 週末（spec 2 日曜・5・8・9-5） ----
+
+export interface WeeklyRecapResult {
+  summary: WeeklySummary;
+  commentary: string;
+  nextWeek: string;
+  /** 翌週のチーム（手伝う側の ID → チーム） */
+  nextTeams: Record<string, TeamIdStr>;
+  sent: number;
+}
+type TeamIdStr = "salvia" | "marigold" | "lupinus";
+
+/**
+ * 日曜: 今週の実況・チーム順位・称号・週の目標ボーナス・翌週のシャッフル。
+ * みんなに実況、称号の人にひとこと、手伝う側に来週のチーム、家族に今週の回数を LINE で。
+ */
+export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> {
+  const today = jstDate(now);
+  const from = weekStart(today);
+  const roster = await loadRoster();
+  const records = await listMornings(from, today);
+  const summary = weeklySummary(records, roster, from, now.toISOString());
+  const text = await weeklyText(summary);
+
+  // 週の目標ボーナスは今朝の得点に足す（二重に足さないよう、同じ週のぶんがあれば入れ替える）
+  const s = await loadMorning();
+  s.morning.scores = [...s.morning.scores.filter((e) => e.reason !== "weekly_goal"), ...summary.goalEvents];
+
+  // 翌週のチーム: 出撃回数と体力でバランス（Claude の案ではなく計算。週ごとの種で毎週変わる）
+  const helpers = roster.participants.filter((p) => p.role === "helper");
+  const seed = Number(from.replace(/-/g, "")) % 100000;
+  const nextTeams = shuffleTeams(helpers, summary.sortieDays, seed);
+  for (const h of helpers) {
+    if (nextTeams[h.id] && nextTeams[h.id] !== h.teamId) await repo().upsertParticipant({ ...h, teamId: nextTeams[h.id] });
+  }
+
+  // LINE: 1人1回にまとめる（実況 → 称号 → 来週のチーム）
+  let sent = 0;
+  const titleOf = new Map(summary.titles.map((t) => [t.participantId, t]));
+  for (const p of roster.participants) {
+    if (!p.lineUserId) continue;
+    const msgs: LineMessage[] = [MSG.weeklyToAll(text.commentary, text.nextWeek)];
+    const title = titleOf.get(p.id);
+    if (title) msgs.push(MSG.weeklyTitle(title.title, title.rareCard));
+    if (p.role === "helper" && nextTeams[p.id]) {
+      const team = getTeam(nextTeams[p.id]);
+      msgs.push(MSG.weeklyNewTeam(team.name, team.colorName));
+    }
+    await push(p.lineUserId, msgs);
+    sent++;
+  }
+  for (const [requesterId, count] of Object.entries(summary.helpedCount)) {
+    const requester = roster.participants.find((p) => p.id === requesterId);
+    for (const link of await repo().listFamilyLinksByRequester(requesterId)) {
+      if (link.familyLineUserId === requester?.lineUserId) continue;
+      await push(link.familyLineUserId, [MSG.weeklyFamily(count)]);
+      sent++;
+    }
+  }
+  s.weekly = { weekStart: from, commentary: text.commentary, nextWeek: text.nextWeek, ranking: summary.ranking, teamTotals: summary.teamTotals, titles: summary.titles, at: now.toISOString() };
+  s.log.push(`${today} 今週の群れ: ${summary.days} 朝・${summary.missionsDone} 軒、称号 ${summary.titles.length} 人、チームを組み直し、LINE ${sent} 人`);
+  await saveMorning(s);
+  return { summary, commentary: text.commentary, nextWeek: text.nextWeek, nextTeams, sent };
+}
+
+/** 「いまからやる（5／15／30分）」: 近くの小タスクを1件さがして提案する */
+export async function offerTaskNow(participantId: string, minutes: 5 | 15 | 30): Promise<LineMessage[]> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const p = roster.participants.find((x) => x.id === participantId);
+  if (!p || p.role !== "helper") return [MSG.nowNothing()];
+  if (s.morning.rollcall.status !== "planned") return [MSG.nowNothing()];
+  const offer = pickTaskNow(s, roster, p, minutes);
+  if (!offer) return [MSG.nowNothing()];
+  const number = baseNumberOf(roster, offer.mission.baseId);
+  s.log.push(`${p.nickname}さんに「いまからやる」: 拠点${number} ${offer.label}（${offer.minutes}分）`);
+  await saveMorning(s);
+  return [MSG.nowOffer(offer.mission.id, number, offer.label, offer.minutes, offer.distanceM)];
 }
 
 function clockTextJst(d: Date): string {

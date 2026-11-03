@@ -4,7 +4,7 @@ import type { CommanderInput, Plan } from "../claude/commander";
 import { decompose } from "../game/mission";
 import { scoreMission } from "../game/score";
 import { clockText, jstIso } from "../jst";
-import type { HelperAnswer, Mission, RequesterAnswer, RollcallAnswer, Sortie } from "../types";
+import type { HelperAnswer, Mission, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
 import type { Roster } from "./roster";
 import type { MorningState } from "./view";
 
@@ -23,6 +23,16 @@ export interface MorningRecord {
   log: string[];
   /** ヘルプ通知の進み具合（ミッション ID ごと）。古い記録にはない */
   help?: Record<string, HelpState>;
+  /** 日曜の「今週の群れ」のまとめ（/admin に出す） */
+  weekly?: {
+    weekStart: string;
+    commentary: string;
+    nextWeek: string;
+    ranking: TeamId[];
+    teamTotals: Record<TeamId, number>;
+    titles: { participantId: string; nickname: string; title: string; rareCard: boolean }[];
+    at: string;
+  };
 }
 
 /** ヘルプ通知の輪: 0=まだ / 1=300m / 2=600m / 3=1km / 4=サポーターまで出した */

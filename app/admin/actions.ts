@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { applySchema, seedTown } from "@/lib/db";
 import { issueCardsForMission } from "@/lib/cards/issue";
 import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
-import { announce, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring } from "@/lib/morning/ops";
+import { setupRichMenu } from "@/lib/line/richmenu";
+import { announce, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring, weeklyRecap } from "@/lib/morning/ops";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
 
@@ -81,6 +82,27 @@ export async function helpNextRing() {
   for (const m of s.morning.missions) if (m.status === "short" && (await notifyHelp(m.id)) !== null) n++;
   if (n === 0) await escalateHelpIfDue();
   refresh();
+}
+
+/** 日曜の「今週の群れ」: 実況・称号・週の目標・翌週のシャッフル */
+export async function runWeekly() {
+  try {
+    await weeklyRecap();
+  } catch (e) {
+    await update((s) => void s.log.push(`今週のまとめに失敗: ${e instanceof Error ? e.message : String(e)}`));
+    return;
+  }
+  refresh();
+}
+
+/** LINE のリッチメニューを作って全員の既定にする（画像は SVG から） */
+export async function makeRichMenu() {
+  try {
+    const r = await setupRichMenu();
+    await update((s) => void s.log.push(r.richMenuId ? `リッチメニューを作成（${r.richMenuId}）` : "リッチメニュー: LINE の鍵がないので画像だけ作成"));
+  } catch (e) {
+    await update((s) => void s.log.push(`リッチメニューの作成に失敗: ${e instanceof Error ? e.message : String(e)}`));
+  }
 }
 
 export async function backToSample() {

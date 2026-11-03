@@ -2,7 +2,8 @@
 //   announce: 前夜 21:00 JST — Open-Meteo を見て予告
 //   rollcall: 6:30 JST — 点呼
 //   plan:     6:40 JST — 作戦配信（Hobby プランでは cron に置けないので、Pro か外部の cron から）
-import { checkForecastAndAnnounce, plan, ring } from "@/lib/morning/ops";
+//   weekly:   日曜の「今週の群れ」（announce が日曜なら先に行う。単独で呼ぶ用）
+import { checkForecastAndAnnounce, plan, ring, weeklyRecap } from "@/lib/morning/ops";
 
 export async function GET(req: Request, ctx: { params: Promise<{ job: string }> }): Promise<Response> {
   const secret = process.env.CRON_SECRET;
@@ -23,6 +24,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ job: string }> 
       case "plan": {
         const r = await plan();
         return Response.json({ ok: true, job, status: r.record.morning.rollcall.status, sent: r.sent });
+      }
+      case "weekly": {
+        const r = await weeklyRecap();
+        return Response.json({ ok: true, job, days: r.summary.days, missionsDone: r.summary.missionsDone, sent: r.sent });
       }
       default:
         return new Response("知らない仕事です: " + job, { status: 404 });
