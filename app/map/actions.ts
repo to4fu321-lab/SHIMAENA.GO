@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
 import type { ClearSummary } from "@/lib/morning/clear";
-import { completeWithPhoto, joinMission, joinNearby, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
+import { completeManually, completeWithPhoto, joinMission, joinNearby, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
 import { isDemoViewer, readViewer, signViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export interface ActionResult {
@@ -13,6 +13,8 @@ export interface ActionResult {
   text: string;
   /** 完了したときの MISSION CLEAR のまとめ */
   clear?: ClearSummary;
+  /** 写真では「まだ」だった → 「それでも完了にする」を出せる */
+  canManual?: boolean;
 }
 
 const firstText = (messages: { type: string }[]) => (messages[0] as TextMessage | undefined)?.text ?? "";
@@ -68,6 +70,15 @@ export async function finishAction(formData: FormData): Promise<ActionResult> {
   const mediaType = sniffImageType(bytes);
   if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
   const r = await completeWithPhoto(id, { bytes, mediaType });
+  revalidatePath("/map");
+  return { ok: r.done, text: firstText(r.messages), clear: r.clear, canManual: r.retry };
+}
+
+/** 「それでも完了にする」: 写真なしで本人の報告として完了にする */
+export async function manualFinishAction(viewerId: string): Promise<ActionResult> {
+  const id = await trustedViewer(viewerId);
+  if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。" };
+  const r = await completeManually(id);
   revalidatePath("/map");
   return { ok: r.done, text: firstText(r.messages), clear: r.clear };
 }

@@ -4,7 +4,7 @@ import { issueCardsForMission, rerenderBacks } from "../cards/issue";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
 import { planMorning } from "../claude/commander";
-import { checkPhoto, type PhotoInput } from "../claude/photo";
+import { checkPhoto, decidePhoto, type PhotoInput } from "../claude/photo";
 import { weeklyText } from "../claude/weekly";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
@@ -15,7 +15,7 @@ import type { LineMessage } from "../line/types";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { TOWN } from "../town";
-import type { HelperAnswer, Participant, RequesterAnswer, Role } from "../types";
+import type { HelperAnswer, Mission, Participant, PhotoCheck, RequesterAnswer, Role, Sortie } from "../types";
 import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
@@ -227,6 +227,8 @@ export interface CompleteResult {
   messages: LineMessage[];
   /** 完了したときの MISSION CLEAR のまとめ（画面用） */
   clear?: ClearSummary;
+  /** 写真では「まだ」→ もう一度か、「それでも完了にする」が選べる */
+  retry?: boolean;
 }
 
 /**
@@ -241,12 +243,49 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
 
   const check = await checkPhoto(image);
   const number = baseNumberOf(roster, mission.baseId);
-  if (!check.cleared || !check.passable) {
+  const outcome = decidePhoto(check);
+  if (outcome === "retry") {
     s.log.push(`拠点${number}の写真: まだ（${check.comment}）`);
     await saveMorning(s);
-    return { done: false, messages: [MSG.photoNotCleared(check.comment)] };
+    return { done: false, retry: true, messages: [MSG.photoNotCleared(check.comment)] };
   }
+  if (outcome === "accepted") {
+    // 写真では判断できない → 本人の報告として受け付ける（AI を最終判定者にしない）
+    check.comment = `写真では確かめきれませんでしたが、報告として受け付けました。${check.comment}`;
+    s.log.push(`拠点${number}の写真: 判断できず → 報告として受け付け`);
+  }
+  return finishMission(s, roster, sortie, mission, check, participantId, now);
+}
 
+/** 「それでも完了にする」（LINE のボタン／地図のボタン）: 写真なしで、本人の報告として完了にする */
+export async function completeManually(participantId: string, now = new Date()): Promise<CompleteResult> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
+  const mission = sortie && s.morning.missions.find((m) => m.id === sortie.missionId);
+  if (!sortie || !mission) return { done: false, messages: [MSG.noSortie()] };
+  s.log.push(`拠点${baseNumberOf(roster, mission.baseId)}: 本人の報告で完了（写真なし）`);
+  const check: PhotoCheck = {
+    cleared: true,
+    passable: true,
+    icy: false,
+    uncertain: true,
+    comment: "本人の報告で完了にしました（写真では確認していません）。お疲れさまでした。",
+  };
+  return finishMission(s, roster, sortie, mission, check, participantId, now);
+}
+
+/** 1軒を完了にする本体: 出撃を完了 → 得点 → カード → 依頼者・家族・仲間へ通知 → MISSION CLEAR のまとめ */
+async function finishMission(
+  s: MorningRecord,
+  roster: Roster,
+  sortie: Sortie,
+  mission: Mission,
+  check: PhotoCheck,
+  participantId: string,
+  now: Date,
+): Promise<CompleteResult> {
+  const number = baseNumberOf(roster, mission.baseId);
   const at = now.toISOString();
   const hpBefore = snowHp(s.morning).current;
   const sorties = s.morning.sorties.filter((x) => x.missionId === mission.id);

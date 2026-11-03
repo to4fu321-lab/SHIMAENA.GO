@@ -2,7 +2,7 @@
 
 // 地図の下の3つのボタン: 行く／終わりました（写真）／人手が足りない。
 import { useRef, useState, useTransition } from "react";
-import { finishAction, goAction, shortAction, type ActionResult } from "@/app/map/actions";
+import { finishAction, goAction, manualFinishAction, shortAction, type ActionResult } from "@/app/map/actions";
 import { openClear } from "./ClearWatcher";
 
 /** スマホの写真はそのままだと大きいので、送る前に長辺 1280px の JPEG に縮める */
@@ -88,6 +88,15 @@ export default function MorningButtons({ viewerId, canAct, going }: { viewerId: 
         <p className={`rounded-2xl px-3 py-2 text-base ${result.ok ? "bg-[#e9fbe7]" : "bg-[#fff4d6]"}`} role="status">
           {result.text}
         </p>
+      )}
+      {result && !result.ok && result.canManual && (
+        <button
+          disabled={pending}
+          onClick={() => run(() => manualFinishAction(viewerId))}
+          className="w-full rounded-2xl bg-white py-3 text-base font-bold text-ink ring-2 ring-ink/15 disabled:opacity-40"
+        >
+          それでも完了にする（写真なし・本人の報告）
+        </button>
       )}
     </div>
   );

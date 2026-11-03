@@ -128,6 +128,8 @@ export interface PhotoCheck {
   passable: boolean; // 通路が通れるか
   icy: boolean; // 凍結が残っているか
   comment: string;
+  /** 写真では判断できない（暗い・ぼやけ・範囲が狭い）。報告として受け付ける（v1.1） */
+  uncertain?: boolean;
 }
 
 export interface Sortie {

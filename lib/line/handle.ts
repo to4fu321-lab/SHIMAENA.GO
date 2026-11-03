@@ -4,7 +4,17 @@ import { randomBytes } from "node:crypto";
 import { judgeLevel } from "../claude/level";
 import { assignTeam, makeLinkCode } from "../game/team";
 import { sniffImageType } from "../image";
-import { answerRollcall, completeWithPhoto, escalateHelpIfDue, joinMission, offerTaskNow, planIfDue, sendThanks, setGoing } from "../morning/ops";
+import {
+  answerRollcall,
+  completeManually,
+  completeWithPhoto,
+  escalateHelpIfDue,
+  joinMission,
+  offerTaskNow,
+  planIfDue,
+  sendThanks,
+  setGoing,
+} from "../morning/ops";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import type { FamilyLink, Participant } from "../types";
@@ -161,6 +171,14 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("go:")) {
     const p = await r.findParticipantByLineUserId(lineUserId);
     const messages = p ? await setGoing(p.id, ev.postback.data === "go:yes") : [MSG.notRegistered()];
+    if (ev.replyToken) await reply(ev.replyToken, messages);
+    return;
+  }
+
+  // 「それでも完了にする」（写真なし、本人の報告）
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data === "done:manual") {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    const messages = p ? (await completeManually(p.id)).messages : [MSG.notRegistered()];
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }

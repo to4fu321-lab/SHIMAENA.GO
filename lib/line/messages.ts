@@ -124,7 +124,11 @@ export const MSG = {
     text(`了解です！拠点${baseNumber}へ。7:00 開始です。\n終わったら、玄関前から道路側を写した写真を1枚送ってください。`),
   goDeclined: () => text("承知しました。無理しないでください。ほかの人に声をかけます。"),
   noSortie: () => text("今朝の割り当てはありません。「いまからやる」と送ると、近くの小さな仕事を探します。"),
-  photoNotCleared: (comment: string) => text(`${comment}\nもう少しお願いできますか。終わったらまた写真を送ってください。`),
+  /** 写真では「まだ」。もう一度送るか、「それでも完了にする」（本人の報告）か */
+  photoNotCleared: (comment: string) =>
+    ask(`${comment}\nもう少しお願いできますか。終わったらまた写真を送ってください。\n（写真がうまく撮れないときは、下のボタンで完了にできます）`, [
+      { label: "それでも完了にする", data: "done:manual" },
+    ]),
   doneThanks: (baseNumber: number | string, teamName: string, points: number, comment: string) =>
     text(`${comment}\n拠点${baseNumber} 完了！ ${teamName}に +${points} 点。ありがとうカードは後ほど届きます。`),
   doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number) =>
