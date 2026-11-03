@@ -20,6 +20,7 @@ import { baseUrl } from "@/lib/url";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { progress, snowHp, teamTotals, viewBases } from "@/lib/morning/view";
+import { teamTheme } from "@/lib/team-theme";
 import { TEAMS } from "@/lib/teams";
 import { soloStatus } from "@/lib/solo/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
@@ -96,10 +97,9 @@ async function Details({ searchParams }: { searchParams: Promise<{ as?: string }
           <div className="flex items-baseline justify-between">
             <p className="eyebrow">今日のあなた</p>
             {myTeam && (
-              <p className="text-sm font-bold">
-                <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: myTeam.color }} aria-hidden="true" />
-                {myTeam.name}チーム
-              </p>
+              <Link href={`/team${q}`} className="rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: myTeam.color, color: teamTheme(myTeam.id).onColor }}>
+                {myTeam.name}チーム ›
+              </Link>
             )}
           </div>
           {solo && (

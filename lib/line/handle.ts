@@ -17,7 +17,8 @@ import {
   setGoing,
 } from "../morning/ops";
 import { repo } from "../repo";
-import { getTeam } from "../teams";
+import { jstDate } from "../jst";
+import { teamTerm } from "../team-theme";
 import type { FamilyLink, Participant } from "../types";
 import { getMessageContent, getProfile, reply } from "./client";
 import { liffUrl } from "../url";
@@ -63,8 +64,7 @@ export async function finishRegistration(lineUserId: string, reg: Registration):
       hasTools: reg.hasTools,
     };
     await r.upsertParticipant(p);
-    const team = getTeam(teamId);
-    return [...MSG.helperDone(team.name, team.colorName), ...MSG.soloInvite(liffUrl("/solo"), "helper")];
+    return [...MSG.helperDone(teamId, teamTerm(jstDate())), ...MSG.soloInvite(liffUrl("/solo"), "helper")];
   }
 
   const level = await judgeLevel({ soloMinutes: reg.soloMinutes, clearArea: reg.clearArea });

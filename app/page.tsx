@@ -12,6 +12,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
+import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 5分の雪かきで、町が変わる" };
@@ -64,20 +65,33 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   // 5分だけ手伝う: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
   const fiveHref = `/solo?pick=5${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
+  // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
+  const myTeam = me?.role === "helper" && me.teamId ? teamTheme(me.teamId) : undefined;
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
       <AutoRefresh seconds={8} />
       {/* 上: ロゴ・ひとこと・くわしく */}
-      <header className="flex shrink-0 items-center gap-2 bg-ice-soft px-4 pt-3 short:pt-1.5">
+      <header className="flex shrink-0 items-center gap-2 bg-ice-soft px-4 pt-3 short:pt-1.5" style={myTeam ? { background: myTeam.soft } : undefined}>
         <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
-          <Mascot size={40} />
+          <Mascot size={40} team={myTeam?.team.id} />
         </span>
         <div className="min-w-0 flex-1 leading-tight">
           <h1 className="text-2xl font-bold">
             シマエナ<span className="text-lamp-deep">GO</span>
           </h1>
-          <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">5分の雪かきで、町が変わる。</p>
+          {myTeam ? (
+            <Link
+              href={`/team${q}`}
+              className="mt-0.5 inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold shadow-sm max-[380px]:text-xs"
+              style={{ background: myTeam.team.color, color: myTeam.onColor }}
+            >
+              <span className="truncate">今週は{myTeam.team.name}</span>
+              <span aria-hidden="true">›</span>
+            </Link>
+          ) : (
+            <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">5分の雪かきで、町が変わる。</p>
+          )}
         </div>
         <Link href={`/today${q}`} className="relative flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="くわしく（今朝のようす）">
           <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -100,7 +114,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
           <path d="M120 19 L150 2" stroke="#7a5a44" strokeWidth="5" strokeLinecap="round" />
           <path d="M10 26 C60 18 120 14 196 4" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" fill="none" />
         </svg>
-        <Mascot className="absolute bottom-[17%] right-[10%] h-[74%] max-h-44 w-auto drop-shadow-md" />
+        <Mascot team={myTeam?.team.id} className="absolute bottom-[17%] right-[10%] h-[74%] max-h-44 w-auto drop-shadow-md" />
       </div>
 
       <main className="relative -mt-4 shrink-0 space-y-2.5 px-4 pb-3 short:space-y-2 short:pb-2">

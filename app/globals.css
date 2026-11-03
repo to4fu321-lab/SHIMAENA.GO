@@ -257,10 +257,21 @@ body {
   8% { opacity: 1; }
   100% { transform: translateY(420px) rotate(540deg); opacity: 0; }
 }
+/* チーム発表（/team）: シマエナガが跳ねて出てきて、名前がぽんと大きくなる */
+.team-reveal { animation: team-reveal 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes team-reveal {
+  0% { opacity: 0; transform: translateY(40px) scale(0.4) rotate(-12deg); }
+  100% { opacity: 1; transform: none; }
+}
+.team-name { animation: team-name 0.7s 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes team-name {
+  0% { opacity: 0; transform: scale(2.2); }
+  100% { opacity: 1; transform: none; }
+}
 .tut-track { transition: transform 0.38s cubic-bezier(0.22, 0.8, 0.3, 1); touch-action: pan-y; }
 .tut-track.dragging { transition: none; }
 @media (prefers-reduced-motion: reduce) {
-  .tut-pop, .tut-bob, .tut-dig, .tut-flash, .confetti { animation: none; }
+  .tut-pop, .tut-bob, .tut-dig, .tut-flash, .confetti, .team-reveal, .team-name { animation: none; }
   .confetti { display: none; }
   .tut-track { transition: none; }
 }

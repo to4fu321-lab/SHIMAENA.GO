@@ -1,39 +1,30 @@
-// シマエナガのキャラクター（オレンジのマフラー）。画像ファイルを使わず SVG で描く。
+// シマエナガのキャラクター。画像ファイルを使わず SVG で描く（絵は lib/mascot-svg.ts）。
 // mood: normal = いつもの顔、happy = 目を細めて喜ぶ顔（完了の画面）
-export default function Mascot({ size = 120, mood = "normal", className = "" }: { size?: number; mood?: "normal" | "happy"; className?: string }) {
+// team: 1週間のチーム。マフラーがチームの色になる（なければいつもの灯りオレンジ）
+import { mascotInner } from "@/lib/mascot-svg";
+import { scarfOf } from "@/lib/team-theme";
+import type { TeamId } from "@/lib/types";
+
+export default function Mascot({
+  size = 120,
+  mood = "normal",
+  team,
+  className = "",
+}: {
+  size?: number;
+  mood?: "normal" | "happy";
+  team?: TeamId;
+  className?: string;
+}) {
   return (
-    <svg viewBox="0 0 120 120" width={size} height={size} aria-hidden="true" className={className}>
-      {/* しっぽ */}
-      <path d="M96 70 L116 62 L112 78 Z" fill="#29445c" />
-      {/* からだ */}
-      <ellipse cx="60" cy="64" rx="44" ry="42" fill="#ffffff" stroke="#dbe6ee" strokeWidth="2" />
-      {/* つばさ */}
-      <path d="M88 52 C104 62 104 86 86 96 C90 82 88 66 80 56 Z" fill="#29445c" />
-      <path d="M32 56 C20 66 22 84 34 92 C32 80 34 66 40 58 Z" fill="#3b6584" />
-      {/* 目 */}
-      {mood === "happy" ? (
-        <>
-          <path d="M40 54 Q45 48 50 54" fill="none" stroke="#1d2f40" strokeWidth="3.4" strokeLinecap="round" />
-          <path d="M70 54 Q75 48 80 54" fill="none" stroke="#1d2f40" strokeWidth="3.4" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <circle cx="45" cy="54" r="4.6" fill="#1d2f40" />
-          <circle cx="75" cy="54" r="4.6" fill="#1d2f40" />
-          <circle cx="46.4" cy="52.6" r="1.4" fill="#fff" />
-          <circle cx="76.4" cy="52.6" r="1.4" fill="#fff" />
-        </>
-      )}
-      {/* くちばし */}
-      <path d="M56 60 L64 60 L60 66 Z" fill="#1d2f40" />
-      {/* ほっぺ */}
-      <ellipse cx="36" cy="64" rx="6" ry="3.6" fill="#f2b8bf" opacity="0.8" />
-      <ellipse cx="84" cy="64" rx="6" ry="3.6" fill="#f2b8bf" opacity="0.8" />
-      {/* マフラー */}
-      <path d="M22 76 C40 88 80 88 98 76 L98 86 C80 98 40 98 22 86 Z" fill="#e8834f" />
-      <path d="M70 88 L78 112 L90 108 L84 86 Z" fill="#d06d3b" />
-      <path d="M26 80 C42 90 78 90 94 80" fill="none" stroke="#f6a57a" strokeWidth="2" />
-    </svg>
+    <svg
+      viewBox="0 0 120 120"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      className={className}
+      dangerouslySetInnerHTML={{ __html: mascotInner(mood, scarfOf(team)) }}
+    />
   );
 }
 

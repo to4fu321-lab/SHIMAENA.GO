@@ -111,7 +111,10 @@ export default function RulesPage() {
           </span>
         ))}
       </div>
-      <p>町内の人は3チームに分かれます。チームは毎週日曜に入れ替わるので、いろんな人と知り合えます。</p>
+      <p>
+        手伝う人は3チームに分かれます。チームは<b>月曜〜日曜の1週間</b>。<b>日曜の夜 9時</b>に組み直して、LINE で「チーム発表」が届きます。毎週ちがう顔ぶれなので、いろんな人と知り合えます。
+      </p>
+      <p className="text-ink-soft">町の地図のマスと、シマエナガのマフラーが、あなたのチームの色になります。</p>
       <ul className="list-inside list-disc space-y-1 text-ink-soft">
         <li>1軒終わると 10点。7:30 までなら +5点</li>
         <li>同じチームで2人以上なら、ひとり +5点</li>

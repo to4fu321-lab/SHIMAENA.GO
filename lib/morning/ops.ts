@@ -15,6 +15,7 @@ import type { LineMessage } from "../line/types";
 import { mapsUrl } from "../nav";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
+import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
 import type { HelperAnswer, Mission, Participant, PhotoCheck, RequesterAnswer, Role, Sortie } from "../types";
 import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
@@ -694,8 +695,7 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
     const title = titleOf.get(p.id);
     if (title) msgs.push(...MSG.weeklyTitle(title.title, title.rareCard));
     if (p.role === "helper" && nextTeams[p.id]) {
-      const team = getTeam(nextTeams[p.id]);
-      msgs.push(...MSG.weeklyNewTeam(team.name, team.colorName));
+      msgs.push(...MSG.weeklyNewTeam(nextTeams[p.id], nextTeamTerm(today)));
     }
     await push(p.lineUserId, msgs);
     sent++;

@@ -76,7 +76,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
         <Ring value={cards.length} goal={reward?.at ?? cards.length} />
 
         <div className="flex items-center gap-2 rounded-3xl bg-card px-3 py-2 shadow-sm ring-1 ring-ink/10">
-          <Mascot size={60} className="shrink-0" />
+          <Mascot size={60} team={me?.role === "helper" ? me.teamId : undefined} className="shrink-0" />
           <p className="text-base font-bold leading-snug">
             {!me ? (
               "LINE で登録すると、ここに活動がたまります。"

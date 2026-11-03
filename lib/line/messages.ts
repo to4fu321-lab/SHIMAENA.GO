@@ -3,6 +3,9 @@
 // うまくいかなかったときも「失敗」と感じさせない言い方にする。どれも吹き出しの配列を返す。
 // v1.5: 質問への答えは吹き出しの中の大きなボタン（choiceCard）、「どこに・何時」は大きな画像の行き先カード（placeCard）。
 import { MENU } from "../brand";
+import { teamAnnounceText, teamImageMessage } from "../team-announce";
+import type { TeamTerm } from "../team-theme";
+import type { TeamId } from "../types";
 import { liffUrl } from "../url";
 import { choiceCard, placeCard, type CardAction, type Choice, type Tone } from "./flex";
 import type { FlexMessage, LineMessage, QuickReplyAction, TextMessage } from "./types";
@@ -35,6 +38,11 @@ const B = {
   roll: { type: "cameraRoll", label: "写真を選ぶ" } as Button,
   register: say("登録する", "登録"),
 };
+
+/** チーム発表: 画像1枚と文（「チームを見る」ボタン付き） */
+function teamAnnounce(teamId: TeamId, term: TeamTerm, kind: "first" | "weekly"): LineMessage[] {
+  return [teamImageMessage(teamId, term, kind), withButtons(teamAnnounceText(teamId, term, kind), [open("チームを見る", "/team")])];
+}
 
 /** 質問と大きな答えボタン（postback）。押した文字がトークに出る。tone: soft は「休む・やめる」側 */
 export function ask(body: string, choices: { label: string; data: string; tone?: Tone }[]): FlexMessage {
@@ -148,8 +156,12 @@ export const MSG = {
   codeNotFound: () => bubbles(["その番号は見つかりませんでした。", "6桁の数字をもう一度確かめて、送ってください。\nわからないときは、番号を教えてくれたご家族に聞いてみてください。"]),
   help: () =>
     bubbles(["下のボタンか、画面の下のメニューから選んでください。"], [B.go, B.map, B.card, B.guide, say("登録をやり直す", "登録")]),
-  helperDone: (teamName: string, colorName: string) =>
-    bubbles(["登録できました！🎉", `あなたのチームは「${teamName}」（${colorName}）です。`, "雪の朝 6:30 に、ここへ1問だけ届きます。ボタンを1回押すだけです。"]),
+  /** 登録できた → チーム発表（画像＋文）→ 雪の朝の案内 */
+  helperDone: (teamId: TeamId, term: TeamTerm): LineMessage[] => [
+    text("登録できました！🎉"),
+    ...teamAnnounce(teamId, term, "first"),
+    text("雪の朝 6:30 に、ここへ1問だけ届きます。ボタンを1回押すだけです。"),
+  ],
   /** 登録のすぐあと: 雪の朝を待たずに、まずはひとりで5分（spec v1.3） */
   soloInvite: (_url: string, role: "helper" | "requester") =>
     role === "helper"
@@ -331,7 +343,8 @@ export const MSG = {
   weeklyToAll: (commentary: string, nextWeek: string) => bubbles([commentary, nextWeek]),
   weeklyTitle: (title: string, rareCard: boolean) =>
     bubbles([`今週の称号「${title}」をおくります。🏅${rareCard ? "\n次のカードはレア確定です。" : ""}`], [B.card]),
-  weeklyNewTeam: (teamName: string, colorName: string) => bubbles([`来週のあなたのチームは「${teamName}」（${colorName}）です。`]),
+  /** 日曜の夜の組み直し: 派手めのチーム発表（画像＋文＋チームの画面を開くボタン） */
+  weeklyNewTeam: (teamId: TeamId, term: TeamTerm): LineMessage[] => teamAnnounce(teamId, term, "weekly"),
   weeklyFamily: (count: number) => bubbles([`今週は、ご家族の家の雪かきを ${count} 回手伝ってもらいました。`]),
   linkedSelf: () => bubbles(["紐づけができました。", "雪の朝 6:30 に「今朝、玄関から外に出られそうですか？」と1回だけ聞きます。"]),
   linkedFamily: () => bubbles(["家族として紐づけました。", "雪かきが終わったときや、点呼に返事がないときにお知らせします。"]),
