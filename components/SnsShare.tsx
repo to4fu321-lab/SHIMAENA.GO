@@ -114,7 +114,7 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
         <textarea
           value={text}
           onChange={(e) => setTexts((t) => ({ ...t, [opt.key]: e.target.value }))}
-          rows={4}
+          rows={5}
           className="mt-1 w-full rounded-2xl bg-paper p-3 text-base text-ink ring-1 ring-ink/15"
         />
       </label>

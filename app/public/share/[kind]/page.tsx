@@ -4,13 +4,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { lineJoinUrl } from "@/lib/line/join";
+import { QUIZ_TYPES } from "@/lib/public/quiz";
 
 const PAGES = {
   today: { title: "今日のシマエナGO 出動", description: "雪の朝、町内のシマエナが家の雪をどけています。今日の出動人数と雪解けの進み。" },
   town: { title: "しらかば町内の雪解け", description: "町の雪解け率・助けた家・今週の活動人数。あなたの町にもシマエナを。" },
   recruit: { title: "5分だけ参加しませんか？", description: "人手が足りない家があります。あなたの5分で町が変わる。" },
-} as const;
-type Kind = keyof typeof PAGES;
+  // シマエナ診断の結果（quiz-asa など）
+  ...Object.fromEntries(
+    Object.values(QUIZ_TYPES).map((t) => [`quiz-${t.type}`, { title: `シマエナ診断: ${t.name}`, description: `${t.catchphrase} あなたは何シマエナ？ 5つの質問で分かります。` }]),
+  ),
+} as Record<string, { title: string; description: string }>;
+type Kind = string;
 
 export function generateStaticParams() {
   return Object.keys(PAGES).map((kind) => ({ kind }));
@@ -57,6 +62,11 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
           </a>
         ) : (
           <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
+        )}
+        {kind.startsWith("quiz-") && (
+          <Link href="/public/diagnosis" className="block rounded-2xl bg-neon py-4 text-center text-lg font-bold text-white">
+            あなたも診断する
+          </Link>
         )}
         <Link href="/public/town?via=sns" className="block rounded-2xl bg-ink py-4 text-center text-lg font-bold text-white">
           町の雪解けを見る

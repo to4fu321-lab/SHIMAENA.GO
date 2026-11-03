@@ -141,6 +141,9 @@ async function Town() {
         ) : (
           <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
         )}
+        <Link href="/public/diagnosis" className="block rounded-2xl bg-neon py-4 text-center text-lg font-bold text-white">
+          シマエナ診断（あなたは何シマエナ？）
+        </Link>
         <Link href="/rules" className="block rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
           あそびかた
         </Link>

@@ -1,6 +1,7 @@
 // SNS シェアカード（spec v1.3）。画像生成AIは使わず、図形から SVG で描く（PNG 化は lib/cards/png.ts）。
 // 数字は集計（PublicStats）だけ。氏名・家・マスの位置は載せない。個人カード（me）だけ本人の呼び名を載せる。
 import { escapeXml, kawaiiBird, wrap } from "../cards/svg";
+import { QUIZ_TYPES, type QuizType } from "../public/quiz";
 import type { PublicStats } from "../public/stats";
 import { TEAMS } from "../teams";
 import type { TeamId } from "../types";
@@ -117,6 +118,25 @@ export function shareCardData(kind: ShareKind, st: PublicStats, url: string, me?
   }
 }
 
+/** 診断結果のカード（町の数字は使わない） */
+export function quizCardData(type: QuizType, url: string, townName: string): ShareCard {
+  const q = QUIZ_TYPES[type];
+  return {
+    eyebrow: `${townName} ・ シマエナ診断`,
+    headline: "あなたは…",
+    bigValue: q.name,
+    bigUnit: "",
+    bigLabel: q.catchphrase,
+    rows: [
+      { label: "おすすめの5分", value: q.mission.replace(/（.*）$/, "") },
+      { label: "参加", value: "LINE で1分" },
+    ],
+    birds: [q.ear, q.ear === "lupinus" ? "salvia" : "lupinus", "marigold"],
+    url,
+    tagline: "あなたも診断してみて",
+  };
+}
+
 const t = (x: number, y: number, size: number, body: string, opts: { fill?: string; anchor?: "start" | "middle" | "end"; weight?: number; spacing?: number } = {}) =>
   `<text x="${x}" y="${y}" font-family="${JP}" font-size="${size}" font-weight="${opts.weight ?? 700}" fill="${opts.fill ?? INK}" text-anchor="${opts.anchor ?? "start"}"${opts.spacing ? ` letter-spacing="${opts.spacing}"` : ""}>${escapeXml(body)}</text>`;
 
@@ -159,7 +179,7 @@ function portrait(c: ShareCard, w: number, h: number): string {
   const panelH = c.gauge !== undefined ? 330 : 280;
   y += 10;
   out.push(`<rect x="70" y="${y}" width="${w - 140}" height="${panelH}" rx="40" fill="#fff" stroke="#cdbaff" stroke-width="3"/>`);
-  const numSize = c.bigValue.length >= 3 ? 140 : 170;
+  const numSize = c.bigValue.length >= 5 ? 76 : c.bigValue.length >= 3 ? 140 : 170;
   out.push(
     `<text x="120" y="${y + 190}" font-family="${JP}" font-weight="700" fill="${NEON}"><tspan font-size="${numSize}">${escapeXml(c.bigValue)}</tspan><tspan font-size="60" fill="${INK}" dx="10">${escapeXml(c.bigUnit)}</tspan></text>`,
   );
@@ -202,7 +222,7 @@ function landscape(c: ShareCard, w: number, h: number): string {
     y += 72;
   }
   out.push(
-    `<text x="64" y="${h - 110}" font-family="${JP}" font-weight="700" fill="${NEON}"><tspan font-size="130">${escapeXml(c.bigValue)}</tspan><tspan font-size="48" fill="${INK}" dx="8">${escapeXml(c.bigUnit)}</tspan></text>`,
+    `<text x="64" y="${h - 110}" font-family="${JP}" font-weight="700" fill="${NEON}"><tspan font-size="${c.bigValue.length >= 5 ? 64 : 130}">${escapeXml(c.bigValue)}</tspan><tspan font-size="48" fill="${INK}" dx="8">${escapeXml(c.bigUnit)}</tspan></text>`,
   );
   out.push(t(70, h - 60, 30, c.bigLabel, { fill: SUB }));
   out.push(`<circle cx="${w - 250}" cy="${h / 2 - 10}" r="200" fill="#fff" opacity="0.75"/>`);
