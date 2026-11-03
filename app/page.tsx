@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
-import { progress, snowHp, teamTotals, viewBases } from "@/lib/morning/view";
+import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { TEAMS } from "@/lib/teams";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
@@ -36,6 +36,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
 
   const hp = snowHp(m);
   const prog = progress(m);
+  const snow = snowTotal(m);
   const totals = teamTotals(m);
   const max = Math.max(1, ...Object.values(totals));
   const movers = new Set(m.sorties.map((s) => s.participantId)).size;
@@ -90,6 +91,12 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
               </>
             )}
           </p>
+          {snow.kg > 0 && (
+            <p className="mt-1 text-sm">
+              町内みんなでどけた雪 <b className="text-lg text-ink">{snow.label}</b>
+              <span className="text-ink/70">（{snow.comparison}・{snow.houses}軒分）</span>
+            </p>
+          )}
         </div>
 
         <ul className="space-y-1" aria-label="チームの得点">

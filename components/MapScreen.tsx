@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import type { CellView } from "@/lib/cells";
 import type { BaseView, MorningState } from "@/lib/morning/view";
-import { progress, snowHp, teamTotals, viewBases } from "@/lib/morning/view";
+import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import type { Base, Role, TeamId } from "@/lib/types";
 import type { ClearSummary } from "@/lib/morning/clear";
@@ -62,6 +62,7 @@ export default function MapScreen({
   const max = Math.max(1, ...Object.values(totals));
   const hp = snowHp(state);
   const prog = progress(state);
+  const snow = snowTotal(state);
   const hpPct = hp.max > 0 ? (hp.current / hp.max) * 100 : 100;
   const viewerTeam = TEAMS.find((t) => t.id === viewer?.teamId);
   const mySortie = state.sorties.find((s) => s.participantId === state.viewerId);
@@ -118,6 +119,12 @@ export default function MapScreen({
             ) : (
               <>
                 {prog.done} / {prog.total} 軒 ・ あと {prog.left} 軒
+              </>
+            )}
+            {snow.kg > 0 && (
+              <>
+                {" "}
+                ・ どけた雪 <b className="text-ink">{snow.label}</b>（{snow.comparison}）
               </>
             )}
           </p>

@@ -4,6 +4,7 @@ import { STYLE_NAME } from "../cards/rarity";
 import type { CardStyle, ClearArea, SnowType } from "../types";
 import { askJson, hasClaudeKey } from "./client";
 import { SNOW_DENSITY, SNOW_TYPE_LABEL } from "./photo";
+import { snowComparison } from "../snowkg";
 
 export const CardTextSchema = z.object({
   designName: z.string(), // 例: 玄関までの三十歩
@@ -37,14 +38,7 @@ export function estimateSnowKg(forecastCm: number, clearArea: ClearArea, snowTyp
   return Math.max(20, Math.round((AREA_M2[clearArea] * (forecastCm / 100) * SNOW_DENSITY[snowType]) / 10) * 10);
 }
 
-export function snowComparison(kg: number): string {
-  if (kg < 100) return "米袋3つ分";
-  if (kg < 300) return "大人4人分";
-  if (kg < 700) return "軽トラ半分";
-  if (kg < 1200) return "軽トラ1台分";
-  if (kg < 2000) return "軽トラ2台分";
-  return "小型トラック1台分";
-}
+export { snowComparison };
 
 const NAMES: Record<CardStyle, [string, string, string][]> = {
   kawaii: [

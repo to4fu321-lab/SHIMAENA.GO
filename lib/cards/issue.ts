@@ -86,6 +86,7 @@ export async function issueCardsForMission(
     rarityLabel: rarity.label,
     snowType: sorties.find((x) => x.photoCheck?.snowType)?.photoCheck?.snowType,
   });
+  mission.snowKg = text.snowKg; // 町内の「どけた雪の合計」に使う
   const issuedCount = s.morning.sorties.length;
   const already = await r.countCardsForRollcall(s.morning.rollcall.id);
   const cards: Card[] = [];

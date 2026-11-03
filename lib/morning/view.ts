@@ -1,6 +1,7 @@
 // 「ある雪の朝」の状態。地図・得点バー・雪HP はこの形を読む。
 // T03 では固定のデモ状態、T06 以降は保存先から組み立てる。
 import { clockText, jstMinutes } from "../jst";
+import { formatKg, snowComparison } from "../snowkg";
 import type { Mission, Rollcall, ScoreEvent, Sortie, TeamId } from "../types";
 
 export interface MorningState {
@@ -56,6 +57,13 @@ export function snowHp(state: MorningState): { current: number; max: number } {
   const done = all.filter((m) => m.status === "done").length;
   const max = Math.round(state.rollcall.forecastCm * all.length);
   return { current: Math.round(state.rollcall.forecastCm * (all.length - done)), max };
+}
+
+/** 今朝、町内みんなでどけた雪の合計（完了した家の kg を足す。チーム対抗ではなく共同の達成） */
+export function snowTotal(state: MorningState): { kg: number; houses: number; label: string; comparison: string } {
+  const done = state.missions.filter((m) => m.status === "done" && (m.snowKg ?? 0) > 0);
+  const kg = done.reduce((a, m) => a + (m.snowKg ?? 0), 0);
+  return { kg, houses: done.length, label: formatKg(kg), comparison: snowComparison(kg) };
 }
 
 export interface Progress {
