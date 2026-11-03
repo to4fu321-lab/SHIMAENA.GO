@@ -4,7 +4,9 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
+import CheerButton from "@/components/CheerButton";
 import SnsShare, { type ShareOption } from "@/components/SnsShare";
+import { CHEER_COOKIE, cheeredToday } from "@/lib/public/cheer";
 import { STYLE_NAME } from "@/lib/cards/rarity";
 import { loadPublicStats } from "@/lib/public/load";
 import { repo } from "@/lib/repo";
@@ -151,6 +153,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
             <p className="text-base">{record.recap.text}</p>
           </div>
         )}
+
+        <CheerButton compact count={stats.cheers} already={cheeredToday(cookieStore.get(CHEER_COOKIE)?.value, stats.today)} />
 
         {me && (
           <p className="text-base">

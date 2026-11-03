@@ -2,9 +2,12 @@
 // 出すのは集計だけ（町の雪解け率・今日の人数・今週の活動）。名前・家・マスの位置・拠点番号は出さない。
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import CheerButton from "@/components/CheerButton";
 import SnsShare from "@/components/SnsShare";
+import { CHEER_COOKIE, cheeredToday } from "@/lib/public/cheer";
 import { lineJoinUrl } from "@/lib/line/join";
 import { loadPublicStats } from "@/lib/public/load";
 import { shareTextsFor } from "@/lib/sns/refresh";
@@ -42,6 +45,7 @@ async function Town() {
   await connection();
   const st = await loadPublicStats();
   const texts = await shareTextsFor(st);
+  const already = cheeredToday((await cookies()).get(CHEER_COOKIE)?.value, st.today);
   const join = lineJoinUrl();
   const site = baseUrl();
   const max = Math.max(1, ...Object.values(st.teamTotals));
@@ -87,6 +91,9 @@ async function Town() {
           </p>
         )}
       </section>
+
+      {/* 応援ゲージ（得点・羽には入れない） */}
+      <CheerButton count={st.cheers} already={already} />
 
       {/* 今日と今週の数字 */}
       <section className="space-y-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日と今週">

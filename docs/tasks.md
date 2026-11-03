@@ -84,6 +84,6 @@
 - [x] **T36 Claude の投稿文** — 採点表 `share`/`solo`/`quiz`、`lib/claude/share.ts`、書き込み点でだけ生成して `shareTexts` に保存、描画時はモック。
   完了条件: キーなしで文例が出る。数字は入力のみ。
 - [x] **T37 シマエナ診断** — `lib/public/quiz.ts`（5問→5タイプ）、`/public/diagnosis`、結果カード `quiz-<type>`、`lib/claude/quiz.ts`（1日1回キャッシュ）。登録不要。
-- [ ] **T38 応援ゲージ** — `town_cheers`、`cheerTownAction`（1日1回）、公開ページとホームのゲージ。得点・羽には入れない。
+- [x] **T38 応援ゲージ** — `town_cheers`、`cheerTownAction`（1日1回）、公開ページとホームのゲージ。得点・羽には入れない。
 - [ ] **T39 初参加の歓迎と募集** — 初回ソロの歓迎、LINE 登録完了の1行、公開ページの「あと1人で救える家 N 軒」、`?via=sns`。
 - [ ] **T40 文書とデモ** — spec v1.3、README、demo.md、devlog、スクショ。
