@@ -79,7 +79,7 @@
   完了条件: `/admin` の「4」→ 来た人の `/solo` で +10、チーム得点は従来どおり（テスト）。
 - [x] **T35 SNS シェアカード** — `lib/sns/cards.ts`（today／me／town／recruit × 正方形／ストーリーズ／OG）、`/api/share/[kind]`、`SnsShare`（X に投稿／画像で共有／保存／文をコピー）、`/public/share/[kind]`、`metadataBase`、フォント同梱。ホームを PART 4 の順に。
   完了条件: PNG が3サイズで返る（テスト）。自動投稿はしない。
-- [ ] **T34 公開ページ** — `lib/public/stats.ts`（集計だけ）、`/api/public/stats`、`/public/town`（雪解け・今日の数字・今週・説明・LINE 参加 🔑`NEXT_PUBLIC_LINE_ADD_FRIEND_URL`・診断へ・シェア）。
+- [x] **T34 公開ページ** — `lib/public/stats.ts`（集計だけ）、`/api/public/stats`、`/public/town`（雪解け・今日の数字・今週・説明・LINE 参加 🔑`NEXT_PUBLIC_LINE_ADD_FRIEND_URL`・診断へ・シェア）。
   完了条件: テストで氏名・緯度経度・マスのキーが出ない。
 - [ ] **T36 Claude の投稿文** — 採点表 `share`/`solo`/`quiz`、`lib/claude/share.ts`、書き込み点でだけ生成して `shareTexts` に保存、描画時はモック。
   完了条件: キーなしで文例が出る。数字は入力のみ。
