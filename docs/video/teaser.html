@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>シマエナGO 20秒ティザー</title>
+<!--
+  使い方
+  - ブラウザで開くと自動で20秒再生して止まる（1920x1080 を画面に合わせて拡大縮小）
+  - ?t=7.5   その秒数の場面で止めて表示（確認用）
+  - ?loop=1  ずっと繰り返す
+  - 録画するときは F11 で全画面にして、ページを再読み込み → すぐ録画開始
+  登場する人・町内はすべて架空です。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fdf6ec; --bg2:#f9ead3; --ink:#5b4636; --ink2:#8a7360;
+  --peach:#f3b08a; --sun:#f6cf72; --sky:#9cc7e8; --snow:#ffffff; --plum:#c9a5d6;
+  --roof:#d99a72; --line:#e7d5bb;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#2b2118;overflow:hidden}
+body{display:grid;place-items:center;font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Noto Sans CJK JP","Noto Sans JP",sans-serif;color:var(--ink)}
+#stage{width:1920px;height:1080px;position:relative;overflow:hidden;background:var(--bg);transform-origin:center center;flex:none}
+.blob{position:absolute;border-radius:50%;background:var(--bg2)}
+.scene{position:absolute;inset:0;opacity:0;animation:scene 4s linear both;animation-delay:calc(var(--t)*1s)}
+@keyframes scene{0%{opacity:0}7%{opacity:1}93%{opacity:1}100%{opacity:0}}
+.a{opacity:0;animation:rise .9s cubic-bezier(.2,.8,.3,1) both;animation-delay:calc(var(--t)*1s)}
+@keyframes rise{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:none}}
+.pop{opacity:0;animation:pop .7s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--t)*1s)}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+.walk{animation:walk 1.8s cubic-bezier(.3,.7,.3,1) both;animation-delay:calc(var(--t)*1s)}
+@keyframes walk{from{transform:translate(var(--dx),var(--dy));opacity:0}15%{opacity:1}to{transform:none;opacity:1}}
+.abs{position:absolute}
+h1,h2,p{font-weight:900}
+.big{font-size:84px;line-height:1.35;letter-spacing:.04em}
+.mid{font-size:44px;line-height:1.5;font-weight:700;color:var(--ink2);letter-spacing:.04em}
+.mark{background:linear-gradient(transparent 62%,rgba(246,207,114,.75) 62%);padding:0 .1em}
+/* 雪 */
+.flake{position:absolute;top:-40px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(156,199,232,.6);animation:fall linear infinite;opacity:.9}
+@keyframes fall{from{transform:translate(0,-40px)}to{transform:translate(-120px,1160px)}}
+/* 電話 */
+.phone{left:1060px;top:90px;width:560px;height:900px;border-radius:70px;background:#fff;border:14px solid var(--ink);box-shadow:0 30px 60px rgba(91,70,54,.18);overflow:hidden}
+.phone .bar{height:90px;background:var(--sky);display:flex;align-items:center;padding:0 36px;font-size:32px;font-weight:900;color:#fff;letter-spacing:.06em}
+.chat{background:#eef5fb;height:100%;padding:30px 26px;position:relative}
+.bub{background:#fff;border-radius:30px;padding:24px 28px;font-size:32px;line-height:1.5;font-weight:700;box-shadow:0 4px 0 rgba(91,70,54,.06);max-width:400px}
+.btns{display:flex;gap:16px}
+.btn{flex:1;text-align:center;font-size:36px;font-weight:900;border-radius:999px;padding:18px 0;background:#fff;border:4px solid var(--sky);color:#4f86b0}
+.btn.on{background:var(--sun);border-color:var(--sun);color:var(--ink);animation:tap .5s both;animation-delay:calc(var(--t)*1s)}
+@keyframes tap{0%{transform:scale(1)}40%{transform:scale(.88)}100%{transform:scale(1.04)}}
+/* 地図 */
+.map{left:860px;top:110px;width:900px;height:860px;border-radius:60px;background:#f6efe0;border:6px solid var(--line);overflow:hidden;box-shadow:0 30px 60px rgba(91,70,54,.14)}
+.dot{width:92px;height:92px;border-radius:50%;background:#d8dee6;border:6px solid #fff;display:grid;place-items:center;font-size:46px;color:#fff;font-weight:900;animation:dotc .8s both;animation-delay:calc(var(--t)*1s);box-shadow:0 6px 0 rgba(91,70,54,.1)}
+@keyframes dotc{0%{background:#d8dee6;transform:scale(1)}50%{transform:scale(1.35)}100%{background:var(--sun);transform:scale(1)}}
+.dot.need{background:var(--peach);animation:needp 1s ease-in-out infinite alternate,dotc .8s both;animation-delay:0s,calc(var(--t)*1s)}
+@keyframes needp{from{box-shadow:0 0 0 0 rgba(243,176,138,.7)}to{box-shadow:0 0 0 34px rgba(243,176,138,0)}}
+.card{width:300px;height:420px;border-radius:36px;background:#fff;border:6px solid #fff;box-shadow:0 24px 50px rgba(91,70,54,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-size:34px;font-weight:900;text-align:center;line-height:1.4}
+.card .ic{width:200px;height:200px;border-radius:50%;display:grid;place-items:center}
+#hud{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 60px;font-size:24px;font-weight:700;color:var(--ink2);letter-spacing:.08em;z-index:9}
+#bar{position:absolute;left:0;bottom:0;height:8px;background:var(--peach);width:0;z-index:9}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="blob" style="left:-200px;top:-220px;width:700px;height:700px"></div>
+  <div class="blob" style="right:-260px;bottom:-300px;width:860px;height:860px"></div>
+  <div id="snow"></div>
+
+  <!-- 1. 雪の朝 -->
+  <section class="scene" style="--t:0">
+    <div class="abs" style="left:150px;top:230px">
+      <p class="big a" style="--t:.4">雪の朝。</p>
+      <p class="mid a" style="--t:1.2;margin-top:28px">ひとり暮らしの家の前に、<br>雪がどっさり。</p>
+      <p class="mid a" style="--t:2.4;margin-top:40px;color:var(--ink)">ひとりでは、たいへん。</p>
+    </div>
+    <svg class="abs pop" style="--t:.6;left:1000px;top:260px" width="760" height="620" viewBox="0 0 760 620">
+      <ellipse cx="380" cy="560" rx="360" ry="40" fill="#fff"/>
+      <ellipse cx="150" cy="520" rx="150" ry="70" fill="#fff"/>
+      <ellipse cx="620" cy="530" rx="140" ry="60" fill="#fff"/>
+      <rect x="170" y="270" width="420" height="270" rx="26" fill="#f8dcb9"/>
+      <path d="M130 290 L380 90 L630 290 Z" fill="var(--roof)" stroke="var(--roof)" stroke-width="24" stroke-linejoin="round"/>
+      <path d="M150 280 Q250 215 380 205 Q520 215 610 280 Q500 260 380 262 Q250 260 150 280Z" fill="#fff"/>
+      <rect x="330" y="380" width="100" height="160" rx="18" fill="#b98562"/>
+      <rect x="215" y="340" width="86" height="86" rx="16" fill="#fff6dc"/>
+      <rect x="460" y="340" width="86" height="86" rx="16" fill="#fff6dc"/>
+      <circle cx="258" cy="383" r="9" fill="var(--sun)"/>
+      <rect x="480" y="150" width="50" height="90" rx="8" fill="#c98f6d"/>
+    </svg>
+  </section>
+
+  <!-- 2. LINE 点呼 -->
+  <section class="scene" style="--t:4">
+    <div class="abs" style="left:150px;top:260px">
+      <p class="big a" style="--t:4.3">朝6:30、<br>LINEに<span class="mark">点呼</span>。</p>
+      <p class="mid a" style="--t:5.2;margin-top:36px">質問は、たったひとつ。<br>タップするだけ。</p>
+    </div>
+    <div class="abs phone pop" style="--t:4.3">
+      <div class="bar">しらかば町内</div>
+      <div class="chat">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <svg width="84" height="84" viewBox="0 0 84 84" class="pop" style="--t:4.9;flex:none"><circle cx="42" cy="42" r="40" fill="#fff"/><ellipse cx="42" cy="48" rx="26" ry="22" fill="#f5e3c8"/><circle cx="42" cy="38" r="22" fill="#fff"/><circle cx="34" cy="36" r="4" fill="#5b4636"/><circle cx="50" cy="36" r="4" fill="#5b4636"/><path d="M38 44 L42 50 L46 44Z" fill="var(--peach)"/></svg>
+          <div class="bub a" style="--t:5">おはようございます。<br>今朝、何分動けますか？</div>
+        </div>
+        <div class="btns a" style="--t:6;margin-top:36px">
+          <div class="btn">15</div><div class="btn on" style="--t:6.9">30</div><div class="btn">60</div>
+        </div>
+        <div class="bub a" style="--t:7.3;margin:40px 0 0 auto;background:var(--sun)">30分、動けます！</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. ランダム3チーム -->
+  <section class="scene" style="--t:8">
+    <div style="position:absolute;left:0;right:0;top:110px;text-align:center">
+      <p class="big a" style="--t:8.3">町内の<span class="mark">ランダム3チーム</span>が、</p>
+      <p class="mid a" style="--t:9.1;margin-top:10px">ひとり暮らしの家へ。</p>
+    </div>
+    <svg class="abs pop" style="--t:8.6;left:790px;top:480px" width="340" height="400" viewBox="0 0 340 400">
+      <rect x="40" y="150" width="260" height="190" rx="22" fill="#f8dcb9"/>
+      <path d="M10 170 L170 40 L330 170 Z" fill="var(--roof)" stroke="var(--roof)" stroke-width="20" stroke-linejoin="round"/>
+      <path d="M30 165 Q100 120 170 112 Q250 120 310 165 Q240 152 170 154 Q100 152 30 165Z" fill="#fff"/>
+      <rect x="135" y="230" width="70" height="110" rx="14" fill="#b98562"/>
+      <path d="M170 24 C150 -4 112 14 130 40 C140 54 160 62 170 70 C180 62 200 54 210 40 C228 14 190 -4 170 24Z" fill="var(--peach)" class="pop" style="--t:11"/>
+    </svg>
+    <!-- チーム: 青 / 黄 / 桃 -->
+    <div id="teams"></div>
+  </section>
+
+  <!-- 4. 地図 -->
+  <section class="scene" style="--t:12">
+    <div class="abs" style="left:150px;top:260px">
+      <p class="big a" style="--t:12.3">みんなでやれば、<br><span class="mark">あっという間。</span></p>
+      <p class="mid a" style="--t:13.2;margin-top:36px">写真を1枚送って「終わりました」。<br>地図があたたかい色に。</p>
+    </div>
+    <div class="abs map pop" style="--t:12.3">
+      <svg width="900" height="860" viewBox="0 0 900 860" style="position:absolute;inset:0">
+        <g stroke="#fff" stroke-width="44" stroke-linecap="round" fill="none">
+          <path d="M-20 250 Q300 200 520 300 T930 280"/>
+          <path d="M-20 640 Q260 700 540 600 T930 660"/>
+          <path d="M240 -20 Q300 300 250 500 T330 880"/>
+          <path d="M650 -20 Q600 300 700 500 T640 880"/>
+        </g>
+        <g fill="#fff"><circle cx="450" cy="450" r="60"/></g>
+      </svg>
+      <div class="dot abs" style="--t:13.4;left:150px;top:140px">✓</div>
+      <div class="dot abs" style="--t:14.0;left:400px;top:190px">✓</div>
+      <div class="dot abs" style="--t:14.6;left:740px;top:170px">✓</div>
+      <div class="dot abs" style="--t:15.1;left:130px;top:520px">✓</div>
+      <div class="dot abs need" style="--t:15.4;left:420px;top:410px">✓</div>
+      <div class="dot abs" style="--t:15.7;left:720px;top:560px">✓</div>
+    </div>
+  </section>
+
+  <!-- 5. カード + ロゴ -->
+  <section class="scene" style="--t:16">
+    <div style="position:absolute;left:0;right:0;top:80px;text-align:center">
+      <p class="mid a" style="--t:16.2;color:var(--ink2)">その朝だけの、カードがひとつ増える。</p>
+    </div>
+    <div class="abs card pop" style="--t:16.4;left:480px;top:190px;transform:rotate(-6deg)"><div class="ic" style="background:#dcecf8"><svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="12" fill="#9cc7e8"/><g stroke="#9cc7e8" stroke-width="10" stroke-linecap="round"><path d="M60 8v30M60 82v30M8 60h30M82 60h30M24 24l22 22M74 74l22 22M96 24L74 46M46 74L24 96"/></g></svg></div>雪かき</div>
+    <div class="abs card pop" style="--t:16.7;left:810px;top:160px"><div class="ic" style="background:#fdf0c8"><svg width="120" height="120" viewBox="0 0 120 120"><path d="M30 44h60v34a24 24 0 0 1-24 24H54a24 24 0 0 1-24-24z" fill="#f6cf72"/><path d="M90 52h10a12 12 0 0 1 0 24H90" fill="none" stroke="#f6cf72" stroke-width="8"/><path d="M50 30q6-10 0-18M70 30q6-10 0-18" stroke="#c9a05a" stroke-width="6" fill="none" stroke-linecap="round"/></svg></div>おちゃ補給</div>
+    <div class="abs card pop" style="--t:17;left:1140px;top:190px;transform:rotate(6deg)"><div class="ic" style="background:#f6e5ef"><svg width="120" height="120" viewBox="0 0 120 120"><path d="M60 100C20 70 14 40 36 30c12-5 22 2 24 12 2-10 12-17 24-12 22 10 16 40-24 70z" fill="#c9a5d6"/></svg></div>ありがとう</div>
+    <div style="position:absolute;left:0;right:0;top:680px;text-align:center">
+      <h1 class="a" style="--t:17.6;font-size:150px;letter-spacing:.08em">シマエナGO</h1>
+      <p class="mid a" style="--t:18.3;margin-top:8px;color:var(--ink)">寒い冬は、くっついて乗り切る。</p>
+    </div>
+  </section>
+
+  <div id="bar"></div>
+  <div id="hud"><span>シマエナGO / しらかば町内（架空）</span><span id="tc">00.00 / 20.00</span></div>
+</div>
+
+<script>
+const DUR = 20;
+const stage = document.getElementById('stage');
+function fit(){ const s=Math.min(innerWidth/1920, innerHeight/1080); stage.style.transform=`scale(${s})`; }
+addEventListener('resize', fit); fit();
+
+// 雪
+const snow = document.getElementById('snow');
+for(let i=0;i<46;i++){
+  const f=document.createElement('i'); f.className='flake';
+  const s=8+((i*7)%14);
+  f.style.cssText=`left:${(i*97)%2000-60}px;width:${s}px;height:${s}px;animation-duration:${9+(i%7)*1.6}s;animation-delay:${-(i*1.3)%12}s;opacity:${.5+(i%5)*.1}`;
+  snow.appendChild(f);
+}
+
+// チーム（人）
+const person=(c)=>`<svg width="96" height="124" viewBox="0 0 96 124"><circle cx="48" cy="34" r="26" fill="#fbe0c8"/><path d="M22 30a26 26 0 0 1 52 0q-26-14-52 0z" fill="#8a6a50"/><circle cx="39" cy="38" r="3.5" fill="#5b4636"/><circle cx="57" cy="38" r="3.5" fill="#5b4636"/><path d="M42 47q6 5 12 0" stroke="#5b4636" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M12 124a36 52 0 0 1 72 0z" fill="${c}"/><circle cx="24" cy="50" r="6" fill="#f3b08a" opacity=".6"/><circle cx="72" cy="50" r="6" fill="#f3b08a" opacity=".6"/></svg>`;
+const teams=[
+  {c:'#8fbfe8', x:120,  y:560, dx:'-60px', dy:'160px', t:9.6},
+  {c:'#f5c76a', x:1480, y:560, dx:'60px',  dy:'160px', t:10.0},
+  {c:'#f2a98d', x:760,  y:820, dx:'0px',   dy:'200px', t:10.4},
+];
+const tw=document.getElementById('teams');
+teams.forEach((tm,k)=>{
+  // 3人ずつ。家に向かって寄る位置を最終位置にする
+  const fx=[ 520, 1230, 640 ][k], fy=[ 560, 560, 800 ][k];
+  [0,1,2].forEach(i=>{
+    const d=document.createElement('div');
+    d.className='abs walk';
+    d.style.cssText=`left:${fx+i*78-(k===1?60:0)}px;top:${fy+(i===1?-26:0)}px;--t:${tm.t+i*.12};--dx:${(tm.x-fx)}px;--dy:${(tm.y-fy)}px`;
+    d.innerHTML=person(tm.c);
+    tw.appendChild(d);
+  });
+});
+
+// 時間を進める（CSSアニメを全部まとめて動かす）
+const params=new URLSearchParams(location.search);
+const tc=document.getElementById('tc'), bar=document.getElementById('bar');
+function seek(sec){
+  document.getAnimations().forEach(a=>{ if(a.effect&&a.effect.target&&a.effect.target.closest&&a.effect.target.closest('#stage')){a.pause();a.currentTime=sec*1000;} });
+  tc.textContent=sec.toFixed(2).padStart(5,'0')+' / '+DUR.toFixed(2);
+  bar.style.width=(sec/DUR*100)+'%';
+}
+if(params.has('t')){
+  requestAnimationFrame(()=>seek(parseFloat(params.get('t'))||0));
+}else{
+  const loop=params.has('loop');
+  let t0=null;
+  requestAnimationFrame(function step(ts){
+    if(t0===null)t0=ts;
+    let s=(ts-t0)/1000;
+    if(s>=DUR){ if(loop){t0=ts;s=0;}else{seek(DUR-.01);return;} }
+    seek(s); requestAnimationFrame(step);
+  });
+}
+</script>
+</body>
+</html>
