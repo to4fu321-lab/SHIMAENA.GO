@@ -11,6 +11,10 @@ import { loadMorning } from "@/lib/morning/store";
 import { listShort } from "@/lib/morning/watch";
 import { SOLO_MISSIONS } from "@/lib/solo/missions";
 import { soloStatus } from "@/lib/solo/ops";
+import { loadPublicStats } from "@/lib/public/load";
+import { loadMeStats } from "@/lib/sns/me";
+import { mockShareText } from "@/lib/sns/text";
+import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "ソロ出動 ・ シマエナGO" };
@@ -58,6 +62,19 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   const planned = record.morning.rollcall.status === "planned";
   const canHelpHouse = planned && me.role === "helper" && Boolean(me.teamId);
   const shorts = listShort(record, roster);
+  const [stats, meStats] = await Promise.all([loadPublicStats(), loadMeStats(me.id)]);
+  const site = baseUrl();
+  const v = `v=${status.totalFeathers}`; // 羽が増えたら画像を取り直す
+  const shareOptions = [
+    {
+      key: "me",
+      label: "わたしの活動",
+      text: mockShareText("me", stats, meStats),
+      image: `/api/share/me.png?${v}${demoAs ? `&as=${demoAs}` : ""}`,
+      page: `${site}/public/share/today?via=sns`,
+    },
+    { key: "recruit", label: "仲間を募集", text: mockShareText("recruit", stats), image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
+  ];
   return (
     <>
       <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
@@ -71,6 +88,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         shortHouses={shorts.length}
         pickFive={pick === "5"}
         q={q}
+        shareOptions={shareOptions}
       />
     </>
   );

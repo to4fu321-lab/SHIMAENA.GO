@@ -9,6 +9,7 @@ import type { SoloMission } from "@/lib/solo/missions";
 import type { SoloClearSummary, SoloStatus } from "@/lib/solo/ops";
 import type { Role } from "@/lib/types";
 import { shrink } from "./shrink";
+import SnsShare, { type ShareOption } from "./SnsShare";
 import SoloClear from "./SoloClear";
 
 const DIFF = ["", "★", "★★", "★★★"];
@@ -23,6 +24,7 @@ export default function SoloScreen({
   shortHouses,
   pickFive,
   q,
+  shareOptions = [],
 }: {
   viewerId: string;
   nickname: string;
@@ -35,6 +37,8 @@ export default function SoloScreen({
   /** ホームの「5分だけ出動」から来た */
   pickFive: boolean;
   q: string;
+  /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
+  shareOptions?: ShareOption[];
 }) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<SoloActionResult | null>(null);
@@ -127,7 +131,19 @@ export default function SoloScreen({
 
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 pb-8 pt-5 text-ink">
-      {clear && <SoloClear summary={clear} onClose={() => setClear(null)} q={q} />}
+      {clear && (
+        <SoloClear summary={clear} onClose={() => setClear(null)} q={q}>
+          <button
+            onClick={() => {
+              setClear(null);
+              setTimeout(() => document.getElementById("share")?.scrollIntoView({ behavior: "smooth" }), 50);
+            }}
+            className="mt-3 w-full rounded-2xl bg-black py-3 text-base font-bold text-white"
+          >
+            SNS に投稿する（X・Instagram）
+          </button>
+        </SoloClear>
+      )}
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">
           ソロ<span className="text-neon">出動</span>
@@ -236,6 +252,8 @@ export default function SoloScreen({
           </ul>
         )}
       </section>
+
+      {shareOptions.length > 0 && <SnsShare options={shareOptions} title="今日の出動を SNS に" />}
 
       <input
         ref={fileRef}

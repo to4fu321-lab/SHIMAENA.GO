@@ -10,16 +10,12 @@ import type { Roster } from "../morning/roster";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { TOWN } from "../town";
+import { baseUrl } from "../url";
 import type { Card, Mission, Participant, Sortie } from "../types";
 import { decideRarity } from "./rarity";
 import { renderCardBackSvg, renderCardSvg, type CardArt } from "./svg";
 
-/** 公開 URL（LINE に画像の URL を渡すため） */
-export function baseUrl(): string {
-  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  return "http://localhost:3000";
-}
+export { baseUrl };
 
 export function cardImageMessages(cardId: string): LineMessage[] {
   const base = baseUrl();

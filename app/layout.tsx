@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import { baseUrl } from "@/lib/url";
 import "./globals.css";
 
 const notoSansJP = Noto_Sans_JP({
@@ -9,9 +10,11 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "Built with Claude: Japan 2026 提出作品（準備中）",
+  // OG 画像などを絶対 URL にする（X や LINE がリンクの見出し画像を取りに来るため）
+  metadataBase: new URL(baseUrl()),
+  title: "シマエナGO ・ 寒い冬は、くっついて乗り切る。",
   description:
-    "Anthropic × Cerebral Valley 主催ハッカソン「Built with Claude: Japan 2026」の提出作品。11/2〜11/8 の期間中に制作。",
+    "雪の朝に LINE で点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲーム。1人でもソロ出動で5分から。Built with Claude: Japan 2026 提出作品。",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

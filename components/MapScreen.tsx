@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import type { CellView, SoloCell } from "@/lib/cells";
 import type { BaseView, MorningState } from "@/lib/morning/view";
 import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
@@ -207,6 +208,9 @@ export default function MapScreen({
           hasAssignment={goingTo.length > 0}
         />
         {shareText && prog.total > 0 && <ShareButton text={shareText} />}
+        <Link href="/#share" className="block text-center text-base font-bold text-ink underline">
+          画像つきで SNS に投稿する（X・Instagram）→
+        </Link>
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink/70" aria-label="色の見方">
           <li><span className="legend bg-white ring-2 ring-ink" />未対応</li>
           <li><span className="legend bg-white ring-2 ring-alert" />人手不足</li>

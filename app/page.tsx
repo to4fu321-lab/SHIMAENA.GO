@@ -4,6 +4,13 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
+import SnsShare, { type ShareOption } from "@/components/SnsShare";
+import { STYLE_NAME } from "@/lib/cards/rarity";
+import { loadPublicStats } from "@/lib/public/load";
+import { repo } from "@/lib/repo";
+import { loadMeStats } from "@/lib/sns/me";
+import { mockShareText } from "@/lib/sns/text";
+import { baseUrl } from "@/lib/url";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
@@ -53,6 +60,25 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   const solo = me ? await soloStatus(me.id, new Date()) : undefined;
   // 「5分だけ出動」: 作戦中で手伝う側（チームあり）なら地図の5分だけ参加、そうでなければソロの5分ミッション
   const fiveHref = planned && me?.role === "helper" && me.teamId ? `/map${q}` : `/solo?pick=5${demoAs ? `&as=${demoAs}` : ""}`;
+  // 今日のシマエナカード（本人の最新の1枚）と、SNS に投稿する下書き（数字は集計だけ）
+  const latestCard = me ? (await repo().listCardsByRecipient(me.id).catch(() => []))[0] : undefined;
+  const stats = await loadPublicStats();
+  const site = baseUrl();
+  const shareOptions: ShareOption[] = [
+    { key: "today", label: "今日の出動", text: mockShareText("today", stats), image: "/api/share/today.png", page: `${site}/public/share/today?via=sns` },
+    { key: "town", label: "町の雪解け", text: mockShareText("town", stats), image: "/api/share/town.png", page: `${site}/public/share/town?via=sns` },
+    { key: "recruit", label: "仲間を募集", text: mockShareText("recruit", stats), image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
+  ];
+  if (me) {
+    const meStats = await loadMeStats(me.id);
+    shareOptions.unshift({
+      key: "me",
+      label: "わたしの活動",
+      text: mockShareText("me", stats, meStats),
+      image: `/api/share/me.png${demoAs ? `?as=${demoAs}` : ""}`,
+      page: `${site}/public/share/today?via=sns`,
+    });
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-paper px-4 pb-6 pt-5 text-ink">
@@ -117,31 +143,11 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
           ))}
         </ul>
 
-        {shorts.length > 0 && (
-          <Link href={`/map${q}`} className="block rounded-2xl bg-[#fff0f3] px-3 py-2 ring-1 ring-alert/40">
-            <b className="text-alert">{shorts[0].missing === 1 ? "あと1人で救える家" : "人手が足りない家"}</b>
-            <span className="text-ink/80">
-              {" "}
-              が {shorts.length} 軒。5分でも助かります →
-            </span>
-          </Link>
-        )}
-
         {record.recap && (
           <div className="rounded-2xl bg-paper px-3 py-2 ring-1 ring-ink/10">
             <p className="text-xs font-bold tracking-widest text-neon">今朝の実況</p>
             <p className="text-base">{record.recap.text}</p>
           </div>
-        )}
-
-        {me && solo && (
-          <Link href={`/solo${q}`} className="block rounded-2xl bg-[#fff0f6] px-3 py-2 ring-1 ring-neon/40">
-            <span className="text-xs font-bold tracking-widest text-neon">今日の自分</span>
-            <span className="block text-base">
-              羽 <b className="text-lg tabular-nums">{solo.todayFeathers}</b>（合計 {solo.totalFeathers}）・連続出動 <b className="tabular-nums">{solo.streak}</b> 日
-              <span className="text-ink/70">{solo.todayFeathers === 0 ? " ・ まだ今日の出動なし →" : " →"}</span>
-            </span>
-          </Link>
         )}
 
         {me && (
@@ -162,6 +168,16 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
         )}
       </section>
 
+      {me && solo && (
+        <Link href={`/solo${q}`} className="block rounded-2xl bg-[#fff0f6] px-3 py-2 ring-1 ring-neon/40">
+          <span className="text-xs font-bold tracking-widest text-neon">今日の自分</span>
+          <span className="block text-base">
+            羽 <b className="text-lg tabular-nums">{solo.todayFeathers}</b>（合計 {solo.totalFeathers}）・連続出動 <b className="tabular-nums">{solo.streak}</b> 日
+            <span className="text-ink/70">{solo.todayFeathers === 0 ? " ・ まだ今日の出動なし →" : " →"}</span>
+          </span>
+        </Link>
+      )}
+
       <nav className="grid gap-3">
         <div className="grid grid-cols-2 gap-3">
           <Link href={`/solo${q}`} className="rounded-2xl bg-neon py-4 text-center text-xl font-bold text-white">
@@ -176,6 +192,43 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
         <Link href={`/map${q}`} className="rounded-2xl bg-ink py-4 text-center text-xl font-bold text-white">
           チーム出撃（地図）
         </Link>
+      </nav>
+
+      {shorts.length > 0 && (
+        <Link href={`/map${q}`} className="block rounded-2xl bg-[#fff0f3] px-3 py-2 ring-1 ring-alert/40">
+          <b className="text-alert">{shorts[0].missing === 1 ? "あと1人で救える家" : "人手が足りない家"}</b>
+          <span className="text-ink/80">
+            {" "}
+            が {shorts.length} 軒。5分でも助かります →
+          </span>
+        </Link>
+      )}
+
+      {/* 今日のシマエナカード（本人の最新の1枚） */}
+      {me && (
+        <Link href={`/cards${q}`} className="flex items-center gap-3 rounded-3xl bg-white p-3 shadow-sm ring-1 ring-ink/10">
+          {latestCard ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/api/cards/${latestCard.id}/front.svg`} alt="" className="aspect-[600/840] w-16 shrink-0 rounded-lg" />
+              <span className="min-w-0">
+                <span className="block text-xs font-bold tracking-widest text-neon">今日のシマエナカード</span>
+                <span className="block truncate text-base font-bold">{latestCard.designName}</span>
+                <span className="block text-sm text-ink/70">{STYLE_NAME[latestCard.style]} ・ カード帳へ →</span>
+              </span>
+            </>
+          ) : (
+            <span className="min-w-0">
+              <span className="block text-xs font-bold tracking-widest text-neon">今日のシマエナカード</span>
+              <span className="block text-base">まだありません。{solo?.nextCard.hint ?? "ミッションを1つ終えると最初のカード"}</span>
+            </span>
+          )}
+        </Link>
+      )}
+
+      <SnsShare options={shareOptions} />
+
+      <nav className="grid gap-3">
         <div className="grid grid-cols-2 gap-3">
           <Link href="/rules" className="rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
             あそびかた
@@ -184,6 +237,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
             カード帳
           </Link>
         </div>
+        <Link href="/public/town" className="py-1 text-center text-base text-ink underline">
+          町の雪解け（公開ページ）
+        </Link>
         <Link href="/admin" className="py-2 text-center text-sm text-ink/70 underline">
           デモ操作（審査・撮影用）
         </Link>
