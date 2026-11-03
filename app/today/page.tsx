@@ -112,6 +112,10 @@ async function Details({ searchParams }: { searchParams: Promise<{ as?: string }
               </span>
             </p>
           )}
+          <Link href={`/solo${q}`} className="block rounded-2xl bg-ice-soft px-3 py-2 ring-1 ring-ice">
+            <span className="block text-lg font-bold">ソロ出動へ →</span>
+            <span className="block text-base">ひとりで3〜5分。自分の家の雪かき・見回り・雪の報告でも羽が入ります。</span>
+          </Link>
           {myBase && myView ? (
             <p className="text-base">
               担当は <b>拠点 {myBase.number}</b>（{STATUS_TEXT[myView.status]}）

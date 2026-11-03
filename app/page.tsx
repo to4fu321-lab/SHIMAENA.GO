@@ -61,7 +61,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   // 出動する: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && me?.role === "helper" && Boolean(me.teamId);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
-  const fiveHref = canHelpHouse ? `/map${q}` : `/solo?pick=5${demoAs ? `&as=${demoAs}` : ""}`;
+  // 5分だけ手伝う: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
+  const fiveHref = `/solo?pick=5${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
 
   return (
@@ -166,8 +167,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
             <path d="M12 7 V12 L15.5 14" />
           </svg>
           <span className="text-left leading-tight">
-            <span className="block text-lg">5分だけ手伝う</span>
-            <span className="block text-sm font-normal">短い時間でも大歓迎</span>
+            <span className="block text-lg">5分だけ手伝う（ソロ出動）</span>
+            <span className="block text-sm font-normal">ひとりでOK・自分の家の雪かきも</span>
           </span>
         </Link>
       </main>
