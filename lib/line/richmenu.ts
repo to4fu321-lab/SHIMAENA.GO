@@ -1,7 +1,9 @@
 // LINE のリッチメニュー（spec 10）: 地図／カード帳／いまからやる／あそびかた／設定。
 // 画像は SVG から作る（2500×843）。作るときは古い同名メニューを消してから。
 import { svgToPng } from "../cards/png";
-import { baseUrl } from "../cards/issue";
+import { baseUrl, liffUrl } from "../url";
+
+export { liffUrl };
 
 export const RICH_MENU_NAME = "shimaena-main";
 const W = 2500;
@@ -11,12 +13,6 @@ export interface MenuItem {
   label: string;
   icon: string; // 絵文字ではなく簡単な図形の SVG
   action: { type: "uri"; uri: string } | { type: "message"; text: string };
-}
-
-/** LIFF の ID があれば LINE の中で開く URL、なければふつうの URL */
-export function liffUrl(path: string): string {
-  const id = process.env.NEXT_PUBLIC_LIFF_ID;
-  return id ? `https://liff.line.me/${id}${path}` : `${baseUrl()}${path}`;
 }
 
 export function menuItems(): MenuItem[] {

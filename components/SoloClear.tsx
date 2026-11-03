@@ -92,6 +92,11 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
             <span className="block text-xs">{s.nextCard.hint}</span>
           </p>
         )}
+        {s.nextMission && (
+          <p className="mt-3 rounded-2xl bg-white px-3 py-2 text-center text-base ring-1 ring-ink/10">
+            次のおすすめ: <b>{s.nextMission}</b>（5分）
+          </p>
+        )}
         {children}
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link href={`/cards${q}`} className="rounded-2xl bg-white py-3 text-center text-base font-bold text-ink ring-2 ring-ink/15">

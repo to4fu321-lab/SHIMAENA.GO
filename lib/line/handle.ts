@@ -20,6 +20,7 @@ import { repo } from "../repo";
 import { getTeam } from "../teams";
 import type { FamilyLink, Participant } from "../types";
 import { getMessageContent, getProfile, reply } from "./client";
+import { liffUrl } from "../url";
 import { MSG } from "./messages";
 import { parseText, step, type RegInput, type Registration } from "./registration";
 import type { LineEvent, LineMessage } from "./types";
@@ -63,7 +64,7 @@ export async function finishRegistration(lineUserId: string, reg: Registration):
     };
     await r.upsertParticipant(p);
     const team = getTeam(teamId);
-    return [MSG.helperDone(team.name, team.colorName)];
+    return [MSG.helperDone(team.name, team.colorName), MSG.soloInvite(liffUrl("/solo"), "helper")];
   }
 
   const level = await judgeLevel({ soloMinutes: reg.soloMinutes, clearArea: reg.clearArea });
@@ -91,6 +92,8 @@ export async function finishRegistration(lineUserId: string, reg: Registration):
     const link: FamilyLink = { familyLineUserId: lineUserId, requesterId: p.id, linkCode: makeLinkCode() };
     await r.addFamilyLink(link);
     messages.push(MSG.proxyDone(link.linkCode));
+  } else {
+    messages.push(MSG.soloInvite(liffUrl("/solo"), "requester"));
   }
   return messages;
 }

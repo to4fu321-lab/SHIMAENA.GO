@@ -141,3 +141,28 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     expect(totalFeathers(logs)).toBe(23);
   });
 });
+
+describe("初参加の歓迎（T39）", () => {
+  beforeEach(() => {
+    for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive"]) delete (globalThis as Record<string, unknown>)[k];
+  });
+
+  it("次のおすすめは、今日まだの外の5分ミッション", async () => {
+    await announce({ date: DEMO_DATE, forecastCm: 12 });
+    const now = new Date("2026-11-03T12:00:00Z");
+    const r1 = await completeSolo("h4", "patrol", { now });
+    expect(r1.ok && r1.summary.nextMission).toBe("雪の多い場所を報告する");
+    const r2 = await completeSolo("h4", "report_snow", { now });
+    expect(r2.ok && r2.summary.nextMission).toBe("雪かき可能な場所を確認する");
+  });
+
+  it("LINE 登録が終わったら、ソロ出動への1行が届く（家族の代理登録には付けない）", async () => {
+    const { finishRegistration } = await import("../line/handle");
+    const helper = await finishRegistration("U-test-helper", { role: "helper", location: [43.04, 141.37], morningMinutes: 15, hasTools: true });
+    expect(helper.map((m) => (m as { text?: string }).text ?? "").join("\n")).toContain("ソロ出動");
+    const req = await finishRegistration("U-test-req", { role: "requester", location: [43.04, 141.37], soloMinutes: 30, clearArea: "entrance", proxy: false });
+    expect(req.map((m) => (m as { text?: string }).text ?? "").join("\n")).toContain("ソロ出動");
+    const proxy = await finishRegistration("U-test-family", { role: "requester", location: [43.04, 141.37], soloMinutes: 30, clearArea: "entrance", proxy: true });
+    expect(proxy.map((m) => (m as { text?: string }).text ?? "").join("\n")).not.toContain("ソロ出動");
+  });
+});

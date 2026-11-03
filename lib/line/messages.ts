@@ -74,6 +74,13 @@ export const MSG = {
     text(
       `登録できました！\nあなたのチームは「${teamName}」（${colorName}）です。\n雪の朝 6:30 に「エナガ点呼」が届きます。1タップで答えてください。`,
     ),
+  /** 登録のすぐあと: 雪の朝を待たずに、まずはソロ出動で5分（spec v1.3） */
+  soloInvite: (url: string, role: "helper" | "requester") =>
+    text(
+      role === "helper"
+        ? `雪の朝を待たずに、まずは「ソロ出動」で5分どうぞ。見回り・雪の報告など、1人でできるミッションで羽ポイントと最初のカードがもらえます。\n${url}`
+        : `ご自分の家の雪かきも「ソロ出動」で記録できます。5分やったら押すだけで、羽ポイントと最初のカードがもらえます（無理はしないでください）。\n${url}`,
+    ),
   requesterDone: (message: string, level: number, requiredPeople: number) =>
     text(`${message}\n家のレベル: ${level}（必要な人数: ${requiredPeople}人）`),
   proxyDone: (code: string) =>

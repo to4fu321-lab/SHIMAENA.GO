@@ -12,7 +12,7 @@ import { repo } from "../repo";
 import { refreshShareTextsLater } from "../sns/refresh";
 import type { Card, Participant, SoloLog } from "../types";
 import { activeDates, bonusLog, bonusesDue, feathersOn, nextCard, streakDays, totalFeathers, type NextCard } from "./feathers";
-import { HELP_HOUSE_FEATHERS, SOLO_BONUS, soloLabel, soloMission, type SoloMission } from "./missions";
+import { HELP_HOUSE_FEATHERS, SOLO_BONUS, SOLO_MISSIONS, soloLabel, soloMission, type SoloMission } from "./missions";
 
 const newId = () => `sl-${randomBytes(6).toString("base64url")}`;
 
@@ -33,6 +33,8 @@ export interface SoloClearSummary {
   nextCard: NextCard;
   /** 写真を付けたとき: 確認できたか／報告として受け付けたか */
   photoNote?: string;
+  /** 次のおすすめ（今日まだの、外でやる5分ミッション） */
+  nextMission?: string;
 }
 
 export type SoloResult =
@@ -138,6 +140,9 @@ export async function completeSolo(
     hitokoto,
     nextCard: nextCard(card ? [...cards, card] : cards, streak),
     photoNote,
+    nextMission: SOLO_MISSIONS.find(
+      (m) => m.onsite && m.kind !== "help_house" && m.kind !== mission.kind && !after.some((l) => l.date === today && l.kind === m.kind),
+    )?.label,
   };
   return { ok: true, summary };
 }

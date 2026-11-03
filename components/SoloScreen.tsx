@@ -155,6 +155,16 @@ export default function SoloScreen({
       <p className="text-base">
         <b>{nickname}</b>さん。仲間がいなくても、自分の5分で町を変えられる。
       </p>
+      {status.totalFeathers === 0 && (
+        <section className="rounded-3xl bg-[#fff6c8] p-4 ring-1 ring-[#e0b800]/50" aria-label="はじめての方へ">
+          <p className="text-lg font-bold">はじめての方へ（3ステップ）</p>
+          <ol className="mt-1 list-decimal space-y-1 pl-6 text-base">
+            <li>下の「雪の状況を見回る」をえらぶ</li>
+            <li>家のまわりを5分だけ歩く（無理はしない）</li>
+            <li>「完了」を押す → 羽と最初のカード</li>
+          </ol>
+        </section>
+      )}
       {pickFive && (
         <p className="rounded-2xl bg-[#fff0f6] px-3 py-2 text-base ring-1 ring-neon/40">
           <b className="text-neon">5分だけ出動</b>: 今朝は作戦がない（か、まだ割り当てがない）ので、下の 5分ミッションから1つどうぞ。

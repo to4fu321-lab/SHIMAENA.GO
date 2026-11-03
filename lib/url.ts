@@ -4,3 +4,9 @@ export function baseUrl(): string {
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   return "http://localhost:3000";
 }
+
+/** LIFF の ID があれば LINE の中で開く URL、なければふつうの URL */
+export function liffUrl(path: string): string {
+  const id = process.env.NEXT_PUBLIC_LIFF_ID;
+  return id ? `https://liff.line.me/${id}${path}` : `${baseUrl()}${path}`;
+}

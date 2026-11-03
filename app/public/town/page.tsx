@@ -41,8 +41,9 @@ function Num({ label, value, unit }: { label: string; value: string | number; un
   );
 }
 
-async function Town() {
+async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> }) {
   await connection();
+  const { via } = await searchParams;
   const st = await loadPublicStats();
   const texts = await shareTextsFor(st);
   const already = cheeredToday((await cookies()).get(CHEER_COOKIE)?.value, st.today);
@@ -58,6 +59,15 @@ async function Town() {
         </h1>
         <p className="text-base text-ink/80">寒い冬は、くっついて乗り切る。</p>
       </header>
+
+      {via === "sns" && (
+        <section className="rounded-3xl bg-[#fff0f6] p-4 ring-1 ring-neon/40" aria-label="ようこそ">
+          <p className="text-lg font-bold">SNS から来てくれて、ありがとう！</p>
+          <p className="text-base">
+            ここは札幌のある町内（デモは架空）の雪かきの様子です。見るだけ・応援だけでも大歓迎。LINE で登録すると、1人の5分（ソロ出動）から参加できます。
+          </p>
+        </section>
+      )}
 
       {/* 町の雪解け */}
       <section className="space-y-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10" aria-label="町の雪解け">
@@ -171,10 +181,10 @@ async function Town() {
   );
 }
 
-export default function TownPage() {
+export default function TownPage({ searchParams }: { searchParams: Promise<{ via?: string }> }) {
   return (
     <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <Town />
+      <Town searchParams={searchParams} />
     </Suspense>
   );
 }
