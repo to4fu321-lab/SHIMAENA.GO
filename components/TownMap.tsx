@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import type { Destination } from "@/lib/nav";
 import type { LatLng } from "@/lib/types";
 import "leaflet/dist/leaflet.css";
-import { type CellView, cellCenter, cellPolygon } from "@/lib/cells";
+import { type CellView, type SoloCell, cellCenter, cellPolygon } from "@/lib/cells";
 import { TEAMS } from "@/lib/teams";
 import { TOWN } from "@/lib/town";
 import type { TeamId } from "@/lib/types";
@@ -67,8 +67,11 @@ export default function TownMap({
   cells,
   home,
   destinations = [],
+  solo = [],
 }: {
   cells: CellView[];
+  /** ソロ出動の足あと（今日、そのマスで活動した件数） */
+  solo?: SoloCell[];
   /** 自分の家（登録した位置） */
   home?: LatLng;
   /** 自分が向かっている家（本人にだけ渡る正確な場所） */
@@ -121,6 +124,19 @@ export default function TownMap({
         }).addTo(map);
       }
 
+      // ソロ出動の足あと: 雪色の薄い塗り（拠点のマスでなければ）と羽のピン。赤・緑は使わない
+      const baseKeys = new Set(cells.map((c) => c.key));
+      for (const sc of solo) {
+        if (!baseKeys.has(sc.key)) {
+          L.polygon(cellPolygon(sc.key), { color: "#5bb8f0", weight: 2, dashArray: "4 4", fillColor: "#8fd3ff", fillOpacity: 0.35, interactive: false }).addTo(map);
+        }
+        const [lat, lng] = cellCenter(sc.key);
+        L.marker([lat, lng], {
+          interactive: false,
+          icon: L.divIcon({ className: "", html: `<div class="solo-pin">🪶${sc.count}</div>`, iconSize: [40, 22], iconAnchor: [-4, 30] }),
+        }).addTo(map);
+      }
+
       // 自分の家（登録した位置）と、向かっている家（本人だけ）。家までは点線で結ぶ
       if (home) {
         L.marker(home, {
@@ -146,7 +162,7 @@ export default function TownMap({
       mapRef.current = null;
       map?.remove();
     };
-  }, [cells, home, destinations]);
+  }, [cells, home, destinations, solo]);
 
   // 現在地（GPS）: 許可があれば青い点を動かす。許可がなければ何も出さない
   useEffect(() => {

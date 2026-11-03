@@ -119,3 +119,17 @@ body {
   white-space: nowrap;
   box-shadow: 0 2px 6px rgba(255, 59, 92, 0.4);
 }
+/* 地図: ソロ出動の足あと（羽の数） */
+.solo-pin {
+  display: grid;
+  place-items: center;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: #fff;
+  color: #1f6fb0;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(31, 111, 176, 0.35);
+}

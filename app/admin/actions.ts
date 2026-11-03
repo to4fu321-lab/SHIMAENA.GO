@@ -23,6 +23,8 @@ import {
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
 import { progress } from "@/lib/morning/view";
+import { appToday } from "@/lib/morning/today";
+import { recordHouseFeathers } from "@/lib/solo/ops";
 
 function refresh() {
   revalidatePath("/");
@@ -85,6 +87,12 @@ export async function completeOne() {
     } catch (e) {
       s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
     }
+    // 来た人の個人の記録（羽）。チーム得点は completeNext のまま
+    const base = roster.bases.find((b) => b.id === mission.baseId);
+    const requester = base && roster.participants.find((p) => p.id === base.requesterId);
+    const people = sorties.flatMap((x) => roster.participants.filter((p) => p.id === x.participantId));
+    const now = new Date();
+    await recordHouseFeathers(people, { missionId: mission.id, baseLocation: requester?.location, today: appToday(s, now), now });
     allDone = progress(s.morning).allDone;
   });
   if (allDone) await writeRecapNow();

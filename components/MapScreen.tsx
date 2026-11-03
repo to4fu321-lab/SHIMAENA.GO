@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { CellView } from "@/lib/cells";
+import type { CellView, SoloCell } from "@/lib/cells";
 import type { BaseView, MorningState } from "@/lib/morning/view";
 import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
@@ -42,8 +42,11 @@ export default function MapScreen({
   cheers = [],
   home,
   destinations = [],
+  solo = [],
 }: {
   state: MorningState;
+  /** ソロ出動の足あと（今日） */
+  solo?: SoloCell[];
   cells: CellView[];
   bases: Base[];
   viewer?: { teamId?: TeamId; role?: Role };
@@ -140,7 +143,7 @@ export default function MapScreen({
 
       {/* 真ん中: 地図（討伐したら背景が明るくなる） */}
       <main className={`relative min-h-[34dvh] flex-1 ${prog.allDone ? "defeated" : ""}`}>
-        <TownMap cells={cells} home={home} destinations={destinations} />
+        <TownMap cells={cells} home={home} destinations={destinations} solo={solo} />
       </main>
 
       {/* 下: 自分の割り当てなど（長くなったら中でスクロール。地図は 34% 以上残す）。操作ボタンはさらに下に固定 */}
@@ -210,6 +213,7 @@ export default function MapScreen({
           <li><span className="legend bg-white ring-2 ring-ink/60" />向かっている</li>
           <li><span className="legend bg-ink/70" />完了（チーム色）</li>
           <li><span className="legend bg-[#9AA0AE]" />返事なし</li>
+          <li><span className="legend bg-[#8fd3ff]" />🪶 ソロ出動の足あと</li>
           <li className="w-full">マスは 50m 四方。どの家かは、割り当てられた人の LINE にだけ届きます。</li>
         </ul>
       </section>

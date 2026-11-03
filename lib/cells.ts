@@ -3,7 +3,7 @@
 import type { Roster } from "./morning/roster";
 import type { BaseView } from "./morning/view";
 import { TOWN } from "./town";
-import type { LatLng, TeamId } from "./types";
+import type { LatLng, SoloLog, TeamId } from "./types";
 
 export const CELL_M = 50;
 const M_PER_LAT = 111320;
@@ -79,4 +79,16 @@ export function viewCells(views: BaseView[], roster: Roster): CellView[] {
           : "none";
     return { key, baseNumbers: c.numbers.sort((a, b) => a - b), status, teams, doneRatio: missions.length ? done / missions.length : 0 };
   });
+}
+
+/** ソロ出動の足あと: 今日の現地の台帳を 50m マスごとに数える（誰かは出さない。画面には件数だけ） */
+export interface SoloCell {
+  key: string;
+  count: number;
+}
+
+export function soloCells(logs: SoloLog[]): SoloCell[] {
+  const counts = new Map<string, number>();
+  for (const l of logs) if (l.onsite && l.cellKey && !l.kind.startsWith("bonus_")) counts.set(l.cellKey, (counts.get(l.cellKey) ?? 0) + 1);
+  return [...counts.entries()].map(([key, count]) => ({ key, count }));
 }

@@ -5,12 +5,14 @@ import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import LiffBridge from "@/components/LiffBridge";
 import MapScreen from "@/components/MapScreen";
-import { viewCells } from "@/lib/cells";
+import { soloCells, viewCells } from "@/lib/cells";
 import { latestClear } from "@/lib/morning/clear";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { viewBases } from "@/lib/morning/view";
+import { appToday } from "@/lib/morning/today";
 import { listShort } from "@/lib/morning/watch";
+import { repo } from "@/lib/repo";
 import { destinationsFor } from "@/lib/nav";
 import { emojiGrid } from "@/lib/share";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
@@ -30,6 +32,9 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   const viewer = roster.participants.find((p) => p.id === viewerId);
   const myMissionId = state.sorties.find((s) => s.participantId === viewerId)?.missionId;
   const thanks = myMissionId ? record.thanks?.[myMissionId] : undefined;
+  // ソロ出動の足あと（今日）。表がまだなければ出さない（画面は止めない）
+  const today = appToday(record);
+  const solo = soloCells(await repo().listSoloLogsBetween(today, today).catch(() => []));
   return (
     <>
       <AutoRefresh />
@@ -47,6 +52,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         cheers={myMissionId ? (record.cheers?.[myMissionId] ?? []).map((c) => c.label) : []}
         home={viewer?.location}
         destinations={destinationsFor(record, roster, viewerId)}
+        solo={solo}
       />
     </>
   );

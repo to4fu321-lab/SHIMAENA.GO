@@ -28,6 +28,8 @@ import { buildRecapInput } from "./recap";
 import { progress, snowHp, viewBases } from "./view";
 import { viewCells } from "../cells";
 import { emojiGrid } from "../share";
+import { recordHouseFeathers } from "../solo/ops";
+import { appToday } from "./today";
 import {
   applyLateAnswer,
   goingCount,
@@ -324,6 +326,11 @@ async function finishMission(
     s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
   await saveMorning(s);
+  // 来た人の個人の記録（羽）にも残す。チーム得点は上の scoreMission のまま（別の台帳）
+  await recordHouseFeathers(
+    sorties.flatMap((x) => (byId.get(x.participantId) ? [byId.get(x.participantId)!] : [])),
+    { missionId: mission.id, baseLocation: requester?.location, today: appToday(s, now), now },
+  );
 
   // 依頼者へ（ありがとう点呼の3ボタン付き）、そして家族へ（spec 8）
   if (requester?.lineUserId) await push(requester.lineUserId, [MSG.requesterDoneNotice(names, mission.id)]);
