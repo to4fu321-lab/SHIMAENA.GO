@@ -61,6 +61,9 @@ create table if not exists cards (
   created_at timestamptz not null default now()
 );
 
+-- 先に作った表に後から足した列（create table if not exists では足されないので、ここで足す。何度流しても安全）
+alter table cards add column if not exists back_svg text;
+
 -- 「今朝の状態」（点呼・回答・ミッション・出撃・得点・文面）をまるごと JSON で1行に持つ。
 -- Vercel はリクエストごとに別のサーバーになるので、メモリではなくここに置く。
 create table if not exists morning_state (
