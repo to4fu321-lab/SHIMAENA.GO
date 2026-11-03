@@ -179,12 +179,24 @@ export const MSG = {
     ),
   knockThanks: () => text("ありがとうございます。声をかけたら、返事があったかどうかをここに送ってください。"),
   familyNoAnswer: () => text("今朝の点呼に、ご家族から返事がありません。お電話などで様子を聞いてみてください。近所の方にも玄関で声をかけてもらうようお願いしています。"),
-  familyDone: (names: string[]) =>
-    text(
+  /** 家族への完了通知。missionId があれば「応援スタンプ」の3ボタン付き（spec v1.2） */
+  familyDone: (names: string[], missionId?: string) => {
+    const body =
       names.length > 0
         ? `今朝、ご家族の家の雪かきが終わりました。来てくれたのは ${names.map((n) => `${n}さん`).join("、")}です。`
-        : "今朝、ご家族の家の雪かきが終わりました。",
-    ),
+        : "今朝、ご家族の家の雪かきが終わりました。";
+    if (!missionId) return text(body);
+    return ask(`${body}\n\n来てくれた人に、遠くから応援を送れます（1タップ）。`, [
+      { label: "お疲れさま", data: `cheer:${missionId}=1` },
+      { label: "あったかくして", data: `cheer:${missionId}=2` },
+      { label: "遠くから拍手", data: `cheer:${missionId}=3` },
+    ]);
+  },
+  cheerToHelper: (requesterName: string, label: string, baseNumber: number | string) =>
+    text(`拠点${baseNumber}（${requesterName}さん）のご家族から、応援「${label}」が届きました。遠くからも見ていてくれています。`),
+  cheerSent: (label: string, count: number) =>
+    text(count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。`),
+  cheerNotFound: () => text("今朝の雪かきの記録が見つかりませんでした。"),
   lateRequesterFine: () => text("よかったです。今朝は取り下げました。ゆっくりどうぞ。"),
   lateRequesterShort: () => text("承知しました。近くの人に声をかけて、人を集めます。"),
   lateHelperThanks: () => text("ありがとうございます。人手が足りない家があればお知らせします。"),

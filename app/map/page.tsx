@@ -43,6 +43,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         recap={record.recap?.text}
         thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
         shareText={emojiGrid(cells, state)}
+        cheers={myMissionId ? (record.cheers?.[myMissionId] ?? []).map((c) => c.label) : []}
       />
     </>
   );

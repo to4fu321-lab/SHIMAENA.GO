@@ -6,8 +6,20 @@ import { issueCardsForMission } from "@/lib/cards/issue";
 import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
 import { setupRichMenu } from "@/lib/line/richmenu";
 import { isThanksChoice } from "@/lib/claude/thanks";
+import { isCheerChoice } from "@/lib/morning/cheer";
 import { latestClear } from "@/lib/morning/clear";
-import { announce, applyThanks, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring, weeklyRecap, writeRecap } from "@/lib/morning/ops";
+import {
+  announce,
+  applyCheer,
+  applyThanks,
+  checkForecastAndAnnounce,
+  escalateHelpIfDue,
+  notifyHelp,
+  plan,
+  ring,
+  weeklyRecap,
+  writeRecap,
+} from "@/lib/morning/ops";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
 import { progress } from "@/lib/morning/view";
@@ -87,6 +99,18 @@ export async function thanksDemo(formData: FormData) {
   const latest = latestClear(s.morning, roster);
   if (!latest) return;
   await applyThanks(latest.missionId, choice);
+  refresh();
+}
+
+/** 家族の応援スタンプを、いちばん最近に終わった家の家族の代わりに押す（デモ用。本番は家族の LINE のボタン） */
+export async function cheerDemo(formData: FormData) {
+  const choice = String(formData.get("choice") ?? "1");
+  if (!isCheerChoice(choice)) return;
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const latest = latestClear(s.morning, roster);
+  if (!latest) return;
+  await applyCheer(latest.missionId, choice);
   refresh();
 }
 

@@ -21,6 +21,7 @@ import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type 
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
 import { recapText } from "../claude/recap";
+import { CHEER_CHOICES, parseCheer, type CheerChoice, type CheerRecord } from "./cheer";
 import { summarizeClear, type ClearSummary } from "./clear";
 import { buildRecapInput } from "./recap";
 import { progress, snowHp, viewBases } from "./view";
@@ -319,7 +320,7 @@ async function finishMission(
   if (requester?.lineUserId) await push(requester.lineUserId, [MSG.requesterDoneNotice(names, mission.id)]);
   if (requester) {
     for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
-      if (link.familyLineUserId !== requester.lineUserId) await push(link.familyLineUserId, [MSG.familyDone(names)]);
+      if (link.familyLineUserId !== requester.lineUserId) await push(link.familyLineUserId, [MSG.familyDone(names, mission.id)]);
     }
   }
   // 一緒に行った仲間へ
@@ -399,6 +400,52 @@ export async function applyThanks(
     console.error("[thanks] 裏面を作り直せませんでした:", e instanceof Error ? e.message : e);
   }
   return { ok: true, messages: [MSG.thanksSent(label, sorties.length)], record };
+}
+
+// ---- 家族の応援スタンプ（spec v1.2） ----
+
+/**
+ * 家族の応援を受け取る: 手伝った人の LINE に届け、記録する。点は付けない。
+ * familyLineUserId を渡すと、その家に紐づいた家族のときだけ受け付ける（/admin のデモでは省く）
+ */
+export async function applyCheer(
+  missionId: string,
+  choice: CheerChoice,
+  opts: { familyLineUserId?: string; now?: Date } = {},
+): Promise<{ ok: boolean; messages: LineMessage[]; record?: CheerRecord }> {
+  const now = opts.now ?? new Date();
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  const base = m && roster.bases.find((b) => b.id === m.baseId);
+  if (!m || !base || m.status !== "done") return { ok: false, messages: [MSG.cheerNotFound()] };
+  if (opts.familyLineUserId) {
+    const links = await repo().listFamilyLinksByRequester(base.requesterId);
+    if (!links.some((l) => l.familyLineUserId === opts.familyLineUserId)) return { ok: false, messages: [MSG.cheerNotFound()] };
+  }
+  const requester = roster.participants.find((p) => p.id === base.requesterId);
+  const label = CHEER_CHOICES[choice];
+  const sorties = s.morning.sorties.filter((x) => x.missionId === m.id);
+  const byId = new Map(roster.participants.map((p) => [p.id, p]));
+  let sentTo = 0;
+  for (const x of sorties) {
+    const p = byId.get(x.participantId);
+    if (!p?.lineUserId) continue;
+    await push(p.lineUserId, [MSG.cheerToHelper(requester?.nickname ?? "お願いした人", label, base.number)]);
+    sentTo++;
+  }
+  const record: CheerRecord = { choice, label, at: now.toISOString(), sentTo };
+  s.cheers = { ...(s.cheers ?? {}), [m.id]: [...(s.cheers?.[m.id] ?? []), record] };
+  s.log.push(`拠点${base.number}: ご家族から応援「${label}」→ ${sorties.length} 人（LINE ${sentTo} 人）`);
+  await saveMorning(s);
+  return { ok: true, messages: [MSG.cheerSent(label, sorties.length)], record };
+}
+
+/** LINE のボタン（cheer:<missionId>=<1|2|3>）: その家に紐づいた家族だけ */
+export async function sendCheer(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
+  const parsed = parseCheer(data);
+  if (!parsed) return [MSG.cheerNotFound()];
+  return (await applyCheer(parsed.missionId, parsed.choice, { familyLineUserId: lineUserId, now })).messages;
 }
 
 /** LINE のボタン（thanks:<missionId>=<1|2|3>）: 押した人がその家の依頼者のときだけ */

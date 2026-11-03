@@ -38,6 +38,7 @@ export default function MapScreen({
   recap,
   thanks,
   shareText,
+  cheers = [],
 }: {
   state: MorningState;
   cells: CellView[];
@@ -53,6 +54,8 @@ export default function MapScreen({
   thanks?: { label: string; sentence: string };
   /** 絵文字グリッド（共有用の文字） */
   shareText?: string;
+  /** 自分が行った家の、ご家族からの応援スタンプ */
+  cheers?: string[];
 }) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
@@ -153,6 +156,11 @@ export default function MapScreen({
             {thanks && (
               <p className="mt-1 rounded-2xl bg-[#fff0f6] px-3 py-2 text-base">
                 お願いした人から「<b>{thanks.label}</b>」 — {thanks.sentence}
+              </p>
+            )}
+            {cheers.length > 0 && (
+              <p className="mt-1 rounded-2xl bg-[#eef6ff] px-3 py-2 text-base">
+                ご家族から応援 {cheers.map((c, i) => <b key={i}>「{c}」</b>)}
               </p>
             )}
           </div>

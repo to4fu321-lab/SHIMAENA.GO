@@ -12,6 +12,7 @@ import {
   joinMission,
   offerTaskNow,
   planIfDue,
+  sendCheer,
   sendThanks,
   setGoing,
 } from "../morning/ops";
@@ -163,6 +164,13 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   // ありがとう点呼（お願いした人の3択）
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("thanks:")) {
     const messages = await sendThanks(lineUserId, ev.postback.data);
+    if (ev.replyToken) await reply(ev.replyToken, messages);
+    return;
+  }
+
+  // 家族の応援スタンプ（その家に紐づいた家族だけ）
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("cheer:")) {
+    const messages = await sendCheer(lineUserId, ev.postback.data);
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }

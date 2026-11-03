@@ -11,10 +11,12 @@ import { loadMorning } from "@/lib/morning/store";
 import { progress, snowHp, teamTotals } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import { helpState, radiusLabel } from "@/lib/morning/watch";
+import { CHEER_CHOICES } from "@/lib/morning/cheer";
 import {
   announceByForecast,
   answerRandomly,
   backToSample,
+  cheerDemo,
   completeOne,
   helpNextRing,
   makeRichMenu,
@@ -149,6 +151,20 @@ async function AdminContent() {
             </button>
           ))}
         </form>
+        <form action={cheerDemo} className="flex flex-wrap items-center gap-2 px-4 py-1 text-sm text-ink/60">
+          <span>家族の応援（最後に終わった家の家族の代わりに）:</span>
+          {(["1", "2", "3"] as const).map((c) => (
+            <button
+              key={c}
+              name="choice"
+              value={c}
+              disabled={!m.missions.some((x) => x.status === "done")}
+              className="rounded-full bg-white px-3 py-1 font-bold text-ink ring-1 ring-ink/15 disabled:opacity-40"
+            >
+              {CHEER_CHOICES[c]}
+            </button>
+          ))}
+        </form>
         <form action={writeRecapNow}>
           <button
             disabled={status !== "planned"}
@@ -261,6 +277,9 @@ async function AdminContent() {
                       <span className="block text-sm text-neon">
                         ありがとう点呼「{s.thanks[x.id].label}」→ {s.thanks[x.id].sentence}
                       </span>
+                    )}
+                    {s.cheers?.[x.id] && s.cheers[x.id].length > 0 && (
+                      <span className="block text-sm text-ink/70">ご家族の応援: {s.cheers[x.id].map((c) => `「${c.label}」`).join("")}</span>
                     )}
                   </li>
                 );

@@ -5,6 +5,7 @@ import { decompose } from "../game/mission";
 import { scoreMission } from "../game/score";
 import { clockText, jstIso } from "../jst";
 import type { HelperAnswer, Mission, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
+import type { CheerRecord } from "./cheer";
 import type { Roster } from "./roster";
 import { progress, type MorningState } from "./view";
 
@@ -39,6 +40,8 @@ export interface MorningRecord {
   thanks?: Record<string, ThanksRecord>;
   /** 今朝が初出撃だった人（最初のカードを受け取った人、v1.1） */
   firstFlights?: string[];
+  /** 家族の応援スタンプ（v1.2）: ミッション ID ごと（家族が複数いれば複数） */
+  cheers?: Record<string, CheerRecord[]>;
 }
 
 export interface ThanksRecord {
