@@ -25,6 +25,7 @@ import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
 import { progress } from "@/lib/morning/view";
 import { appToday } from "@/lib/morning/today";
 import { recordHouseFeathers } from "@/lib/solo/ops";
+import { refreshShareTexts } from "@/lib/sns/refresh";
 
 function refresh() {
   revalidatePath("/");
@@ -96,6 +97,18 @@ export async function completeOne() {
     allDone = progress(s.morning).allDone;
   });
   if (allDone) await writeRecapNow();
+  else await refreshShareTexts().catch((e) => console.error("[share]", e));
+}
+
+/** SNS の投稿文を Claude に書いてもらう（数字が変わっていなくても作り直す）。キーがなければ定型のまま */
+export async function writeShareTextsNow() {
+  try {
+    const n = await refreshShareTexts(new Date(), { force: true });
+    await update((s) => void s.log.push(n > 0 ? `SNS の投稿文を Claude が ${n} 種類書いた` : "SNS の投稿文: Claude のキーがないので定型のまま"));
+  } catch (e) {
+    await update((s) => void s.log.push(`SNS の投稿文に失敗: ${e instanceof Error ? e.message : String(e)}`));
+  }
+  revalidatePath("/public/town");
 }
 
 /** ありがとう点呼を、いちばん最近に終わった家の依頼者の代わりに押す（デモ用。本番は依頼者の LINE のボタン） */

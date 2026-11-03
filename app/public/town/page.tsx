@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import SnsShare from "@/components/SnsShare";
 import { lineJoinUrl } from "@/lib/line/join";
 import { loadPublicStats } from "@/lib/public/load";
-import { mockShareText } from "@/lib/sns/text";
+import { shareTextsFor } from "@/lib/sns/refresh";
 import { TEAMS } from "@/lib/teams";
 import { baseUrl } from "@/lib/url";
 
@@ -41,6 +41,7 @@ function Num({ label, value, unit }: { label: string; value: string | number; un
 async function Town() {
   await connection();
   const st = await loadPublicStats();
+  const texts = await shareTextsFor(st);
   const join = lineJoinUrl();
   const site = baseUrl();
   const max = Math.max(1, ...Object.values(st.teamTotals));
@@ -148,9 +149,9 @@ async function Town() {
       <SnsShare
         title="この町を SNS で広める"
         options={[
-          { key: "town", label: "町の雪解け", text: mockShareText("town", st), image: "/api/share/town.png", page: `${site}/public/share/town?via=sns` },
-          { key: "today", label: "今日の出動", text: mockShareText("today", st), image: "/api/share/today.png", page: `${site}/public/share/today?via=sns` },
-          { key: "recruit", label: "仲間を募集", text: mockShareText("recruit", st), image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
+          { key: "town", label: "町の雪解け", text: texts.town.text, image: "/api/share/town.png", page: `${site}/public/share/town?via=sns` },
+          { key: "today", label: "今日の出動", text: texts.today.text, image: "/api/share/today.png", page: `${site}/public/share/today?via=sns` },
+          { key: "recruit", label: "仲間を募集", text: texts.recruit.text, image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
         ]}
       />
       <p className="text-center text-xs text-ink/50">

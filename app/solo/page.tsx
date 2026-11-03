@@ -13,6 +13,7 @@ import { SOLO_MISSIONS } from "@/lib/solo/missions";
 import { soloStatus } from "@/lib/solo/ops";
 import { loadPublicStats } from "@/lib/public/load";
 import { loadMeStats } from "@/lib/sns/me";
+import { shareTextsFor } from "@/lib/sns/refresh";
 import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
@@ -63,6 +64,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   const canHelpHouse = planned && me.role === "helper" && Boolean(me.teamId);
   const shorts = listShort(record, roster);
   const [stats, meStats] = await Promise.all([loadPublicStats(), loadMeStats(me.id)]);
+  const texts = await shareTextsFor(stats);
   const site = baseUrl();
   const v = `v=${status.totalFeathers}`; // 羽が増えたら画像を取り直す
   const shareOptions = [
@@ -73,7 +75,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
       image: `/api/share/me.png?${v}${demoAs ? `&as=${demoAs}` : ""}`,
       page: `${site}/public/share/today?via=sns`,
     },
-    { key: "recruit", label: "仲間を募集", text: mockShareText("recruit", stats), image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
+    { key: "recruit", label: "仲間を募集", text: texts.recruit.text, image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
   ];
   return (
     <>

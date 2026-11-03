@@ -9,6 +9,7 @@ import { addDays } from "../jst";
 import { loadMorning } from "../morning/store";
 import { appToday } from "../morning/today";
 import { repo } from "../repo";
+import { refreshShareTextsLater } from "../sns/refresh";
 import type { Card, Participant, SoloLog } from "../types";
 import { activeDates, bonusLog, bonusesDue, feathersOn, nextCard, streakDays, totalFeathers, type NextCard } from "./feathers";
 import { HELP_HOUSE_FEATHERS, SOLO_BONUS, soloLabel, soloMission, type SoloMission } from "./missions";
@@ -122,6 +123,7 @@ export async function completeSolo(
     console.error("[solo] カードを発行できませんでした:", e instanceof Error ? e.message : e);
   }
 
+  await refreshShareTextsLater(); // 今日の出動人数が変わったので、投稿文を作り直す（返事のあとで）
   const summary: SoloClearSummary = {
     kind: mission.kind,
     label: mission.label,

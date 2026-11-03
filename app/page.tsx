@@ -9,6 +9,7 @@ import { STYLE_NAME } from "@/lib/cards/rarity";
 import { loadPublicStats } from "@/lib/public/load";
 import { repo } from "@/lib/repo";
 import { loadMeStats } from "@/lib/sns/me";
+import { shareTextsFor } from "@/lib/sns/refresh";
 import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { loadRoster } from "@/lib/morning/roster";
@@ -64,10 +65,11 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   const latestCard = me ? (await repo().listCardsByRecipient(me.id).catch(() => []))[0] : undefined;
   const stats = await loadPublicStats();
   const site = baseUrl();
+  const texts = await shareTextsFor(stats);
   const shareOptions: ShareOption[] = [
-    { key: "today", label: "今日の出動", text: mockShareText("today", stats), image: "/api/share/today.png", page: `${site}/public/share/today?via=sns` },
-    { key: "town", label: "町の雪解け", text: mockShareText("town", stats), image: "/api/share/town.png", page: `${site}/public/share/town?via=sns` },
-    { key: "recruit", label: "仲間を募集", text: mockShareText("recruit", stats), image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
+    { key: "today", label: "今日の出動", text: texts.today.text, image: "/api/share/today.png", page: `${site}/public/share/today?via=sns` },
+    { key: "town", label: "町の雪解け", text: texts.town.text, image: "/api/share/town.png", page: `${site}/public/share/town?via=sns` },
+    { key: "recruit", label: "仲間を募集", text: texts.recruit.text, image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
   ];
   if (me) {
     const meStats = await loadMeStats(me.id);

@@ -29,6 +29,7 @@ import { progress, snowHp, viewBases } from "./view";
 import { viewCells } from "../cells";
 import { emojiGrid } from "../share";
 import { recordHouseFeathers } from "../solo/ops";
+import { refreshShareTextsLater } from "../sns/refresh";
 import { appToday } from "./today";
 import {
   applyLateAnswer,
@@ -361,6 +362,7 @@ async function finishMission(
   const clear =
     summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId, firstFlightIds: s.firstFlights }) ?? undefined;
   if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
+  await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
   return { done: true, messages: [reply], clear };
 }
 
@@ -482,6 +484,7 @@ export async function writeRecap(now = new Date()): Promise<string> {
   s.recap = { text, at: now.toISOString(), allDone: input.allDone };
   s.log.push(`今朝の実況を書いた（${input.housesDone}/${input.housesTotal} 軒・${input.movers} 人）`);
   await saveMorning(s);
+  await refreshShareTextsLater();
   return text;
 }
 

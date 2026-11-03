@@ -28,6 +28,7 @@ import {
   startEmptyMorning,
   thanksDemo,
   writeRecapNow,
+  writeShareTextsNow,
 } from "./actions";
 import { THANKS_CHOICES } from "@/lib/claude/thanks";
 
@@ -172,6 +173,9 @@ async function AdminContent() {
           >
             今朝の実況を書く（全軒完了では自動）
           </button>
+        </form>
+        <form action={writeShareTextsNow}>
+          <button className="w-full rounded-2xl px-4 py-1 text-sm text-ink/60 underline">SNS の投稿文を Claude に書いてもらう（完了のたびに自動）</button>
         </form>
         <Step n="6" label="日曜の夜: 今週の群れ（実況・称号・シャッフル）" action={runWeekly} />
         <form action={backToSample}>

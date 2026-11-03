@@ -81,7 +81,7 @@
   完了条件: PNG が3サイズで返る（テスト）。自動投稿はしない。
 - [x] **T34 公開ページ** — `lib/public/stats.ts`（集計だけ）、`/api/public/stats`、`/public/town`（雪解け・今日の数字・今週・説明・LINE 参加 🔑`NEXT_PUBLIC_LINE_ADD_FRIEND_URL`・診断へ・シェア）。
   完了条件: テストで氏名・緯度経度・マスのキーが出ない。
-- [ ] **T36 Claude の投稿文** — 採点表 `share`/`solo`/`quiz`、`lib/claude/share.ts`、書き込み点でだけ生成して `shareTexts` に保存、描画時はモック。
+- [x] **T36 Claude の投稿文** — 採点表 `share`/`solo`/`quiz`、`lib/claude/share.ts`、書き込み点でだけ生成して `shareTexts` に保存、描画時はモック。
   完了条件: キーなしで文例が出る。数字は入力のみ。
 - [ ] **T37 シマエナ診断** — `lib/public/quiz.ts`（5問→5タイプ）、`/public/diagnosis`、結果カード `quiz-<type>`、`lib/claude/quiz.ts`（1日1回キャッシュ）。登録不要。
 - [ ] **T38 応援ゲージ** — `town_cheers`、`cheerTownAction`（1日1回）、公開ページとホームのゲージ。得点・羽には入れない。
