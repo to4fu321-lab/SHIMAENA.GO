@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { applySchema, seedTown } from "@/lib/db";
 import { issueCardsForMission } from "@/lib/cards/issue";
 import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
-import { announce, checkForecastAndAnnounce, plan, ring } from "@/lib/morning/ops";
+import { announce, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring } from "@/lib/morning/ops";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
 
@@ -72,6 +72,15 @@ export async function completeOne() {
 export async function rescue() {
   const roster = await loadRoster();
   await update((s) => void rescueShort(s, roster));
+}
+
+/** 人手不足の家のヘルプ通知を次の輪へ（300m → 600m → 1km → サポーター）。5分待たずに進める */
+export async function helpNextRing() {
+  const s = await loadMorning();
+  let n = 0;
+  for (const m of s.morning.missions) if (m.status === "short" && (await notifyHelp(m.id)) !== null) n++;
+  if (n === 0) await escalateHelpIfDue();
+  refresh();
 }
 
 export async function backToSample() {

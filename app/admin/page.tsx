@@ -10,11 +10,13 @@ import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { snowHp, teamTotals } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
+import { helpState, radiusLabel } from "@/lib/morning/watch";
 import {
   announceByForecast,
   answerRandomly,
   backToSample,
   completeOne,
+  helpNextRing,
   prepareDatabase,
   rescue,
   ringNow,
@@ -108,6 +110,14 @@ async function AdminContent() {
         <Step n="3" label="6:40 司令官に作戦を立ててもらう" action={runCommander} disabled={status !== "open" || s.answers.length === 0} />
         <Step n="4" label="そろった家を1軒、完了にする" action={completeOne} disabled={status !== "planned"} />
         <Step n="5" label="人手不足の家に駆けつける" action={rescue} disabled={!m.missions.some((x) => x.status === "short")} />
+        <form action={helpNextRing}>
+          <button
+            disabled={!m.missions.some((x) => x.status === "short")}
+            className="w-full rounded-2xl px-4 py-1 text-sm text-ink/60 underline disabled:opacity-40"
+          >
+            ヘルプ通知を次の輪へ（300m → 600m → 1km → サポーター）
+          </button>
+        </form>
         <form action={backToSample}>
           <button className="w-full rounded-2xl px-4 py-2 text-sm text-ink/60 underline">朝 7:10 の見本の状態に戻す</button>
         </form>
@@ -169,10 +179,15 @@ async function AdminContent() {
               .map((x) => {
                 const base = roster.bases.find((b) => b.id === x.baseId);
                 const going = m.sorties.filter((so) => so.missionId === x.id);
+                const help = helpState(s, x.id);
                 return (
                   <li key={x.id}>
                     拠点{base?.number ?? "?"}：<b>{MISSION_TEXT[x.status]}</b>（{going.length}/{x.requiredPeople}人）
                     <span className="text-sm text-ink/60"> {going.map((so) => name(so.participantId)).join("・")}</span>
+                    {help.stage > 0 && (
+                      <span className="text-sm text-alert"> ヘルプ {radiusLabel(help.stage - 1)}まで</span>
+                    )}
+                    {help.knockIds && help.knockIds.length > 0 && <span className="text-sm text-ink/60"> 声かけ依頼済み</span>}
                   </li>
                 );
               })}

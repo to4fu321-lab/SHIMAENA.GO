@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { judgeLevel } from "../claude/level";
 import { assignTeam, makeLinkCode } from "../game/team";
 import { sniffImageType } from "../image";
-import { answerRollcall, completeWithPhoto, planIfDue, setGoing } from "../morning/ops";
+import { answerRollcall, completeWithPhoto, escalateHelpIfDue, joinMission, planIfDue, setGoing } from "../morning/ops";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import type { FamilyLink, Participant } from "../types";
@@ -115,6 +115,21 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     const messages = await answerRollcall(lineUserId, ev.postback.data);
     if (ev.replyToken) await reply(ev.replyToken, messages);
     await planIfDue();
+    await escalateHelpIfDue();
+    return;
+  }
+
+  // ヘルプ通知の「行く（5分でも）」「今は無理」、返事なしの「声をかけに行く」
+  if (ev.type === "postback" && "postback" in ev && (ev.postback.data.startsWith("help:") || ev.postback.data.startsWith("knock:"))) {
+    const data = ev.postback.data;
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    let messages: LineMessage[];
+    if (!p) messages = [MSG.notRegistered()];
+    else if (data.startsWith("help:go=")) messages = await joinMission(p.id, data.slice("help:go=".length));
+    else if (data.startsWith("knock:")) messages = [MSG.knockThanks()];
+    else messages = [MSG.helpDeclined()];
+    if (ev.replyToken) await reply(ev.replyToken, messages);
+    await escalateHelpIfDue();
     return;
   }
 

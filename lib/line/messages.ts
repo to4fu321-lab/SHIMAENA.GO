@@ -136,6 +136,40 @@ export const MSG = {
         : "今朝の雪かきが終わりました。足元に気をつけてお出かけください。",
     ),
   shortReported: (baseNumber: number | string) => text(`拠点${baseNumber}の人手不足を町内に知らせます。5分だけ来てくれる人を探します。`),
+  // ---- ヘルプ通知と見守り（spec 4・8） ----
+  helpRequest: (missionId: string, baseNumber: number | string, missing: number, tasks: string[]) =>
+    ask(
+      `拠点${baseNumber}で人手が足りません（あと${missing}人）。\n5分でもOK: ${tasks.slice(0, 2).join("／")}\n行けますか？`,
+      [
+        { label: "行く（5分でも）", data: `help:go=${missionId}` },
+        { label: "今は無理", data: "help:no" },
+      ],
+    ),
+  helpJoined: (baseNumber: number | string) =>
+    text(`ありがとうございます！拠点${baseNumber}へお願いします。終わったら写真を1枚送ってください。`),
+  helpDeclined: () => text("承知しました。また次の機会に。"),
+  helpAlreadyEnough: (baseNumber: number | string) => text(`拠点${baseNumber}は人がそろいました。ありがとうございます。`),
+  supporterRequest: (baseNumber: number | string, missing: number) =>
+    text(`【サポーターへ】拠点${baseNumber}に人が集まりません（あと${missing}人）。1km まで声をかけましたが足りません。お願いできますか。`),
+  knockRequest: (missionId: string, baseNumber: number | string) =>
+    ask(
+      `拠点${baseNumber}は、今朝の点呼に返事がありません。通りがかりに玄関で声をかけてもらえますか？（体調のことは判断しなくて大丈夫です。返事があったかだけ教えてください）`,
+      [
+        { label: "声をかけに行く", data: `knock:${missionId}` },
+        { label: "今は無理", data: "help:no" },
+      ],
+    ),
+  knockThanks: () => text("ありがとうございます。声をかけたら、返事があったかどうかをここに送ってください。"),
+  familyNoAnswer: () => text("今朝の点呼に、ご家族から返事がありません。お電話などで様子を聞いてみてください。近所の方にも玄関で声をかけてもらうようお願いしています。"),
+  familyDone: (names: string[]) =>
+    text(
+      names.length > 0
+        ? `今朝、ご家族の家の雪かきが終わりました。来てくれたのは ${names.map((n) => `${n}さん`).join("、")}です。`
+        : "今朝、ご家族の家の雪かきが終わりました。",
+    ),
+  lateRequesterFine: () => text("よかったです。今朝は取り下げました。ゆっくりどうぞ。"),
+  lateRequesterShort: () => text("承知しました。近くの人に声をかけて、人を集めます。"),
+  lateHelperThanks: () => text("ありがとうございます。人手が足りない家があればお知らせします。"),
   linkedSelf: () => text("紐づけました。雪の朝 6:30 に「今朝、玄関は出られそうですか？」と1回だけ聞きます。"),
   linkedFamily: () => text("家族として紐づけました。雪かきが終わったときや、点呼に返事がないときにお知らせします。"),
 } satisfies Record<string, (...args: never[]) => LineMessage>;

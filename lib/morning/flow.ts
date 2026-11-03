@@ -21,6 +21,17 @@ export interface MorningRecord {
   /** デモの時計（分、0時から）。完了のたびに進む */
   clockMin: number;
   log: string[];
+  /** ヘルプ通知の進み具合（ミッション ID ごと）。古い記録にはない */
+  help?: Record<string, HelpState>;
+}
+
+/** ヘルプ通知の輪: 0=まだ / 1=300m / 2=600m / 3=1km / 4=サポーターまで出した */
+export interface HelpState {
+  stage: 0 | 1 | 2 | 3 | 4;
+  lastAt?: string; // ISO
+  notifiedIds: string[];
+  /** 声かけ（返事なし）をお願いした人 */
+  knockIds?: string[];
 }
 
 /** デモ用の日付（12月の月曜の朝）。本番の cron は本当の日付で動かす */

@@ -17,6 +17,7 @@ export interface Repo {
   upsertBase(b: Base): Promise<void>;
   addFamilyLink(link: FamilyLink): Promise<void>;
   findFamilyLinkByCode(code: string): Promise<FamilyLink | undefined>;
+  listFamilyLinksByRequester(requesterId: string): Promise<FamilyLink[]>;
   getSession(lineUserId: string): Promise<RegSession | undefined>;
   setSession(lineUserId: string, session: RegSession | null): Promise<void>;
   // カード（表面・裏面の SVG を持つ）
@@ -86,6 +87,9 @@ export const memoryRepo: Repo = {
   },
   async findFamilyLinkByCode(code) {
     return mem().links.find((l) => l.linkCode === code);
+  },
+  async listFamilyLinksByRequester(requesterId) {
+    return mem().links.filter((l) => l.requesterId === requesterId);
   },
   async getSession(lineUserId) {
     return mem().sessions.get(lineUserId);
@@ -299,6 +303,13 @@ export const dbRepo: Repo = {
     return rows[0]
       ? { familyLineUserId: rows[0].family_line_user_id, requesterId: rows[0].requester_id, linkCode: rows[0].link_code }
       : undefined;
+  },
+  async listFamilyLinksByRequester(requesterId) {
+    const rows = await query<{ family_line_user_id: string; requester_id: string; link_code: string }>(
+      "select family_line_user_id, requester_id, link_code from family_links where requester_id = $1",
+      [requesterId],
+    );
+    return rows.map((r) => ({ familyLineUserId: r.family_line_user_id, requesterId: r.requester_id, linkCode: r.link_code }));
   },
   async getSession(lineUserId) {
     const rows = await query<{ session: RegSession }>("select session from line_sessions where line_user_id = $1", [lineUserId]);

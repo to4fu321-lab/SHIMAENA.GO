@@ -17,6 +17,17 @@ import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { claimPlanning, loadMorning, saveMorning } from "./store";
+import {
+  applyLateAnswer,
+  goingCount,
+  helpDue,
+  helpState,
+  missingPeople,
+  pickHelpTargets,
+  pickKnockTargets,
+  radiusLabel,
+  setHelpState,
+} from "./watch";
 
 /** 前夜の予告: 今朝の状態を作り直し、LINE のある全員に送る */
 export async function announce(opts: { date: string; forecastCm: number }): Promise<MorningRecord> {
@@ -69,10 +80,22 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p) return [MSG.notRegistered()];
   const s = await loadMorning();
-  if (s.morning.rollcall.status !== "open") return [MSG.rollcallClosed()];
+  const status = s.morning.rollcall.status;
+  if (status !== "open" && status !== "planned") return [MSG.rollcallClosed()];
   const value = /^rc:ans=([a-z0-9]+)$/.exec(data)?.[1] ?? "";
   const answer = p.role === "requester" ? REQUESTER_ANSWERS[value] : HELPER_ANSWERS[value];
   if (answer === undefined) return [p.role === "requester" ? MSG.rollcallRequester() : MSG.rollcallHelper()];
+  if (status === "planned") {
+    // 作戦配信のあとの答え（spec 4-c）: 「いいえ」なら人を集め、「はい」なら取り下げる
+    const roster = await loadRoster();
+    const late = applyLateAnswer(s, roster, p, answer, now.toISOString());
+    s.log.push(`${p.nickname}さんが遅れて点呼に回答（${value}）`);
+    await saveMorning(s);
+    if (late.kind === "short") await notifyHelp(late.mission.id, now);
+    if (late.kind === "fine") return [MSG.lateRequesterFine()];
+    if (late.kind === "short") return [MSG.lateRequesterShort()];
+    return [MSG.lateHelperThanks()];
+  }
   putAnswer(s, p.id, answer, now.toISOString());
   s.log.push(`${p.nickname}さんが点呼に回答（${value}）`);
   await saveMorning(s);
@@ -114,7 +137,12 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   }
   s.log.push(`作戦を LINE で ${sent} 人に送信`);
   await saveMorning(s);
-  return { record: s, sent };
+  // 開始 20 分前（6:40）の時点で足りない家はすぐヘルプ通知（spec 4-a）、返事なしの家は声かけと家族へ（spec 4）
+  for (const m of s.morning.missions) {
+    if (m.status === "short") await notifyHelp(m.id);
+    if (m.status === "no_answer") await notifyNoAnswer(m.id);
+  }
+  return { record: await loadMorning(), sent };
 }
 
 /**
@@ -154,9 +182,11 @@ export async function setGoing(participantId: string, go: boolean, now = new Dat
   }
   s.morning.sorties = s.morning.sorties.filter((x) => x.id !== sortie.id);
   const going = s.morning.sorties.filter((x) => x.missionId === mission.id).length;
-  if (going < mission.requiredPeople && mission.status !== "done") mission.status = "short";
+  const becameShort = going < mission.requiredPeople && mission.status !== "done";
+  if (becameShort) mission.status = "short";
   s.log.push(`${who}さんは今朝は行けない → 拠点${number}は ${going}/${mission.requiredPeople} 人`);
   await saveMorning(s);
+  if (becameShort) await notifyHelp(mission.id, now);
   return [MSG.goDeclined()];
 }
 
@@ -171,6 +201,7 @@ export async function reportShort(participantId: string): Promise<LineMessage[]>
   const number = baseNumberOf(roster, mission.baseId);
   s.log.push(`拠点${number}から「人手が足りない」`);
   await saveMorning(s);
+  await notifyHelp(mission.id); // spec 4-b
   return [MSG.shortReported(number)];
 }
 
@@ -225,8 +256,13 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   }
   await saveMorning(s);
 
-  // 依頼者へ（家族への通知は T12）
+  // 依頼者へ、そして家族へ（spec 8）
   if (requester?.lineUserId) await push(requester.lineUserId, [MSG.requesterDoneNotice(names)]);
+  if (requester) {
+    for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
+      if (link.familyLineUserId !== requester.lineUserId) await push(link.familyLineUserId, [MSG.familyDone(names)]);
+    }
+  }
   // 一緒に行った仲間へ
   for (const x of sorties) {
     if (x.participantId === participantId) continue;
@@ -241,6 +277,122 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
     : text(`${check.comment}\n拠点${number} 完了！`);
   if (check.icy) reply.text += "\n凍っているところがあるようです。砂をまくと安心です。";
   return { done: true, messages: [reply] };
+}
+
+// ---- ヘルプ通知と見守り（spec 4） ----
+
+/** サポーター（町内会役員役）の LINE。環境変数 SUPPORTER_LINE_USER_IDS にカンマ区切りで */
+function supporterIds(): string[] {
+  return (process.env.SUPPORTER_LINE_USER_IDS ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+}
+
+/**
+ * 人手が足りない家のヘルプ通知を1段階すすめる: 300m → 600m → 1km → サポーター。
+ * 文面には「5分でもOK」の小タスクを添える。同じ人には2回送らない。
+ */
+export async function notifyHelp(missionId: string, now = new Date()): Promise<{ ring: string; notified: number } | null> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  if (!m || m.status === "done") return null;
+  const state = helpState(s, m.id);
+  if (state.stage >= 4) return null;
+  const missing = missingPeople(s, m);
+  if (missing <= 0) return null;
+  const number = baseNumberOf(roster, m.baseId);
+  const ring = state.stage; // 0..3
+  if (ring === 3) {
+    const ids = supporterIds();
+    for (const id of ids) await push(id, [MSG.supporterRequest(number, missing)]);
+    setHelpState(s, m.id, { ...state, stage: 4, lastAt: now.toISOString() });
+    s.log.push(`拠点${number}: サポーターへ連絡（${ids.length > 0 ? `${ids.length} 人` : "未設定"}）`);
+    await saveMorning(s);
+    return { ring: radiusLabel(3), notified: ids.length };
+  }
+  const targets = pickHelpTargets(s, roster, m, ring as 0 | 1 | 2);
+  const tasks = m.subtasks.filter((t) => t.minutes === 5).map((t) => `${t.label}（5分）`);
+  let sent = 0;
+  for (const t of targets) {
+    if (!t.lineUserId) continue;
+    await push(t.lineUserId, [MSG.helpRequest(m.id, number, missing, tasks.length ? tasks : ["偵察（5分）"])]);
+    sent++;
+  }
+  setHelpState(s, m.id, {
+    ...state,
+    stage: (ring + 1) as 1 | 2 | 3,
+    lastAt: now.toISOString(),
+    notifiedIds: [...state.notifiedIds, ...targets.map((t) => t.id)],
+  });
+  s.log.push(
+    `拠点${number}: ヘルプ通知 ${radiusLabel(ring)}（${targets.length} 人: ${targets.map((t) => t.nickname).join("・") || "該当なし"}、LINE ${sent} 人）`,
+  );
+  await saveMorning(s);
+  return { ring: radiusLabel(ring), notified: targets.length };
+}
+
+/** 間に合っていない家のヘルプ通知を、5分おきに次の輪へ。Webhook と /admin のボタンから呼ぶ */
+export async function escalateHelpIfDue(now = new Date()): Promise<number> {
+  const s = await loadMorning();
+  let n = 0;
+  for (const m of s.morning.missions) {
+    if (m.status !== "short") continue;
+    if (!helpDue(helpState(s, m.id), now)) continue;
+    if ((await notifyHelp(m.id, now)) !== null) n++;
+  }
+  return n;
+}
+
+/** 返事なしの家: 近所（300m）に「声かけお願い」、家族に「返事がありません」 */
+export async function notifyNoAnswer(missionId: string): Promise<void> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  if (!m || m.status !== "no_answer") return;
+  const state = helpState(s, m.id);
+  if (state.knockIds && state.knockIds.length > 0) return; // 一度だけ
+  const number = baseNumberOf(roster, m.baseId);
+  const targets = pickKnockTargets(s, roster, m);
+  for (const t of targets) if (t.lineUserId) await push(t.lineUserId, [MSG.knockRequest(m.id, number)]);
+  const base = roster.bases.find((b) => b.id === m.baseId);
+  let family = 0;
+  if (base) {
+    for (const link of await repo().listFamilyLinksByRequester(base.requesterId)) {
+      await push(link.familyLineUserId, [MSG.familyNoAnswer()]);
+      family++;
+    }
+  }
+  setHelpState(s, m.id, { ...state, knockIds: targets.map((t) => t.id) });
+  s.log.push(`拠点${number}: 返事なし → 声かけ依頼 ${targets.length} 人（${targets.map((t) => t.nickname).join("・") || "該当なし"}）、家族 ${family} 人に連絡`);
+  await saveMorning(s);
+}
+
+/** ヘルプ通知の「行く（5分でも）」: 出撃に加わる。自分の家を終えた人なら駆けつけボーナス */
+export async function joinMission(participantId: string, missionId: string, now = new Date()): Promise<LineMessage[]> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  const p = roster.participants.find((x) => x.id === participantId);
+  if (!m || !p?.teamId || m.status === "done") return [MSG.noSortie()];
+  const number = baseNumberOf(roster, m.baseId);
+  if (s.morning.sorties.some((x) => x.missionId === m.id && x.participantId === p.id && x.status === "going")) {
+    return [MSG.helpJoined(number)];
+  }
+  if (missingPeople(s, m) <= 0) return [MSG.helpAlreadyEnough(number)];
+  const finishedOwn = s.morning.sorties.some((x) => x.participantId === p.id && x.status === "done");
+  s.morning.sorties.push({
+    id: `s${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
+    missionId: m.id,
+    participantId: p.id,
+    teamId: p.teamId,
+    subtaskIds: [],
+    status: "going",
+    rescue: finishedOwn,
+    confirmedAt: now.toISOString(),
+  });
+  if (goingCount(s, m.id) >= m.requiredPeople) m.status = "in_progress";
+  s.log.push(`${p.nickname}さんがヘルプで拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`);
+  await saveMorning(s);
+  return [MSG.helpJoined(number)];
 }
 
 function clockTextJst(d: Date): string {
