@@ -4,6 +4,7 @@
 // スマホは左右にスワイプ、PC は「次へ」「戻る」ボタンと ← → キー。LINE の操作は練習版（何も送信しない）。
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { inviteMessage, lineShareUrl } from "@/lib/share-links";
 import { TEAMS } from "@/lib/teams";
 import Mascot, { SnowTown } from "../Mascot";
 import LineChat, { type ChatMsg } from "./LineChat";
@@ -455,6 +456,16 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
         </button>
       )}
       {showJoinHelp && !joinUrl && <p className="tut-pop shrink-0 text-center text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>}
+      <button
+        type="button"
+        onClick={() => {
+          const m = inviteMessage(window.location.origin, joinUrl);
+          window.open(lineShareUrl(m.text, m.url), "_blank", "noopener,noreferrer");
+        }}
+        className="min-h-10 shrink-0 text-base font-bold underline"
+      >
+        LINE で友だちも誘う →
+      </button>
     </>,
   ];
 

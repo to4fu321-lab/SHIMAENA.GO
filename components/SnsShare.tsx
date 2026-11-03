@@ -3,6 +3,7 @@
 // SNS に共有（spec v1.3）。自動投稿はしない: 文は本人が読んで直してから、自分で押して投稿する。
 // X は投稿画面（intent）を開くだけ。Instagram など画像の SNS は、画像を保存するか OS の共有シートで渡す。
 import { useState } from "react";
+import { lineShareUrl, xShareUrl } from "@/lib/share-links";
 
 export interface ShareOption {
   key: string;
@@ -58,12 +59,8 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
     }
   };
 
-  const postX = () => {
-    const u = new URL("https://x.com/intent/post");
-    u.searchParams.set("text", text);
-    u.searchParams.set("url", opt.page);
-    window.open(u.toString(), "_blank", "noopener,noreferrer");
-  };
+  const postX = () => window.open(xShareUrl(text, opt.page), "_blank", "noopener,noreferrer");
+  const postLine = () => window.open(lineShareUrl(text, opt.page), "_blank", "noopener,noreferrer");
 
   const shareImage = (format: "square" | "story") =>
     run(async () => {
@@ -122,13 +119,16 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
         <button onClick={postX} className={`${btn} bg-black text-white`}>
           X に投稿
         </button>
+        <button onClick={postLine} className={`${btn} bg-[#06C755] text-white`}>
+          LINE で送る
+        </button>
         <button disabled={busy} onClick={() => shareImage("square")} className={`${btn} bg-ink text-white`}>
-          画像で共有
+          Instagram など（画像）
         </button>
         <button disabled={busy} onClick={() => save("square")} className={`${btn} btn-white`}>
           画像を保存
         </button>
-        <button disabled={busy} onClick={() => save("story")} className={`${btn} btn-white`}>
+        <button disabled={busy} onClick={() => save("story")} className={`${btn} btn-white col-span-2`}>
           ストーリーズ用
         </button>
       </div>

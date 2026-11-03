@@ -9,7 +9,10 @@ import type { SoloMission } from "@/lib/solo/missions";
 import type { SoloClearSummary, SoloStatus } from "@/lib/solo/ops";
 import type { Role } from "@/lib/types";
 import { shrink } from "./shrink";
+import FriendShare from "./FriendShare";
+import QuickShare from "./QuickShare";
 import SnsShare, { type ShareOption } from "./SnsShare";
+import { clearMessage } from "@/lib/share-links";
 import SoloClear from "./SoloClear";
 
 const DIFF = ["", "★", "★★", "★★★"];
@@ -133,6 +136,7 @@ export default function SoloScreen({
     <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 pb-8 pt-5 text-ink">
       {clear && (
         <SoloClear summary={clear} onClose={() => setClear(null)} q={q}>
+          <QuickShare text={clearMessage("solo", clear.onsite ? 5 : 3)} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
           <button
             onClick={() => {
               setClear(null);
@@ -140,7 +144,7 @@ export default function SoloScreen({
             }}
             className="btn btn-white mt-3 w-full text-base"
           >
-            SNS に投稿する（X・Instagram）
+            投稿文を直してから投稿する
           </button>
         </SoloClear>
       )}
@@ -264,6 +268,7 @@ export default function SoloScreen({
       </section>
 
       {shareOptions.length > 0 && <SnsShare options={shareOptions} title="今日の出動を SNS に" />}
+      <FriendShare />
 
       <input
         ref={fileRef}

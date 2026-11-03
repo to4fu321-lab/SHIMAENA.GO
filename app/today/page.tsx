@@ -7,6 +7,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import CheerButton from "@/components/CheerButton";
 import Icon from "@/components/Icon";
 import TabBar from "@/components/TabBar";
+import FriendShare from "@/components/FriendShare";
 import SnsShare, { type ShareOption } from "@/components/SnsShare";
 import { CHEER_COOKIE, cheeredToday } from "@/lib/public/cheer";
 import { STYLE_NAME } from "@/lib/cards/rarity";
@@ -185,6 +186,8 @@ async function Details({ searchParams }: { searchParams: Promise<{ as?: string }
           )}
         </Link>
       )}
+
+      <FriendShare />
 
       <SnsShare options={shareOptions} />
 

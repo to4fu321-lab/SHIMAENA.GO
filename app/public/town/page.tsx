@@ -61,6 +61,17 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         <p className="text-base text-ink-soft">寒い冬は、くっついて乗り切る。</p>
       </header>
 
+      {via === "cheer" && (
+        <section className="rounded-3xl bg-camellia-soft p-4 ring-1 ring-camellia" aria-label="応援のお願い">
+          <p className="text-lg font-bold">友だちから応援のお願いが届きました！</p>
+          <p className="text-base">
+            下の「町を応援する」を押すと、町の応援ゲージに入ります（登録なし・1日1回）。
+            <a href="#cheer" className="font-bold underline">
+              応援する ↓
+            </a>
+          </p>
+        </section>
+      )}
       {via === "sns" && (
         <section className="rounded-3xl bg-warm p-4 ring-1 ring-lamp/50" aria-label="ようこそ">
           <p className="text-lg font-bold">SNS から来てくれて、ありがとう！</p>
@@ -104,7 +115,9 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
       </section>
 
       {/* 応援ゲージ（得点・羽には入れない） */}
-      <CheerButton count={st.cheers} already={already} />
+      <div id="cheer" className="scroll-mt-4">
+        <CheerButton count={st.cheers} already={already} />
+      </div>
 
       {/* 今日と今週の数字 */}
       <section className="space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日と今週">
