@@ -26,6 +26,8 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   // 家の正確な位置はサーバーに置いたまま、画面には 50m マスだけを渡す
   const cells = viewCells([...viewBases(state).values()], roster);
   const viewer = roster.participants.find((p) => p.id === viewerId);
+  const myMissionId = state.sorties.find((s) => s.participantId === viewerId)?.missionId;
+  const thanks = myMissionId ? record.thanks?.[myMissionId] : undefined;
   return (
     <>
       <AutoRefresh />
@@ -38,6 +40,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         clear={latestClear(state, roster, viewerId)}
         rescue={listShort(record, roster)}
         recap={record.recap?.text}
+        thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
       />
     </>
   );

@@ -132,3 +132,36 @@ export async function issueCardsForMission(
   s.log.push(`拠点${base?.number ?? "?"}のカード「${text.designName}」（${rarity.label} ${"★".repeat(rarity.stars)}）を ${cards.length} 枚発行`);
   return { cards, sent };
 }
+
+/** 保存してあるカードから、裏面を描くのに要る分だけ CardArt を組み立てる（裏面は人の並びを使わない） */
+export function artFromCard(card: Card, date: string): CardArt {
+  const teamIds = card.teamIds.length > 0 ? card.teamIds : (["salvia"] as const);
+  return {
+    style: card.style,
+    designName: card.designName,
+    designNameEn: card.designNameEn,
+    rarityLabel: card.rarityLabel,
+    stars: card.stars,
+    members: card.memberNames.map((name, i) => ({ name, teamId: teamIds[i % teamIds.length] })),
+    date,
+    townName: TOWN.name.replace(/（.*）$/, ""),
+    snowKg: card.snowKg,
+    snowKgComparison: card.snowKgComparison,
+    serial: card.serial,
+    issuedCount: card.issuedCount,
+  };
+}
+
+/**
+ * ありがとう点呼が届いたら、その家のカードの裏面を作り直す（依頼者の一言が入る）。
+ * 発行済みのカードそのもの（表・番号・枚数）は変えない。
+ */
+export async function rerenderBacks(missionId: string, back: { date: string; thanks: string; subtasks: string[] }): Promise<number> {
+  const r = repo();
+  const cards = await r.listCardsByMission(missionId);
+  for (const card of cards) {
+    const svg = renderCardBackSvg(artFromCard(card, back.date), { thanks: back.thanks, subtasks: back.subtasks });
+    await r.updateCardBack(card.id, svg);
+  }
+  return cards.length;
+}

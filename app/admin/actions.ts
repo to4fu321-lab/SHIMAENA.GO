@@ -5,7 +5,9 @@ import { applySchema, seedTown } from "@/lib/db";
 import { issueCardsForMission } from "@/lib/cards/issue";
 import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
 import { setupRichMenu } from "@/lib/line/richmenu";
-import { announce, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring, weeklyRecap, writeRecap } from "@/lib/morning/ops";
+import { isThanksChoice } from "@/lib/claude/thanks";
+import { latestClear } from "@/lib/morning/clear";
+import { announce, applyThanks, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring, weeklyRecap, writeRecap } from "@/lib/morning/ops";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
 import { progress } from "@/lib/morning/view";
@@ -73,6 +75,18 @@ export async function completeOne() {
     allDone = progress(s.morning).allDone;
   });
   if (allDone) await writeRecapNow();
+}
+
+/** ありがとう点呼を、いちばん最近に終わった家の依頼者の代わりに押す（デモ用。本番は依頼者の LINE のボタン） */
+export async function thanksDemo(formData: FormData) {
+  const choice = String(formData.get("choice") ?? "1");
+  if (!isThanksChoice(choice)) return;
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const latest = latestClear(s.morning, roster);
+  if (!latest) return;
+  await applyThanks(latest.missionId, choice);
+  refresh();
 }
 
 /** 今朝の実況を書く（Claude。キーがなければ定型）。全軒完了では自動で呼ばれる */

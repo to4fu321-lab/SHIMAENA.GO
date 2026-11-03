@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { judgeLevel } from "../claude/level";
 import { assignTeam, makeLinkCode } from "../game/team";
 import { sniffImageType } from "../image";
-import { answerRollcall, completeWithPhoto, escalateHelpIfDue, joinMission, offerTaskNow, planIfDue, setGoing } from "../morning/ops";
+import { answerRollcall, completeWithPhoto, escalateHelpIfDue, joinMission, offerTaskNow, planIfDue, sendThanks, setGoing } from "../morning/ops";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import type { FamilyLink, Participant } from "../types";
@@ -147,6 +147,13 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     else messages = [MSG.helpDeclined()];
     if (ev.replyToken) await reply(ev.replyToken, messages);
     await escalateHelpIfDue();
+    return;
+  }
+
+  // ありがとう点呼（お願いした人の3択）
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("thanks:")) {
+    const messages = await sendThanks(lineUserId, ev.postback.data);
+    if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
 

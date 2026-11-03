@@ -129,12 +129,24 @@ export const MSG = {
     text(`${comment}\n拠点${baseNumber} 完了！ ${teamName}に +${points} 点。ありがとうカードは後ほど届きます。`),
   doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number) =>
     text(`拠点${baseNumber}は ${byName}さんの写真で完了になりました。${teamName}に +${points} 点。お疲れさまでした！`),
-  requesterDoneNotice: (names: string[]) =>
-    text(
+  /** 完了をお願いした人へ。missionId があれば「ありがとう点呼」の3ボタン付き（spec v1.1） */
+  requesterDoneNotice: (names: string[], missionId?: string) => {
+    const body =
       names.length > 0
         ? `今朝の雪かきが終わりました。${names.map((n) => `${n}さん`).join("、")}が来てくれました。足元に気をつけてお出かけください。`
-        : "今朝の雪かきが終わりました。足元に気をつけてお出かけください。",
-    ),
+        : "今朝の雪かきが終わりました。足元に気をつけてお出かけください。";
+    if (!missionId) return text(body);
+    return ask(`${body}\n\nひとこと返しませんか？（1タップで届きます）`, [
+      { label: "ありがとう", data: `thanks:${missionId}=1` },
+      { label: "助かりました", data: `thanks:${missionId}=2` },
+      { label: "お茶どうぞ", data: `thanks:${missionId}=3` },
+    ]);
+  },
+  thanksToHelper: (fromName: string, label: string, baseNumber: number | string, sentence: string) =>
+    text(`${fromName}さん（拠点${baseNumber}）から「${label}」が届きました。\n${sentence}\nカードの裏面にも入りました。`),
+  thanksSent: (label: string, count: number) =>
+    text(count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。カードの裏面に入ります。`),
+  thanksNotFound: () => text("今朝の雪かきの記録が見つかりませんでした。"),
   shortReported: (baseNumber: number | string) => text(`拠点${baseNumber}の人手不足を町内に知らせます。5分だけ来てくれる人を探します。`),
   // ---- ヘルプ通知と見守り（spec 4・8） ----
   helpRequest: (missionId: string, baseNumber: number | string, missing: number, tasks: string[]) =>

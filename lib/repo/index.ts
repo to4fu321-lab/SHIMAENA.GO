@@ -25,6 +25,9 @@ export interface Repo {
   getCard(id: string): Promise<{ card: Card; svg: string; backSvg: string } | undefined>;
   listCardsByRecipient(recipientId: string): Promise<Card[]>;
   countCardsForRollcall(rollcallId: string): Promise<number>;
+  listCardsByMission(missionId: string): Promise<Card[]>;
+  /** 裏面を作り直す（ありがとう点呼が届いたとき） */
+  updateCardBack(id: string, backSvg: string): Promise<void>;
 }
 
 // ---- メモリ ----
@@ -113,6 +116,13 @@ export const memoryRepo: Repo = {
   async countCardsForRollcall(rollcallId) {
     return [...mem().cards.values()].filter((c) => c.card.rollcallId === rollcallId).length;
   },
+  async listCardsByMission(missionId) {
+    return [...mem().cards.values()].map((c) => c.card).filter((c) => c.missionId === missionId);
+  },
+  async updateCardBack(id, backSvg) {
+    const c = mem().cards.get(id);
+    if (c) c.backSvg = backSvg;
+  },
 };
 
 // ---- Neon ----
@@ -189,7 +199,17 @@ function rowToCard(r: CardRow): Card {
   };
 }
 
-const dbCardMethods: Pick<Repo, "insertCard" | "getCard" | "listCardsByRecipient" | "countCardsForRollcall"> = {
+const dbCardMethods: Pick<
+  Repo,
+  "insertCard" | "getCard" | "listCardsByRecipient" | "countCardsForRollcall" | "listCardsByMission" | "updateCardBack"
+> = {
+  async listCardsByMission(missionId) {
+    const rows = await query<CardRow>(`select ${CARD_COLS} from cards where mission_id = $1 order by serial`, [missionId]);
+    return rows.map(rowToCard);
+  },
+  async updateCardBack(id, backSvg) {
+    await query("update cards set back_svg = $2 where id = $1", [id, backSvg]);
+  },
   async insertCard(card, svg, backSvg) {
   await query(
     `insert into cards (id, recipient_id, rollcall_id, mission_id, serial, issued_count, design_name, design_name_en, rarity_label, stars, style,

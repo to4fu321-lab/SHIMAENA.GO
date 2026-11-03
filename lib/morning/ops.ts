@@ -1,7 +1,8 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
-import { issueCardsForMission } from "../cards/issue";
+import { issueCardsForMission, rerenderBacks } from "../cards/issue";
 import { announceText } from "../claude/announce";
+import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
 import { planMorning } from "../claude/commander";
 import { checkPhoto, type PhotoInput } from "../claude/photo";
 import { weeklyText } from "../claude/weekly";
@@ -16,7 +17,7 @@ import { getTeam } from "../teams";
 import { TOWN } from "../town";
 import type { HelperAnswer, Participant, RequesterAnswer, Role } from "../types";
 import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
-import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord } from "./flow";
+import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
 import { recapText } from "../claude/recap";
@@ -272,8 +273,8 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   }
   await saveMorning(s);
 
-  // 依頼者へ、そして家族へ（spec 8）
-  if (requester?.lineUserId) await push(requester.lineUserId, [MSG.requesterDoneNotice(names)]);
+  // 依頼者へ（ありがとう点呼の3ボタン付き）、そして家族へ（spec 8）
+  if (requester?.lineUserId) await push(requester.lineUserId, [MSG.requesterDoneNotice(names, mission.id)]);
   if (requester) {
     for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
       if (link.familyLineUserId !== requester.lineUserId) await push(link.familyLineUserId, [MSG.familyDone(names)]);
@@ -297,6 +298,69 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   const clear = summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId }) ?? undefined;
   if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   return { done: true, messages: [reply], clear };
+}
+
+// ---- ありがとう点呼（spec v1.1） ----
+
+/**
+ * お願いした人の3択を受け取る: 手伝った人の LINE に届け、Claude が一文に整えてカードの裏面を作り直す。点は付けない。
+ * requesterId を省くと、その家の依頼者として扱う（/admin のデモ用）
+ */
+export async function applyThanks(
+  missionId: string,
+  choice: ThanksChoice,
+  opts: { requesterId?: string; now?: Date } = {},
+): Promise<{ ok: boolean; messages: LineMessage[]; record?: ThanksRecord }> {
+  const now = opts.now ?? new Date();
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  const base = m && roster.bases.find((b) => b.id === m.baseId);
+  if (!m || !base || m.status !== "done") return { ok: false, messages: [MSG.thanksNotFound()] };
+  if (opts.requesterId && base.requesterId !== opts.requesterId) return { ok: false, messages: [MSG.thanksNotFound()] };
+  const requester = roster.participants.find((p) => p.id === base.requesterId);
+  const label = THANKS_CHOICES[choice];
+  const sorties = s.morning.sorties.filter((x) => x.missionId === m.id);
+  const completedAt = sorties.find((x) => x.completedAt)?.completedAt ?? now.toISOString();
+  const sentence = await thanksSentence({
+    label,
+    completedAtJst: clockTextJst(new Date(completedAt)),
+    memberCount: sorties.length,
+    teamNames: [...new Set(sorties.map((x) => getTeam(x.teamId).name))],
+    forecastCm: s.morning.rollcall.forecastCm,
+  });
+  // 手伝った人へ（1人1回のプッシュ）
+  const byId = new Map(roster.participants.map((p) => [p.id, p]));
+  let sentTo = 0;
+  for (const x of sorties) {
+    const p = byId.get(x.participantId);
+    if (!p?.lineUserId) continue;
+    await push(p.lineUserId, [MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence)]);
+    sentTo++;
+  }
+  const record: ThanksRecord = { choice, label, sentence, at: now.toISOString(), sentTo };
+  s.thanks = { ...(s.thanks ?? {}), [m.id]: record };
+  s.log.push(`拠点${base.number}: ありがとう点呼「${label}」→ ${sorties.length} 人（LINE ${sentTo} 人）。裏面: ${sentence}`);
+  await saveMorning(s);
+  try {
+    await rerenderBacks(m.id, {
+      date: s.morning.rollcall.date,
+      thanks: sentence,
+      subtasks: m.subtasks.map((t) => `${t.label}（${t.minutes}分）`),
+    });
+  } catch (e) {
+    console.error("[thanks] 裏面を作り直せませんでした:", e instanceof Error ? e.message : e);
+  }
+  return { ok: true, messages: [MSG.thanksSent(label, sorties.length)], record };
+}
+
+/** LINE のボタン（thanks:<missionId>=<1|2|3>）: 押した人がその家の依頼者のときだけ */
+export async function sendThanks(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
+  const p = await repo().findParticipantByLineUserId(lineUserId);
+  if (!p) return [MSG.notRegistered()];
+  const mt = /^thanks:(.+)=([123])$/.exec(data);
+  if (!mt || !isThanksChoice(mt[2])) return [MSG.thanksNotFound()];
+  return (await applyThanks(mt[1], mt[2], { requesterId: p.id, now })).messages;
 }
 
 /** 今朝の実況（spec v1.1 9-6）: 本当の集計だけを Claude に渡して3〜4文。全軒完了で自動、/admin のボタンでも */

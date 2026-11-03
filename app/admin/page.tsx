@@ -24,8 +24,10 @@ import {
   runCommander,
   runWeekly,
   startEmptyMorning,
+  thanksDemo,
   writeRecapNow,
 } from "./actions";
+import { THANKS_CHOICES } from "@/lib/claude/thanks";
 
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
 
@@ -132,6 +134,20 @@ async function AdminContent() {
           >
             ヘルプ通知を次の輪へ（300m → 600m → 1km → サポーター）
           </button>
+        </form>
+        <form action={thanksDemo} className="flex flex-wrap items-center gap-2 px-4 py-1 text-sm text-ink/60">
+          <span>ありがとう点呼（最後に終わった家の依頼者の代わりに）:</span>
+          {(["1", "2", "3"] as const).map((c) => (
+            <button
+              key={c}
+              name="choice"
+              value={c}
+              disabled={!m.missions.some((x) => x.status === "done")}
+              className="rounded-full bg-white px-3 py-1 font-bold text-ink ring-1 ring-ink/15 disabled:opacity-40"
+            >
+              {THANKS_CHOICES[c]}
+            </button>
+          ))}
         </form>
         <form action={writeRecapNow}>
           <button
@@ -241,6 +257,11 @@ async function AdminContent() {
                     )}
                     {help.knockIds && help.knockIds.length > 0 && <span className="text-sm text-ink/60"> 声かけ依頼済み</span>}
                     {x.reason && <span className="block text-sm text-ink/60">司令官の理由: {x.reason}</span>}
+                    {s.thanks?.[x.id] && (
+                      <span className="block text-sm text-neon">
+                        ありがとう点呼「{s.thanks[x.id].label}」→ {s.thanks[x.id].sentence}
+                      </span>
+                    )}
                   </li>
                 );
               })}

@@ -35,6 +35,7 @@ export default function MapScreen({
   clear = null,
   rescue = [],
   recap,
+  thanks,
 }: {
   state: MorningState;
   cells: CellView[];
@@ -46,6 +47,8 @@ export default function MapScreen({
   rescue?: ShortHouse[];
   /** 今朝の実況（討伐のあと） */
   recap?: string;
+  /** 自分が行った家の、お願いした人からのひとこと（ありがとう点呼） */
+  thanks?: { label: string; sentence: string };
 }) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
@@ -141,6 +144,11 @@ export default function MapScreen({
             {myMission?.reason && (
               <p className="mt-1 text-sm text-ink/80">
                 <span className="font-bold text-neon">司令官</span> {myMission.reason}
+              </p>
+            )}
+            {thanks && (
+              <p className="mt-1 rounded-2xl bg-[#fff0f6] px-3 py-2 text-base">
+                お願いした人から「<b>{thanks.label}</b>」 — {thanks.sentence}
               </p>
             )}
           </div>

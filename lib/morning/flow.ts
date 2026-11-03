@@ -23,8 +23,6 @@ export interface MorningRecord {
   log: string[];
   /** ヘルプ通知の進み具合（ミッション ID ごと）。古い記録にはない */
   help?: Record<string, HelpState>;
-  /** 今朝の実況（Claude、v1.1）。全軒完了で自動、/admin のボタンでも */
-  recap?: { text: string; at: string; allDone: boolean };
   /** 日曜の「今週の群れ」のまとめ（/admin に出す） */
   weekly?: {
     weekStart: string;
@@ -35,6 +33,19 @@ export interface MorningRecord {
     titles: { participantId: string; nickname: string; title: string; rareCard: boolean }[];
     at: string;
   };
+  /** 今朝の実況（Claude、v1.1）。全軒完了で自動、/admin のボタンでも */
+  recap?: { text: string; at: string; allDone: boolean };
+  /** ありがとう点呼（v1.1）: ミッション ID ごとに、お願いした人の3択と、Claude が整えた一文 */
+  thanks?: Record<string, ThanksRecord>;
+}
+
+export interface ThanksRecord {
+  choice: "1" | "2" | "3";
+  label: string; // ありがとう／助かりました／お茶どうぞ
+  sentence: string; // カード裏面の一文
+  at: string; // ISO
+  /** 伝えた相手（手伝った人）の数 */
+  sentTo: number;
 }
 
 /** ヘルプ通知の輪: 0=まだ / 1=300m / 2=600m / 3=1km / 4=サポーターまで出した */
