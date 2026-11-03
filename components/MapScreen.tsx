@@ -6,6 +6,7 @@ import type { BaseView, MorningState } from "@/lib/morning/view";
 import { snowHp, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import type { Base, TeamId } from "@/lib/types";
+import MorningButtons from "./MorningButtons";
 
 const TownMap = dynamic(() => import("./TownMap"), {
   ssr: false,
@@ -100,15 +101,7 @@ export default function MapScreen({
         ) : (
           <p className="text-lg font-bold">今朝の割り当てはまだありません</p>
         )}
-        <div className="grid grid-cols-3 gap-2">
-          <button className="rounded-2xl bg-ink py-4 text-lg font-bold text-white">行く</button>
-          <button className="rounded-2xl bg-neon py-4 text-lg font-bold text-white">終わりました</button>
-          <button className="rounded-2xl border-2 border-alert py-4 text-base font-bold leading-tight text-alert">
-            人手が
-            <br />
-            足りない
-          </button>
-        </div>
+        <MorningButtons viewerId={state.viewerId} canAct={Boolean(mySortie && mySortie.status === "going")} going={Boolean(mySortie?.confirmedAt)} />
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink/70" aria-label="色の見方">
           <li><span className="legend bg-white ring-2 ring-ink" />未対応</li>
           <li><span className="legend bg-white ring-2 ring-alert" />人手不足</li>

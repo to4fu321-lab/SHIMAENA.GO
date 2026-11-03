@@ -3,11 +3,12 @@
 import { randomBytes } from "node:crypto";
 import { judgeLevel } from "../claude/level";
 import { assignTeam, makeLinkCode } from "../game/team";
-import { answerRollcall, planIfDue } from "../morning/ops";
+import { sniffImageType } from "../image";
+import { answerRollcall, completeWithPhoto, planIfDue, setGoing } from "../morning/ops";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import type { FamilyLink, Participant } from "../types";
-import { getProfile, reply } from "./client";
+import { getMessageContent, getProfile, reply } from "./client";
 import { MSG } from "./messages";
 import { parseText, step, type RegInput, type Registration } from "./registration";
 import type { LineEvent, LineMessage } from "./types";
@@ -114,6 +115,31 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     const messages = await answerRollcall(lineUserId, ev.postback.data);
     if (ev.replyToken) await reply(ev.replyToken, messages);
     await planIfDue();
+    return;
+  }
+
+  // 「行く」「今朝は行けない」
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("go:")) {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    const messages = p ? await setGoing(p.id, ev.postback.data === "go:yes") : [MSG.notRegistered()];
+    if (ev.replyToken) await reply(ev.replyToken, messages);
+    return;
+  }
+
+  // 写真1枚で「終わりました」
+  if (ev.type === "message" && "message" in ev && ev.message.type === "image") {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    let messages: LineMessage[];
+    if (!p) messages = [MSG.notRegistered()];
+    else {
+      const content = await getMessageContent(ev.message.id);
+      const mediaType = content && sniffImageType(content.bytes);
+      messages =
+        content && mediaType
+          ? (await completeWithPhoto(p.id, { bytes: content.bytes, mediaType })).messages
+          : [MSG.photoNotCleared("写真を受け取れませんでした。")];
+    }
+    if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
 

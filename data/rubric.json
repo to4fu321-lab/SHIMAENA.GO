@@ -25,13 +25,41 @@
   },
   "subtasks": {
     "catalog": [
-      { "kind": "path", "label": "玄関前の通路", "minutes": 5 },
-      { "kind": "sand", "label": "階段の砂まき", "minutes": 5 },
-      { "kind": "dump", "label": "雪捨て場まで1往復", "minutes": 5 },
-      { "kind": "garage", "label": "車庫前", "minutes": 15 },
-      { "kind": "road", "label": "道路まで", "minutes": 30 },
-      { "kind": "scout", "label": "偵察（写真1枚で「ここまだ」）", "minutes": 5 },
-      { "kind": "supply", "label": "補給（お茶・カイロ）", "minutes": 5 }
+      {
+        "kind": "path",
+        "label": "玄関前の通路",
+        "minutes": 5
+      },
+      {
+        "kind": "sand",
+        "label": "階段の砂まき",
+        "minutes": 5
+      },
+      {
+        "kind": "dump",
+        "label": "雪捨て場まで1往復",
+        "minutes": 5
+      },
+      {
+        "kind": "garage",
+        "label": "車庫前",
+        "minutes": 15
+      },
+      {
+        "kind": "road",
+        "label": "道路まで",
+        "minutes": 30
+      },
+      {
+        "kind": "scout",
+        "label": "偵察（写真1枚で「ここまだ」）",
+        "minutes": 5
+      },
+      {
+        "kind": "supply",
+        "label": "補給（お茶・カイロ）",
+        "minutes": 5
+      }
     ],
     "rules": [
       "玄関前の通路と階段の砂まきは必ず入れる",
@@ -58,5 +86,15 @@
     "体調や医療について判断しない。返事がない家は「声かけ」を提案するだけ",
     "無理をさせない。休憩・水分・転倒に気をつける一言は添えてよい",
     "お金や景品を約束しない"
-  ]
+  ],
+  "photo": {
+    "description": "完了写真の確認。写真から分かることだけを言う。",
+    "rules": [
+      "cleared: 玄関前の通路から道路側まで、雪が除かれて地面や踏み固めた面が見えている",
+      "passable: 大人が転ばずに歩ける幅（50cm 以上）が通っている",
+      "icy: つるつるの氷や踏み固めた雪が光って見える。見えたら砂まきを勧める",
+      "雪かきと関係ない写真（室内・人物だけ・真っ暗）は cleared=false、passable=false にして理由を comment に書く",
+      "comment は1〜2文。ほめる言葉を先に、直すことがあれば後に"
+    ]
+  }
 }

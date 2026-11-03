@@ -114,6 +114,28 @@ export const MSG = {
         ? `${startTime} に ${names.map((n) => `${n}さん`).join("、")}が向かいます。玄関の鍵を開けておいてください。`
         : "人手を集めています。決まり次第お知らせします。",
     ),
+  // ---- 朝の一本道（spec 2: 行く → 写真 → 完了） ----
+  planForHelper: (body: string) =>
+    ask(body, [
+      { label: "行く", data: "go:yes" },
+      { label: "今朝は行けない", data: "go:no" },
+    ]),
+  goConfirmed: (baseNumber: number | string) =>
+    text(`了解です！拠点${baseNumber}へ。7:00 開始です。\n終わったら、玄関前から道路側を写した写真を1枚送ってください。`),
+  goDeclined: () => text("承知しました。無理しないでください。ほかの人に声をかけます。"),
+  noSortie: () => text("今朝の割り当てはありません。「いまからやる」は後日の機能です。"),
+  photoNotCleared: (comment: string) => text(`${comment}\nもう少しお願いできますか。終わったらまた写真を送ってください。`),
+  doneThanks: (baseNumber: number | string, teamName: string, points: number, comment: string) =>
+    text(`${comment}\n拠点${baseNumber} 完了！ ${teamName}に +${points} 点。ありがとうカードは後ほど届きます。`),
+  doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number) =>
+    text(`拠点${baseNumber}は ${byName}さんの写真で完了になりました。${teamName}に +${points} 点。お疲れさまでした！`),
+  requesterDoneNotice: (names: string[]) =>
+    text(
+      names.length > 0
+        ? `今朝の雪かきが終わりました。${names.map((n) => `${n}さん`).join("、")}が来てくれました。足元に気をつけてお出かけください。`
+        : "今朝の雪かきが終わりました。足元に気をつけてお出かけください。",
+    ),
+  shortReported: (baseNumber: number | string) => text(`拠点${baseNumber}の人手不足を町内に知らせます。5分だけ来てくれる人を探します。`),
   linkedSelf: () => text("紐づけました。雪の朝 6:30 に「今朝、玄関は出られそうですか？」と1回だけ聞きます。"),
   linkedFamily: () => text("家族として紐づけました。雪かきが終わったときや、点呼に返事がないときにお知らせします。"),
 } satisfies Record<string, (...args: never[]) => LineMessage>;

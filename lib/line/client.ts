@@ -46,6 +46,29 @@ export async function multicast(to: string[], messages: LineMessage[]): Promise<
   await post("/message/multicast", { to: to.slice(0, 500), messages: messages.slice(0, 5) });
 }
 
+/** ユーザーが送ってきた画像などの中身を取る（完了写真） */
+export async function getMessageContent(messageId: string): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
+  const t = token();
+  if (!t) return undefined;
+  const res = await fetch(`https://api-data.line.me/v2/bot/message/${encodeURIComponent(messageId)}/content`, {
+    headers: { Authorization: `Bearer ${t}` },
+  });
+  if (!res.ok) return undefined;
+  return { bytes: new Uint8Array(await res.arrayBuffer()), contentType: res.headers.get("content-type") ?? "" };
+}
+
+/** LIFF のアクセストークンから、その人の LINE ユーザー ID を確かめる（画面側の申告を信じない） */
+export async function getProfileByAccessToken(accessToken: string): Promise<{ userId: string; displayName: string } | undefined> {
+  try {
+    const res = await fetch(`${API.replace("/bot", "")}/profile`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!res.ok) return undefined;
+    const json = (await res.json()) as { userId?: string; displayName?: string };
+    return json.userId ? { userId: json.userId, displayName: json.displayName ?? "" } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** 表示名を取る（呼び名に使う）。取れなければ undefined */
 export async function getProfile(userId: string): Promise<{ displayName: string } | undefined> {
   const t = token();

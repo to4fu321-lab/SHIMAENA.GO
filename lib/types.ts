@@ -135,6 +135,8 @@ export interface Sortie {
   status: SortieStatus;
   /** 赤点滅の家に、自分の割り当て完了後に駆けつけたか */
   rescue: boolean;
+  /** 「行く」を押した時刻 */
+  confirmedAt?: string; // ISO
   photoUrl?: string;
   photoCheck?: PhotoCheck;
   completedAt?: string; // ISO
