@@ -1,28 +1,166 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import AutoRefresh from "@/components/AutoRefresh";
+import { loadRoster } from "@/lib/morning/roster";
+import { loadMorning } from "@/lib/morning/store";
+import { progress, snowHp, teamTotals, viewBases } from "@/lib/morning/view";
+import { listShort } from "@/lib/morning/watch";
+import { TEAMS } from "@/lib/teams";
+import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
-export default function Home() {
+export const metadata: Metadata = { title: "シマエナGO ・ 今朝の出撃" };
+
+const STATUS_TEXT = {
+  open: "人を待っています",
+  short: "人手が足りません",
+  assigned: "そろいました",
+  in_progress: "作業中",
+  done: "完了",
+  no_answer: "返事がありません",
+  none: "",
+} as const;
+
+/** ホーム = 今朝の出撃画面（spec v1.1 10.6）。初めて見た人でも、今朝なにが起きているかが一目で分かるように */
+async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+  await connection();
+  const { as } = await searchParams;
+  const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
+  const m = record.morning;
+  const demoAs = as && /^h\d+$/.test(as) ? as : undefined;
+  const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
+  const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
+  const q = demoAs ? `?as=${demoAs}` : "";
+
+  const hp = snowHp(m);
+  const prog = progress(m);
+  const totals = teamTotals(m);
+  const max = Math.max(1, ...Object.values(totals));
+  const movers = new Set(m.sorties.map((s) => s.participantId)).size;
+  const shorts = listShort(record, roster);
+  const planned = m.rollcall.status === "planned";
+  const [, month, day] = m.rollcall.date.split("-").map(Number);
+
+  const mySortie = me && m.sorties.find((s) => s.participantId === me.id && s.status === "going");
+  const myMission = mySortie && m.missions.find((x) => x.id === mySortie.missionId);
+  const myBase = myMission && roster.bases.find((b) => b.id === myMission.baseId);
+  const myView = myMission && viewBases(m).get(myMission.baseId);
+  const myTeam = TEAMS.find((t) => t.id === me?.teamId);
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 bg-paper px-4 py-16 text-center text-ink">
-      <p className="text-sm font-bold tracking-widest text-neon">Built with Claude: Japan 2026</p>
-      <h1 className="text-4xl font-bold">
-        シマエナ<span className="text-neon">GO</span>
-      </h1>
-      <p className="text-xl">寒い冬は、くっついて乗り切る。</p>
-      <p className="max-w-md text-ink/80">雪の朝、町内のみんなで、ひとり暮らしの家の雪かきをするゲーム。</p>
-      <nav className="grid w-full max-w-sm gap-3">
-        <Link href="/rules" className="rounded-2xl bg-neon py-4 text-lg font-bold text-white">
-          あそびかた
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-paper px-4 pb-6 pt-5 text-ink">
+      <AutoRefresh seconds={8} />
+      <header className="text-center">
+        <p className="text-xs font-bold tracking-widest text-neon">Built with Claude: Japan 2026</p>
+        <h1 className="text-3xl font-bold">
+          シマエナ<span className="text-neon">GO</span>
+        </h1>
+        <p className="text-base text-ink/80">寒い冬は、くっついて乗り切る。</p>
+      </header>
+
+      {/* 今朝の状況 */}
+      <section className="space-y-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10" aria-label="今朝の出撃">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-bold">
+            {month}月{day}日の朝
+          </h2>
+          <p className="text-sm text-ink/70">予報 {m.rollcall.forecastCm}cm</p>
+        </div>
+
+        <div className={`rounded-2xl px-3 py-2 ring-1 ${prog.allDone ? "bg-[#fff0f6] ring-neon/40" : "bg-paper ring-ink/10"}`}>
+          <div className="flex items-baseline justify-between gap-2 text-sm">
+            <span className="truncate font-bold">今朝の相手{m.rollcall.snowName ? `『${m.rollcall.snowName}』` : ""}</span>
+            <span className="shrink-0 tabular-nums">
+              HP {hp.current} / {hp.max}
+            </span>
+          </div>
+          <span className="mt-1 block h-3 overflow-hidden rounded-full bg-ink/10">
+            <span className="block h-full rounded-full bg-snow" style={{ width: `${hp.max > 0 ? (hp.current / hp.max) * 100 : 100}%` }} />
+          </span>
+          <p className="mt-1 text-sm text-ink/70">
+            {!planned ? (
+              m.rollcall.status === "open" ? "点呼中です（6:40 に作戦）" : "作戦はまだです"
+            ) : prog.allDone ? (
+              <b className="text-neon">討伐{prog.defeatedAt ? ` ${prog.defeatedAt}` : ""}！ {prog.total}軒すべて完了</b>
+            ) : (
+              <>
+                {prog.done} / {prog.total} 軒 ・ あと {prog.left} 軒 ・ 動いた人 {movers} 人
+              </>
+            )}
+          </p>
+        </div>
+
+        <ul className="space-y-1" aria-label="チームの得点">
+          {TEAMS.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 text-sm">
+              <span className="w-28 shrink-0 font-bold" style={{ color: t.color }}>
+                {t.name}
+              </span>
+              <span className="h-3 flex-1 overflow-hidden rounded-full bg-ink/10">
+                <span className="block h-full rounded-full" style={{ width: `${(totals[t.id] / max) * 100}%`, background: t.color }} />
+              </span>
+              <span className="w-10 text-right tabular-nums">{totals[t.id]}</span>
+            </li>
+          ))}
+        </ul>
+
+        {shorts.length > 0 && (
+          <Link href={`/map${q}`} className="block rounded-2xl bg-[#fff0f3] px-3 py-2 ring-1 ring-alert/40">
+            <b className="text-alert">{shorts[0].missing === 1 ? "あと1人で救える家" : "人手が足りない家"}</b>
+            <span className="text-ink/80">
+              {" "}
+              が {shorts.length} 軒。5分でも助かります →
+            </span>
+          </Link>
+        )}
+
+        {me && (
+          <p className="text-base">
+            {myTeam ? (
+              <>
+                あなたは <b style={{ color: myTeam.color }}>{myTeam.name}</b>。
+              </>
+            ) : null}
+            {myBase && myView ? (
+              <>
+                担当は <b>拠点 {myBase.number}</b>（{STATUS_TEXT[myView.status]}）
+              </>
+            ) : me.role === "helper" ? (
+              "今朝の担当はまだありません。"
+            ) : null}
+          </p>
+        )}
+      </section>
+
+      <nav className="grid gap-3">
+        <Link href={`/map${q}`} className="rounded-2xl bg-ink py-4 text-center text-xl font-bold text-white">
+          出撃する（地図）
         </Link>
-        <Link href="/map" className="rounded-2xl bg-ink py-4 text-lg font-bold text-white">
-          地図を見る
+        <Link href={`/map${q}`} className="rounded-2xl bg-neon py-4 text-center text-lg font-bold text-white">
+          5分だけ参加
         </Link>
-        <Link href="/cards" className="rounded-2xl bg-white py-4 text-lg font-bold text-ink ring-2 ring-ink/15">
-          カード帳
-        </Link>
-        <Link href="/admin" className="rounded-2xl py-3 text-base text-ink/70 underline">
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/rules" className="rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
+            あそびかた
+          </Link>
+          <Link href={`/cards${q}`} className="rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
+            カード帳
+          </Link>
+        </div>
+        <Link href="/admin" className="py-2 text-center text-sm text-ink/70 underline">
           デモ操作（審査・撮影用）
         </Link>
       </nav>
     </main>
+  );
+}
+
+export default function Home({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+  return (
+    <Suspense fallback={<main className="grid min-h-dvh place-items-center bg-paper text-ink">読み込み中…</main>}>
+      <Today searchParams={searchParams} />
+    </Suspense>
   );
 }
