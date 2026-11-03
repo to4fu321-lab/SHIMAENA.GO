@@ -94,3 +94,28 @@ body {
   .blink, .pulse, .hp-shrink { animation: none; }
   .feathers { display: none; }
 }
+
+/* 地図: 自分の家と、向かっている家の印 */
+.me-pin {
+  display: grid;
+  place-items: center;
+  height: 24px;
+  border-radius: 9999px;
+  background: #3b2a78;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(59, 42, 120, 0.35);
+}
+.dest-pin {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  border-radius: 9999px;
+  background: #ff3b5c;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(255, 59, 92, 0.4);
+}

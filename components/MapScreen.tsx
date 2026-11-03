@@ -5,7 +5,8 @@ import type { CellView } from "@/lib/cells";
 import type { BaseView, MorningState } from "@/lib/morning/view";
 import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
-import type { Base, Role, TeamId } from "@/lib/types";
+import type { Base, LatLng, Role, TeamId } from "@/lib/types";
+import type { Destination } from "@/lib/nav";
 import type { ClearSummary } from "@/lib/morning/clear";
 import type { ShortHouse } from "@/lib/morning/watch";
 import ClearWatcher from "./ClearWatcher";
@@ -39,6 +40,8 @@ export default function MapScreen({
   thanks,
   shareText,
   cheers = [],
+  home,
+  destinations = [],
 }: {
   state: MorningState;
   cells: CellView[];
@@ -56,6 +59,10 @@ export default function MapScreen({
   shareText?: string;
   /** 自分が行った家の、ご家族からの応援スタンプ */
   cheers?: string[];
+  /** 自分の家（登録した位置）。地図に「あなた」の印を出す */
+  home?: LatLng;
+  /** 自分が向かっている家（正確な場所と道順）。本人にだけ渡る */
+  destinations?: Destination[];
 }) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
@@ -133,7 +140,7 @@ export default function MapScreen({
 
       {/* 真ん中: 地図（討伐したら背景が明るくなる） */}
       <main className={`relative min-h-[34dvh] flex-1 ${prog.allDone ? "defeated" : ""}`}>
-        <TownMap cells={cells} />
+        <TownMap cells={cells} home={home} destinations={destinations} />
       </main>
 
       {/* 下: 自分の割り当てなど（長くなったら中でスクロール。地図は 34% 以上残す）。操作ボタンはさらに下に固定 */}
@@ -155,6 +162,21 @@ export default function MapScreen({
             <p className="text-sm text-ink/70">
               {myView.goingPeople}人 / 必要 {myView.requiredPeople}人 ・ 7:00 開始
             </p>
+            {destinations.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {destinations.map((d) => (
+                  <a
+                    key={d.missionId}
+                    href={d.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-2xl bg-ink px-4 py-3 text-base font-bold text-white"
+                  >
+                    拠点{d.baseNumber}への道順を開く
+                  </a>
+                ))}
+              </div>
+            )}
             {myMission?.reason && (
               <p className="mt-1 text-sm text-ink/80">
                 <span className="font-bold text-neon">司令官</span> {myMission.reason}

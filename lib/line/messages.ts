@@ -120,8 +120,12 @@ export const MSG = {
       { label: "行く", data: "go:yes" },
       { label: "今朝は行けない", data: "go:no" },
     ]),
-  goConfirmed: (baseNumber: number | string) =>
-    text(`了解です！拠点${baseNumber}へ。7:00 開始です。\n終わったら、玄関前から道路側を写した写真を1枚送ってください。`),
+  goConfirmed: (baseNumber: number | string, routeUrl?: string) =>
+    text(
+      `了解です！拠点${baseNumber}へ。7:00 開始です。` +
+        (routeUrl ? `\n道順（地図アプリで開きます）: ${routeUrl}` : "") +
+        `\n終わったら、玄関前から道路側を写した写真を1枚送ってください。`,
+    ),
   goDeclined: () => text("承知しました。無理しないでください。ほかの人に声をかけます。"),
   noSortie: () => text("今朝の割り当てはありません。「いまからやる」と送ると、近くの小さな仕事を探します。"),
   /** 写真では「まだ」。もう一度送るか、「それでも完了にする」（本人の報告）か */
@@ -163,8 +167,12 @@ export const MSG = {
         { label: "今は無理", data: "help:no" },
       ],
     ),
-  helpJoined: (baseNumber: number | string) =>
-    text(`ありがとうございます！拠点${baseNumber}へお願いします。終わったら写真を1枚送ってください。`),
+  helpJoined: (baseNumber: number | string, routeUrl?: string) =>
+    text(
+      `ありがとうございます！拠点${baseNumber}へお願いします。` +
+        (routeUrl ? `\n道順（地図アプリで開きます）: ${routeUrl}` : "") +
+        `\n終わったら写真を1枚送ってください。`,
+    ),
   helpDeclined: () => text("承知しました。また次の機会に。"),
   helpAlreadyEnough: (baseNumber: number | string) => text(`拠点${baseNumber}は人がそろいました。ありがとうございます。`),
   supporterRequest: (baseNumber: number | string, missing: number) =>

@@ -11,6 +11,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { viewBases } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
+import { destinationsFor } from "@/lib/nav";
 import { emojiGrid } from "@/lib/share";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
@@ -44,6 +45,8 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
         shareText={emojiGrid(cells, state)}
         cheers={myMissionId ? (record.cheers?.[myMissionId] ?? []).map((c) => c.label) : []}
+        home={viewer?.location}
+        destinations={destinationsFor(record, roster, viewerId)}
       />
     </>
   );

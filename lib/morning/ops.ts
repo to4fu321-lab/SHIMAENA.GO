@@ -12,6 +12,7 @@ import { jstDate, jstMinutes, jstIso } from "../jst";
 import { getProfileByAccessToken, multicast, push } from "../line/client";
 import { MSG, text } from "../line/messages";
 import type { LineMessage } from "../line/types";
+import { mapsUrl } from "../nav";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { TOWN } from "../town";
@@ -176,6 +177,14 @@ export async function planIfDue(now = new Date()): Promise<boolean> {
 
 // ---- 朝の一本道: 行く → 写真で完了 → 得点 → 依頼者へ通知 ----
 
+/** 向かう本人にだけ渡す、家までの道順 URL */
+function routeTo(roster: Roster, baseId: string, participantId: string): string | undefined {
+  const base = roster.bases.find((b) => b.id === baseId);
+  const requester = base && roster.participants.find((p) => p.id === base.requesterId);
+  const me = roster.participants.find((p) => p.id === participantId);
+  return requester ? mapsUrl(requester.location, me?.location) : undefined;
+}
+
 function baseNumberOf(roster: Roster, baseId: string): number | string {
   return roster.bases.find((b) => b.id === baseId)?.number ?? "?";
 }
@@ -195,7 +204,7 @@ export async function setGoing(participantId: string, go: boolean, now = new Dat
     if (mission.status === "assigned") mission.status = "in_progress";
     s.log.push(`${who}さんが拠点${number}へ「行く」`);
     await saveMorning(s);
-    return [MSG.goConfirmed(number)];
+    return [MSG.goConfirmed(number, routeTo(roster, mission.baseId, participantId))];
   }
   s.morning.sorties = s.morning.sorties.filter((x) => x.id !== sortie.id);
   const going = s.morning.sorties.filter((x) => x.missionId === mission.id).length;
@@ -573,7 +582,7 @@ export async function joinMission(
   if (!m || !p?.teamId || m.status === "done") return [MSG.noSortie()];
   const number = baseNumberOf(roster, m.baseId);
   if (s.morning.sorties.some((x) => x.missionId === m.id && x.participantId === p.id && x.status === "going")) {
-    return [MSG.helpJoined(number)];
+    return [MSG.helpJoined(number, routeTo(roster, m.baseId, p.id))];
   }
   const enough = missingPeople(s, m) <= 0;
   if (enough && !opts.extra) return [MSG.helpAlreadyEnough(number)];
@@ -593,7 +602,7 @@ export async function joinMission(
     `${p.nickname}さんが${enough ? "偵察・補給で" : "ヘルプで"}拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`,
   );
   await saveMorning(s);
-  return [MSG.helpJoined(number)];
+  return [MSG.helpJoined(number, routeTo(roster, m.baseId, p.id))];
 }
 
 export interface JoinNearbyResult {

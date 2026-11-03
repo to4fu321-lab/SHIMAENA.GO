@@ -2,6 +2,8 @@
 
 // 建物のぬりえ地図。Leaflet はブラウザでしか動かないので、ここは画面側だけで読み込む。
 import { useEffect, useRef } from "react";
+import type { Destination } from "@/lib/nav";
+import type { LatLng } from "@/lib/types";
 import "leaflet/dist/leaflet.css";
 import { type CellView, cellCenter, cellPolygon } from "@/lib/cells";
 import { TEAMS } from "@/lib/teams";
@@ -61,8 +63,19 @@ function cellStyle(cell: CellView): StyleSpec {
   }
 }
 
-export default function TownMap({ cells }: { cells: CellView[] }) {
+export default function TownMap({
+  cells,
+  home,
+  destinations = [],
+}: {
+  cells: CellView[];
+  /** 自分の家（登録した位置） */
+  home?: LatLng;
+  /** 自分が向かっている家（本人にだけ渡る正確な場所） */
+  destinations?: Destination[];
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<import("leaflet").Map | null>(null);
 
   useEffect(() => {
     let map: import("leaflet").Map | undefined;
@@ -70,6 +83,7 @@ export default function TownMap({ cells }: { cells: CellView[] }) {
     import("leaflet").then((L) => {
       if (cancelled || !ref.current) return;
       map = L.map(ref.current, { zoomControl: false, attributionControl: true }).setView(TOWN.center, 16);
+      mapRef.current = map;
       L.control.zoom({ position: "topright" }).addTo(map);
       // OpenStreetMap 標準タイル。パステルに合わせて CSS（.town-tiles）で色を淡くする
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -106,12 +120,61 @@ export default function TownMap({ cells }: { cells: CellView[] }) {
           }),
         }).addTo(map);
       }
+
+      // 自分の家（登録した位置）と、向かっている家（本人だけ）。家までは点線で結ぶ
+      if (home) {
+        L.marker(home, {
+          interactive: false,
+          icon: L.divIcon({ className: "", html: `<div class="me-pin">あなた</div>`, iconSize: [48, 24], iconAnchor: [24, 12] }),
+        }).addTo(map);
+      }
+      for (const d of destinations) {
+        L.marker(d.location, {
+          interactive: false,
+          icon: L.divIcon({ className: "", html: `<div class="dest-pin">拠点${d.baseNumber} ここ</div>`, iconSize: [96, 26], iconAnchor: [48, 34] }),
+        }).addTo(map);
+        L.circleMarker(d.location, { radius: 7, color: "#ff3b5c", weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(map);
+        if (home) L.polyline([home, d.location], { color: "#3b2a78", weight: 3, dashArray: "6 8", opacity: 0.8, interactive: false }).addTo(map);
+      }
+      if (destinations.length > 0) {
+        const pts = [...destinations.map((d) => d.location), ...(home ? [home] : [])];
+        map.fitBounds(L.latLngBounds(pts).pad(0.4), { maxZoom: 17 });
+      }
     });
     return () => {
       cancelled = true;
+      mapRef.current = null;
       map?.remove();
     };
-  }, [cells]);
+  }, [cells, home, destinations]);
+
+  // 現在地（GPS）: 許可があれば青い点を動かす。許可がなければ何も出さない
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    let dot: import("leaflet").CircleMarker | undefined;
+    let Lmod: typeof import("leaflet") | undefined;
+    import("leaflet").then((L) => {
+      Lmod = L;
+    });
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const map = mapRef.current;
+        if (!map || !Lmod) return;
+        const at: LatLng = [pos.coords.latitude, pos.coords.longitude];
+        if (!dot) {
+          dot = Lmod.circleMarker(at, { radius: 8, color: "#fff", weight: 3, fillColor: "#2F6FE4", fillOpacity: 1, interactive: false }).addTo(map);
+        } else dot.setLatLng(at);
+      },
+      () => {
+        /* 許可されなかった・取れなかった → 出さない */
+      },
+      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 20_000 },
+    );
+    return () => {
+      navigator.geolocation.clearWatch(id);
+      dot?.remove();
+    };
+  }, []);
 
   return <div ref={ref} className="h-full w-full" aria-label="町内の地図" />;
 }
