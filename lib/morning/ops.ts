@@ -19,7 +19,9 @@ import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
+import { recapText } from "../claude/recap";
 import { summarizeClear, type ClearSummary } from "./clear";
+import { buildRecapInput } from "./recap";
 import { progress, snowHp } from "./view";
 import {
   applyLateAnswer,
@@ -293,7 +295,20 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   const prog = progress(s.morning);
   if (prog.allDone) reply.text += `\n「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐！ ${prog.total}軒すべて終わりました。`;
   const clear = summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId }) ?? undefined;
+  if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   return { done: true, messages: [reply], clear };
+}
+
+/** 今朝の実況（spec v1.1 9-6）: 本当の集計だけを Claude に渡して3〜4文。全軒完了で自動、/admin のボタンでも */
+export async function writeRecap(now = new Date()): Promise<string> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const input = buildRecapInput(s, roster);
+  const { text } = await recapText(input);
+  s.recap = { text, at: now.toISOString(), allDone: input.allDone };
+  s.log.push(`今朝の実況を書いた（${input.housesDone}/${input.housesTotal} 軒・${input.movers} 人）`);
+  await saveMorning(s);
+  return text;
 }
 
 // ---- ヘルプ通知と見守り（spec 4） ----

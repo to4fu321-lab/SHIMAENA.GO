@@ -5,11 +5,13 @@ import { applySchema, seedTown } from "@/lib/db";
 import { issueCardsForMission } from "@/lib/cards/issue";
 import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
 import { setupRichMenu } from "@/lib/line/richmenu";
-import { announce, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring, weeklyRecap } from "@/lib/morning/ops";
+import { announce, checkForecastAndAnnounce, escalateHelpIfDue, notifyHelp, plan, ring, weeklyRecap, writeRecap } from "@/lib/morning/ops";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
+import { progress } from "@/lib/morning/view";
 
 function refresh() {
+  revalidatePath("/");
   revalidatePath("/map");
   revalidatePath("/admin");
 }
@@ -54,9 +56,10 @@ export async function runCommander() {
   refresh();
 }
 
-/** 4: そろった家を1軒、完了にする（デモ）。カードも発行して、LINE のある人には届く */
+/** 4: そろった家を1軒、完了にする（デモ）。カードも発行して、LINE のある人には届く。全軒終わったら今朝の実況 */
 export async function completeOne() {
   const roster = await loadRoster();
+  let allDone = false;
   await update(async (s) => {
     const missionId = completeNext(s, roster);
     const mission = s.morning.missions.find((m) => m.id === missionId);
@@ -67,7 +70,20 @@ export async function completeOne() {
     } catch (e) {
       s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
     }
+    allDone = progress(s.morning).allDone;
   });
+  if (allDone) await writeRecapNow();
+}
+
+/** 今朝の実況を書く（Claude。キーがなければ定型）。全軒完了では自動で呼ばれる */
+export async function writeRecapNow() {
+  try {
+    await writeRecap();
+  } catch (e) {
+    await update((s) => void s.log.push(`今朝の実況に失敗: ${e instanceof Error ? e.message : String(e)}`));
+    return;
+  }
+  refresh();
 }
 
 export async function rescue() {

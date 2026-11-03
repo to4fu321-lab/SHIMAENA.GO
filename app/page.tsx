@@ -116,6 +116,13 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
           </Link>
         )}
 
+        {record.recap && (
+          <div className="rounded-2xl bg-paper px-3 py-2 ring-1 ring-ink/10">
+            <p className="text-xs font-bold tracking-widest text-neon">今朝の実況</p>
+            <p className="text-base">{record.recap.text}</p>
+          </div>
+        )}
+
         {me && (
           <p className="text-base">
             {myTeam ? (

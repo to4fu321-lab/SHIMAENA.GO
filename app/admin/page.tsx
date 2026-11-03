@@ -24,6 +24,7 @@ import {
   runCommander,
   runWeekly,
   startEmptyMorning,
+  writeRecapNow,
 } from "./actions";
 
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
@@ -132,11 +133,26 @@ async function AdminContent() {
             ヘルプ通知を次の輪へ（300m → 600m → 1km → サポーター）
           </button>
         </form>
+        <form action={writeRecapNow}>
+          <button
+            disabled={status !== "planned"}
+            className="w-full rounded-2xl px-4 py-1 text-sm text-ink/60 underline disabled:opacity-40"
+          >
+            今朝の実況を書く（全軒完了では自動）
+          </button>
+        </form>
         <Step n="6" label="日曜の夜: 今週の群れ（実況・称号・シャッフル）" action={runWeekly} />
         <form action={backToSample}>
           <button className="w-full rounded-2xl px-4 py-2 text-sm text-ink/60 underline">朝 7:10 の見本の状態に戻す</button>
         </form>
       </section>
+
+      {s.recap && (
+        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
+          <h2 className="font-bold">今朝の実況（{hasClaudeKey() ? "Claude" : "定型"}）</h2>
+          <p className="mt-1 text-base">{s.recap.text}</p>
+        </section>
+      )}
 
       {s.weekly && (
         <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">

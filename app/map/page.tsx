@@ -37,6 +37,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         viewer={viewer ? { teamId: viewer.teamId, role: viewer.role } : undefined}
         clear={latestClear(state, roster, viewerId)}
         rescue={listShort(record, roster)}
+        recap={record.recap?.text}
       />
     </>
   );

@@ -23,6 +23,8 @@ export interface MorningRecord {
   log: string[];
   /** ヘルプ通知の進み具合（ミッション ID ごと）。古い記録にはない */
   help?: Record<string, HelpState>;
+  /** 今朝の実況（Claude、v1.1）。全軒完了で自動、/admin のボタンでも */
+  recap?: { text: string; at: string; allDone: boolean };
   /** 日曜の「今週の群れ」のまとめ（/admin に出す） */
   weekly?: {
     weekStart: string;

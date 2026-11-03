@@ -34,6 +34,7 @@ export default function MapScreen({
   viewer,
   clear = null,
   rescue = [],
+  recap,
 }: {
   state: MorningState;
   cells: CellView[];
@@ -43,6 +44,8 @@ export default function MapScreen({
   clear?: ClearSummary | null;
   /** 人手が足りない家（あと少しで救える順） */
   rescue?: ShortHouse[];
+  /** 今朝の実況（討伐のあと） */
+  recap?: string;
 }) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
@@ -118,6 +121,12 @@ export default function MapScreen({
 
       {/* 下: 自分の割り当てとボタン（長くなったら中でスクロール。地図は 34% 以上残す） */}
       <section className="max-h-[58dvh] space-y-3 overflow-y-auto rounded-t-3xl bg-white px-4 pb-5 pt-4 shadow-[0_-4px_16px_rgba(59,42,120,0.12)]">
+        {prog.allDone && recap && (
+          <div className="rounded-2xl bg-[#fff0f6] px-3 py-2 ring-1 ring-neon/40">
+            <p className="text-xs font-bold tracking-widest text-neon">今朝の実況</p>
+            <p className="text-base">{recap}</p>
+          </div>
+        )}
         {myBase && myView ? (
           <div>
             <p className="text-sm text-ink/70">
