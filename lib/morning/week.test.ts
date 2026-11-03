@@ -3,7 +3,8 @@ import { mockWeeklyText } from "../claude/weekly";
 import { weeklySummary } from "../game/week";
 import { handleEvent } from "../line/handle";
 import { menuItems, richMenuObject, richMenuSvg, setupRichMenu } from "../line/richmenu";
-import type { LineEvent, TextMessage } from "../line/types";
+import type { LineEvent, LineMessage } from "../line/types";
+import { actionsOf, textOf } from "../line/flex";
 import { memoryRepo } from "../repo";
 import { DEMO_DATE, fillAnswers, type MorningRecord } from "./flow";
 import { announce, completeWithPhoto, offerTaskNow, plan, ring, setGoing, weeklyRecap } from "./ops";
@@ -12,7 +13,7 @@ import { archiveMorning, listMornings, loadMorning, saveMorning } from "./store"
 import { pickTaskNow } from "./watch";
 
 // 吹き出しが分かれても読めるように、全部の文をつなげて調べる
-const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
+const t = (m: LineMessage | LineMessage[]) => [m].flat().map(textOf).join("\n");
 
 async function morningDone(date: string, seed: number): Promise<MorningRecord> {
   await announce({ date, forecastCm: 12 });
@@ -113,7 +114,7 @@ describe("いまからやる", () => {
       expect(offer.minutes).toBeLessThanOrEqual(5);
       const msgs = await offerTaskNow("p-now", 5);
       expect(t(msgs)).toContain("お願いできますか");
-      expect((msgs.at(-1) as TextMessage).quickReply?.items[0].action).toMatchObject({ type: "postback", data: `help:go=${offer.mission.id}` });
+      expect(actionsOf(msgs.at(-1)!)[0]).toMatchObject({ type: "postback", data: `help:go=${offer.mission.id}` });
     }
     // LINE: 「いまからやる」→ 何分？ → now:15
     const ev = (rest: Record<string, unknown>): LineEvent => ({ replyToken: "rt", source: { type: "user", userId: "U-now" }, timestamp: 0, ...rest }) as LineEvent;

@@ -1,9 +1,11 @@
 // LINE に送る文面と大きなボタン（クイックリプライ）。文面はここにまとめて、あとで直しやすくする。
 // 方針（v1.4）: 1つの吹き出しに1つの話題。短く、やさしい日本語で。次にすることはボタンで出す（最後の吹き出しに付く）。
 // うまくいかなかったときも「失敗」と感じさせない言い方にする。どれも吹き出しの配列を返す。
+// v1.5: 質問への答えは吹き出しの中の大きなボタン（choiceCard）、「どこに・何時」は大きな画像の行き先カード（placeCard）。
 import { MENU } from "../brand";
 import { liffUrl } from "../url";
-import type { LineMessage, QuickReplyAction, TextMessage } from "./types";
+import { choiceCard, placeCard, type CardAction, type Choice, type Tone } from "./flex";
+import type { FlexMessage, LineMessage, QuickReplyAction, TextMessage } from "./types";
 
 type Button = QuickReplyAction;
 
@@ -34,13 +36,19 @@ const B = {
   register: say("登録する", "登録"),
 };
 
-/** 文面＋ボタン（postback）。label は 20 文字まで */
-export function ask(body: string, choices: { label: string; data: string }[]): TextMessage {
-  return withButtons(
+/** 質問と大きな答えボタン（postback）。押した文字がトークに出る。tone: soft は「休む・やめる」側 */
+export function ask(body: string, choices: { label: string; data: string; tone?: Tone }[]): FlexMessage {
+  return choiceCard(
     body,
-    choices.map((c) => pb(c.label, c.data)),
+    choices.map((c) => ({ label: c.label, action: pb(c.label, c.data) as CardAction, tone: c.tone })),
   );
 }
+
+/** 質問と大きなボタン（postback と Web の画面を混ぜられる） */
+const card = (body: string, choices: Choice[]) => choiceCard(body, choices);
+const mapChoice: Choice = { label: "🗺 町の地図を開く", action: { type: "uri", label: "町の地図を開く", uri: liffUrl("/map") }, tone: "line" };
+const choose = (label: string, data: string, tone?: Tone): Choice => ({ label, action: pb(label, data) as CardAction, tone });
+const photoAsk = (body: string) => withButtons(body, [B.camera, B.roll]);
 
 /** 「位置情報を送る」ボタン付きの文面 */
 export function askLocation(body: string): TextMessage {
@@ -87,13 +95,14 @@ const names = (ns: string[]) => ns.map((n) => `${n}さん`).join("、");
 export const MSG = {
   // ---- 登録（spec 1） ----
   welcome: () =>
-    bubbles(["シマエナGO へようこそ！☃️", "雪の朝に、町内で少しずつ雪かきを助け合うアプリです。"]).concat(
+    [
+      ...bubbles(["シマエナGO へようこそ！☃️", "雪の朝に、町内で少しずつ雪かきを助け合うアプリです。"]),
       ask("あなたはどちらですか？", [
         { label: "雪かきをお願いしたい", data: "reg:role=requester" },
         { label: "雪かきを手伝う", data: "reg:role=helper" },
-        { label: "家族の代わりに登録", data: "reg:role=family" },
+        { label: "家族の代わりに登録", data: "reg:role=family", tone: "soft" },
       ]),
-    ),
+    ],
   locationSelf: () => [
     text("ありがとうございます。"),
     askLocation("家の場所を教えてください。\n下の「位置情報を送る」を押して、地図で家を選びます。\n（地図に名前や住所は出ません）"),
@@ -107,7 +116,7 @@ export const MSG = {
       { label: "15分くらい", data: "reg:q1=15" },
       { label: "30分くらい", data: "reg:q1=30" },
       { label: "60分以上", data: "reg:q1=60" },
-      { label: "わからない", data: "reg:q1=unknown" },
+      { label: "わからない", data: "reg:q1=unknown", tone: "soft" },
     ]),
   ],
   requesterQ2: () => [
@@ -127,7 +136,7 @@ export const MSG = {
   helperQ2: () => [
     ask("スコップなどの道具はありますか？", [
       { label: "ある", data: "reg:q2=yes" },
-      { label: "ない", data: "reg:q2=no" },
+      { label: "ない", data: "reg:q2=no", tone: "soft" },
     ]),
   ],
   linkWho: () => [
@@ -167,7 +176,7 @@ export const MSG = {
     ...hello(forecastCm),
     ask("今朝、玄関から外に出られそうですか？", [
       { label: "はい", data: "rc:ans=yes" },
-      { label: "いいえ", data: "rc:ans=no" },
+      { label: "いいえ", data: "rc:ans=no", tone: "soft" },
       { label: "誰かと一緒なら", data: "rc:ans=together" },
     ]),
   ],
@@ -178,7 +187,7 @@ export const MSG = {
       { label: "15分", data: "rc:ans=15" },
       { label: "30分", data: "rc:ans=30" },
       { label: "60分", data: "rc:ans=60" },
-      { label: "今朝は休む", data: "rc:ans=0" },
+      { label: "今朝は休む", data: "rc:ans=0", tone: "soft" },
     ]),
   ],
   rollcallThanks: (answer: string) =>
@@ -199,12 +208,13 @@ export const MSG = {
       : bubbles(["いま、来てくれる人を集めています。", "決まったら、すぐにお知らせします。"]),
 
   // ---- 朝の一本道（spec 2: 行く → 写真 → 完了） ----
-  planForHelper: (body: string) => [withButtons(body, [pb("行く", "go:yes"), pb("今朝は行けない", "go:no"), B.map])],
-  goConfirmed: (baseNumber: number | string, routeUrl?: string) =>
-    bubbles(
-      ["了解です！🙌", `拠点${baseNumber}へお願いします。7:00 開始です。`, "終わったら、玄関の前から道路の方を写した写真を1枚送ってください。"],
-      [B.camera, B.roll, ...(routeUrl ? [{ type: "uri", label: "道順を開く", uri: routeUrl } as Button] : []), B.map],
-    ),
+  planForHelper: (body: string) => [card(body, [choose("👟 行く", "go:yes"), choose("今朝は行けない", "go:no", "soft"), mapChoice])],
+  /** 「行く」のあと: 了解 → 行き先カード（大きな画像・地図・ルート）→ 終わったら写真 */
+  goConfirmed: (baseNumber: number | string, routeUrl?: string) => [
+    text("了解です！🙌"),
+    placeCard({ time: "7:00", baseNumber, note: "5分でも助かります。足元に気をつけて。", mapUrl: liffUrl("/map"), routeUrl }),
+    photoAsk("終わったら、玄関の前から道路の方を写した写真を1枚送ってください。"),
+  ],
   goDeclined: () => bubbles(["わかりました。無理しないでくださいね。", "ほかの人に声をかけます。"]),
   noSortie: () => bubbles(["今朝の割り当てはありません。", "近くの手伝いを探すときは、下の「出動する」を押してください。"], [B.go, B.map]),
   /** 写真では「まだ」。もう一度送るか、「それでも完了にする」（本人の報告）か */
@@ -252,13 +262,13 @@ export const MSG = {
   // ---- ヘルプ通知と見守り（spec 4・8） ----
   helpRequest: (missionId: string, baseNumber: number | string, missing: number, tasks: string[]) => [
     ...bubbles(["助けてほしい家があります。🙏", `拠点${baseNumber}、あと${missing}人です。`]),
-    withButtons(`5分でもOK: ${tasks.slice(0, 2).join("／")}\n行けますか？`, [pb("行く（5分でも）", `help:go=${missionId}`), pb("今は無理", "help:no"), B.map]),
+    card(`5分でもOK: ${tasks.slice(0, 2).join("／")}\n行けますか？`, [choose("👟 行く（5分でも）", `help:go=${missionId}`), choose("今は無理", "help:no", "soft"), mapChoice]),
   ],
-  helpJoined: (baseNumber: number | string, routeUrl?: string) =>
-    bubbles(
-      [`ありがとうございます！拠点${baseNumber}へお願いします。🙌`, "終わったら、写真を1枚送ってください。"],
-      [B.camera, B.roll, ...(routeUrl ? [{ type: "uri", label: "道順を開く", uri: routeUrl } as Button] : []), B.map],
-    ),
+  helpJoined: (baseNumber: number | string, routeUrl?: string) => [
+    text("ありがとうございます！🙌"),
+    placeCard({ time: "now", baseNumber, note: "5分でも助かります。足元に気をつけて。", mapUrl: liffUrl("/map"), routeUrl }),
+    photoAsk("終わったら、写真を1枚送ってください。"),
+  ],
   helpDeclined: () => bubbles(["わかりました。気にしないでくださいね。", "また次の機会に、よろしくお願いします。"]),
   helpAlreadyEnough: (baseNumber: number | string) => bubbles([`拠点${baseNumber}は人がそろいました。`, "ありがとうございます！"], [B.go]),
   supporterRequest: (baseNumber: number | string, missing: number) =>
@@ -267,7 +277,7 @@ export const MSG = {
     ...bubbles([`拠点${baseNumber}は、今朝の点呼に返事がありません。`, "体調のことは判断しなくて大丈夫です。返事があったかだけ教えてください。"]),
     ask("通りがかりに、玄関で声をかけてもらえますか？", [
       { label: "声をかけに行く", data: `knock:${missionId}` },
-      { label: "今は無理", data: "help:no" },
+      { label: "今は無理", data: "help:no", tone: "soft" },
     ]),
   ],
   knockThanks: () => bubbles(["ありがとうございます。🙏", "声をかけたら、返事があったかどうかを、ここに送ってください。"]),
@@ -307,7 +317,7 @@ export const MSG = {
   ])],
   nowOffer: (missionId: string, baseNumber: number | string, label: string, minutes: number, distanceM: number) => [
     text(`拠点${baseNumber}（ここから約${Math.round(distanceM / 10) * 10}m）に、手伝いがあります。`),
-    withButtons(`「${label}」${minutes}分。\nお願いできますか？`, [pb("行く", `help:go=${missionId}`), pb("やめておく", "help:no"), B.map]),
+    card(`「${label}」${minutes}分。\nお願いできますか？`, [choose("👟 行く", `help:go=${missionId}`), choose("やめておく", "help:no", "soft"), mapChoice]),
   ],
   /** 近くに仕事がないとき。無駄足や失敗と感じないように */
   nowNothing: () =>

@@ -4,7 +4,8 @@ import { memoryRepo } from "../repo";
 import { finishRegistration, handleEvent, toInput } from "./handle";
 import { parseText, step, type RegSession } from "./registration";
 import { signBody, verifySignature } from "./signature";
-import type { LineEvent, TextMessage } from "./types";
+import type { LineEvent, LineMessage, TextMessage } from "./types";
+import { actionsOf } from "./flex";
 
 describe("署名検証", () => {
   const secret = "test-secret";
@@ -34,7 +35,7 @@ describe("文字の読み取り", () => {
   });
 });
 
-const labels = (m: TextMessage) => m.quickReply?.items.map((i) => i.action.label) ?? [];
+const labels = (m: LineMessage) => actionsOf(m).map((a) => a.label);
 
 describe("登録の会話（純粋な関数）", () => {
   it("手伝う側: 友だち追加 → 役割 → 位置 → 2問 → 完了", () => {

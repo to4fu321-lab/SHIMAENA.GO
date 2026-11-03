@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { TextMessage } from "../line/types";
+import type { LineMessage } from "../line/types";
+import { textOf } from "../line/flex";
 import { completeNext, DEMO_DATE, fillAnswers } from "./flow";
 import { announce, joinMission, joinNearby, plan, ring } from "./ops";
 import { loadRoster } from "./roster";
@@ -7,7 +8,7 @@ import { loadMorning, saveMorning } from "./store";
 import { busyIds, listShort } from "./watch";
 
 // 吹き出しが分かれても読めるように、全部の文をつなげて調べる
-const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
+const t = (m: LineMessage | LineMessage[]) => [m].flat().map(textOf).join("\n");
 
 async function setup(seed = 5) {
   await announce({ date: DEMO_DATE, forecastCm: 12 });

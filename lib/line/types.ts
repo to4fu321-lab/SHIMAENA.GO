@@ -20,7 +20,27 @@ export interface ImageMessage {
   previewImageUrl: string;
 }
 
-export type LineMessage = TextMessage | ImageMessage;
+/** Flex Message（大きな画像・大きなボタンの吹き出し）。中身は lib/line/flex.ts で組み立てる */
+export interface FlexMessage {
+  type: "flex";
+  /** 通知やトーク一覧に出る文 */
+  altText: string;
+  contents: FlexBubble;
+  quickReply?: TextMessage["quickReply"];
+}
+
+/** Flex の部品（使う分だけ、ゆるい型） */
+export type FlexComponent = { type: string; [key: string]: unknown };
+export interface FlexBubble {
+  type: "bubble";
+  size?: "nano" | "micro" | "kilo" | "mega" | "giga";
+  hero?: FlexComponent;
+  body?: FlexComponent;
+  footer?: FlexComponent;
+  styles?: Record<string, unknown>;
+}
+
+export type LineMessage = TextMessage | ImageMessage | FlexMessage;
 
 export interface LineSource {
   type: "user" | "group" | "room";

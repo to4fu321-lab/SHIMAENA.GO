@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { mockThanks, THANKS_CHOICES, THANKS_MAX, ThanksSchema, trimThanks } from "../claude/thanks";
 import { MSG } from "../line/messages";
-import type { TextMessage } from "../line/types";
+import type { LineMessage } from "../line/types";
+import { actionsOf, textOf } from "../line/flex";
 import { memoryRepo } from "../repo";
 import { DEMO_DATE, fillAnswers } from "./flow";
 import { announce, applyThanks, completeWithPhoto, plan, ring, sendThanks } from "./ops";
@@ -9,7 +10,7 @@ import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 
 // 吹き出しが分かれても読めるように、全部の文をつなげて調べる
-const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
+const t = (m: LineMessage | LineMessage[]) => [m].flat().map(textOf).join("\n");
 
 async function morningWithOneDone() {
   await announce({ date: DEMO_DATE, forecastCm: 12 });
@@ -28,9 +29,9 @@ async function morningWithOneDone() {
 describe("ありがとう点呼（spec v1.1）", () => {
   it("完了の通知に3つのボタンが付く", () => {
     const m = MSG.requesterDoneNotice(["田中"], "m-x").at(-1)!; // ボタンは最後の吹き出しに付く
-    expect(m.quickReply?.items.map((i) => i.action.label)).toEqual(["ありがとう", "助かりました", "お茶どうぞ"]);
-    expect(m.quickReply?.items.map((i) => (i.action as { data?: string }).data)).toEqual(["thanks:m-x=1", "thanks:m-x=2", "thanks:m-x=3"]);
-    expect(MSG.requesterDoneNotice(["田中"]).some((x) => x.quickReply)).toBe(false);
+    expect(actionsOf(m).map((a) => a.label)).toEqual(["ありがとう", "助かりました", "お茶どうぞ"]);
+    expect(actionsOf(m).map((a) => (a as { data?: string }).data)).toEqual(["thanks:m-x=1", "thanks:m-x=2", "thanks:m-x=3"]);
+    expect(MSG.requesterDoneNotice(["田中"]).some((x) => actionsOf(x).length > 0)).toBe(false);
   });
 
   it("一文は40字まで、名前を入れず、3択ごとに変わる", () => {

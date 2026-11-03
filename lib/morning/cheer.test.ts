@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MSG } from "../line/messages";
-import type { TextMessage } from "../line/types";
+import type { LineMessage } from "../line/types";
+import { actionsOf, textOf } from "../line/flex";
 import { memoryRepo } from "../repo";
 import { parseCheer } from "./cheer";
 import { DEMO_DATE, fillAnswers } from "./flow";
@@ -9,7 +10,7 @@ import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 
 // 吹き出しが分かれても読めるように、全部の文をつなげて調べる
-const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
+const t = (m: LineMessage | LineMessage[]) => [m].flat().map(textOf).join("\n");
 
 async function morningWithOneDone() {
   await announce({ date: DEMO_DATE, forecastCm: 12 });
@@ -27,8 +28,8 @@ async function morningWithOneDone() {
 describe("家族の応援スタンプ（spec v1.2）", () => {
   it("家族への完了通知に3つのボタンが付く。データの読み取り", () => {
     const m = MSG.familyDone(["田中"], "m-x").at(-1)!; // ボタンは最後の吹き出しに付く
-    expect(m.quickReply?.items.map((i) => i.action.label)).toEqual(["お疲れさま", "あったかくして", "遠くから拍手"]);
-    expect(MSG.familyDone(["田中"]).some((x) => x.quickReply)).toBe(false);
+    expect(actionsOf(m).map((a) => a.label)).toEqual(["お疲れさま", "あったかくして", "遠くから拍手"]);
+    expect(MSG.familyDone(["田中"]).some((x) => actionsOf(x).length > 0)).toBe(false);
     expect(parseCheer("cheer:m-x=2")).toEqual({ missionId: "m-x", choice: "2" });
     expect(parseCheer("cheer:m-x=9")).toBeNull();
     expect(parseCheer("thanks:m-x=1")).toBeNull();
