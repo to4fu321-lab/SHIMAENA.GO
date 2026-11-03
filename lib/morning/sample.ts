@@ -1,4 +1,4 @@
-// デモ用の固定状態: 2026-12-14（日）朝 7:10 ごろ、予報 12cm。
+// デモ用の固定状態: 2026-12-14（月）朝 7:10 ごろ、予報 12cm。
 // 拠点1〜8 がいろいろな状態になっている。人物はすべて架空。
 import type { MorningState } from "./view";
 import type { Mission, ScoreEvent, Sortie, TeamId } from "../types";

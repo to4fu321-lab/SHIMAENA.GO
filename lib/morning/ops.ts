@@ -1,5 +1,6 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
+import { issueCardsForMission } from "../cards/issue";
 import { announceText } from "../claude/announce";
 import { planMorning } from "../claude/commander";
 import { checkPhoto, type PhotoInput } from "../claude/photo";
@@ -216,6 +217,12 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   const me = byId.get(participantId);
   const pointsOf = (teamId: string) => events.filter((e) => e.teamId === teamId).reduce((a, e) => a + e.points, 0);
   s.log.push(`${clockTextJst(now)} 拠点${number} 完了（${names.join("・")}）写真: ${check.comment}`);
+  // その朝だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る
+  try {
+    await issueCardsForMission(s, roster, mission, sorties);
+  } catch (e) {
+    s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
+  }
   await saveMorning(s);
 
   // 依頼者へ（家族への通知は T12）

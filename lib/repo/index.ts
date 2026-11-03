@@ -3,7 +3,7 @@
 import { hasDb, query } from "../db";
 import type { RegSession } from "../line/registration";
 import { TOWN } from "../town";
-import type { Base, FamilyLink, Participant, TeamId } from "../types";
+import type { Base, Card, FamilyLink, Participant, TeamId } from "../types";
 
 export interface Repo {
   findParticipantByLineUserId(lineUserId: string): Promise<Participant | undefined>;
@@ -19,6 +19,11 @@ export interface Repo {
   findFamilyLinkByCode(code: string): Promise<FamilyLink | undefined>;
   getSession(lineUserId: string): Promise<RegSession | undefined>;
   setSession(lineUserId: string, session: RegSession | null): Promise<void>;
+  // カード（表面・裏面の SVG を持つ）
+  insertCard(card: Card, svg: string, backSvg: string): Promise<void>;
+  getCard(id: string): Promise<{ card: Card; svg: string; backSvg: string } | undefined>;
+  listCardsByRecipient(recipientId: string): Promise<Card[]>;
+  countCardsForRollcall(rollcallId: string): Promise<number>;
 }
 
 // ---- メモリ ----
@@ -27,6 +32,7 @@ interface Mem {
   bases: Map<string, Base>;
   links: FamilyLink[];
   sessions: Map<string, RegSession>;
+  cards: Map<string, { card: Card; svg: string; backSvg: string }>;
 }
 const g = globalThis as { __shimaenaRepo?: Mem };
 function mem(): Mem {
@@ -35,6 +41,7 @@ function mem(): Mem {
     bases: new Map(TOWN.bases.map((b) => [b.id, structuredClone(b)])),
     links: [],
     sessions: new Map(),
+    cards: new Map(),
   };
   return g.__shimaenaRepo;
 }
@@ -87,6 +94,21 @@ export const memoryRepo: Repo = {
     if (session) mem().sessions.set(lineUserId, session);
     else mem().sessions.delete(lineUserId);
   },
+  async insertCard(card, svg, backSvg) {
+    mem().cards.set(card.id, { card: structuredClone(card), svg, backSvg });
+  },
+  async getCard(id) {
+    return mem().cards.get(id);
+  },
+  async listCardsByRecipient(recipientId) {
+    return [...mem().cards.values()]
+      .map((c) => c.card)
+      .filter((c) => c.recipientId === recipientId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  },
+  async countCardsForRollcall(rollcallId) {
+    return [...mem().cards.values()].filter((c) => c.card.rollcallId === rollcallId).length;
+  },
 };
 
 // ---- Neon ----
@@ -122,7 +144,77 @@ function rowToParticipant(r: ParticipantRow): Participant {
 const PARTICIPANT_COLS =
   "id, nickname, role, lat, lng, line_user_id, team_id, solo_minutes, clear_area, level, morning_minutes, has_tools, registered_by_family_id";
 
+interface CardRow {
+  id: string;
+  recipient_id: string;
+  rollcall_id: string;
+  mission_id: string;
+  serial: number;
+  issued_count: number;
+  design_name: string;
+  design_name_en: string;
+  rarity_label: string;
+  stars: number;
+  style: Card["style"];
+  snow_kg: number;
+  snow_kg_comparison: string;
+  member_names: string[];
+  team_ids: TeamId[];
+  created_at: string;
+}
+const CARD_COLS =
+  "id, recipient_id, rollcall_id, mission_id, serial, issued_count, design_name, design_name_en, rarity_label, stars, style, snow_kg, snow_kg_comparison, member_names, team_ids, created_at";
+function rowToCard(r: CardRow): Card {
+  return {
+    id: r.id,
+    recipientId: r.recipient_id,
+    rollcallId: r.rollcall_id,
+    missionId: r.mission_id,
+    serial: Number(r.serial),
+    issuedCount: Number(r.issued_count),
+    designName: r.design_name,
+    designNameEn: r.design_name_en,
+    rarityLabel: r.rarity_label,
+    stars: Number(r.stars) as 1 | 2 | 3,
+    style: r.style,
+    snowKg: Number(r.snow_kg),
+    snowKgComparison: r.snow_kg_comparison,
+    memberNames: r.member_names,
+    teamIds: r.team_ids,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+const dbCardMethods: Pick<Repo, "insertCard" | "getCard" | "listCardsByRecipient" | "countCardsForRollcall"> = {
+  async insertCard(card, svg, backSvg) {
+  await query(
+    `insert into cards (id, recipient_id, rollcall_id, mission_id, serial, issued_count, design_name, design_name_en, rarity_label, stars, style,
+       snow_kg, snow_kg_comparison, member_names, team_ids, svg, back_svg, created_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16, $17, $18)
+     on conflict (id) do nothing`,
+    [
+      card.id, card.recipientId, card.rollcallId, card.missionId, card.serial, card.issuedCount, card.designName, card.designNameEn,
+      card.rarityLabel, card.stars, card.style, card.snowKg, card.snowKgComparison, JSON.stringify(card.memberNames),
+      JSON.stringify(card.teamIds), svg, backSvg, card.createdAt,
+    ],
+  );
+  },
+  async getCard(id) {
+  const rows = await query<CardRow & { svg: string; back_svg: string }>(`select ${CARD_COLS}, svg, back_svg from cards where id = $1`, [id]);
+  return rows[0] ? { card: rowToCard(rows[0]), svg: rows[0].svg, backSvg: rows[0].back_svg } : undefined;
+  },
+  async listCardsByRecipient(recipientId) {
+  const rows = await query<CardRow>(`select ${CARD_COLS} from cards where recipient_id = $1 order by created_at desc`, [recipientId]);
+  return rows.map(rowToCard);
+  },
+  async countCardsForRollcall(rollcallId) {
+  const rows = await query<{ n: string }>("select count(*)::text as n from cards where rollcall_id = $1", [rollcallId]);
+  return Number(rows[0]?.n ?? 0);
+  },
+};
+
 export const dbRepo: Repo = {
+  ...dbCardMethods,
   async findParticipantByLineUserId(lineUserId) {
     const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants where line_user_id = $1`, [lineUserId]);
     return rows[0] ? rowToParticipant(rows[0]) : undefined;

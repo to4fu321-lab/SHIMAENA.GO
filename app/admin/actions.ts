@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { applySchema, seedTown } from "@/lib/db";
+import { issueCardsForMission } from "@/lib/cards/issue";
 import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
 import { announce, checkForecastAndAnnounce, plan, ring } from "@/lib/morning/ops";
 import { loadRoster } from "@/lib/morning/roster";
@@ -52,9 +53,20 @@ export async function runCommander() {
   refresh();
 }
 
+/** 4: そろった家を1軒、完了にする（デモ）。カードも発行して、LINE のある人には届く */
 export async function completeOne() {
   const roster = await loadRoster();
-  await update((s) => void completeNext(s, roster));
+  await update(async (s) => {
+    const missionId = completeNext(s, roster);
+    const mission = s.morning.missions.find((m) => m.id === missionId);
+    if (!mission) return;
+    const sorties = s.morning.sorties.filter((x) => x.missionId === mission.id);
+    try {
+      await issueCardsForMission(s, roster, mission, sorties);
+    } catch (e) {
+      s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  });
 }
 
 export async function rescue() {

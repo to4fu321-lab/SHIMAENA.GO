@@ -57,6 +57,7 @@ create table if not exists cards (
   member_names jsonb not null,
   team_ids jsonb not null,
   svg text,
+  back_svg text,
   created_at timestamptz not null default now()
 );
 

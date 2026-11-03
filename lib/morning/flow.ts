@@ -23,7 +23,7 @@ export interface MorningRecord {
   log: string[];
 }
 
-/** デモ用の日付（12月の日曜の朝）。本番の cron は本当の日付で動かす */
+/** デモ用の日付（12月の月曜の朝）。本番の cron は本当の日付で動かす */
 export const DEMO_DATE = "2026-12-14";
 
 let idSeq = 0;
