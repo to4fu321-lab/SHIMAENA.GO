@@ -14,7 +14,7 @@ export function heroParams(t: string | null, n: string | null): { time: string; 
 }
 
 /** シマエナガ（オレンジのマフラー）。components/Mascot.tsx と同じ絵。x, y は左上、s は倍率（元は 120px） */
-function mascot(x: number, y: number, s: number): string {
+function mascot(x: number, y: number, s: number, cap = false): string {
   return `<g transform="translate(${x} ${y}) scale(${s})">
     <path d="M96 70 L116 62 L112 78 Z" fill="#29445c"/>
     <ellipse cx="60" cy="64" rx="44" ry="42" fill="#ffffff" stroke="#dbe6ee" stroke-width="2"/>
@@ -27,8 +27,16 @@ function mascot(x: number, y: number, s: number): string {
     <ellipse cx="84" cy="64" rx="6" ry="3.6" fill="#f2b8bf" opacity="0.8"/>
     <path d="M22 76 C40 88 80 88 98 76 L98 86 C80 98 40 98 22 86 Z" fill="#e8834f"/>
     <path d="M70 88 L78 112 L90 108 L84 86 Z" fill="#d06d3b"/>
+    ${cap ? CAP : ""}
   </g>`;
 }
+
+/** 隊長の帽子（紺に雪の結晶のバッジ） */
+const CAP = `
+    <path d="M26 36 C30 8 90 8 94 36 Z" fill="#29445c"/>
+    <path d="M18 36 Q60 46 102 36 L100 44 Q60 54 20 44 Z" fill="#1d2f40"/>
+    <circle cx="60" cy="24" r="8" fill="#ffd36e"/>
+    <path d="M60 18 V30 M54.8 21 L65.2 27 M54.8 27 L65.2 21" stroke="#29445c" stroke-width="1.8" stroke-linecap="round"/>`;
 
 /** 雪の家（灯りつき）。x は左端、w は幅、ground は地面の高さ */
 function house(x: number, w: number, h: number, ground: number): string {
@@ -76,5 +84,100 @@ export function renderHeroSvg(time: string, base: string): string {
   <path d="M372 330 L412 520" stroke="#8a6a4a" stroke-width="12" stroke-linecap="round"/>
   <path d="M384 510 L442 494 L458 554 L400 570 Z" fill="${COLORS.lamp}"/>
   ${mascot(110, 300, 2.5)}
+</svg>`;
+}
+
+// ---- 隊長カードの画像（予告・朝のあいさつ）: /api/line/hero/snow.png?cm=12&s=ぼた雪のドンブリ&w=eve ----
+
+export interface SnowLevel {
+  /** 難しさ（1〜4） */
+  stars: number;
+  label: string;
+  /** 隊長のひとこと（吹き出し。11字くらいまで） */
+  cheer: string;
+}
+
+/** 積雪で難しさとひとことを決める。雪が多いほど盛り上げる（怖がらせない） */
+export function snowLevel(cm: number): SnowLevel {
+  if (cm < 8) return { stars: 1, label: "こな雪", cheer: "サクッといくしま〜！" };
+  if (cm < 15) return { stars: 2, label: "ふつうの雪", cheer: "みんなで5分えな〜！" };
+  if (cm < 25) return { stars: 3, label: "大雪", cheer: "出番だしま〜！！" };
+  return { stars: 4, label: "ボス級の大雪", cheer: "群れの力だしま〜！" };
+}
+
+/** URL から来た値をそろえる。雪の名前は 8 字まで（記号は外す） */
+export function snowParams(cm: string | null, name: string | null, when: string | null): { cm: number; name: string; when: "eve" | "morning" } {
+  const n = Number(cm);
+  return {
+    cm: Number.isFinite(n) ? Math.max(0, Math.min(200, Math.round(n))) : 0,
+    name: (name ?? "").replace(/[<>&"'「」『』\s]/g, "").slice(0, 8),
+    when: when === "morning" ? "morning" : "eve",
+  };
+}
+
+/** 画像の URL（雪の名前は Claude がつけた名前。人の名前・住所は入れない） */
+export function snowHeroPath(cm: number, name: string | undefined, when: "eve" | "morning"): string {
+  const q = new URLSearchParams({ cm: String(cm), w: when });
+  if (name) q.set("s", name);
+  return `/api/line/hero/snow.png?${q.toString()}`;
+}
+
+export function renderSnowSvg(cm: number, name: string, when: "eve" | "morning"): string {
+  const lv = snowLevel(cm);
+  const heavy = lv.stars >= 3;
+  // 雪が多いほど空は夕焼けの灯り色に、雪のつぶは多く大きく
+  const sky = lv.stars === 4 ? ["#3b6584", "#d9825b"] : heavy ? ["#8fb8c9", "#f5d6bf"] : ["#cfe2ee", "#f4f7fa"];
+  const count = 8 + lv.stars * 8;
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  const flakes = Array.from({ length: count }, () => {
+    const x = 240 + rnd() * 780;
+    const y = 170 + rnd() * 380;
+    const r = 3 + rnd() * (2 + lv.stars * 1.6);
+    return `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r.toFixed(1)}" fill="#fff" opacity="0.9"/>`;
+  }).join("");
+  // 積雪ゲージ: 40cm で満タン（10px = 1cm）
+  const gx = 70, gTop = 200, gBottom = 600, per = 10;
+  const fill = Math.min(cm, 40) * per;
+  const ticks = [10, 20, 30, 40]
+    .map((t) => `<path d="M${gx + 90} ${gBottom - t * per} h18" stroke="${COLORS.ink}" stroke-width="4"/><text x="${gx + 116}" y="${gBottom - t * per + 10}" font-size="26" font-weight="700" fill="${COLORS.ink}">${t}</text>`)
+    .join("");
+  const stars = Array.from({ length: 4 }, (_, i) => `<text x="${770 + i * 62}" y="112" font-size="56" fill="${i < lv.stars ? "#ffd36e" : "#5b7590"}">★</text>`).join("");
+  const rays = heavy
+    ? Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2;
+        const cx = 816, cy = 466;
+        return `<path d="M${(cx + Math.cos(a) * 150).toFixed(0)} ${(cy + Math.sin(a) * 150).toFixed(0)} L${(cx + Math.cos(a) * 240).toFixed(0)} ${(cy + Math.sin(a) * 240).toFixed(0)}" stroke="#ffd36e" stroke-width="10" stroke-linecap="round" opacity="0.85"/>`;
+      }).join("")
+    : "";
+  const title = name ? `『${escapeXml(name)}』` : lv.label;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${HERO_W}" height="${HERO_H}" viewBox="0 0 ${HERO_W} ${HERO_H}" font-family="Zen Maru Gothic, sans-serif">
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
+  <rect width="${HERO_W}" height="${HERO_H}" fill="url(#sky)"/>
+  ${flakes}
+  <!-- 上の帯: 相手の雪の名前と難しさ -->
+  <rect width="${HERO_W}" height="150" fill="${COLORS.ink}"/>
+  <text x="48" y="58" font-size="32" font-weight="700" fill="#cfe2ee">${when === "eve" ? "明日の朝の相手" : "今朝の相手"}</text>
+  <text x="40" y="126" font-size="${name ? 60 : 64}" font-weight="700" fill="#ffd36e">${title}</text>
+  ${stars}
+  <!-- 積雪ゲージ -->
+  <rect x="${gx}" y="${gTop}" width="90" height="${gBottom - gTop}" rx="16" fill="${COLORS.ink}" fill-opacity="0.18" stroke="${COLORS.ink}" stroke-width="5"/>
+  <rect x="${gx + 5}" y="${gBottom - fill}" width="80" height="${fill}" rx="12" fill="#ffffff"/>
+  <path d="M${gx + 5} ${gBottom - fill + 8} q20 -16 40 0 t40 0" fill="#fff" stroke="${COLORS.ice}" stroke-width="4"/>
+  ${cm > 40 ? `<text x="${gx + 45}" y="${gTop - 14}" font-size="40" font-weight="700" fill="${COLORS.lamp}" text-anchor="middle">↑</text>` : ""}
+  ${ticks}
+  <rect x="228" y="236" width="320" height="270" rx="32" fill="#fff" opacity="0.88"/>
+  <text x="250" y="380" font-size="150" font-weight="700" fill="${COLORS.ink}">${cm}</text>
+  <text x="${250 + String(cm).length * 84}" y="380" font-size="60" font-weight="700" fill="${COLORS.ink}">cm</text>
+  <rect x="250" y="410" width="${lv.label.length * 44 + 48}" height="70" rx="35" fill="${heavy ? COLORS.lamp : COLORS.winter}"/>
+  <text x="${274}" y="460" font-size="44" font-weight="700" fill="#fff">${lv.label}</text>
+  <!-- 隊長 -->
+  ${rays}
+  <rect x="560" y="176" width="460" height="86" rx="43" fill="#fff" stroke="${COLORS.ink}" stroke-width="5"/>
+  <path d="M760 258 L790 300 L800 258 Z" fill="#fff" stroke="${COLORS.ink}" stroke-width="5" stroke-linejoin="round"/>
+  <rect x="762" y="250" width="34" height="12" fill="#fff"/>
+  <text x="790" y="235" font-size="44" font-weight="700" fill="${heavy ? COLORS.lamp : COLORS.ink}" text-anchor="middle">${escapeXml(lv.cheer)}</text>
+  ${mascot(660, 300, 2.6, true)}
+  <path d="M0 ${HERO_H - 40} C260 ${HERO_H - 70} 600 ${HERO_H - 20} ${HERO_W} ${HERO_H - 56} V${HERO_H} H0 Z" fill="#fff"/>
 </svg>`;
 }

@@ -23,7 +23,7 @@ export function mockRecap(i: RecapInput): Recap {
   if (i.fiveMinuteJoins > 0) extras.push(`5分の偵察・補給が${i.fiveMinuteJoins}回`);
   const note = extras.length > 0 ? `（${extras.join("、")}）` : "";
   const parts: string[] = [];
-  parts.push(`エナガ隊長です。${md(i.date)}、${i.townName}に${i.forecastCm}cmの雪${i.snowName ? `、相手は「${i.snowName}」` : ""}。`);
+  parts.push(`エナガ隊長だしま〜！${md(i.date)}、${i.townName}に${i.forecastCm}cmの雪${i.snowName ? `、相手は「${i.snowName}」` : ""}。`);
   if (i.movers > 0) parts.push(`${i.startTime}、${i.teamsOut}つの群れが出撃し、${i.movers}人が動きました。`);
   if (i.allDone) {
     parts.push(`${i.lastDoneAt ? `${i.lastDoneAt}に` : ""}${i.housesDone}軒すべての玄関が開き、討伐です${note}。`);
@@ -41,7 +41,7 @@ export async function recapText(input: RecapInput): Promise<Recap> {
   const res = await askJson({
     task:
       "今朝の町内の雪かきの実況を書いてください。採点表 recap の規則に従います: 3〜4文、やさしい日本語、入力の数字だけを使い、入力にない数字や出来事は書かない。" +
-      "人の名前は出さない。体調や医療の話はしない。最後の1文は町内へのねぎらい。口調は採点表 voice のエナガ隊長で、最初に「エナガ隊長です。」と名乗る。",
+      "人の名前は出さない。体調や医療の話はしない。最後の1文は町内へのねぎらい。口調は採点表 voice のエナガ隊長で、最初に「エナガ隊長だしま〜！」と名乗る。",
     input,
     schema: RecapSchema,
     effort: "low",

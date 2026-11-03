@@ -92,7 +92,7 @@ describe("朝の一本道（行く → 写真 → 完了 → 得点 → 通知�
     const s = await morningWithPlan();
     const mine = s.morning.sorties.find((x) => x.participantId === "p-go")!;
     const mission = s.morning.missions.find((m) => m.id === mine.missionId)!;
-    expect(t((await setGoing("p-go", false)))).toContain("わかりました");
+    expect(t((await setGoing("p-go", false)))).toContain("無理しないで");
     let now = await loadMorning();
     expect(now.morning.sorties.some((x) => x.participantId === "p-go")).toBe(false);
     const going = now.morning.sorties.filter((x) => x.missionId === mission.id).length;

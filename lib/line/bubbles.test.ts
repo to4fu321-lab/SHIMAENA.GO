@@ -1,7 +1,7 @@
 // Bot の文面（v1.4）: 1つの吹き出しに1つの話題、ボタンは最後、5つまで、仕事がないときも安心できる言い方
 import { describe, expect, it } from "vitest";
 import { actionsOf, textOf } from "./flex";
-import { heroParams, renderHeroSvg } from "./hero";
+import { heroParams, renderHeroSvg, renderSnowSvg, snowLevel, snowParams } from "./hero";
 import { fitFive, MSG, splitSentences, text } from "./messages";
 import type { FlexMessage, LineMessage } from "./types";
 
@@ -9,9 +9,11 @@ const texts = (ms: LineMessage[]) => ms.map(textOf);
 const labels = (m: LineMessage) => actionsOf(m).map((a) => a.label);
 
 describe("Bot の吹き出し", () => {
-  it("点呼は あいさつ → 雪の量 → 質問 の3つ。時間は 5・15・30・60分と「今朝は休む」", () => {
-    const ms = MSG.rollcallHelper(12);
-    expect(texts(ms)).toEqual(["おはようございます！☃️", "今朝は雪12cm。", "今朝、何分動けますか？"]);
+  it("点呼は 隊長カード（おはよう・今朝の雪）→ 質問 の2つ。時間は 5・15・30・60分と「今朝は休む」", () => {
+    const ms = MSG.rollcallHelper(12, "ぼた雪のドンブリ");
+    expect(texts(ms)).toEqual(["おはようだしま〜！☃️今朝は雪12cm、相手は『ぼた雪のドンブリ』だえな〜！", "今朝、何分動けるしま〜？"]);
+    const hero = (ms[0] as FlexMessage).contents.hero?.url as string;
+    expect(hero).toContain("/api/line/hero/snow.png?cm=12&w=morning&s=");
     expect(ms.at(-1)?.type).toBe("flex"); // 答えは吹き出しの中の大きなボタン
     expect(labels(ms.at(-1)!)).toEqual(["5分", "15分", "30分", "60分", "今朝は休む"]);
     expect(ms.slice(0, -1).every((m) => actionsOf(m).length === 0)).toBe(true);
@@ -23,7 +25,7 @@ describe("Bot の吹き出し", () => {
 
   it("仕事がないときは、お礼と次の案内（ひとりで5分・町の地図）", () => {
     const ms = MSG.nowNothing();
-    expect(texts(ms)[0]).toBe("今近くに仕事がありません。");
+    expect(texts(ms)[0]).toBe("今近くに仕事はないしま〜。");
     expect(texts(ms).join("")).toContain("ありがとう");
     expect(labels(ms.at(-1)!)).toContain("ひとりで5分を見る");
     expect(labels(ms.at(-1)!)).toContain("町の地図を開く");
@@ -57,7 +59,7 @@ describe("Bot の吹き出し", () => {
 
   it("行き先カード: 大きな画像（時刻と拠点だけ）・地図・ルートのボタン。画像を押すと道順", () => {
     const [ok, card, photo] = MSG.goConfirmed(3, "https://maps.example/route");
-    expect(textOf(ok)).toContain("了解です");
+    expect(textOf(ok)).toContain("了解だしま〜");
     const c = card as FlexMessage;
     expect(c.altText).toBe("拠点3へ 7:00 に集合です！");
     expect(c.contents.hero?.url).toContain("/api/line/hero/go.png?t=7%3A00&n=3");
@@ -78,8 +80,25 @@ describe("Bot の吹き出し", () => {
   it("行き先の画像: 変な値は既定に戻し、文字は画像に安全に入る", () => {
     expect(heroParams("<script>", "3; drop")).toEqual({ time: "7:00", base: "?" });
     expect(heroParams("now", "12")).toEqual({ time: "now", base: "12" });
+    expect(snowParams("12", "<b>雪</b>のとても長い名前", "x")).toEqual({ cm: 12, name: "b雪/bのとても", when: "eve" });
     const svg = renderHeroSvg("7:00", "3");
     expect(svg).toContain("7:00");
     expect(svg).toContain("拠点 3");
+  });
+
+  it("隊長カード: 雪が多いほど★が増えて、ひとことが元気になる。予告はカード1枚", () => {
+    expect([3, 12, 20, 35].map((cm) => snowLevel(cm).stars)).toEqual([1, 2, 3, 4]);
+    expect(snowLevel(20).cheer).toContain("出番");
+    const svg = renderSnowSvg(35, "大雪のドッシリ", "eve");
+    expect(svg).toContain("明日の朝の相手");
+    expect(svg).toContain("大雪のドッシリ");
+    const [card] = MSG.announce("エナガ隊長だしま〜！明朝 6:30 に点呼するえな〜！予想は 12cm、相手は「ぼた雪のドンブリ」だしま〜！", 12, "ぼた雪のドンブリ");
+    const lines = ((card as FlexMessage).contents.body?.contents as { text: string }[]).map((x) => x.text);
+    expect(lines).toEqual(["エナガ隊長だしま〜！", "明朝 6:30 に点呼するえな〜！", "予想は 12cm、相手は「ぼた雪のドンブリ」だしま〜！"]);
+  });
+
+  it("お願いする側・見守りの文は、丁寧なまま（しま〜・えな〜を付けない）", () => {
+    const plain = [...MSG.rollcallThanks("no"), ...MSG.familyNoAnswer(), ...MSG.knockThanks(), ...MSG.planForRequester("7:00", ["田中"])];
+    expect(texts(plain).join("")).not.toMatch(/しま〜|えな〜/);
   });
 });

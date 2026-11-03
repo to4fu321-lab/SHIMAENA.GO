@@ -4,6 +4,7 @@
 // 位置情報・カメラのボタンは LINE の決まりで Flex に置けないので、クイックリプライのまま（messages.ts）。
 import { COLORS } from "../brand";
 import { baseUrl } from "../url";
+import { snowHeroPath } from "./hero";
 import type { FlexComponent, FlexMessage, LineMessage, QuickReplyAction } from "./types";
 
 /** Flex のボタンに置けるアクション（位置情報・カメラは置けない） */
@@ -128,4 +129,35 @@ export function actionsOf(m: LineMessage): QuickReplyAction[] {
 /** 吹き出しの文（Flex は通知の文）。テストや記録で使う */
 export function textOf(m: LineMessage): string {
   return m.type === "text" ? m.text : m.type === "flex" ? m.altText : "";
+}
+
+export interface CaptainCard {
+  /** 積雪（cm） */
+  cm: number;
+  /** 雪の名前（雪ボス） */
+  snowName?: string;
+  /** eve = 前夜の予告、morning = 朝のあいさつ */
+  when: "eve" | "morning";
+  /** 隊長のことば（1行ずつ） */
+  lines: string[];
+}
+
+/** エナガ隊長のカード: 帽子のシマエナガと積雪ゲージの大きな画像＋隊長のことば */
+export function captainCard(c: CaptainCard): FlexMessage {
+  return {
+    type: "flex",
+    altText: c.lines.join("").slice(0, 400),
+    contents: {
+      type: "bubble",
+      size: "giga",
+      hero: { type: "image", url: `${baseUrl()}${snowHeroPath(c.cm, c.snowName, c.when)}`, size: "full", aspectRatio: "20:13", aspectMode: "cover" },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        paddingAll: "20px",
+        contents: c.lines.map((t, i) => ({ type: "text", text: t, size: i === 0 ? "xl" : "lg", weight: "bold", color: i === 0 ? COLORS.lamp : COLORS.ink, wrap: true })),
+      },
+    },
+  };
 }

@@ -114,21 +114,21 @@ export function mockPlan(input: CommanderInput): Plan {
           const h = input.helpers.find((x) => x.id === o)!;
           return `${TEAM_NAME[h.teamId]}の${h.nickname}さん`;
         });
-      const withWho = others.length > 0 ? `${others.join("、")}と一緒です。` : "";
+      const withWho = others.length > 0 ? `${others.join("、")}と一緒だしま〜！` : "";
       const note =
         m.status === "no_answer"
           ? "点呼に返事がありません。まず玄関で声をかけてください。"
-          : "5分でも助かります。足元に気をつけて。";
+          : "5分でも助かるしま〜。足元に気をつけてえな〜！";
       messages.push({
         participantId: id,
-        text: `おはようございます。${input.startTime}、拠点${base.number}（${base.requesterName}）へお願いできますか。${withWho}${note}`,
+        text: `おはようだしま〜！${input.startTime}、拠点${base.number}（${base.requesterName}）へお願いできるえな〜？${withWho}${note}`,
       });
     }
   }
 
   const short = missions.filter((m) => m.status === "short").length;
   const briefing =
-    `エナガ隊長です。今朝の予報は${input.forecastCm}cm。${missions.length}軒を${input.startTime}から始めます。` +
+    `エナガ隊長だしま〜！今朝の予報は${input.forecastCm}cm。${missions.length}軒を${input.startTime}から始めます。` +
     (short > 0 ? `人手が足りない家が${short}軒あります。5分だけでも、近くの人お願いします。` : "全部の家に人がそろいました。");
   return { missions, messages, briefing };
 }
@@ -180,7 +180,7 @@ export async function planMorning(input: CommanderInput): Promise<Plan> {
       "雪の朝の点呼が終わりました。採点表の importance・requiredPeople・assignment の規則で、家ごとの重要度・必要人数・割り当てを決めてください。" +
       "「はい」と答えた家はミッションにしません。家ごとに reason（30字まで）を書きます: なぜその重要度・人数・その人たちなのかを、レベル・答え・距離・人数などの事実だけで。体調や医療の話は書きません。" +
       "割り当てた人それぞれに LINE の文面（3文以内、やさしい日本語、開始時刻と家の番号と依頼者の呼び名と一緒に行く人を含む。名乗らない）を書き、" +
-      "町内みんなへのまとめ（2〜3文。採点表 voice のエナガ隊長の口調で、最初に「エナガ隊長です。」）も書いてください。",
+      "町内みんなへのまとめ（2〜3文。採点表 voice のエナガ隊長の口調で、最初に「エナガ隊長だしま〜！」）も書いてください。",
     input,
     schema: PlanSchema,
     effort: "medium",

@@ -104,7 +104,7 @@ describe("いまからやる", () => {
     const s = await loadMorning();
     fillAnswers(s, await loadRoster(), 5);
     await saveMorning(s);
-    expect(t((await offerTaskNow("p-now", 5)))).toContain("ありません"); // 作戦前
+    expect(t((await offerTaskNow("p-now", 5)))).toContain("仕事はないしま〜"); // 作戦前
     await plan();
     const planned = await loadMorning();
     const roster = await loadRoster();

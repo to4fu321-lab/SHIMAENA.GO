@@ -81,6 +81,6 @@ describe("あと1人で救える家と「5分だけ参加」（spec v1.1）", ()
     const full = s.morning.missions.find((m) => m.status === "assigned" || m.status === "in_progress");
     if (!full || free.length === 0) return; // この乱数ではそろった家が残らない
     expect(t((await joinMission(free[0].id, full.id)))).toContain("そろいました");
-    expect(t((await joinMission(free[0].id, full.id, new Date(), { extra: true })))).toContain("ありがとうございます");
+    expect(t((await joinMission(free[0].id, full.id, new Date(), { extra: true })))).toContain("ありがとうしま〜");
   });
 });

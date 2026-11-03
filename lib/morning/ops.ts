@@ -10,7 +10,7 @@ import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstMinutes, jstIso } from "../jst";
 import { getProfileByAccessToken, multicast, push } from "../line/client";
-import { MSG, splitSentences } from "../line/messages";
+import { MSG } from "../line/messages";
 import type { LineMessage } from "../line/types";
 import { mapsUrl } from "../nav";
 import { repo } from "../repo";
@@ -56,7 +56,7 @@ export async function announce(opts: { date: string; forecastCm: number }): Prom
   const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
   const ids = lineIds(roster.participants);
-  await multicast(ids, splitSentences(a.text, 4)); // 予告も1文ずつの吹き出しに
+  await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName)); // 予告はエナガ隊長のカード1枚に
   s.log.push(`予告を LINE で ${ids.length} 人に送信`);
   await saveMorning(s);
   return s;
@@ -86,8 +86,8 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
   const of = (role: Role) => lineIds(roster.participants.filter((p) => p.role === role));
   const requesters = of("requester");
   const helpers = of("helper");
-  await multicast(requesters, MSG.rollcallRequester(s.morning.rollcall.forecastCm));
-  await multicast(helpers, MSG.rollcallHelper(s.morning.rollcall.forecastCm));
+  await multicast(requesters, MSG.rollcallRequester(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName));
+  await multicast(helpers, MSG.rollcallHelper(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName));
   const sent = requesters.length + helpers.length;
   s.log.push(`点呼を LINE で ${sent} 人に送信`);
   await saveMorning(s);
@@ -106,7 +106,7 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
   if (status !== "open" && status !== "planned") return MSG.rollcallClosed();
   const value = /^rc:ans=([a-z0-9]+)$/.exec(data)?.[1] ?? "";
   const answer = p.role === "requester" ? REQUESTER_ANSWERS[value] : HELPER_ANSWERS[value];
-  if (answer === undefined) return p.role === "requester" ? MSG.rollcallRequester(s.morning.rollcall.forecastCm) : MSG.rollcallHelper(s.morning.rollcall.forecastCm);
+  if (answer === undefined) return p.role === "requester" ? MSG.rollcallRequester(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName) : MSG.rollcallHelper(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName);
   if (status === "planned") {
     // 作戦配信のあとの答え（spec 4-c）: 「いいえ」なら人を集め、「はい」なら取り下げる
     const roster = await loadRoster();
@@ -152,14 +152,14 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
     add(requester, MSG.planForRequester("7:00", names.filter(Boolean)));
   }
   // 1人1回のプッシュにまとめる。1つの吹き出しに1つの話題（v1.4）:
-  // 「おはようございます！」→「今朝は雪○cm。」→（手伝う側）「助けてほしい家が○軒」「5分だけでも大歓迎！」→ 個別の文面（ボタンは最後）
+  // 隊長カード（おはよう・今朝の雪）→（手伝う側）「助けてほしい家が○軒」「5分だけでも大歓迎！」→ 個別の文面（ボタンは最後）
   // 町内へのまとめ（s.briefing、エナガ隊長の文）は /admin と記録に残す。LINE は短くする
   const houses = s.morning.missions.filter((m) => m.status !== "no_answer").length;
   let sent = 0;
   for (const p of roster.participants) {
     if (!p.lineUserId) continue;
     const mine = personal.get(p.lineUserId) ?? [];
-    const head = MSG.morningHello(s.morning.rollcall.forecastCm);
+    const head = MSG.morningHello(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName);
     const body = p.role === "helper" ? [...MSG.housesToday(houses, mine.length === 0), ...mine] : mine;
     await push(p.lineUserId, [...head, ...body]);
     sent++;
