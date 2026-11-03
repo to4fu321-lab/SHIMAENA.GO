@@ -8,10 +8,12 @@ import { collection, nextReward, REWARDS } from "@/lib/cards/collection";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { repo } from "@/lib/repo";
+import Icon from "@/components/Icon";
+import { soloStatus } from "@/lib/solo/ops";
 import { TEAMS } from "@/lib/teams";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
-export const metadata: Metadata = { title: "カード帳 ・ シマエナGO" };
+export const metadata: Metadata = { title: "活動カード ・ シマエナGO" };
 
 /** 5つのタッチの、未入手のときの影の色 */
 const STYLE_SWATCH: Record<string, string> = {
@@ -33,13 +35,17 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
   const col = collection(cards);
   const reward = nextReward(cards.length);
   const title = record.weekly?.titles.find((t) => t.participantId === viewerId);
+  const solo = me ? await soloStatus(me.id, new Date()) : undefined;
+  const todayLogs = solo ? solo.recent.filter((l) => l.date === solo.today) : [];
+  const q = as ? `?as=${as}` : "";
 
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-5 bg-paper px-4 py-5 text-ink">
       <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!as} />
       <header className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-bold">
-          カード帳
+        <h1 className="flex items-center gap-2 text-2xl font-bold">
+          <Icon name="card" size={34} accent="var(--camellia)" />
+          活動カード
         </h1>
         <Link href={`/${as ? `?as=${as}` : ""}`} className="btn btn-white min-h-11 px-3 text-sm">
           ホーム
@@ -59,6 +65,44 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           "まだ登録がありません"
         )}
       </p>
+
+      {/* 今日の活動をふりかえる（LINE のメニュー「活動カード」から来た人が、まず見るところ） */}
+      {solo && (
+        <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日の活動">
+          <h2 className="text-lg font-bold">今日の活動</h2>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-2xl bg-ice-soft px-2 py-2">
+              <p className="text-sm font-bold">今日の羽</p>
+              <p className="text-3xl font-bold tabular-nums">{solo.todayFeathers}</p>
+            </div>
+            <div className="rounded-2xl bg-ice-soft px-2 py-2">
+              <p className="text-sm font-bold">連続出動</p>
+              <p className="text-3xl font-bold tabular-nums">{solo.streak}日</p>
+            </div>
+            <div className="rounded-2xl bg-ice-soft px-2 py-2">
+              <p className="text-sm font-bold">カード</p>
+              <p className="text-3xl font-bold tabular-nums">{cards.length}枚</p>
+            </div>
+          </div>
+          {todayLogs.length > 0 ? (
+            <ul className="space-y-1 text-base">
+              {todayLogs.map((l) => (
+                <li key={l.id} className="flex items-baseline justify-between gap-2">
+                  <span>✓ {l.label}</span>
+                  <b className="shrink-0 tabular-nums">+{l.feathers}羽</b>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              <p className="text-base">今日の出動はまだありません。5分だけでも、町の力になります。</p>
+              <Link href={`/solo${q}`} className="btn btn-lamp text-lg">
+                出動する
+              </Link>
+            </>
+          )}
+        </section>
+      )}
 
       {/* 図鑑: 5つのタッチとリボン。未入手は影で見せる */}
       <section className="space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="図鑑">

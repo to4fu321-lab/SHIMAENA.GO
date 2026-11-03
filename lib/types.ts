@@ -80,7 +80,7 @@ export interface Rollcall {
 /** 依頼者の答え: はい（出られる）／いいえ／一緒なら */
 export type RequesterAnswer = "yes" | "no" | "together";
 /** 手伝う側の答え: 動ける分数 */
-export type HelperAnswer = 0 | 15 | 30 | 60;
+export type HelperAnswer = 0 | 5 | 15 | 30 | 60;
 
 export interface RollcallAnswer {
   rollcallId: string;

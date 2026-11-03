@@ -164,7 +164,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
           シマエナ診断（あなたは何シマエナ？）
         </Link>
         <Link href="/rules" className="btn btn-white text-lg">
-          あそびかた
+          使い方
         </Link>
       </section>
 

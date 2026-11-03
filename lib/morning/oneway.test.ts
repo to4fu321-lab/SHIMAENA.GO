@@ -9,7 +9,8 @@ import { announce, completeWithPhoto, plan, reportShort, ring, setGoing } from "
 import { loadMorning, saveMorning } from "./store";
 import { loadRoster } from "./roster";
 
-const t = (m: { type: string }) => (m as TextMessage).text;
+// 吹き出しが分かれても読めるように、全部の文をつなげて調べる
+const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46]);
 
 describe("画像の種類と画面の持ち主の印", () => {
@@ -59,7 +60,7 @@ describe("朝の一本道（行く → 写真 → 完了 → 得点 → 通知�
     const mission = s.morning.missions.find((m) => m.id === mine!.missionId)!;
     const mates = s.morning.sorties.filter((x) => x.missionId === mission.id);
 
-    expect(t((await setGoing("p-go", true))[0])).toContain("了解");
+    expect(t((await setGoing("p-go", true)))).toContain("了解");
     let now = await loadMorning();
     expect(now.morning.sorties.find((x) => x.participantId === "p-go")?.confirmedAt).toBeTruthy();
     if (mission.status === "assigned") expect(now.morning.missions.find((m) => m.id === mission.id)?.status).toBe("in_progress");
@@ -67,7 +68,7 @@ describe("朝の一本道（行く → 写真 → 完了 → 得点 → 通知�
     const before = now.morning.scores.length;
     const r = await completeWithPhoto("p-go", { bytes: JPEG, mediaType: "image/jpeg" }, new Date("2026-12-14T07:20:00+09:00"));
     expect(r.done).toBe(true);
-    expect(t(r.messages[0])).toContain("完了");
+    expect(t(r.messages)).toContain("完了");
     now = await loadMorning();
     const m = now.morning.missions.find((x) => x.id === mission.id)!;
     expect(m.status).toBe("done");
@@ -84,24 +85,24 @@ describe("朝の一本道（行く → 写真 → 完了 → 得点 → 通知�
     // 2回目の写真は「割り当てなし」
     const again = await completeWithPhoto("p-go", { bytes: JPEG, mediaType: "image/jpeg" });
     expect(again.done).toBe(false);
-    expect(t(again.messages[0])).toContain("割り当てはありません");
+    expect(t(again.messages)).toContain("割り当てはありません");
   });
 
   it("「今朝は行けない」で外れ、足りなくなった家は人手不足になる。「人手が足りない」も同じ", async () => {
     const s = await morningWithPlan();
     const mine = s.morning.sorties.find((x) => x.participantId === "p-go")!;
     const mission = s.morning.missions.find((m) => m.id === mine.missionId)!;
-    expect(t((await setGoing("p-go", false))[0])).toContain("承知");
+    expect(t((await setGoing("p-go", false)))).toContain("わかりました");
     let now = await loadMorning();
     expect(now.morning.sorties.some((x) => x.participantId === "p-go")).toBe(false);
     const going = now.morning.sorties.filter((x) => x.missionId === mission.id).length;
     if (going < mission.requiredPeople) expect(now.morning.missions.find((m) => m.id === mission.id)?.status).toBe("short");
 
     // 割り当てがない人の「人手が足りない」は案内だけ
-    expect(t((await reportShort("p-go"))[0])).toContain("割り当てはありません");
+    expect(t((await reportShort("p-go")))).toContain("割り当てはありません");
     // 割り当てのある架空の人が押すと人手不足になる
     const other = now.morning.sorties.find((x) => x.status === "going")!;
-    expect(t((await reportShort(other.participantId))[0])).toContain("人手不足");
+    expect(t((await reportShort(other.participantId)))).toContain("人手不足");
     now = await loadMorning();
     expect(now.morning.missions.find((m) => m.id === other.missionId)?.status).toBe("short");
   });

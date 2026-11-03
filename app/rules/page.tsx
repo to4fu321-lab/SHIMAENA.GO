@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Icon from "@/components/Icon";
+import { MENU, type MenuKey } from "@/lib/brand";
 import { TEAMS } from "@/lib/teams";
 
-export const metadata: Metadata = { title: "あそびかた ・ シマエナGO" };
+export const metadata: Metadata = { title: "使い方 ・ シマエナGO" };
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -42,14 +44,14 @@ const CAREFUL = [
   ["腰を守る", "ひざを曲げて、少しずつすくう。ひねらない"],
   ["ひとりでやらない", "群れで動くのがシマエナGO。子どもは大人と一緒に"],
   ["無理しない", "5分でも立派な参加です。疲れたら休む、寒かったら帰る"],
-  ["体調がすぐれない日は休む", "点呼で「0分」と答えればだいじょうぶ"],
+  ["体調がすぐれない日は休む", "点呼で「今朝は休む」を押せばだいじょうぶ"],
 ] as const;
 
 export default function RulesPage() {
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-5 bg-paper px-4 py-6 text-ink">
       <header className="space-y-2 text-center">
-        <p className="eyebrow">あそびかた</p>
+        <p className="eyebrow">使い方</p>
         <h1 className="text-3xl font-bold">
           シマエナ<span className="text-camellia-deep">GO</span>
         </h1>
@@ -60,17 +62,44 @@ export default function RulesPage() {
         </p>
       </header>
 
+      <Card title="LINE のメニュー（画面の下の4つ）">
+        <ul className="space-y-2">
+          {(["go", "map", "card", "guide"] as MenuKey[]).map((k) => (
+            <li key={k} className="flex items-center gap-3">
+              <span className="grid size-12 shrink-0 place-items-center rounded-xl ring-1 ring-ink/20" style={{ background: MENU[k].bg, color: MENU[k].fg }}>
+                <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
+                  <Icon name={MENU[k].icon} size={26} accent={k === "go" ? MENU[k].bg : MENU[k].accent} />
+                </span>
+              </span>
+              <span>
+                <b>{MENU[k].label}</b>
+                <span className="block text-base text-ink-soft">
+                  {k === "go"
+                    ? "何分動けるかを選ぶと、近くの手伝いを1つ探します。なければ、ひとりでできる5分を案内します。"
+                    : k === "map"
+                      ? "町の雪の状況と、助けが必要な家（50m のマス）を見られます。"
+                      : k === "card"
+                        ? "今日の活動と、もらったカードをふりかえります。"
+                        : "このページです。"}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-base">登録の確認・やり直しは、ホームの下の「設定」から。</p>
+      </Card>
+
       <Card title="手伝う人は、3つだけ">
         <ol className="space-y-4">
-          <Step n={1} title="雪の朝、LINE に1問だけ届く" text="「今朝、何分動けますか？」0・15・30・60 から1つ押すだけ。" />
-          <Step n={2} title="「行く」を押す" text="近くの家と時間が届きます。地図で同じチームの仲間も見えます。" />
-          <Step n={3} title="終わったら写真を1枚" text="地図のマスがチームの色に塗られて、その朝だけのカードが届きます。" />
+          <Step n={1} title="雪の朝、LINE に1問だけ届く" text="「今朝、何分動けますか？」5分・15分・30分・60分・今朝は休む から1つ押すだけ。" />
+          <Step n={2} title="「行く」を押す" text="近くの家と時間が届きます。町の地図で同じチームの仲間も見えます。" />
+          <Step n={3} title="終わったら写真を1枚" text="「写真を撮る」ボタンで1枚。町の地図のマスがチームの色に塗られて、その朝だけのカードが届きます。" />
         </ol>
       </Card>
 
       <Card title="手伝ってほしい人は、1つだけ">
         <p>
-          雪の朝に届く「今朝、玄関は出られそうですか？」に、<b>はい・いいえ・一緒なら</b>から1つ押すだけ。
+          雪の朝に届く「今朝、玄関から外に出られそうですか？」に、<b>はい・いいえ・誰かと一緒なら</b>から1つ押すだけ。
         </p>
         <p className="text-ink-soft">LINE を使っていない方は、ご家族が代わりに登録できます。終わったらご家族にも知らせが届きます。</p>
       </Card>

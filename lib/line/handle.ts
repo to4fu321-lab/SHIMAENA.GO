@@ -64,7 +64,7 @@ export async function finishRegistration(lineUserId: string, reg: Registration):
     };
     await r.upsertParticipant(p);
     const team = getTeam(teamId);
-    return [MSG.helperDone(team.name, team.colorName), MSG.soloInvite(liffUrl("/solo"), "helper")];
+    return [...MSG.helperDone(team.name, team.colorName), ...MSG.soloInvite(liffUrl("/solo"), "helper")];
   }
 
   const level = await judgeLevel({ soloMinutes: reg.soloMinutes, clearArea: reg.clearArea });
@@ -87,13 +87,13 @@ export async function finishRegistration(lineUserId: string, reg: Registration):
   const base = await r.findBaseByRequester(p.id);
   if (!base) await r.upsertBase({ id: `base-${p.id}`, number: await r.nextBaseNumber(), requesterId: p.id });
 
-  const messages: LineMessage[] = [MSG.requesterDone(level.message, level.level, level.requiredPeople)];
+  const messages: LineMessage[] = MSG.requesterDone(level.message, level.level, level.requiredPeople);
   if (reg.proxy) {
     const link: FamilyLink = { familyLineUserId: lineUserId, requesterId: p.id, linkCode: makeLinkCode() };
     await r.addFamilyLink(link);
-    messages.push(MSG.proxyDone(link.linkCode));
+    messages.push(...MSG.proxyDone(link.linkCode));
   } else {
-    messages.push(MSG.soloInvite(liffUrl("/solo"), "requester"));
+    messages.push(...MSG.soloInvite(liffUrl("/solo"), "requester"));
   }
   return messages;
 }
@@ -102,16 +102,16 @@ export async function finishRegistration(lineUserId: string, reg: Registration):
 export async function applyLink(lineUserId: string, code: string, who: "self" | "family"): Promise<LineMessage[]> {
   const r = repo();
   const found = await r.findFamilyLinkByCode(code);
-  if (!found) return [MSG.codeNotFound()];
+  if (!found) return MSG.codeNotFound();
   const requester = await r.findParticipant(found.requesterId);
-  if (!requester) return [MSG.codeNotFound()];
+  if (!requester) return MSG.codeNotFound();
 
   if (who === "self") {
     await r.upsertParticipant({ ...requester, lineUserId });
-    return [MSG.linkedSelf()];
+    return MSG.linkedSelf();
   }
   await r.addFamilyLink({ familyLineUserId: lineUserId, requesterId: requester.id, linkCode: makeLinkCode() });
-  return [MSG.linkedFamily()];
+  return MSG.linkedFamily();
 }
 
 export async function handleEvent(ev: LineEvent): Promise<void> {
@@ -133,19 +133,19 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     return;
   }
 
-  // 「いまからやる」（リッチメニュー／文字）→ 何分？ → 近くの小タスクを1件
-  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^いまからやる$/.test(ev.message.text.trim())) {
-    if (ev.replyToken) await reply(ev.replyToken, [MSG.nowAsk()]);
+  // 「出動する」（リッチメニュー／文字。前の名前「いまからやる」も受け付ける）→ 何分？ → 近くの小タスクを1件
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^(出動する|出動|いまからやる)$/.test(ev.message.text.trim())) {
+    if (ev.replyToken) await reply(ev.replyToken, MSG.nowAsk());
     return;
   }
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("now:")) {
     const p = await r.findParticipantByLineUserId(lineUserId);
     const minutes = Number(ev.postback.data.slice(4));
     const messages = !p
-      ? [MSG.notRegistered()]
-      : minutes === 5 || minutes === 15 || minutes === 30
+      ? MSG.notRegistered()
+      : minutes === 5 || minutes === 15 || minutes === 30 || minutes === 60
         ? await offerTaskNow(p.id, minutes)
-        : [MSG.nowAsk()];
+        : MSG.nowAsk();
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
@@ -155,10 +155,10 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     const data = ev.postback.data;
     const p = await r.findParticipantByLineUserId(lineUserId);
     let messages: LineMessage[];
-    if (!p) messages = [MSG.notRegistered()];
+    if (!p) messages = MSG.notRegistered();
     else if (data.startsWith("help:go=")) messages = await joinMission(p.id, data.slice("help:go=".length));
-    else if (data.startsWith("knock:")) messages = [MSG.knockThanks()];
-    else messages = [MSG.helpDeclined()];
+    else if (data.startsWith("knock:")) messages = MSG.knockThanks();
+    else messages = MSG.helpDeclined();
     if (ev.replyToken) await reply(ev.replyToken, messages);
     await escalateHelpIfDue();
     return;
@@ -181,7 +181,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   // 「行く」「今朝は行けない」
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("go:")) {
     const p = await r.findParticipantByLineUserId(lineUserId);
-    const messages = p ? await setGoing(p.id, ev.postback.data === "go:yes") : [MSG.notRegistered()];
+    const messages = p ? await setGoing(p.id, ev.postback.data === "go:yes") : MSG.notRegistered();
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
@@ -189,7 +189,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   // 「それでも完了にする」（写真なし、本人の報告）
   if (ev.type === "postback" && "postback" in ev && ev.postback.data === "done:manual") {
     const p = await r.findParticipantByLineUserId(lineUserId);
-    const messages = p ? (await completeManually(p.id)).messages : [MSG.notRegistered()];
+    const messages = p ? (await completeManually(p.id)).messages : MSG.notRegistered();
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
@@ -198,14 +198,14 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "message" && "message" in ev && ev.message.type === "image") {
     const p = await r.findParticipantByLineUserId(lineUserId);
     let messages: LineMessage[];
-    if (!p) messages = [MSG.notRegistered()];
+    if (!p) messages = MSG.notRegistered();
     else {
       const content = await getMessageContent(ev.message.id);
       const mediaType = content && sniffImageType(content.bytes);
       messages =
         content && mediaType
           ? (await completeWithPhoto(p.id, { bytes: content.bytes, mediaType })).messages
-          : [MSG.photoNotCleared("写真を受け取れませんでした。")];
+          : MSG.photoNotCleared("写真を受け取れませんでした。");
     }
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
@@ -214,7 +214,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   let input = toInput(ev);
   if (!input) return;
   if (input.kind === "code" && !(await r.findFamilyLinkByCode(input.code))) {
-    if (ev.replyToken) await reply(ev.replyToken, [MSG.codeNotFound()]);
+    if (ev.replyToken) await reply(ev.replyToken, MSG.codeNotFound());
     return;
   }
   if (input.kind === "text") input = { kind: "text", text: input.text };

@@ -19,6 +19,9 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 <img src="docs/screens/admin.png" width="30%" alt="デモ操作">
 </p>
 <p>
+<img src="docs/screens/richmenu.png" width="60%" alt="LINE のリッチメニュー: 出動する／町の地図／活動カード／使い方">
+</p>
+<p>
 <img src="docs/screens/solo.png" width="30%" alt="ソロ出動">
 <img src="docs/screens/share-today.png" width="30%" alt="SNS シェアカード（今日の出動）">
 <img src="docs/screens/public-town.png" width="30%" alt="公開ページ（町の雪解け）">
@@ -140,7 +143,7 @@ npm run dev
 
 ### 日曜の「今週の群れ」とメニュー
 - 日曜の夜（21:00 の cron、または `/admin` の「6」）に、今週の実況（Claude、キーなしは定型）・チーム順位・称号（3日で「早起きのエナガ」、5日で「朝の群れの主」＋レアカード確定）・週の目標ボーナス（関わった家が全部 8:00 までならチーム全員 +20）を LINE で送り、翌週のチームを出撃回数と体力でバランスよく組み直す。家族には「今週は N 回手伝ってもらいました」。
-- LINE のリッチメニュー（地図／カード帳／いまからやる／あそびかた／設定）は `/admin` の「リッチメニューを作る」で作る（画像は SVG から）。LIFF のエンドポイント URL は公開 URL のルート（`https://yukikaki-karano-kaihou.vercel.app/`）にすると、`/map` と `/cards` が LINE の中で開く。
+- LINE のリッチメニュー（出動する／町の地図／活動カード／使い方。大きいサイズ 2500×1686）は `/admin` の「リッチメニューを作る」で作る（画像は SVG から。見本は `docs/screens/richmenu.png`）。設定は Web の `/settings`。LIFF のエンドポイント URL は公開 URL のルート（`https://yukikaki-karano-kaihou.vercel.app/`）にすると、`/map` と `/cards` が LINE の中で開く。
 - 「いまからやる」→ 5／15／30分 を選ぶと、近く（1km 以内）の人手不足の家の小タスクか、作業中の家の偵察を1件提案する。
 
 ### 点呼を自動で動かす（Vercel Cron）

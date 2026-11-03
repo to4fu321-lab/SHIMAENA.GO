@@ -105,7 +105,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
         {children}
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link href={`/cards${q}`} className="btn btn-white text-base">
-            カード帳
+            活動カード
           </Link>
           <button onClick={onClose} className="btn btn-ink text-base">
             閉じる

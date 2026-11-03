@@ -3,7 +3,10 @@
 export type QuickReplyAction =
   | { type: "postback"; label: string; data: string; displayText?: string }
   | { type: "location"; label: string }
-  | { type: "message"; label: string; text: string };
+  | { type: "message"; label: string; text: string }
+  | { type: "uri"; label: string; uri: string }
+  | { type: "camera"; label: string }
+  | { type: "cameraRoll"; label: string };
 
 export interface TextMessage {
   type: "text";

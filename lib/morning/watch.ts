@@ -95,10 +95,10 @@ export interface TaskOffer {
 }
 
 /**
- * 「いまからやる（5／15／30分）」: 近くの小タスクを1件選ぶ（spec 2 日中）。
+ * 「出動する（5／15／30／60分）」: 近くの小タスクを1件選ぶ（spec 2 日中）。
  * 人手不足の家を優先し、なければ作業中の家の偵察・補給（5分）。動ける分数に収まるものだけ。
  */
-export function pickTaskNow(s: MorningRecord, roster: Roster, p: Participant, minutes: 5 | 15 | 30): TaskOffer | null {
+export function pickTaskNow(s: MorningRecord, roster: Roster, p: Participant, minutes: 5 | 15 | 30 | 60): TaskOffer | null {
   if (busyIds(s).has(p.id)) return null; // もうどこかに向かっている
   const candidates: TaskOffer[] = [];
   for (const m of s.morning.missions) {

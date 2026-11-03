@@ -309,7 +309,7 @@ async function AdminContent() {
 
       <section className="space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
         <h2 className="font-bold">LINE のメニュー</h2>
-        <p className="text-sm text-ink-soft">地図／カード帳／いまからやる／あそびかた／設定 の5つ。画像は SVG から作る。何度押しても作り直すだけ。</p>
+        <p className="text-sm text-ink-soft">出動する／町の地図／活動カード／使い方 の4つ（大きいサイズ 2500×1686）。設定は Web の /settings。画像は SVG から作る。何度押しても作り直すだけ。</p>
         <form action={makeRichMenu}>
           <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">リッチメニューを作る</button>
         </form>

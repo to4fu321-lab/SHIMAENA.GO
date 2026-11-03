@@ -17,7 +17,13 @@ export interface ActionResult {
   canManual?: boolean;
 }
 
-const firstText = (messages: { type: string }[]) => (messages[0] as TextMessage | undefined)?.text ?? "";
+/** LINE の返事を画面の1行に: 吹き出しは1つ1つの話題なので、最初の2つ（何が起きたか・次にすること）をつなげて出す */
+const firstText = (messages: { type: string }[]) =>
+  messages
+    .filter((m): m is TextMessage => m.type === "text")
+    .slice(0, 2)
+    .map((m) => m.text.replace(/\n/g, " "))
+    .join(" ");
 
 export async function goAction(viewerId: string): Promise<ActionResult> {
   const id = await trustedViewer(viewerId);

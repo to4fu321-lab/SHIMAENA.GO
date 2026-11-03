@@ -72,7 +72,7 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
           町の雪解けを見る
         </Link>
         <Link href="/rules" className="btn btn-white text-base">
-          あそびかた
+          使い方
         </Link>
       </section>
     </main>

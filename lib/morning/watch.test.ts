@@ -9,7 +9,8 @@ import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 import { applyLateAnswer, helpDue, missingPeople, pickHelpTargets } from "./watch";
 
-const t = (m: { type: string }) => (m as TextMessage).text;
+// 吹き出しが分かれても読めるように、全部の文をつなげて調べる
+const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
 
 async function setup(seed = 5) {
   await announce({ date: DEMO_DATE, forecastCm: 12 });
@@ -96,7 +97,7 @@ describe("ヘルプ通知の流れ（メモリ保存・LINE には送らない�
     const s = await setup(5);
     const short = s.morning.missions.find((m) => m.status === "short");
     if (!short) return;
-    expect(t((await joinMission("p-help", short.id))[0])).toContain("ありがとう");
+    expect(t((await joinMission("p-help", short.id)))).toContain("ありがとう");
     const after = await loadMorning();
     const mine = after.morning.sorties.find((x) => x.participantId === "p-help" && x.missionId === short.id);
     expect(mine?.status).toBe("going");
@@ -128,12 +129,12 @@ describe("ヘルプ通知の流れ（メモリ保存・LINE には送らない�
     const mine = after.morning.missions.find((m) => m.baseId === "base-p-req");
     expect(mine?.status).toBe("no_answer");
     expect(after.log.some((l) => l.includes("拠点99: 返事なし") && l.includes("家族 1 人"))).toBe(true);
-    expect(t((await answerRollcall("U-req", "rc:ans=no"))[0])).toContain("人を集めます");
+    expect(t((await answerRollcall("U-req", "rc:ans=no")))).toContain("人を集めます");
     const late = await loadMorning();
     expect(late.morning.missions.find((m) => m.baseId === "base-p-req")?.status).toBe("short");
     expect(late.help?.[mine!.id]?.stage).toBe(1);
     // 「はい」なら取り下げ
-    expect(t((await answerRollcall("U-req", "rc:ans=yes"))[0])).toContain("取り下げ");
+    expect(t((await answerRollcall("U-req", "rc:ans=yes")))).toContain("取り下げ");
     expect((await loadMorning()).morning.missions.some((m) => m.baseId === "base-p-req")).toBe(false);
   });
 

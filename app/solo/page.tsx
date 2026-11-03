@@ -18,7 +18,7 @@ import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
-export const metadata: Metadata = { title: "ソロ出動 ・ シマエナGO" };
+export const metadata: Metadata = { title: "出動する ・ シマエナGO" };
 
 async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string }> }) {
   await connection();
@@ -35,7 +35,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
       <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-4 py-6 text-ink">
         <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
         <h1 className="text-2xl font-bold">
-          ひとりで5分 <span className="text-base font-normal text-ink-soft">ソロ出動</span>
+          出動する <span className="text-base font-normal text-ink-soft">ひとりで5分（ソロ出動）</span>
         </h1>
         <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">仲間がいなくても、自分の5分で町を変えられる。</p>
@@ -49,7 +49,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
             <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
           )}
           <Link href="/rules" className="btn btn-white text-lg">
-            あそびかた
+            使い方
           </Link>
           <p className="text-sm text-ink-soft">
             デモ: <Link href="/solo?as=h3" className="underline">架空の手伝う側として開く</Link>

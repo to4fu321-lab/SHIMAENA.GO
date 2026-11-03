@@ -6,7 +6,8 @@ import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 import { busyIds, listShort } from "./watch";
 
-const t = (m: { type: string }) => (m as TextMessage).text;
+// 吹き出しが分かれても読めるように、全部の文をつなげて調べる
+const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
 
 async function setup(seed = 5) {
   await announce({ date: DEMO_DATE, forecastCm: 12 });
@@ -52,7 +53,7 @@ describe("あと1人で救える家と「5分だけ参加」（spec v1.1）", ()
 
     const r1 = await joinNearby(free[0].id, 5);
     expect(r1.joined).toBe(true);
-    expect(t(r1.messages[0])).toContain(`拠点${r1.baseNumber}`);
+    expect(t(r1.messages)).toContain(`拠点${r1.baseNumber}`);
     let after = await loadMorning();
     const mine = after.morning.sorties.find((x) => x.participantId === free[0].id && x.status === "going")!;
     expect(mine.status).toBe("going");
@@ -78,7 +79,7 @@ describe("あと1人で救える家と「5分だけ参加」（spec v1.1）", ()
     const s = await loadMorning();
     const full = s.morning.missions.find((m) => m.status === "assigned" || m.status === "in_progress");
     if (!full || free.length === 0) return; // この乱数ではそろった家が残らない
-    expect(t((await joinMission(free[0].id, full.id))[0])).toContain("そろいました");
-    expect(t((await joinMission(free[0].id, full.id, new Date(), { extra: true }))[0])).toContain("ありがとうございます");
+    expect(t((await joinMission(free[0].id, full.id)))).toContain("そろいました");
+    expect(t((await joinMission(free[0].id, full.id, new Date(), { extra: true })))).toContain("ありがとうございます");
   });
 });

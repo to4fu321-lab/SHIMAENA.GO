@@ -1,5 +1,6 @@
 // LINE Messaging API を呼ぶ（返信・プッシュ・プロフィール）。サーバー側でだけ使う。
 // LINE_CHANNEL_ACCESS_TOKEN がない間は送らずにログに出す（開発用）。
+import { fitFive } from "./messages";
 import type { LineMessage } from "./types";
 
 const API = "https://api.line.me/v2/bot";
@@ -31,19 +32,19 @@ async function post(pathname: string, body: unknown): Promise<void> {
 /** 返信（無料。replyToken は1回・約1分だけ有効、5通まで） */
 export async function reply(replyToken: string, messages: LineMessage[]): Promise<void> {
   if (messages.length === 0) return;
-  await post("/message/reply", { replyToken, messages: messages.slice(0, 5) });
+  await post("/message/reply", { replyToken, messages: fitFive(messages) });
 }
 
 /** プッシュ（無料プランは月 200 通までなので、予告・点呼・作戦など大事なものだけに使う） */
 export async function push(to: string, messages: LineMessage[]): Promise<void> {
   if (messages.length === 0) return;
-  await post("/message/push", { to, messages: messages.slice(0, 5) });
+  await post("/message/push", { to, messages: fitFive(messages) });
 }
 
 /** 同じ文面を何人かに送る（500 人まで。通数は人数ぶん数える） */
 export async function multicast(to: string[], messages: LineMessage[]): Promise<void> {
   if (to.length === 0 || messages.length === 0) return;
-  await post("/message/multicast", { to: to.slice(0, 500), messages: messages.slice(0, 5) });
+  await post("/message/multicast", { to: to.slice(0, 500), messages: fitFive(messages) });
 }
 
 /** ユーザーが送ってきた画像などの中身を取る（完了写真） */

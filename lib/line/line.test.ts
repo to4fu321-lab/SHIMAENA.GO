@@ -40,19 +40,19 @@ describe("登録の会話（純粋な関数）", () => {
   it("手伝う側: 友だち追加 → 役割 → 位置 → 2問 → 完了", () => {
     let out = step(undefined, { kind: "follow" });
     expect(out.session?.step).toBe("role");
-    expect(labels(out.messages[0] as TextMessage)).toEqual(["雪かきをお願いしたい", "雪かきを手伝う", "家族の代わりに登録"]);
+    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["雪かきをお願いしたい", "雪かきを手伝う", "家族の代わりに登録"]);
 
     out = step(out.session!, { kind: "postback", data: "reg:role=helper" });
     expect(out.session).toMatchObject({ step: "location", role: "helper", proxy: false });
-    expect((out.messages[0] as TextMessage).quickReply?.items[0].action.type).toBe("location");
+    expect((out.messages.at(-1) as TextMessage).quickReply?.items[0].action.type).toBe("location");
 
     out = step(out.session!, { kind: "location", location: [43.04, 141.37] });
     expect(out.session?.step).toBe("q1");
-    expect(labels(out.messages[0] as TextMessage)).toEqual(["15分", "30分", "60分"]);
+    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["15分", "30分", "60分"]);
 
     out = step(out.session!, { kind: "postback", data: "reg:q1=30" });
     expect(out.session?.step).toBe("q2");
-    expect(labels(out.messages[0] as TextMessage)).toEqual(["ある", "ない"]);
+    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["ある", "ない"]);
 
     out = step(out.session!, { kind: "postback", data: "reg:q2=yes" });
     expect(out.session).toBeNull();
@@ -62,9 +62,9 @@ describe("登録の会話（純粋な関数）", () => {
   it("依頼者: 2問の選択肢が違い、答えがそのまま残る", () => {
     let out = step({ step: "role" }, { kind: "postback", data: "reg:role=requester" });
     out = step(out.session!, { kind: "location", location: [43.041, 141.371] });
-    expect(labels(out.messages[0] as TextMessage)).toEqual(["15分くらい", "30分くらい", "60分以上", "わからない"]);
+    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["15分くらい", "30分くらい", "60分以上", "わからない"]);
     out = step(out.session!, { kind: "postback", data: "reg:q1=unknown" });
-    expect(labels(out.messages[0] as TextMessage)).toEqual(["玄関前まで", "車庫前まで", "道路まで"]);
+    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["玄関前まで", "車庫前まで", "道路まで"]);
     out = step(out.session!, { kind: "postback", data: "reg:q2=road" });
     expect(out.done).toEqual({
       role: "requester",
@@ -78,7 +78,7 @@ describe("登録の会話（純粋な関数）", () => {
   it("家族の代理登録: 依頼者の質問になり、proxy が付く", () => {
     let out = step({ step: "role" }, { kind: "postback", data: "reg:role=family" });
     expect(out.session).toMatchObject({ step: "location", role: "requester", proxy: true });
-    expect((out.messages[0] as TextMessage).text).toContain("ご家族");
+    expect((out.messages.at(-1) as TextMessage).text).toContain("お願いする方の家");
     out = step(out.session!, { kind: "location", location: [43.04, 141.37] });
     out = step(out.session!, { kind: "postback", data: "reg:q1=60" });
     out = step(out.session!, { kind: "postback", data: "reg:q2=garage" });
@@ -89,7 +89,7 @@ describe("登録の会話（純粋な関数）", () => {
     const s: RegSession = { step: "q1", role: "helper", proxy: false, location: [1, 2] };
     const byText = step(s, { kind: "text", text: "はい" });
     expect(byText.session).toEqual(s);
-    expect(labels(byText.messages[0] as TextMessage)).toEqual(["15分", "30分", "60分"]);
+    expect(labels(byText.messages.at(-1) as TextMessage)).toEqual(["15分", "30分", "60分"]);
     const byOldButton = step(s, { kind: "postback", data: "reg:role=helper" });
     expect(byOldButton.session).toEqual(s);
     const wrongValue = step(s, { kind: "postback", data: "reg:q1=999" });
@@ -101,14 +101,14 @@ describe("登録の会話（純粋な関数）", () => {
     expect(restart.session).toEqual({ step: "role" });
     const idle = step(undefined, { kind: "text", text: "おはよう" });
     expect(idle.session).toBeNull();
-    expect((idle.messages[0] as TextMessage).text).toContain("登録");
+    expect(labels(idle.messages.at(-1) as TextMessage)).toContain("登録をやり直す");
     expect(step(undefined, { kind: "location", location: [1, 2] }).messages).toEqual([]);
   });
 
   it("連携コード → 本人か家族かを聞く → 決まる", () => {
     let out = step(undefined, { kind: "code", code: "123456" });
     expect(out.session).toEqual({ step: "linkWho", linkCode: "123456" });
-    expect(labels(out.messages[0] as TextMessage)).toEqual(["雪かきをお願いする本人", "家族（お知らせを受け取る）"]);
+    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["お願いする本人", "家族（知らせを受け取る）"]);
     out = step(out.session!, { kind: "postback", data: "link:who=self" });
     expect(out.session).toBeNull();
     expect(out.link).toEqual({ code: "123456", who: "self" });
@@ -178,7 +178,7 @@ describe("Webhook の処理（メモリ保存・LINE には送らない）", () 
       soloMinutes: 60,
       clearArea: "road",
     });
-    expect((msgs[0] as TextMessage).text).toContain("家のレベル: 3");
+    expect(msgs.map((m) => (m as TextMessage).text).join("\n")).toContain("家のレベル: 3");
     const p = await memoryRepo.findParticipantByLineUserId(u);
     expect(p).toMatchObject({ role: "requester", level: 3, soloMinutes: 60, clearArea: "road" });
     const base = await memoryRepo.findBaseByRequester(p!.id);
@@ -194,7 +194,7 @@ describe("Webhook の処理（メモリ保存・LINE には送らない）", () 
       soloMinutes: 30,
       clearArea: "entrance",
     });
-    const code = /連携コード: (\d{6})/.exec((msgs[1] as TextMessage).text)?.[1];
+    const code = /連携コード: (\d{6})/.exec(msgs.map((m) => (m as TextMessage).text).join("\n"))?.[1];
     expect(code).toMatch(/^\d{6}$/);
     const link = await memoryRepo.findFamilyLinkByCode(code!);
     expect(link?.familyLineUserId).toBe(family);

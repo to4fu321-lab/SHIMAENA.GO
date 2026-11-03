@@ -7,7 +7,8 @@ import { announce, answerRollcall, plan, planIfDue, ring } from "./ops";
 import { TOWN_ROSTER } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 
-const t = (m: { type: string }) => (m as TextMessage).text;
+// 吹き出しが分かれても読めるように、全部の文をつなげて調べる
+const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
 
 describe("朝の本番の操作（メモリ保存・LINE には送らない）", () => {
   it("予告 → 点呼 → LINE の答え → 作戦、が通る", async () => {
@@ -28,9 +29,9 @@ describe("朝の本番の操作（メモリ保存・LINE には送らない）",
     expect(announced.log.at(-1)).toContain("予告を LINE で 1 人に送信");
 
     // 点呼の前に答えても受け付けない
-    expect(t((await answerRollcall("U-real", "rc:ans=30"))[0])).toContain("点呼の時間ではありません");
+    expect(t((await answerRollcall("U-real", "rc:ans=30")))).toContain("点呼の時間ではありません");
     // 登録していない人
-    expect(t((await answerRollcall("U-nobody", "rc:ans=30"))[0])).toContain("登録がまだ");
+    expect(t((await answerRollcall("U-nobody", "rc:ans=30")))).toContain("登録がまだ");
 
     const rung = await ring();
     expect(rung.record.morning.rollcall.status).toBe("open");
@@ -38,8 +39,8 @@ describe("朝の本番の操作（メモリ保存・LINE には送らない）",
     expect((await ring()).sent).toBe(0); // 2回目は何もしない
 
     // おかしな値なら質問をもう一度
-    expect((await answerRollcall("U-real", "rc:ans=99"))[0]).toMatchObject({ quickReply: expect.anything() });
-    expect(t((await answerRollcall("U-real", "rc:ans=30"))[0])).toContain("6:40");
+    expect((await answerRollcall("U-real", "rc:ans=99")).at(-1)).toMatchObject({ quickReply: expect.anything() });
+    expect(t((await answerRollcall("U-real", "rc:ans=30")))).toContain("6:40");
     let s = await loadMorning();
     expect(s.answers).toEqual([expect.objectContaining({ participantId: "p-real", answer: 30 })]);
 

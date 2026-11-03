@@ -146,7 +146,7 @@ export default function SoloScreen({
       )}
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">
-          ひとりで5分 <span className="text-base font-normal text-ink-soft">ソロ出動</span>
+          出動する <span className="text-base font-normal text-ink-soft">ひとりで5分（ソロ出動）</span>
         </h1>
         <Link href={`/${q}`} className="btn btn-white min-h-11 px-3 text-sm">
           ホーム
@@ -217,7 +217,7 @@ export default function SoloScreen({
                   {shortHouses > 0 ? `5分だけ助けに行く（あと1人の家 ${shortHouses} 軒）` : "5分だけ参加（偵察・補給）"}
                 </button>
                 <Link href={`/map${q}`} className="btn btn-white text-base">
-                  地図で見る
+                  町の地図で見る
                 </Link>
               </div>
             ) : (
@@ -227,7 +227,7 @@ export default function SoloScreen({
             )}
             {helpText && (
               <p className="mt-2 rounded-2xl bg-ice-soft px-3 py-2 text-sm" role="status">
-                {helpText} <Link href={`/map${q}`} className="font-bold underline">地図へ</Link>
+                {helpText} <Link href={`/map${q}`} className="font-bold underline">町の地図へ</Link>
               </p>
             )}
           </div>
@@ -279,10 +279,10 @@ export default function SoloScreen({
       />
       <nav className="grid grid-cols-2 gap-3">
         <Link href={`/map${q}`} className="btn btn-white text-lg">
-          みんなで出動（地図）
+          町の地図
         </Link>
         <Link href={`/cards${q}`} className="btn btn-white text-lg">
-          カード帳
+          活動カード
         </Link>
       </nav>
     </main>

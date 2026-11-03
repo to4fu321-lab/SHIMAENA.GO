@@ -49,7 +49,7 @@ export function parseText(text: string): { kind: "restart" } | { kind: "code"; c
 }
 
 /** いまの段階の質問をもう一度出す */
-function question(s: RegSession): LineMessage {
+function question(s: RegSession): LineMessage[] {
   switch (s.step) {
     case "role":
       return MSG.welcome();
@@ -78,34 +78,34 @@ export function step(session: RegSession | undefined, input: RegInput): RegOutco
 
   if (input.kind === "follow" || input.kind === "restart") {
     const next: RegSession = { step: "role" };
-    return { session: next, messages: [question(next)] };
+    return { session: next, messages: question(next) };
   }
 
   if (input.kind === "code") {
     const next: RegSession = { step: "linkWho", linkCode: input.code };
-    return { session: next, messages: [question(next)] };
+    return { session: next, messages: question(next) };
   }
 
   if (!s) {
     // 登録の途中ではない。文字が来たら案内だけ返す
-    return { session: null, messages: input.kind === "text" ? [MSG.help()] : [] };
+    return { session: null, messages: input.kind === "text" ? MSG.help() : [] };
   }
 
   if (input.kind === "location") {
-    if (s.step !== "location") return { session: s, messages: [question(s)] };
+    if (s.step !== "location") return { session: s, messages: question(s) };
     const next: RegSession = { ...s, step: "q1", location: input.location };
-    return { session: next, messages: [question(next)] };
+    return { session: next, messages: question(next) };
   }
 
   if (input.kind === "postback") {
     const d = parseData(input.data);
-    if (!d) return { session: s, messages: [question(s)] };
+    if (!d) return { session: s, messages: question(s) };
 
     if (d.ns === "link" && d.key === "who" && s.step === "linkWho" && s.linkCode) {
       if (d.value === "self" || d.value === "family") {
         return { session: null, messages: [], link: { code: s.linkCode, who: d.value } };
       }
-      return { session: s, messages: [question(s)] };
+      return { session: s, messages: question(s) };
     }
 
     if (d.ns === "reg" && d.key === "role" && s.step === "role") {
@@ -115,26 +115,26 @@ export function step(session: RegSession | undefined, input: RegInput): RegOutco
           : d.value === "requester" || d.value === "helper"
             ? { step: "location", role: d.value, proxy: false }
             : s;
-      return { session: next, messages: [question(next)] };
+      return { session: next, messages: question(next) };
     }
 
     if (d.ns === "reg" && d.key === "q1" && s.step === "q1") {
       const ok = s.role === "helper" ? d.value in MORNING : d.value in SOLO;
-      if (!ok) return { session: s, messages: [question(s)] };
+      if (!ok) return { session: s, messages: question(s) };
       const next: RegSession = { ...s, step: "q2", q1: d.value };
-      return { session: next, messages: [question(next)] };
+      return { session: next, messages: question(next) };
     }
 
     if (d.ns === "reg" && d.key === "q2" && s.step === "q2" && s.location && s.q1 !== undefined) {
       if (s.role === "helper") {
-        if (d.value !== "yes" && d.value !== "no") return { session: s, messages: [question(s)] };
+        if (d.value !== "yes" && d.value !== "no") return { session: s, messages: question(s) };
         return {
           session: null,
           messages: [],
           done: { role: "helper", location: s.location, morningMinutes: MORNING[s.q1], hasTools: d.value === "yes" },
         };
       }
-      if (!(d.value in AREA)) return { session: s, messages: [question(s)] };
+      if (!(d.value in AREA)) return { session: s, messages: question(s) };
       return {
         session: null,
         messages: [],
@@ -149,9 +149,9 @@ export function step(session: RegSession | undefined, input: RegInput): RegOutco
     }
 
     // 段階に合わないボタン（古いメッセージのボタンなど）→ いまの質問をもう一度
-    return { session: s, messages: [question(s)] };
+    return { session: s, messages: question(s) };
   }
 
   // 途中で文字が来た → いまの質問をもう一度
-  return { session: s, messages: [question(s)] };
+  return { session: s, messages: question(s) };
 }

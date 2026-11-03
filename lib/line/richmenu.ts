@@ -1,58 +1,111 @@
-// LINE のリッチメニュー（spec 10）: 地図／カード帳／いまからやる／あそびかた／設定。
-// 画像は SVG から作る（2500×843）。作るときは古い同名メニューを消してから。
+// LINE のリッチメニュー（spec v1.4）: 出動する／町の地図／活動カード／使い方 の4つ。設定は Web の画面（/settings）へ移した。
+// 画像は SVG から作る（大きいサイズ 2500×1686）。左半分が「出動する」（いちばん目立つ灯りオレンジ）、右に3つを縦に並べる。
+// 色・アイコン・名前は Web と同じもの（lib/brand.ts）。作るときは古い同名メニューを消してから。
+import { COLORS, MENU, type MenuKey, iconSvg } from "../brand";
 import { svgToPng } from "../cards/png";
-import { baseUrl, liffUrl } from "../url";
+import { liffUrl } from "../url";
 
 export { liffUrl };
 
 export const RICH_MENU_NAME = "shimaena-main";
 const W = 2500;
-const H = 843;
+const H = 1686;
+const GAP = 30; // 4つの領域をはっきり分ける雪の余白
+const FONT = "Zen Maru Gothic, sans-serif";
 
 export interface MenuItem {
+  key: MenuKey;
   label: string;
-  icon: string; // 絵文字ではなく簡単な図形の SVG
+  sub: string;
   action: { type: "uri"; uri: string } | { type: "message"; text: string };
+  /** タップ領域（LINE の仕様どおり、画像の座標で隙間なく敷きつめる） */
+  bounds: { x: number; y: number; width: number; height: number };
 }
 
 export function menuItems(): MenuItem[] {
+  const half = W / 2;
+  const row = H / 3;
+  const item = (key: MenuKey, action: MenuItem["action"], bounds: MenuItem["bounds"]): MenuItem => ({
+    key,
+    label: MENU[key].label,
+    sub: MENU[key].sub,
+    action,
+    bounds,
+  });
   return [
-    { label: "地図", icon: `<rect x="-60" y="-50" width="120" height="100" rx="14" fill="#fff"/><path d="M-60 -10 L-20 -30 L20 -10 L60 -30 L60 50 L20 30 L-20 50 L-60 30 Z" fill="#cdbaff"/><circle cx="0" cy="0" r="18" fill="#ff4f8b"/>`, action: { type: "uri", uri: liffUrl("/map") } },
-    { label: "カード帳", icon: `<rect x="-50" y="-60" width="90" height="120" rx="12" fill="#fff" transform="rotate(-8)"/><rect x="-40" y="-60" width="90" height="120" rx="12" fill="#ffb3d9" transform="rotate(6)"/><circle cx="5" cy="-5" r="22" fill="#fff"/>`, action: { type: "uri", uri: liffUrl("/cards") } },
-    { label: "いまからやる", icon: `<circle cx="0" cy="0" r="56" fill="#fff"/><path d="M0 -40 V0 L28 16" stroke="#6b4fcf" stroke-width="10" stroke-linecap="round" fill="none"/>`, action: { type: "message", text: "いまからやる" } },
-    { label: "あそびかた", icon: `<rect x="-50" y="-60" width="100" height="120" rx="12" fill="#fff"/><path d="M-28 -24 h56 M-28 0 h56 M-28 24 h32" stroke="#6b4fcf" stroke-width="10" stroke-linecap="round"/>`, action: { type: "uri", uri: `${baseUrl()}/rules` } },
-    { label: "設定", icon: `<circle cx="0" cy="0" r="52" fill="#fff"/><circle cx="0" cy="0" r="18" fill="none" stroke="#6b4fcf" stroke-width="10"/><path d="M0 -52 v14 M0 38 v14 M-52 0 h14 M38 0 h14" stroke="#6b4fcf" stroke-width="10" stroke-linecap="round"/>`, action: { type: "message", text: "登録" } },
+    // 「出動する」は文字を送る → Bot が「何分動けますか？」と聞き、近くの手伝いを探す
+    item("go", { type: "message", text: MENU.go.label }, { x: 0, y: 0, width: half, height: H }),
+    item("map", { type: "uri", uri: liffUrl("/map") }, { x: half, y: 0, width: half, height: row }),
+    item("card", { type: "uri", uri: liffUrl("/cards") }, { x: half, y: row, width: half, height: row }),
+    item("guide", { type: "uri", uri: liffUrl("/rules") }, { x: half, y: row * 2, width: half, height: H - row * 2 }),
   ];
 }
 
+const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** 雪の粒（背景の飾り。位置は固定） */
+function snowDots(): string {
+  const dots = [
+    [60, 70, 9], [400, 22, 6], [880, 40, 8], [1240, 120, 7], [1600, 18, 6], [2050, 50, 9], [2440, 110, 7],
+    [20, 900, 7], [1246, 820, 8], [2480, 900, 6], [300, 1668, 7], [1100, 1660, 6], [1900, 1668, 8],
+  ];
+  return dots.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#ffffff"/>`).join("");
+}
+
+/** 左の大きな「出動する」 */
+function bigTile(it: MenuItem): string {
+  const m = MENU[it.key];
+  const x = it.bounds.x + GAP;
+  const y = it.bounds.y + GAP;
+  const w = it.bounds.width - GAP * 1.5;
+  const h = it.bounds.height - GAP * 2;
+  const cx = x + w / 2;
+  return `
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="64" fill="${m.bg}"/>
+  <circle cx="${cx}" cy="${y + 520}" r="320" fill="#ffffff"/>
+  <g transform="translate(${cx - 220} ${y + 300}) scale(4.4)">${iconSvg(m.icon, COLORS.ink, m.bg)}</g>
+  <rect x="${x + 70}" y="${y + 950}" width="${w - 140}" height="${h - 1020}" rx="48" fill="#ffffff"/>
+  <text x="${cx}" y="${y + 1190}" font-family="${FONT}" font-size="210" font-weight="700" fill="${COLORS.ink}" text-anchor="middle">${esc(it.label)}</text>
+  <text x="${cx}" y="${y + 1370}" font-family="${FONT}" font-size="74" font-weight="700" fill="${COLORS.ink}" text-anchor="middle">${esc(it.sub)}</text>
+  <text x="${cx}" y="${y + 1480}" font-family="${FONT}" font-size="60" font-weight="400" fill="${COLORS.ink}" text-anchor="middle">5分だけでも大歓迎</text>`;
+}
+
+/** 右の小さな3つ（アイコン＋名前＋説明） */
+function smallTile(it: MenuItem): string {
+  const m = MENU[it.key];
+  const x = it.bounds.x + GAP / 2;
+  const y = it.bounds.y + (it.bounds.y === 0 ? GAP : GAP / 2);
+  const w = it.bounds.width - GAP * 1.5;
+  const h = it.bounds.height - GAP * 1.5;
+  const cy = y + h / 2;
+  const light = m.bg === COLORS.warm;
+  return `
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="56" fill="${m.bg}"${light ? ` stroke="${COLORS.ink}" stroke-opacity="0.25" stroke-width="4"` : ""}/>
+  <circle cx="${x + 230}" cy="${cy}" r="170" fill="#ffffff"/>
+  <g transform="translate(${x + 230 - 120} ${cy - 120}) scale(2.4)">${iconSvg(m.icon, COLORS.ink, m.accent)}</g>
+  <text x="${x + 460}" y="${cy + 10}" font-family="${FONT}" font-size="132" font-weight="700" fill="${m.fg}">${esc(it.label)}</text>
+  <text x="${x + 462}" y="${cy + 120}" font-family="${FONT}" font-size="58" font-weight="700" fill="${m.fg}">${esc(it.sub)}</text>`;
+}
+
 export function richMenuSvg(items = menuItems()): string {
-  const cell = W / items.length;
-  const cells = items
-    .map(
-      (it, i) => `
-  <g transform="translate(${cell * i + cell / 2} ${H / 2 - 60})">
-    <g transform="scale(1.6)">${it.icon}</g>
-    <text x="0" y="200" font-family="Zen Maru Gothic, sans-serif" font-size="72" font-weight="700" fill="#3b2a78" text-anchor="middle">${it.label}</text>
-  </g>
-  ${i > 0 ? `<line x1="${cell * i}" y1="80" x2="${cell * i}" y2="${H - 80}" stroke="#fff" stroke-width="4" opacity="0.7"/>` : ""}`,
-    )
-    .join("");
+  const [go, ...rest] = items;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe3f1"/><stop offset="1" stop-color="#dff6f3"/></linearGradient></defs>
-  <rect width="${W}" height="${H}" fill="url(#bg)"/>${cells}
+  <rect width="${W}" height="${H}" fill="${COLORS.snowBlue}"/>
+  ${snowDots()}
+  ${bigTile(go)}
+  ${rest.map(smallTile).join("")}
 </svg>`;
 }
 
 /** LINE API に渡す形 */
 export function richMenuObject(items = menuItems()) {
-  const cell = Math.floor(W / items.length);
   return {
     size: { width: W, height: H },
     selected: true,
     name: RICH_MENU_NAME,
-    chatBarText: "メニュー",
-    areas: items.map((it, i) => ({
-      bounds: { x: cell * i, y: 0, width: cell, height: H },
+    chatBarText: "メニュー（出動・地図）",
+    areas: items.map((it) => ({
+      bounds: it.bounds,
       action: it.action.type === "uri" ? { type: "uri", label: it.label, uri: it.action.uri } : { type: "message", label: it.label, text: it.action.text },
     })),
   };

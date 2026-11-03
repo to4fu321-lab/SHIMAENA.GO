@@ -91,7 +91,7 @@ export default function MapScreen({
       <header className="space-y-2 bg-card px-4 pb-3 pt-3 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-bold leading-tight">
-            みんなで出動
+            町の地図
             <span className="block text-sm font-normal text-ink-soft">
               {month}月{day}日の朝 ・ 予報 {state.rollcall.forecastCm}cm
             </span>

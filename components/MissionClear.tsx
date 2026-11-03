@@ -152,7 +152,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
         </details>
 
         <button onClick={onClose} className="btn btn-ink btn-big mt-4 w-full">
-          地図へ戻る
+          町の地図へ戻る
         </button>
       </div>
     </div>

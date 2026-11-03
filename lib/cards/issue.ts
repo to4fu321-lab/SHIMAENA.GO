@@ -132,7 +132,7 @@ export async function issueCardsForMission(
     cards.push(card);
     if (m.lineUserId) {
       // 初出撃の歓迎は、カードと同じ1回のプッシュにまとめる
-      await push(m.lineUserId, [...(firstFlight ? [MSG.firstFlight(art.townName)] : []), ...cardImageMessages(card.id)]);
+      await push(m.lineUserId, [...(firstFlight ? MSG.firstFlight(art.townName) : []), ...cardImageMessages(card.id)]);
       sent++;
     }
   }
@@ -218,7 +218,7 @@ export async function issueSoloCard(
   const back = renderCardBackSvg(art, { thanks: opts.hitokoto, subtasks: [`${opts.missionLabel}（ソロ出動）`], firstFlight: opts.firstFlight });
   await repo().insertCard(card, svg, back);
   if (p.lineUserId) {
-    await push(p.lineUserId, [...(opts.firstFlight ? [MSG.firstFlight(art.townName)] : []), ...cardImageMessages(card.id)]);
+    await push(p.lineUserId, [...(opts.firstFlight ? MSG.firstFlight(art.townName) : []), ...cardImageMessages(card.id)]);
   }
   return card;
 }

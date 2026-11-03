@@ -11,7 +11,8 @@ import { loadRoster, TOWN_ROSTER } from "./roster";
 import { archiveMorning, listMornings, loadMorning, saveMorning } from "./store";
 import { pickTaskNow } from "./watch";
 
-const t = (m: { type: string }) => (m as TextMessage).text;
+// 吹き出しが分かれても読めるように、全部の文をつなげて調べる
+const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
 
 async function morningDone(date: string, seed: number): Promise<MorningRecord> {
   await announce({ date, forecastCm: 12 });
@@ -102,7 +103,7 @@ describe("いまからやる", () => {
     const s = await loadMorning();
     fillAnswers(s, await loadRoster(), 5);
     await saveMorning(s);
-    expect(t((await offerTaskNow("p-now", 5))[0])).toContain("ありません"); // 作戦前
+    expect(t((await offerTaskNow("p-now", 5)))).toContain("ありません"); // 作戦前
     await plan();
     const planned = await loadMorning();
     const roster = await loadRoster();
@@ -111,8 +112,8 @@ describe("いまからやる", () => {
     if (offer) {
       expect(offer.minutes).toBeLessThanOrEqual(5);
       const msgs = await offerTaskNow("p-now", 5);
-      expect(t(msgs[0])).toContain("お願いできますか");
-      expect((msgs[0] as TextMessage).quickReply?.items[0].action).toMatchObject({ type: "postback", data: `help:go=${offer.mission.id}` });
+      expect(t(msgs)).toContain("お願いできますか");
+      expect((msgs.at(-1) as TextMessage).quickReply?.items[0].action).toMatchObject({ type: "postback", data: `help:go=${offer.mission.id}` });
     }
     // LINE: 「いまからやる」→ 何分？ → now:15
     const ev = (rest: Record<string, unknown>): LineEvent => ({ replyToken: "rt", source: { type: "user", userId: "U-now" }, timestamp: 0, ...rest }) as LineEvent;
@@ -128,16 +129,25 @@ describe("いまからやる", () => {
 });
 
 describe("リッチメニュー", () => {
-  it("5つのボタン（地図／カード帳／いまからやる／あそびかた／設定）と画像", async () => {
+  it("4つのボタン（出動する／町の地図／活動カード／使い方）。設定は Web へ。大きいサイズに隙間なく敷きつめる", async () => {
     const items = menuItems();
-    expect(items.map((i) => i.label)).toEqual(["地図", "カード帳", "いまからやる", "あそびかた", "設定"]);
+    expect(items.map((i) => i.label)).toEqual(["出動する", "町の地図", "活動カード", "使い方"]);
     const obj = richMenuObject(items);
-    expect(obj.areas).toHaveLength(5);
-    expect(obj.areas[2].action).toEqual({ type: "message", label: "いまからやる", text: "いまからやる" });
-    expect(obj.areas[0].bounds).toEqual({ x: 0, y: 0, width: 500, height: 843 });
-    expect(richMenuSvg(items)).toContain("カード帳");
+    expect(obj.size).toEqual({ width: 2500, height: 1686 });
+    expect(obj.areas).toHaveLength(4);
+    expect(obj.areas[0].action).toEqual({ type: "message", label: "出動する", text: "出動する" });
+    expect(obj.areas[0].bounds).toEqual({ x: 0, y: 0, width: 1250, height: 1686 });
+    // タップ領域の面積の合計 = 画像の面積（すき間も重なりもない）
+    const area = obj.areas.reduce((a, x) => a + x.bounds.width * x.bounds.height, 0);
+    expect(area).toBe(2500 * 1686);
+    expect(obj.chatBarText.length).toBeLessThanOrEqual(14);
+    for (const a of obj.areas) expect(a.action.label.length).toBeLessThanOrEqual(20);
+    const svg = richMenuSvg(items);
+    for (const label of ["出動する", "町の地図", "活動カード", "使い方"]) expect(svg).toContain(label);
+    expect(svg).not.toContain("設定");
     const r = await setupRichMenu(); // トークンなし → 画像だけ
     expect(r.richMenuId).toBeNull();
     expect(r.imageBytes).toBeGreaterThan(10_000);
+    expect(r.imageBytes).toBeLessThan(1_000_000); // LINE の画像は 1MB まで
   });
 });

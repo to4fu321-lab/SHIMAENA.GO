@@ -5,6 +5,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import CheerButton from "@/components/CheerButton";
+import Icon from "@/components/Icon";
+import MenuTiles from "@/components/MenuTiles";
 import SnsShare, { type ShareOption } from "@/components/SnsShare";
 import { CHEER_COOKIE, cheeredToday } from "@/lib/public/cheer";
 import { STYLE_NAME } from "@/lib/cards/rarity";
@@ -190,7 +192,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
               {STATUS_TEXT[myView.status]}。いま {myView.goingPeople}人 / 必要 {myView.requiredPeople}人。
             </p>
             <Link href={`/map${q}`} className="btn btn-lamp btn-big">
-              地図で場所を見る
+              町の地図で場所を見る
             </Link>
           </>
         ) : (
@@ -217,8 +219,13 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
             )}
           </div>
           {solo && (
-            <p className="text-base">
-              羽ポイント <b className="text-2xl tabular-nums">{solo.todayFeathers}</b>（合計 {solo.totalFeathers}）・ 連続出動 <b className="text-2xl tabular-nums">{solo.streak}</b> 日
+            <p className="flex flex-wrap gap-x-4 text-base">
+              <span>
+                羽ポイント <b className="text-2xl tabular-nums">{solo.todayFeathers}</b>（合計 {solo.totalFeathers}）
+              </span>
+              <span>
+                連続出動 <b className="text-2xl tabular-nums">{solo.streak}</b> 日
+              </span>
             </p>
           )}
           {myBase && myView ? (
@@ -231,15 +238,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
         </section>
       )}
 
-      {/* することを選ぶ（ボタンは少なく、大きく） */}
-      <nav className="grid gap-3" aria-label="することを選ぶ">
-        <Link href={`/solo${q}`} className="btn btn-ink btn-big">
-          ひとりで5分（ソロ出動）
-        </Link>
-        <Link href={`/map${q}`} className="btn btn-white btn-big">
-          みんなで出動（地図）
-        </Link>
-      </nav>
+      {/* LINE のメニューと同じ4つ（名前・色・アイコンをそろえる） */}
+      <MenuTiles hrefs={{ go: `/solo${q}`, map: `/map${q}`, card: `/cards${q}`, guide: "/rules" }} />
 
       {/* 今朝のようす: 雪のかさ・チームの得点・実況・応援 */}
       <section className="space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今朝のようす">
@@ -294,7 +294,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
               <span className="min-w-0">
                 <span className="eyebrow block text-camellia-deep">今日のシマエナカード</span>
                 <span className="block truncate text-base font-bold">{latestCard.designName}</span>
-                <span className="block text-sm text-ink-soft">{STYLE_NAME[latestCard.style]} ・ カード帳を開く</span>
+                <span className="block text-sm text-ink-soft">{STYLE_NAME[latestCard.style]} ・ 活動カードを開く</span>
               </span>
             </>
           ) : (
@@ -309,14 +309,10 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
       <SnsShare options={shareOptions} />
 
       <nav className="grid gap-3" aria-label="そのほか">
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/rules" className="btn btn-white text-lg">
-            あそびかた
-          </Link>
-          <Link href={`/cards${q}`} className="btn btn-white text-lg">
-            カード帳
-          </Link>
-        </div>
+        <Link href={`/settings${q}`} className="btn btn-white gap-2 text-lg">
+          <Icon name="settings" size={28} accent="var(--ice)" />
+          設定（登録の確認・やり直し）
+        </Link>
         <Link href="/public/town" className="btn text-base text-ink underline">
           町の雪解け（公開ページ）
         </Link>

@@ -8,7 +8,8 @@ import { announce, completeManually, plan, ring } from "./ops";
 import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 
-const t = (m: { type: string }) => (m as TextMessage).text;
+// 吹き出しが分かれても読めるように、全部の文をつなげて調べる
+const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");
 
 describe("写真「確認できない」と手動完了（spec v1.1 9-3）", () => {
   it("通れる＝完了、判断できない＝報告として受け付け、それ以外＝もう一度", () => {
@@ -28,8 +29,10 @@ describe("写真「確認できない」と手動完了（spec v1.1 9-3）", () 
   });
 
   it("「まだ」の返事には「それでも完了にする」ボタンが付く", () => {
-    const m = MSG.photoNotCleared("もう少し");
-    expect(m.quickReply?.items.map((i) => (i.action as { data?: string }).data)).toEqual(["done:manual"]);
+    const m = MSG.photoNotCleared("もう少し").at(-1)!; // ボタンは最後の吹き出しに付く
+    expect(m.quickReply?.items[0].action).toMatchObject({ type: "postback", data: "done:manual" });
+    // 写真をもう一度撮る・選ぶボタンもある（失敗と感じさせず、次にすることを出す）
+    expect(m.quickReply?.items.map((i) => i.action.type)).toEqual(["postback", "camera", "cameraRoll"]);
   });
 
   it("写真なしで完了にすると、本人の報告として記録され、MISSION CLEAR のまとめも返る", async () => {
@@ -44,7 +47,7 @@ describe("写真「確認できない」と手動完了（spec v1.1 9-3）", () 
     const r = await completeManually(going.participantId);
     expect(r.done).toBe(true);
     expect(r.clear?.missionId).toBe(going.missionId);
-    expect(t(r.messages[0])).toContain("本人の報告");
+    expect(t(r.messages)).toContain("本人の報告");
     const s = await loadMorning();
     const sortie = s.morning.sorties.find((x) => x.id === going.id)!;
     expect(sortie.status).toBe("done");
