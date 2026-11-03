@@ -56,6 +56,12 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
           </p>
         )}
         {clear.members.length > 0 && <p className="text-base text-ink/80">{clear.members.map((m) => `${m}さん`).join("・")}</p>}
+        {(clear.care || clear.snowTypeLabel) && (
+          <p className="mt-1 text-sm text-ink/80">
+            {clear.snowTypeLabel && <span className="mr-2 rounded-full bg-snow/40 px-2 py-0.5 font-bold text-ink">{clear.snowTypeLabel}</span>}
+            {clear.care}
+          </p>
+        )}
 
         <ul className="mt-2 space-y-1 rounded-2xl bg-white px-4 py-3 ring-1 ring-ink/10" aria-label="点の内訳">
           {clear.items.map((i) => (

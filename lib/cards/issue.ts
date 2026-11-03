@@ -84,6 +84,7 @@ export async function issueCardsForMission(
     teamNames: [...new Set(members.map((m) => getTeam(m.teamId).name))],
     style: rarity.style,
     rarityLabel: rarity.label,
+    snowType: sorties.find((x) => x.photoCheck?.snowType)?.photoCheck?.snowType,
   });
   const issuedCount = s.morning.sorties.length;
   const already = await r.countCardsForRollcall(s.morning.rollcall.id);

@@ -1,5 +1,6 @@
 // ミッション完了の「まとめ」（spec v1.1: MISSION CLEAR）。点の内訳・チーム得点・雪HPの減りを1つの形にする。
 // 得点そのものは lib/game/score.ts が決める。ここは見せるために集計するだけ（純粋な関数）。
+import { SNOW_TYPE_LABEL } from "../claude/photo";
 import type { ScoreEvent, ScoreReason, TeamId } from "../types";
 import type { Roster } from "./roster";
 import { type MorningState, progress, snowHp, teamTotals } from "./view";
@@ -40,6 +41,9 @@ export interface ClearSummary {
   myPoints?: number;
   /** 画面を見ている人にとって、これが初出撃（最初のカード） */
   firstFlight?: boolean;
+  /** 写真から見えた雪質（v1.2）と労いの一言 */
+  snowTypeLabel?: string;
+  care?: string;
   hpBefore: number;
   hpAfter: number;
   hpMax: number;
@@ -98,6 +102,8 @@ export function summarizeClear(
     opts.viewerId === undefined
       ? undefined
       : sorties.some((x) => x.participantId === opts.viewerId) && (opts.firstFlightIds ?? []).includes(opts.viewerId);
+  const check = sorties.find((x) => x.photoCheck)?.photoCheck;
+  const snowTypeLabel = check?.snowType && check.snowType !== "unknown" ? SNOW_TYPE_LABEL[check.snowType] : undefined;
   return {
     missionId,
     baseNumber: roster.bases.find((b) => b.id === mission.baseId)?.number ?? "?",
@@ -109,6 +115,8 @@ export function summarizeClear(
     teamTotals: teamTotals(state),
     myPoints,
     firstFlight,
+    snowTypeLabel,
+    care: check?.care || undefined,
     hpBefore: opts.hpBefore ?? Math.min(hp.max, hp.current + state.rollcall.forecastCm),
     hpAfter: hp.current,
     hpMax: hp.max,

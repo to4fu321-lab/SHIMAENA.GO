@@ -4,7 +4,7 @@ import { issueCardsForMission, rerenderBacks } from "../cards/issue";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
 import { planMorning } from "../claude/commander";
-import { checkPhoto, decidePhoto, type PhotoInput } from "../claude/photo";
+import { checkPhoto, decidePhoto, SNOW_TYPE_LABEL, type PhotoInput } from "../claude/photo";
 import { weeklyText } from "../claude/weekly";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
@@ -335,6 +335,8 @@ async function finishMission(
     ? MSG.doneThanks(number, myTeam.name, pointsOf(myTeam.id), check.comment)
     : text(`${check.comment}\n拠点${number} 完了！`);
   if (check.icy) reply.text += "\n凍っているところがあるようです。砂をまくと安心です。";
+  if (check.snowType && check.snowType !== "unknown") reply.text += `\n雪質: ${SNOW_TYPE_LABEL[check.snowType]}。`;
+  if (check.care) reply.text += `\n${check.care}`;
   const prog = progress(s.morning);
   if (prog.allDone) reply.text += `\n「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐！ ${prog.total}軒すべて終わりました。`;
   // 絵文字グリッド（マスの色だけ。そのまま LINE グループや X に貼れる）を返事に添える

@@ -123,6 +123,9 @@ export interface Mission {
 // ---- 出撃 ----
 export type SortieStatus = "going" | "done";
 
+/** 雪質（v1.2）: 粉雪／湿り雪／凍った雪／わからない */
+export type SnowType = "powder" | "wet" | "icy" | "unknown";
+
 export interface PhotoCheck {
   cleared: boolean; // 雪が除かれているか
   passable: boolean; // 通路が通れるか
@@ -130,6 +133,10 @@ export interface PhotoCheck {
   comment: string;
   /** 写真では判断できない（暗い・ぼやけ・範囲が狭い）。報告として受け付ける（v1.1） */
   uncertain?: boolean;
+  /** 写真から見える雪質（v1.2）。カードの排雪 kg と労いの文に使う */
+  snowType?: SnowType;
+  /** 労いの一言（30字、v1.2）。体調の判断はしない */
+  care?: string;
 }
 
 export interface Sortie {
