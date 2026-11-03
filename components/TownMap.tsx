@@ -10,9 +10,10 @@ import { TEAMS } from "@/lib/teams";
 import { TOWN } from "@/lib/town";
 import type { TeamId } from "@/lib/types";
 
-const RED = "#FF3B5C"; // 人手不足
-const GREY = "#9AA0AE"; // 返事なし
-const INK = "#3B2A78";
+const RED = "#C0392B"; // 人手不足（赤は地図の状態色だけに使う）
+const GREY = "#8B949E"; // 返事なし
+const INK = "#29445C"; // 冬の深い青
+const ICE = "#8FB8C9"; // 氷の青（ソロ出動の足あと）
 
 const teamColor = (id: TeamId) => TEAMS.find((t) => t.id === id)!.color;
 
@@ -59,7 +60,7 @@ function cellStyle(cell: CellView): StyleSpec {
     case "open":
       return { color: INK, weight: 3, fillColor: "#ffffff", fillOpacity: 0.55, label: INK };
     default:
-      return { color: INK, weight: 1, dashArray: "3 5", fillColor: "#ffffff", fillOpacity: 0.15, label: "#8a7bb5" };
+      return { color: INK, weight: 1, dashArray: "3 5", fillColor: "#ffffff", fillOpacity: 0.15, label: "#6b8296" };
   }
 }
 
@@ -88,7 +89,7 @@ export default function TownMap({
       map = L.map(ref.current, { zoomControl: false, attributionControl: true }).setView(TOWN.center, 16);
       mapRef.current = map;
       L.control.zoom({ position: "topright" }).addTo(map);
-      // OpenStreetMap 標準タイル。パステルに合わせて CSS（.town-tiles）で色を淡くする
+      // OpenStreetMap 標準タイル。雪明かりの画面に合わせて CSS（.town-tiles）で色を淡くする
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         className: "town-tiles",
@@ -96,14 +97,14 @@ export default function TownMap({
       }).addTo(map);
 
       for (const park of TOWN.parks) {
-        L.polygon(park.polygon, { stroke: false, fillColor: "#bff0dc", fillOpacity: 0.7, interactive: false }).addTo(map);
+        L.polygon(park.polygon, { stroke: false, fillColor: "#dfe9e3", fillOpacity: 0.7, interactive: false }).addTo(map);
       }
 
       for (const building of TOWN.buildings) {
         L.polygon(building.polygon, {
-          color: "#cbc3e3",
+          color: "#c9d3dc",
           weight: 0.6,
-          fillColor: "#ece8f6",
+          fillColor: "#eef2f6",
           fillOpacity: 0.8,
           interactive: false,
         }).addTo(map);
@@ -124,11 +125,11 @@ export default function TownMap({
         }).addTo(map);
       }
 
-      // ソロ出動の足あと: 雪色の薄い塗り（拠点のマスでなければ）と羽のピン。赤・緑は使わない
+      // ソロ出動の足あと: 氷の青の薄い塗り（拠点のマスでなければ）と羽のピン。赤・緑は使わない
       const baseKeys = new Set(cells.map((c) => c.key));
       for (const sc of solo) {
         if (!baseKeys.has(sc.key)) {
-          L.polygon(cellPolygon(sc.key), { color: "#5bb8f0", weight: 2, dashArray: "4 4", fillColor: "#8fd3ff", fillOpacity: 0.35, interactive: false }).addTo(map);
+          L.polygon(cellPolygon(sc.key), { color: ICE, weight: 2, dashArray: "4 4", fillColor: ICE, fillOpacity: 0.35, interactive: false }).addTo(map);
         }
         const [lat, lng] = cellCenter(sc.key);
         L.marker([lat, lng], {
@@ -149,8 +150,8 @@ export default function TownMap({
           interactive: false,
           icon: L.divIcon({ className: "", html: `<div class="dest-pin">拠点${d.baseNumber} ここ</div>`, iconSize: [96, 26], iconAnchor: [48, 34] }),
         }).addTo(map);
-        L.circleMarker(d.location, { radius: 7, color: "#ff3b5c", weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(map);
-        if (home) L.polyline([home, d.location], { color: "#3b2a78", weight: 3, dashArray: "6 8", opacity: 0.8, interactive: false }).addTo(map);
+        L.circleMarker(d.location, { radius: 7, color: RED, weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(map);
+        if (home) L.polyline([home, d.location], { color: INK, weight: 3, dashArray: "6 8", opacity: 0.8, interactive: false }).addTo(map);
       }
       if (destinations.length > 0) {
         const pts = [...destinations.map((d) => d.location), ...(home ? [home] : [])];

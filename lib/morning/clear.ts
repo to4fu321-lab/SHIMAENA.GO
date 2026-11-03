@@ -41,6 +41,8 @@ export interface ClearSummary {
   myPoints?: number;
   /** 画面を見ている人にとって、これが初出撃（最初のカード） */
   firstFlight?: boolean;
+  /** 画面を見ている人が、この家に来た人のひとりか */
+  mine?: boolean;
   /** 写真から見えた雪質（v1.2）と労いの一言 */
   snowTypeLabel?: string;
   care?: string;
@@ -48,6 +50,9 @@ export interface ClearSummary {
   hpAfter: number;
   hpMax: number;
   left: number;
+  /** 今朝の家の数と、終わった家の数（この家を含む） */
+  total: number;
+  done: number;
   allDone: boolean;
   defeatedAt?: string;
   completedAt: string;
@@ -98,10 +103,8 @@ export function summarizeClear(
     opts.viewerId === undefined
       ? undefined
       : state.scores.filter((e) => e.participantId === opts.viewerId).reduce((a, e) => a + e.points, 0);
-  const firstFlight =
-    opts.viewerId === undefined
-      ? undefined
-      : sorties.some((x) => x.participantId === opts.viewerId) && (opts.firstFlightIds ?? []).includes(opts.viewerId);
+  const mine = opts.viewerId === undefined ? undefined : sorties.some((x) => x.participantId === opts.viewerId);
+  const firstFlight = opts.viewerId === undefined ? undefined : mine && (opts.firstFlightIds ?? []).includes(opts.viewerId);
   const check = sorties.find((x) => x.photoCheck)?.photoCheck;
   const snowTypeLabel = check?.snowType && check.snowType !== "unknown" ? SNOW_TYPE_LABEL[check.snowType] : undefined;
   return {
@@ -115,12 +118,15 @@ export function summarizeClear(
     teamTotals: teamTotals(state),
     myPoints,
     firstFlight,
+    mine,
     snowTypeLabel,
     care: check?.care || undefined,
     hpBefore: opts.hpBefore ?? Math.min(hp.max, hp.current + state.rollcall.forecastCm),
     hpAfter: hp.current,
     hpMax: hp.max,
     left: prog.left,
+    total: prog.total,
+    done: prog.done,
     allDone: prog.allDone,
     defeatedAt: prog.defeatedAt,
     completedAt,

@@ -9,9 +9,14 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 **11月2日〜11月8日の期間中に、このリポジトリ上でゼロから制作しています。**
 
 <p>
+<img src="docs/screens/top.png" width="30%" alt="トップ: 5分の雪かきで、町が変わる">
 <img src="docs/screens/map.png" width="30%" alt="地図: 50m マスがチーム色に塗られていく">
+<img src="docs/screens/clear.png" width="30%" alt="雪かき完了: あなたの5分で1軒が助かりました">
+</p>
+<p>
 <img src="docs/screens/card-retrowave.png" width="30%" alt="ありがとうカード（早朝のレア）">
 <img src="docs/screens/cards.png" width="30%" alt="カード帳">
+<img src="docs/screens/admin.png" width="30%" alt="デモ操作">
 </p>
 <p>
 <img src="docs/screens/solo.png" width="30%" alt="ソロ出動">
@@ -71,6 +76,11 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 - Claude API（Claude Opus 5.5、構造化出力、プロンプトキャッシュ、安全判定で断られたときのサーバー側フォールバック）
 - LINE Messaging API（Webhook・返信・プッシュ・マルチキャスト・リッチメニュー）＋ LIFF
 - Leaflet ＋ OpenStreetMap、Open-Meteo、resvg（SVG → PNG）、vitest（テスト 167 本）
+
+## デザイン「白銀の北海道に、家の灯りがともる。」
+- 配色は `app/globals.css` の CSS 変数で一元管理: 雪明かり `#F4F7FA`（背景）／冬の深い青 `#29445C`（文字・見出し・ナビ）／灯りオレンジ `#D9825B`（いちばん大事なボタンだけ）／氷の青 `#8FB8C9`（進捗）／雪椿ピンク `#C8A7B8`（達成の演出）／生成り `#F5EEE5`（やわらかい囲み）。赤は「人手不足」と注意だけ、緑は使わない。
+- 子どもから高齢者まで: 本文 16px 以上（既定 18px）、ボタンは高さ 56px 以上（操作ボタンは 64px）、アイコンだけの操作はなし、色だけに頼らず文字と形（✓・！・点滅のわく）でも状態を出す。「人手が足りない」は押す前に一度たずねる。
+- トップは「5分の雪かきで、町が変わる。」と、救える家・参加した人・雪かき達成・次に手伝ってほしい場所。完了画面は「あなたの5分で、1軒が助かりました。」と家の窓に灯りがともる演出。
 
 ## Claude Code をどう使ったか（スマホだけで開発）
 本人はプログラミング初心者で、開発はすべて **スマホの Claude アプリから Claude Code（クラウド）に日本語で指示するだけ** で進めました。パソコンでコードを書いた時間はありません。

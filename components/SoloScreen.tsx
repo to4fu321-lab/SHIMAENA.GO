@@ -89,24 +89,24 @@ export default function SoloScreen({
     const done = doneToday.includes(m.kind);
     const busy = pending && busyKind === m.kind;
     return (
-      <li key={m.kind} className={`rounded-2xl px-3 py-3 ring-1 ${done ? "bg-paper ring-ink/10" : "bg-white ring-ink/15"}`}>
+      <li key={m.kind} className={`rounded-2xl px-3 py-3 ring-1 ${done ? "bg-paper ring-ink/10" : "bg-card ring-ink/15 shadow-sm"}`}>
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <p className="text-base font-bold leading-snug">{m.label}</p>
-            <p className="text-sm text-ink/70">{m.description}</p>
-            <p className="mt-1 text-xs text-ink/60">
-              {m.minutes}分 ・ むずかしさ {DIFF[m.difficulty]} ・ <b className="text-neon">+{m.feathers}羽</b>
+            <p className="text-sm text-ink-soft">{m.description}</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              {m.minutes}分 ・ むずかしさ {DIFF[m.difficulty]} ・ <b className="text-camellia-deep">+{m.feathers}羽</b>
               {m.photo === "optional" && " ・ 写真OK"}
             </p>
           </div>
           {done ? (
-            <span className="shrink-0 rounded-2xl bg-ink/10 px-3 py-3 text-sm font-bold">今日は完了 ✓</span>
+            <span className="flex min-h-14 shrink-0 items-center rounded-2xl bg-ice-soft px-3 text-base font-bold">✓ 今日は完了</span>
           ) : (
             <div className="flex shrink-0 flex-col gap-1">
               <button
                 disabled={pending}
                 onClick={() => submit(m.kind)}
-                className="min-h-12 rounded-2xl bg-ink px-4 text-base font-bold text-white active:scale-95 disabled:opacity-40"
+                className="btn btn-ink min-w-24 text-lg"
               >
                 {busy ? "…" : "完了"}
               </button>
@@ -117,7 +117,7 @@ export default function SoloScreen({
                     photoKind.current = m.kind;
                     fileRef.current?.click();
                   }}
-                  className="rounded-2xl bg-white px-2 py-1 text-xs font-bold text-ink ring-1 ring-ink/20 disabled:opacity-40"
+                  className="btn btn-white min-h-11 px-2 text-sm"
                 >
                   写真をつけて
                 </button>
@@ -138,7 +138,7 @@ export default function SoloScreen({
               setClear(null);
               setTimeout(() => document.getElementById("share")?.scrollIntoView({ behavior: "smooth" }), 50);
             }}
-            className="mt-3 w-full rounded-2xl bg-black py-3 text-base font-bold text-white"
+            className="btn btn-white mt-3 w-full text-base"
           >
             SNS に投稿する（X・Instagram）
           </button>
@@ -146,17 +146,17 @@ export default function SoloScreen({
       )}
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">
-          ソロ<span className="text-neon">出動</span>
+          ひとりで5分 <span className="text-base font-normal text-ink-soft">ソロ出動</span>
         </h1>
-        <Link href={`/${q}`} className="text-base underline">
-          ホームへ
+        <Link href={`/${q}`} className="btn btn-white min-h-11 px-3 text-sm">
+          ホーム
         </Link>
       </header>
       <p className="text-base">
         <b>{nickname}</b>さん。仲間がいなくても、自分の5分で町を変えられる。
       </p>
       {status.totalFeathers === 0 && (
-        <section className="rounded-3xl bg-[#fff6c8] p-4 ring-1 ring-[#e0b800]/50" aria-label="はじめての方へ">
+        <section className="rounded-3xl bg-warm p-4 ring-1 ring-lamp/50" aria-label="はじめての方へ">
           <p className="text-lg font-bold">はじめての方へ（3ステップ）</p>
           <ol className="mt-1 list-decimal space-y-1 pl-6 text-base">
             <li>下の「雪の状況を見回る」をえらぶ</li>
@@ -166,34 +166,34 @@ export default function SoloScreen({
         </section>
       )}
       {pickFive && (
-        <p className="rounded-2xl bg-[#fff0f6] px-3 py-2 text-base ring-1 ring-neon/40">
-          <b className="text-neon">5分だけ出動</b>: 今朝は作戦がない（か、まだ割り当てがない）ので、下の 5分ミッションから1つどうぞ。
+        <p className="rounded-2xl bg-camellia-soft px-3 py-2 text-base ring-1 ring-camellia">
+          <b className="text-camellia-deep">5分だけ出動</b>: 今朝は作戦がない（か、まだ割り当てがない）ので、下の 5分ミッションから1つどうぞ。
         </p>
       )}
 
       {/* 今日の自分 */}
-      <section className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日の自分">
+      <section className="rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日の自分">
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <p className="text-xs text-ink/60">今日の羽</p>
-            <p className="text-2xl font-bold tabular-nums text-neon">{status.todayFeathers}</p>
+            <p className="text-sm font-bold">今日の羽</p>
+            <p className="text-3xl font-bold tabular-nums text-camellia-deep">{status.todayFeathers}</p>
           </div>
           <div>
-            <p className="text-xs text-ink/60">連続出動</p>
-            <p className="text-2xl font-bold tabular-nums">{status.streak}日</p>
+            <p className="text-sm font-bold">連続出動</p>
+            <p className="text-3xl font-bold tabular-nums">{status.streak}日</p>
           </div>
           <div>
-            <p className="text-xs text-ink/60">合計の羽</p>
-            <p className="text-2xl font-bold tabular-nums">{status.totalFeathers}</p>
+            <p className="text-sm font-bold">合計の羽</p>
+            <p className="text-3xl font-bold tabular-nums">{status.totalFeathers}</p>
           </div>
         </div>
-        <p className="mt-2 text-sm text-ink/70">
+        <p className="mt-2 text-sm text-ink-soft">
           次に獲得できるカード: <b className="text-ink">{status.nextCard.label}</b>（{status.nextCard.hint}）
         </p>
       </section>
 
       {result && !result.ok && (
-        <p className="rounded-2xl bg-[#fff4d6] px-3 py-2 text-base" role="status">
+        <p className="rounded-2xl bg-warm px-3 py-2 text-base" role="status">
           {result.text}
         </p>
       )}
@@ -201,33 +201,33 @@ export default function SoloScreen({
       {/* 5分・現地 */}
       <section className="space-y-2" aria-label="5分ミッション（現地）">
         <h2 className="text-lg font-bold">
-          5分ミッション <span className="text-sm font-normal text-ink/60">外に出てやること</span>
+          5分ミッション <span className="text-sm font-normal text-ink-soft">外に出てやること</span>
         </h2>
         <ul className="space-y-2">{onsite.map(row)}</ul>
         {house && (
-          <div className="rounded-2xl bg-white px-3 py-3 ring-1 ring-ink/15">
+          <div className="rounded-2xl bg-card px-3 py-3 ring-1 ring-ink/15">
             <p className="text-base font-bold leading-snug">{house.label}</p>
-            <p className="text-sm text-ink/70">{house.description}</p>
-            <p className="mt-1 text-xs text-ink/60">
-              5分〜 ・ むずかしさ {DIFF[house.difficulty]} ・ <b className="text-neon">+{house.feathers}羽</b>（完了は写真で）
+            <p className="text-sm text-ink-soft">{house.description}</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              5分〜 ・ むずかしさ {DIFF[house.difficulty]} ・ <b className="text-camellia-deep">+{house.feathers}羽</b>（完了は写真で）
             </p>
             {canHelpHouse ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button disabled={pending} onClick={helpHouse} className="min-h-12 rounded-2xl bg-neon px-4 text-base font-bold text-white disabled:opacity-40">
+                <button disabled={pending} onClick={helpHouse} className="btn btn-lamp text-base">
                   {shortHouses > 0 ? `5分だけ助けに行く（あと1人の家 ${shortHouses} 軒）` : "5分だけ参加（偵察・補給）"}
                 </button>
-                <Link href={`/map${q}`} className="text-sm underline">
+                <Link href={`/map${q}`} className="btn btn-white text-base">
                   地図で見る
                 </Link>
               </div>
             ) : (
-              <p className="mt-2 rounded-2xl bg-paper px-3 py-2 text-sm text-ink/70">
+              <p className="mt-2 rounded-2xl bg-paper px-3 py-2 text-sm text-ink-soft">
                 {role === "helper" ? "今は家の募集がありません（雪の朝の作戦中に出ます）。見回りをどうぞ。" : "家の雪かきの募集は手伝う側の画面に出ます。自分の家の雪かきをどうぞ。"}
               </p>
             )}
             {helpText && (
-              <p className="mt-2 rounded-2xl bg-[#e9fbe7] px-3 py-2 text-sm" role="status">
-                {helpText} <Link href={`/map${q}`} className="underline">地図へ</Link>
+              <p className="mt-2 rounded-2xl bg-ice-soft px-3 py-2 text-sm" role="status">
+                {helpText} <Link href={`/map${q}`} className="font-bold underline">地図へ</Link>
               </p>
             )}
           </div>
@@ -237,26 +237,26 @@ export default function SoloScreen({
       {/* 3分・オンライン */}
       <section className="space-y-2" aria-label="3分ミッション（オンライン）">
         <h2 className="text-lg font-bold">
-          3分ミッション <span className="text-sm font-normal text-ink/60">家の中でできること（雪かき完了にはなりません）</span>
+          3分ミッション <span className="text-sm font-normal text-ink-soft">家の中でできること（雪かき完了にはなりません）</span>
         </h2>
         <ul className="space-y-2">{online.map(row)}</ul>
       </section>
 
       {/* 活動記録 */}
-      <section className="space-y-2 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日の活動記録">
+      <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日の活動記録">
         <h2 className="text-lg font-bold">活動記録（7日）</h2>
         {status.recent.length === 0 ? (
-          <p className="text-sm text-ink/70">まだありません。最初の5分をどうぞ。</p>
+          <p className="text-sm text-ink-soft">まだありません。最初の5分をどうぞ。</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {status.recent.map((l) => (
               <li key={l.id} className="flex items-baseline justify-between gap-2">
                 <span className="min-w-0 truncate">
-                  <span className="text-ink/60">{l.date.slice(5).replace("-", "/")}</span> {l.label}
-                  {l.photoChecked && <span className="ml-1 rounded-full bg-[#e9fbe7] px-1.5 text-xs">写真確認</span>}
-                  {l.onsite === false && !l.kind.startsWith("bonus_") && <span className="ml-1 text-xs text-ink/50">オンライン</span>}
+                  <span className="text-ink-soft">{l.date.slice(5).replace("-", "/")}</span> {l.label}
+                  {l.photoChecked && <span className="ml-1 rounded-full bg-ice-soft px-1.5 text-xs">✓ 写真確認</span>}
+                  {l.onsite === false && !l.kind.startsWith("bonus_") && <span className="ml-1 text-xs text-ink-soft">オンライン</span>}
                 </span>
-                <b className="shrink-0 tabular-nums text-neon">+{l.feathers}</b>
+                <b className="shrink-0 tabular-nums text-camellia-deep">+{l.feathers}</b>
               </li>
             ))}
           </ul>
@@ -278,10 +278,10 @@ export default function SoloScreen({
         }}
       />
       <nav className="grid grid-cols-2 gap-3">
-        <Link href={`/map${q}`} className="rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
-          地図
+        <Link href={`/map${q}`} className="btn btn-white text-lg">
+          みんなで出動（地図）
         </Link>
-        <Link href={`/cards${q}`} className="rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
+        <Link href={`/cards${q}`} className="btn btn-white text-lg">
           カード帳
         </Link>
       </nav>

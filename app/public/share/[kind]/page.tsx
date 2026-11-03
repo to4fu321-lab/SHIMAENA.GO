@@ -43,13 +43,13 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-4 py-6 text-ink">
       <header className="text-center">
         <h1 className="text-3xl font-bold">
-          シマエナ<span className="text-neon">GO</span>
+          シマエナ<span className="text-camellia-deep">GO</span>
         </h1>
-        <p className="text-base text-ink/80">寒い冬は、くっついて乗り切る。</p>
+        <p className="text-base text-ink-soft">寒い冬は、くっついて乗り切る。</p>
       </header>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/api/share/${kind}.png?format=square`} alt={p.title} className="aspect-square w-full rounded-3xl shadow-sm ring-1 ring-ink/10" />
-      <section className="space-y-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
+      <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
         <h2 className="text-xl font-bold">{p.title}</h2>
         <p>{p.description}</p>
         <p>
@@ -57,21 +57,21 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
           <b>ソロ出動</b>（見回り・雪の報告・自分の家の雪かき）で、1人の5分から参加できます。
         </p>
         {join ? (
-          <a href={`${join}`} className="block rounded-2xl bg-[#06C755] py-4 text-center text-lg font-bold text-white">
+          <a href={`${join}`} className="btn btn-big bg-[#06C755] text-white">
             LINE で参加する
           </a>
         ) : (
           <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
         )}
         {kind.startsWith("quiz-") && (
-          <Link href="/public/diagnosis" className="block rounded-2xl bg-neon py-4 text-center text-lg font-bold text-white">
+          <Link href="/public/diagnosis" className="btn btn-ink btn-big">
             あなたも診断する
           </Link>
         )}
-        <Link href="/public/town?via=sns" className="block rounded-2xl bg-ink py-4 text-center text-lg font-bold text-white">
+        <Link href="/public/town?via=sns" className="btn btn-ink btn-big">
           町の雪解けを見る
         </Link>
-        <Link href="/rules" className="block text-center text-base underline">
+        <Link href="/rules" className="btn btn-white text-base">
           あそびかた
         </Link>
       </section>

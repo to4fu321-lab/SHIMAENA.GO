@@ -88,9 +88,9 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
       return "文をコピーしました";
     });
 
-  const btn = "min-h-12 rounded-2xl px-3 text-base font-bold disabled:opacity-40";
+  const btn = "btn text-base";
   return (
-    <section id="share" className="scroll-mt-4 space-y-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10" aria-label={title}>
+    <section id="share" className="scroll-mt-4 space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label={title}>
       <h2 className="text-lg font-bold">{title}</h2>
       {options.length > 1 && (
         <div className="flex flex-wrap gap-2" role="tablist">
@@ -100,7 +100,7 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
               role="tab"
               aria-selected={o.key === opt.key}
               onClick={() => setKey(o.key)}
-              className={`rounded-full px-3 py-1 text-sm font-bold ring-1 ${o.key === opt.key ? "bg-ink text-white ring-ink" : "bg-white text-ink ring-ink/20"}`}
+              className={`min-h-11 rounded-full px-3 py-1 text-sm font-bold ring-1 ${o.key === opt.key ? "bg-ink text-white ring-ink" : "bg-card text-ink ring-ink/30"}`}
             >
               {o.label}
             </button>
@@ -109,7 +109,7 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`${opt.image}${opt.image.includes("?") ? "&" : "?"}format=square`} alt={`${opt.label}のシェア画像`} className="aspect-square w-full rounded-2xl ring-1 ring-ink/10" />
-      <label className="block text-sm text-ink/70">
+      <label className="block text-sm text-ink-soft">
         投稿文（直してから投稿できます）
         <textarea
           value={text}
@@ -122,17 +122,17 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
         <button onClick={postX} className={`${btn} bg-black text-white`}>
           X に投稿
         </button>
-        <button disabled={busy} onClick={() => shareImage("square")} className={`${btn} bg-neon text-white`}>
+        <button disabled={busy} onClick={() => shareImage("square")} className={`${btn} bg-ink text-white`}>
           画像で共有
         </button>
-        <button disabled={busy} onClick={() => save("square")} className={`${btn} bg-white text-ink ring-2 ring-ink/15`}>
+        <button disabled={busy} onClick={() => save("square")} className={`${btn} btn-white`}>
           画像を保存
         </button>
-        <button disabled={busy} onClick={() => save("story")} className={`${btn} bg-white text-ink ring-2 ring-ink/15`}>
+        <button disabled={busy} onClick={() => save("story")} className={`${btn} btn-white`}>
           ストーリーズ用
         </button>
       </div>
-      <button disabled={busy} onClick={copy} className="w-full text-center text-sm text-ink/70 underline">
+      <button disabled={busy} onClick={copy} className="btn w-full text-base text-ink underline">
         文をコピー
       </button>
       {msg && (
@@ -140,7 +140,7 @@ export default function SnsShare({ options, title = "SNS に投稿する" }: { o
           {msg}
         </p>
       )}
-      <p className="text-xs text-ink/50">自動では投稿しません。名前や家の場所は画像に入りません。</p>
+      <p className="text-sm text-ink-soft">自動では投稿しません。名前や家の場所は画像に入りません。</p>
     </section>
   );
 }

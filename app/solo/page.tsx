@@ -35,23 +35,23 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
       <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-4 py-6 text-ink">
         <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
         <h1 className="text-2xl font-bold">
-          ソロ<span className="text-neon">出動</span>
+          ひとりで5分 <span className="text-base font-normal text-ink-soft">ソロ出動</span>
         </h1>
-        <section className="space-y-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
+        <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">仲間がいなくても、自分の5分で町を変えられる。</p>
           <p>見回り・雪の報告・自分の家の雪かき。1人でできる 3〜5分のミッションで、羽ポイントとカードがたまります。</p>
-          <p className="text-sm text-ink/70">ソロ出動は LINE で登録した人の画面です。LINE の「シマエナGO」から開いてください。</p>
+          <p className="text-sm text-ink-soft">ソロ出動は LINE で登録した人の画面です。LINE の「シマエナGO」から開いてください。</p>
           {join ? (
-            <a href={join} className="block rounded-2xl bg-[#06C755] py-4 text-center text-lg font-bold text-white">
+            <a href={join} className="btn btn-big bg-[#06C755] text-white">
               LINE で参加する
             </a>
           ) : (
             <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
           )}
-          <Link href="/rules" className="block rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
+          <Link href="/rules" className="btn btn-white text-lg">
             あそびかた
           </Link>
-          <p className="text-xs text-ink/50">
+          <p className="text-sm text-ink-soft">
             デモ: <Link href="/solo?as=h3" className="underline">架空の手伝う側として開く</Link>
           </p>
         </section>

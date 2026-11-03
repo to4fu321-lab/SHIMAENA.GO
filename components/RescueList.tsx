@@ -39,50 +39,38 @@ export default function RescueList({
   return (
     <div className="space-y-2">
       {items.length > 0 && (
-        <div className="rounded-2xl bg-[#fff0f3] px-3 py-2 ring-1 ring-alert/40" aria-label="人手が足りない家">
-          <p className="font-bold text-alert">{items[0].missing === 1 ? "あと1人で救える家" : "人手が足りない家"}</p>
-          <ul className="mt-1 space-y-2">
+        <div className="rounded-2xl bg-alert-soft px-3 py-3 ring-1 ring-alert/40" aria-label="人手が足りない家">
+          <p className="text-base font-bold text-alert">！ {items[0].missing === 1 ? "あと1人で救える家" : "人手が足りない家"}</p>
+          <ul className="mt-2 space-y-3">
             {shown.map((h) => (
-              <li key={h.missionId} className="flex items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-base font-bold">
-                    拠点{h.baseNumber}{" "}
-                    <span className="font-normal text-ink/70">
-                      あと{h.missing}人（{h.going}/{h.required}）
-                    </span>
+              <li key={h.missionId} className="space-y-2">
+                <div>
+                  <p className="text-lg font-bold leading-tight">
+                    拠点{h.baseNumber}　<span className="text-base font-normal">あと{h.missing}人（いま {h.going}人 / 必要 {h.required}人）</span>
                   </p>
-                  <p className="truncate text-sm text-ink/70">5分でOK: {h.tasks.join("／")}</p>
+                  <p className="text-sm text-ink-soft">5分でできる仕事: {h.tasks.join("／")}</p>
                 </div>
                 {goingTo.includes(h.missionId) ? (
-                  <span className="shrink-0 rounded-2xl bg-ink/10 px-3 py-2 text-sm font-bold">向かっています</span>
+                  <p className="rounded-2xl bg-card px-3 py-2 text-center text-base font-bold ring-1 ring-ink/15">✓ 向かっています</p>
                 ) : (
-                  <button
-                    disabled={pending}
-                    onClick={() => run(() => joinAction(viewerId, h.missionId))}
-                    className="shrink-0 rounded-2xl bg-alert px-3 py-2 text-base font-bold leading-tight text-white disabled:opacity-40"
-                  >
-                    5分だけ
-                    <br />
-                    助けに行く
+                  <button disabled={pending} onClick={() => run(() => joinAction(viewerId, h.missionId))} className="btn btn-lamp w-full text-lg">
+                    拠点{h.baseNumber}に 5分だけ助けに行く
                   </button>
                 )}
               </li>
             ))}
           </ul>
-          {items.length > SHOW && <p className="mt-1 text-xs text-ink/60">ほか {items.length - SHOW} 軒</p>}
+          {items.length > SHOW && <p className="mt-1 text-sm text-ink-soft">ほか {items.length - SHOW} 軒</p>}
         </div>
       )}
       {items.length === 0 && !hasAssignment && (
-        <button
-          disabled={pending}
-          onClick={() => run(() => fiveMinutesAction(viewerId))}
-          className="w-full rounded-2xl bg-neon py-4 text-lg font-bold text-white disabled:opacity-40"
-        >
-          {pending ? "さがしています…" : "5分だけ参加（偵察・補給）"}
+        <button disabled={pending} onClick={() => run(() => fiveMinutesAction(viewerId))} className="btn btn-lamp w-full text-lg">
+          {pending ? "さがしています…" : "5分だけ参加する（見回り・補給）"}
         </button>
       )}
       {result && (
-        <p className={`rounded-2xl px-3 py-2 text-base ${result.ok ? "bg-[#e9fbe7]" : "bg-[#fff4d6]"}`} role="status">
+        <p className={`rounded-2xl px-3 py-2 text-base ring-1 ${result.ok ? "bg-ice-soft ring-ice" : "bg-warm ring-lamp/50"}`} role="status">
+          {result.ok ? "✓ " : "！ "}
           {result.text}
         </p>
       )}

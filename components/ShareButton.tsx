@@ -28,14 +28,14 @@ export default function ShareButton({ text }: { text: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button onClick={share} className="rounded-2xl bg-white px-4 py-2 text-base font-bold text-ink ring-2 ring-ink/15">
+      <button onClick={share} className="btn btn-white text-base">
         結果をコピー
       </button>
-      <pre className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-pre-wrap font-sans text-xs leading-tight text-ink/70" aria-label="共有する文字">
+      <pre className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-pre-wrap font-sans text-xs leading-tight text-ink-soft" aria-label="共有する文字">
         {text.split("\n").slice(1, -2).join("\n")}
       </pre>
       {done && (
-        <p className="w-full text-sm text-ink/70" role="status">
+        <p className="w-full text-sm text-ink-soft" role="status">
           {done}
         </p>
       )}

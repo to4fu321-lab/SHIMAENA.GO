@@ -31,9 +31,10 @@ export interface ShareCard {
 }
 
 const JP = "Zen Maru Gothic, sans-serif";
-const INK = "#3b2a78";
-const NEON = "#ff4f8b";
-const SUB = "#8a7bb5";
+const INK = "#29445c"; // 冬の深い青
+const NEON = "#7d4f68"; // 雪椿（強調の文字）
+const SUB = "#4a6076"; // 補足の文字
+const ICE = "#8fb8c9"; // 氷の青（ゲージ）
 const TEAM_ORDER: TeamId[] = ["salvia", "marigold", "lupinus"];
 
 const md = (ymd: string) => {
@@ -141,9 +142,9 @@ const t = (x: number, y: number, size: number, body: string, opts: { fill?: stri
   `<text x="${x}" y="${y}" font-family="${JP}" font-size="${size}" font-weight="${opts.weight ?? 700}" fill="${opts.fill ?? INK}" text-anchor="${opts.anchor ?? "start"}"${opts.spacing ? ` letter-spacing="${opts.spacing}"` : ""}>${escapeXml(body)}</text>`;
 
 function background(w: number, h: number): string {
-  return `<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe3f1"/><stop offset="1" stop-color="#dff6f3"/></linearGradient></defs>
+  return `<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f7fa"/><stop offset="1" stop-color="#e3eef3"/></linearGradient></defs>
   <rect width="${w}" height="${h}" fill="url(#bg)"/>
-  <g opacity="0.55"><circle cx="${w - 90}" cy="40" r="14" fill="#8fd3ff"/><rect x="26" y="${h / 2}" width="22" height="22" fill="#ffd400" transform="rotate(20 37 ${h / 2 + 11})"/><circle cx="${w - 40}" cy="${h - 300}" r="10" fill="#ff8ab5"/><path d="M24 46 l18 -12 l18 12" stroke="#9b5de5" stroke-width="5" fill="none"/></g>`;
+  <g opacity="0.7"><circle cx="${w - 90}" cy="40" r="14" fill="#ffffff"/><circle cx="26" cy="${h / 2}" r="10" fill="#ffffff"/><circle cx="${w - 40}" cy="${h - 300}" r="8" fill="#c8a7b8"/><circle cx="60" cy="90" r="6" fill="#ffffff"/><circle cx="${w / 2}" cy="${h - 140}" r="7" fill="#ffffff"/></g>`;
 }
 
 function logo(x: number, y: number, size: number): string {
@@ -153,14 +154,14 @@ function logo(x: number, y: number, size: number): string {
 function birdRow(birds: (TeamId | undefined)[], cx: number, y: number, scale: number, gap: number): string {
   const n = birds.length;
   const x0 = cx - ((n - 1) * gap) / 2;
-  const color = (id?: TeamId) => TEAMS.find((tm) => tm.id === id)?.color ?? "#cdbaff";
+  const color = (id?: TeamId) => TEAMS.find((tm) => tm.id === id)?.color ?? "#c8a7b8";
   return birds.map((b, i) => kawaiiBird(x0 + i * gap, y + (i % 2) * 8, scale, color(b))).join("");
 }
 
 function gaugeBar(x: number, y: number, w: number, h: number, pct: number): string {
   const p = Math.max(0, Math.min(100, pct));
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}" fill="#ece8f6"/>
-  ${p > 0 ? `<rect x="${x}" y="${y}" width="${Math.max(h, (w * p) / 100)}" height="${h}" rx="${h / 2}" fill="#8fd3ff"/>` : ""}`;
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}" fill="#ffffff" stroke="#c9d3dc" stroke-width="2"/>
+  ${p > 0 ? `<rect x="${x}" y="${y}" width="${Math.max(h, (w * p) / 100)}" height="${h}" rx="${h / 2}" fill="${ICE}"/>` : ""}`;
 }
 
 /** 正方形とストーリーズ（縦長）。ストーリーズは上下に余白を足して、シマエナガの列と誘い文を大きく */
@@ -178,7 +179,7 @@ function portrait(c: ShareCard, w: number, h: number): string {
   // 大きな数字の板（右にシマエナガ）
   const panelH = c.gauge !== undefined ? 330 : 280;
   y += 10;
-  out.push(`<rect x="70" y="${y}" width="${w - 140}" height="${panelH}" rx="40" fill="#fff" stroke="#cdbaff" stroke-width="3"/>`);
+  out.push(`<rect x="70" y="${y}" width="${w - 140}" height="${panelH}" rx="40" fill="#fff" stroke="#c9d3dc" stroke-width="3"/>`);
   const numSize = c.bigValue.length >= 5 ? 76 : c.bigValue.length >= 3 ? 140 : 170;
   out.push(
     `<text x="120" y="${y + 190}" font-family="${JP}" font-weight="700" fill="${NEON}"><tspan font-size="${numSize}">${escapeXml(c.bigValue)}</tspan><tspan font-size="60" fill="${INK}" dx="10">${escapeXml(c.bigUnit)}</tspan></text>`,
@@ -191,13 +192,13 @@ function portrait(c: ShareCard, w: number, h: number): string {
   for (const r of c.rows) {
     out.push(t(90, y, story ? 40 : 36, r.label, { fill: SUB, weight: 400 }));
     out.push(t(w - 90, y, story ? 42 : 38, r.value, { anchor: "end" }));
-    out.push(`<line x1="90" y1="${y + 22}" x2="${w - 90}" y2="${y + 22}" stroke="#e6defa" stroke-width="2"/>`);
+    out.push(`<line x1="90" y1="${y + 22}" x2="${w - 90}" y2="${y + 22}" stroke="#e3eef3" stroke-width="2"/>`);
     y += story ? 92 : 72;
   }
   if (c.quote) {
     y += 10;
     for (const line of wrap(`「${c.quote}」`, 18).slice(0, 2)) {
-      out.push(t(w / 2, y, story ? 40 : 34, line, { anchor: "middle", fill: "#6b4fcf" }));
+      out.push(t(w / 2, y, story ? 40 : 34, line, { anchor: "middle", fill: "#29445c" }));
       y += story ? 56 : 46;
     }
   }

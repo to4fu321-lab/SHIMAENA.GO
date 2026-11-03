@@ -27,33 +27,33 @@ async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string 
   const site = baseUrl();
   return (
     <div className="space-y-4">
-      <section className="space-y-3 rounded-3xl bg-white p-5 text-center shadow-sm ring-1 ring-ink/10" aria-label="診断の結果">
-        <p className="text-base text-ink/70">あなたは…</p>
-        <h2 className="text-3xl font-bold text-neon">{t.name}</h2>
+      <section className="space-y-3 rounded-3xl bg-card p-5 text-center shadow-sm ring-1 ring-ink/10" aria-label="診断の結果">
+        <p className="text-base text-ink-soft">あなたは…</p>
+        <h2 className="text-3xl font-bold text-camellia-deep">{t.name}</h2>
         <p className="text-lg font-bold">{t.catchphrase}</p>
         <p className="text-left">{t.description}</p>
-        <p className="rounded-2xl bg-[#fff0f6] px-3 py-2 text-left text-base">
-          <span className="block text-xs font-bold tracking-widest text-neon">エナガ隊長から</span>
+        <p className="rounded-2xl bg-warm px-3 py-2 text-left text-base">
+          <span className="block eyebrow">エナガ隊長から</span>
           {comment.text}
         </p>
-        <p className="rounded-2xl bg-paper px-3 py-2 text-left text-base">
+        <p className="rounded-2xl bg-ice-soft px-3 py-2 text-left text-base">
           おすすめの5分: <b>{t.mission}</b>
         </p>
       </section>
-      <section className="space-y-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
+      <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
         <h2 className="text-xl font-bold">ソロ出動で、さっそく5分</h2>
         <p>シマエナGO は、雪の朝に町内でくっついて雪をどける雪かきゲームです。仲間がいない日も、1人の5分（ソロ出動）から参加できます。</p>
         {join ? (
-          <a href={join} className="block rounded-2xl bg-[#06C755] py-4 text-center text-xl font-bold text-white">
+          <a href={join} className="btn btn-big bg-[#06C755] text-white">
             LINE で参加する
           </a>
         ) : (
           <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
         )}
-        <Link href="/public/town" className="block rounded-2xl bg-ink py-4 text-center text-lg font-bold text-white">
+        <Link href="/public/town" className="btn btn-ink btn-big">
           町の雪解けを見る
         </Link>
-        <Link href="/public/diagnosis" className="block text-center text-base underline">
+        <Link href="/public/diagnosis" className="btn btn-white text-base">
           もう一度診断する
         </Link>
       </section>
@@ -77,11 +77,11 @@ export default function DiagnosisPage({ searchParams }: { searchParams: Promise<
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 pb-8 pt-5 text-ink">
       <header className="text-center">
-        <p className="text-xs font-bold tracking-widest text-neon">登録なしで遊べます</p>
+        <p className="eyebrow">登録なしで遊べます</p>
         <h1 className="text-3xl font-bold">
-          シマエナ<span className="text-neon">診断</span>
+          シマエナ<span className="text-camellia-deep">診断</span>
         </h1>
-        <p className="text-base text-ink/80">あなたは何シマエナ？ 5つの質問で、向いている5分が分かります。</p>
+        <p className="text-base text-ink-soft">あなたは何シマエナ？ 5つの質問で、向いている5分が分かります。</p>
       </header>
       <Suspense fallback={<p className="text-center">読み込み中…</p>}>
         <Diagnosis searchParams={searchParams} />

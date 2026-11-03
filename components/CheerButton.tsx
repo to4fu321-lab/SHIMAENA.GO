@@ -20,25 +20,25 @@ export default function CheerButton({ count: initial, already: initialAlready, c
     });
 
   return (
-    <div className={compact ? "space-y-1" : "space-y-2 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10"} aria-label="町の応援ゲージ">
+    <div className={compact ? "space-y-1" : "space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10"} aria-label="町の応援ゲージ">
       <div className="flex items-baseline justify-between">
         <p className={compact ? "text-sm font-bold" : "text-lg font-bold"}>今日の応援</p>
-        <p className="text-sm text-ink/70">
-          <b className="text-lg tabular-nums text-neon">{count}</b> 人 / 目標 {CHEER_GOAL}
+        <p className="text-sm text-ink-soft">
+          <b className="text-xl tabular-nums text-ink">{count}</b> 人 / 目標 {CHEER_GOAL}
         </p>
       </div>
-      <span className="block h-3 overflow-hidden rounded-full bg-ink/10" aria-hidden="true">
-        <span className="block h-full rounded-full bg-[#ffb3d9] transition-[width] duration-700" style={{ width: `${cheerPct(count)}%` }} />
+      <span className="block h-3 overflow-hidden rounded-full bg-ice-soft" aria-hidden="true">
+        <span className="block h-full rounded-full bg-camellia transition-[width] duration-700" style={{ width: `${cheerPct(count)}%` }} />
       </span>
       <button
         disabled={pending || already}
         onClick={cheer}
-        className={`w-full rounded-2xl font-bold text-white active:scale-95 disabled:opacity-60 ${compact ? "min-h-12 bg-neon/90 text-base" : "min-h-14 bg-neon text-xl"}`}
+        className={`btn btn-ink w-full ${compact ? "text-base" : "btn-big"}`}
       >
-        {already ? "今日は応援しました ✓" : pending ? "…" : "町を応援する"}
+        {already ? "✓ 今日は応援しました" : pending ? "送っています…" : "町を応援する（登録なし・1日1回）"}
       </button>
       {justNow && (
-        <p className="rounded-2xl bg-[#fff0f6] px-3 py-2 text-sm" role="status">
+        <p className="rounded-2xl bg-camellia-soft px-3 py-2 text-sm" role="status">
           ありがとう！応援は町のゲージに入ります（雪かきの完了や得点にはなりません）。
           <a href="#share" className="font-bold underline">
             SNS で広める
@@ -46,7 +46,7 @@ export default function CheerButton({ count: initial, already: initialAlready, c
           と、もっと仲間が増えます。
         </p>
       )}
-      {!compact && <p className="text-xs text-ink/50">登録なしで押せます。1日1回。</p>}
+      {!compact && <p className="text-sm text-ink-soft">応援は町のゲージに入ります。得点にはなりません。</p>}
     </div>
   );
 }

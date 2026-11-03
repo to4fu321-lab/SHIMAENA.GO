@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "あそびかた ・ シマエナGO" 
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
+    <section className="rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
       <h2 className="text-xl font-bold">{title}</h2>
       <div className="mt-3 space-y-2">{children}</div>
     </section>
@@ -16,10 +16,10 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 function Step({ n, title, text }: { n: number; title: string; text: string }) {
   return (
     <li className="flex gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-neon text-lg font-bold text-white">{n}</span>
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-ink text-lg font-bold text-white">{n}</span>
       <div>
         <p className="font-bold">{title}</p>
-        <p className="text-ink/80">{text}</p>
+        <p className="text-ink-soft">{text}</p>
       </div>
     </li>
   );
@@ -49,12 +49,12 @@ export default function RulesPage() {
   return (
     <main className="mx-auto min-h-dvh max-w-xl space-y-5 bg-paper px-4 py-6 text-ink">
       <header className="space-y-2 text-center">
-        <p className="text-sm font-bold tracking-widest text-neon">あそびかた</p>
+        <p className="eyebrow">あそびかた</p>
         <h1 className="text-3xl font-bold">
-          シマエナ<span className="text-neon">GO</span>
+          シマエナ<span className="text-camellia-deep">GO</span>
         </h1>
         <p className="text-lg">寒い冬は、くっついて乗り切る。</p>
-        <p className="text-ink/80">
+        <p className="text-ink-soft">
           雪の朝、町内のみんなで、ひとり暮らしの家の雪かきをするゲームです。
           シマエナガが枝の上で身を寄せ合って冬を越すように。
         </p>
@@ -72,26 +72,27 @@ export default function RulesPage() {
         <p>
           雪の朝に届く「今朝、玄関は出られそうですか？」に、<b>はい・いいえ・一緒なら</b>から1つ押すだけ。
         </p>
-        <p className="text-ink/80">LINE を使っていない方は、ご家族が代わりに登録できます。終わったらご家族にも知らせが届きます。</p>
+        <p className="text-ink-soft">LINE を使っていない方は、ご家族が代わりに登録できます。終わったらご家族にも知らせが届きます。</p>
       </Card>
 
       <Card title="チームと点数">
         <div className="flex flex-wrap gap-2">
           {TEAMS.map((t) => (
-            <span key={t.id} className="rounded-full px-4 py-1 font-bold text-white" style={{ background: t.color }}>
-              {t.name}
+            <span key={t.id} className="rounded-full bg-card px-4 py-1 font-bold ring-2" style={{ "--tw-ring-color": t.color } as React.CSSProperties}>
+              <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" />
+              {t.name}（{t.colorName}）
             </span>
           ))}
         </div>
         <p>町内の人は3チームに分かれます。チームは毎週日曜に入れ替わるので、いろんな人と知り合えます。</p>
-        <ul className="list-inside list-disc space-y-1 text-ink/90">
+        <ul className="list-inside list-disc space-y-1 text-ink-soft">
           <li>1軒終わると 10点。7:30 までなら +5点</li>
           <li>同じチームで2人以上なら、ひとり +5点</li>
           <li>ほかのチームを手伝うと、<b>両方のチームに</b> +5点</li>
           <li>人手が足りない家（赤く点滅）に駆けつけると +10点</li>
           <li>偵察（写真1枚）やお茶の差し入れも 3点</li>
         </ul>
-        <p className="text-sm text-ink/70">点数はお金にはなりません。町内の中だけで比べます。</p>
+        <p className="text-sm text-ink-soft">点数はお金にはなりません。町内の中だけで比べます。</p>
       </Card>
 
       <Card title="持ちもの">
@@ -99,7 +100,7 @@ export default function RulesPage() {
           {BRING.map(([what, note]) => (
             <li key={what}>
               <b>{what}</b>
-              <span className="text-ink/70"> ― {note}</span>
+              <span className="text-ink-soft"> ― {note}</span>
             </li>
           ))}
         </ul>
@@ -115,16 +116,16 @@ export default function RulesPage() {
             </li>
           ))}
         </ul>
-        <p className="text-sm text-ink/70">
+        <p className="text-sm text-ink-soft">
           けがや急な体調の変化があったときは、ためらわずに 119 番へ。シマエナGO は体調の判断はしません。
         </p>
       </Card>
 
       <div className="grid grid-cols-2 gap-3 pb-6">
-        <Link href="/map" className="rounded-2xl bg-ink py-4 text-center text-lg font-bold text-white">
+        <Link href="/map" className="btn btn-ink btn-big">
           地図を見る
         </Link>
-        <Link href="/" className="rounded-2xl bg-white py-4 text-center text-lg font-bold ring-2 ring-ink">
+        <Link href="/" className="btn btn-white text-lg">
           はじめに戻る
         </Link>
       </div>

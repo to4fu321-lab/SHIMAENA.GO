@@ -19,24 +19,24 @@ export default function Quiz() {
 
   if (!q) return <p className="text-center text-lg">結果を出しています…</p>;
   return (
-    <section className="space-y-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10" aria-label="シマエナ診断">
-      <p className="text-sm font-bold text-neon">
+    <section className="space-y-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10" aria-label="シマエナ診断">
+      <p className="eyebrow">
         しつもん {i + 1} / {QUIZ_QUESTIONS.length}
       </p>
-      <span className="block h-2 overflow-hidden rounded-full bg-ink/10" aria-hidden="true">
-        <span className="block h-full rounded-full bg-neon transition-[width]" style={{ width: `${(i / QUIZ_QUESTIONS.length) * 100}%` }} />
+      <span className="block h-3 overflow-hidden rounded-full bg-ice-soft" aria-hidden="true">
+        <span className="block h-full rounded-full bg-ice transition-[width]" style={{ width: `${(i / QUIZ_QUESTIONS.length) * 100}%` }} />
       </span>
       <h2 className="text-2xl font-bold">{q.text}</h2>
       <div className="grid gap-3">
         {QUIZ_CHOICES.map((c) => (
-          <button key={c.value} onClick={() => answer(c.value)} className="min-h-14 rounded-2xl bg-ink text-xl font-bold text-white active:scale-95">
+          <button key={c.value} onClick={() => answer(c.value)} className="btn btn-ink btn-big">
             {c.label}
           </button>
         ))}
       </div>
       {i > 0 && (
-        <button onClick={() => setAnswers(answers.slice(0, -1))} className="w-full text-center text-base text-ink/70 underline">
-          ひとつ戻る
+        <button onClick={() => setAnswers(answers.slice(0, -1))} className="btn btn-white w-full text-base">
+          ひとつ前の質問に戻る
         </button>
       )}
     </section>
