@@ -13,13 +13,21 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 <img src="docs/screens/card-retrowave.png" width="30%" alt="ありがとうカード（早朝のレア）">
 <img src="docs/screens/cards.png" width="30%" alt="カード帳">
 </p>
+<p>
+<img src="docs/screens/solo.png" width="30%" alt="ソロ出動">
+<img src="docs/screens/share-today.png" width="30%" alt="SNS シェアカード（今日の出動）">
+<img src="docs/screens/public-town.png" width="30%" alt="公開ページ（町の雪解け）">
+</p>
 
 ## 公開中のアプリ
 - https://yukikaki-karano-kaihou.vercel.app/
 
 | 画面 | 何ができるか |
 |---|---|
-| `/` ホーム | 今朝の出撃画面: 今朝の雪（雪ボス）のHP・○/○軒・動いた人数・3チームの得点・人手が足りない家。大きなボタンで地図／5分だけ参加／あそびかた／カード帳へ |
+| `/` ホーム | 町の雪解け（雪ボスのHP・○/○軒・3チームの得点・今日の応援）→ 今日の自分（羽・連続出動）→ 大きなボタン（ソロ出動／5分だけ出動／チーム出撃）→ あと1人で救える家 → 今日のシマエナカード → SNS に投稿する |
+| `/solo` ソロ出動 | 仲間がいなくても1人で 3〜5分のミッション（見回り・雪の報告・自分の家の雪かき など）。羽ポイント・連続出動・カード。SOLO CLEAR の演出と、SNS に投稿 |
+| `/public/town` 公開ページ | LINE 登録前でも見られる町の雪解け（集計だけ）。今日と今週の数字・町を応援する・LINE で参加・シマエナ診断・SNS で広める |
+| `/public/diagnosis` シマエナ診断 | 登録なしの5問で「あなたは何シマエナ？」。結果カードを SNS でシェア |
 | `/rules` あそびかた | 手伝う人は3つだけ、手伝ってほしい人は1つだけ。持ちものと、けがをしないために |
 | `/map` 地図 | 50m マスのぬりえ。得点バーと今朝の雪（雪ボス）のHP、全軒完了で「討伐」。LINE から開くと自分の割り当て・司令官の理由・「行く」「終わりました（写真）」「人手が足りない」。完了すると MISSION CLEAR（点の内訳・雪HPの減り）。「あと1人で救える家」と「5分だけ助けに行く」「5分だけ参加」。「結果をコピー」（絵文字グリッド） |
 | `/cards` カード帳 | その朝だけのカード。正方形と 4:5 で保存。図鑑（5タッチの取得状況・リボン・今週の称号）と、ご褒美（想定。架空の地元の銭湯・お店） |
@@ -50,6 +58,9 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 | 週末の実況 | 日曜の夜 | 今週の集計 → 実況文と来週へのひとこと | [`lib/claude/weekly.ts`](lib/claude/weekly.ts) |
 | ありがとうの一文 | お願いした人が3択（ありがとう／助かりました／お茶どうぞ）を押したとき | 3択とその朝の状況 → カード裏面の一文（40字、名前なし）。手伝った人の LINE にも届く | [`lib/claude/thanks.ts`](lib/claude/thanks.ts) |
 | 今朝の実況 | 全軒完了したとき（`/admin` のボタンでも） | 本当の集計（軒数・動いた人数・時刻・合流・駆けつけ）→ 3〜4文。数字は Claude に作らせない | [`lib/claude/recap.ts`](lib/claude/recap.ts) |
+| SNS の投稿文 | 家・ソロの完了と今朝の実況のあと（返事を返してから） | 公開用の集計（人数・軒数・雪解け率）→ 115字の下書き。入力にない数字が混ざれば定型に戻す。本人が直して自分で投稿（自動投稿しない） | [`lib/claude/share.ts`](lib/claude/share.ts) |
+| ソロ出動のひとこと | ソロのミッションを終えたとき | ミッション・羽・連続日数 → 30字（SOLO CLEAR と個人の活動カード） | [`lib/claude/solo.ts`](lib/claude/solo.ts) |
+| 診断のひとこと | シマエナ診断の結果（タイプごとに1日1回） | タイプ → 40字のひとこと | [`lib/claude/quiz.ts`](lib/claude/quiz.ts) |
 
 - 司令官には「エナガ隊長」という声がある（採点表の voice。世話焼きで明るい町内会長風。やさしい日本語のまま。判定には影響しない）。
 - 体調や医療は判断しない（採点表の safety に明記）。返事がない家は「声かけ」を提案するだけ。
@@ -59,7 +70,7 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 - Next.js 16（App Router）/ TypeScript / Tailwind CSS v4 / Vercel（Cron）/ Neon（Postgres、素の SQL）
 - Claude API（Claude Opus 5.5、構造化出力、プロンプトキャッシュ、安全判定で断られたときのサーバー側フォールバック）
 - LINE Messaging API（Webhook・返信・プッシュ・マルチキャスト・リッチメニュー）＋ LIFF
-- Leaflet ＋ OpenStreetMap、Open-Meteo、resvg（SVG → PNG）、vitest（テスト 101 本）
+- Leaflet ＋ OpenStreetMap、Open-Meteo、resvg（SVG → PNG）、vitest（テスト 167 本）
 
 ## Claude Code をどう使ったか（スマホだけで開発）
 本人はプログラミング初心者で、開発はすべて **スマホの Claude アプリから Claude Code（クラウド）に日本語で指示するだけ** で進めました。パソコンでコードを書いた時間はありません。
@@ -103,6 +114,13 @@ npm run dev
 - 人手が足りない家（作戦の時点で不足／現場の「人手が足りない」／作戦のあとの「いいえ」）は、近い順に 300m → 600m → 1km の手伝う側（全チーム）に「5分でもOK」の小タスクを添えて LINE で呼びかける。5分おきに輪を広げ、最後は町内会役員役のサポーター（環境変数 `SUPPORTER_LINE_USER_IDS`、カンマ区切り）へ。
 - 点呼に返事がない家は地図で灰色に点滅し、300m 以内の人に「声かけお願い」、家族に「返事がありません」が届く。体調や医療の判断はしない。
 - 家が終わると、依頼者と家族に「終わりました」が届く。
+
+### ソロ出動と SNS（v1.3）
+- 仲間がいない日も `/solo` で1人の 3〜5分から。現地のミッション（見回り・雪の報告・自分の家の雪かき など）とオンラインの 3分ミッション（雪かき完了にはしない）。同じミッションは1日1回。羽ポイントはチーム得点とは別の個人の記録で、順位には使わない。最初の1枚と5日連続でカード。地図に今日の足あと（50m マスに羽のピン）。
+- 公開ページ `/public/town` とシマエナ診断 `/public/diagnosis` は LINE 登録なしで見られる（集計だけ。名前・家・マスの位置は出さない）。
+- SNS シェアカード `/api/share/<種類>.png`（今日の出動・町の雪解け・仲間を募集・わたしの活動・診断結果 × 正方形・ストーリーズ・リンクの見出し）。「X に投稿」は投稿画面を開くだけ、「画像で共有」はスマホの共有シート（Instagram など）。
+- LINE 参加ボタンには、Vercel の環境変数 `NEXT_PUBLIC_LINE_ADD_FRIEND_URL` に公式アカウントの友だち追加 URL（LINE Official Account Manager →「友だちを増やす」→「友だち追加ガイド」の URL）を入れる。入れるまでは「LINE で『シマエナGO』を検索」と出る。
+- 表が2つ増えた（`solo_logs`・`town_cheers`）ので、公開版の `/admin` で「DB を準備する」をもう一度押す。
 
 ### ありがとうカード
 - 家が完了すると、来た人の数だけカードが発行され、LINE に表と裏の2枚が届く。二度と同じカードは発行されない（通し番号 No.○/○）。
