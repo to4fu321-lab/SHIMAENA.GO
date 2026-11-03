@@ -117,6 +117,11 @@ export default function MapScreen({
             <p className="text-sm text-ink/70">
               {myView.goingPeople}人 / 必要 {myView.requiredPeople}人 ・ 7:00 開始
             </p>
+            {myMission?.reason && (
+              <p className="mt-1 text-sm text-ink/80">
+                <span className="font-bold text-neon">司令官</span> {myMission.reason}
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-lg font-bold">今朝の割り当てはまだありません</p>

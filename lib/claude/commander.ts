@@ -26,6 +26,9 @@ export interface CommanderInput {
   }[];
 }
 
+/** 司令官の理由（1家1行）の長さ */
+export const REASON_MAX = 30;
+
 export const PlanSchema = z.object({
   missions: z.array(
     z.object({
@@ -34,6 +37,8 @@ export const PlanSchema = z.object({
       requiredPeople: z.number().int(),
       assignedHelperIds: z.array(z.string()),
       status: z.enum(["assigned", "short", "no_answer"]),
+      /** なぜその重要度・人数・その人たちか（30字まで、事実だけ。体調の話はしない）。地図と /admin に出す */
+      reason: z.string(),
     }),
   ),
   /** 割り当てられた人それぞれへの LINE の文面 */
@@ -44,6 +49,19 @@ export const PlanSchema = z.object({
 export type Plan = z.infer<typeof PlanSchema>;
 
 const TEAM_NAME: Record<TeamId, string> = { salvia: "サルビア", marigold: "マリーゴールド", lupinus: "ルピナス" };
+const ANSWER_TEXT: Record<RequesterAnswer | "none", string> = { no: "出られない", together: "一緒にやる", yes: "出られる", none: "返事なし" };
+
+/** 理由を1行・30字に整える（改行や余分な空白も消す） */
+export function cleanReason(reason: string | undefined): string {
+  return (reason ?? "").replace(/\s+/g, " ").trim().slice(0, REASON_MAX);
+}
+
+/** Claude が使えないときの理由: レベル・答え・人数の事実だけで作る */
+function mockReason(base: CommanderInput["bases"][number], required: number, picked: number): string {
+  const why = base.answer === "none" ? "返事なし。まず声かけ" : `${ANSWER_TEXT[base.answer]}・レベル${base.level}`;
+  const who = picked >= required ? `近い${picked}人で` : `あと${required - picked}人、近所に声かけ`;
+  return cleanReason(`${why} → ${required}人。${who}`);
+}
 
 /** Claude が使えないときの作戦（採点表と同じ規則を計算で行う） */
 export function mockPlan(input: CommanderInput): Plan {
@@ -82,6 +100,7 @@ export function mockPlan(input: CommanderInput): Plan {
       requiredPeople: t.required,
       assignedHelperIds: picked.map((h) => h.id),
       status: t.base.answer === "none" ? "no_answer" : picked.length >= t.required ? "assigned" : "short",
+      reason: mockReason(t.base, t.required, picked.length),
     });
   }
 
@@ -118,7 +137,12 @@ export function mockPlan(input: CommanderInput): Plan {
  * Claude の作戦を点検する: 存在しない ID・二重割り当て・動けない人を外し、
  * 人数から状態を付け直す。点検後の作戦だけを保存に使う。
  */
-export function sanitizePlan(plan: Plan, input: CommanderInput): Plan {
+/** 点検に入れる作戦。古い形（reason なし）も受け付ける */
+export type PlanInput = Omit<Plan, "missions"> & {
+  missions: (Omit<Plan["missions"][number], "reason"> & { reason?: string })[];
+};
+
+export function sanitizePlan(plan: PlanInput, input: CommanderInput): Plan {
   const helperOk = new Set(input.helpers.filter((h) => h.minutes > 0).map((h) => h.id));
   const baseById = new Map(input.bases.map((b) => [b.baseId, b]));
   const used = new Set<string>();
@@ -142,6 +166,7 @@ export function sanitizePlan(plan: Plan, input: CommanderInput): Plan {
       requiredPeople: required,
       assignedHelperIds: assigned,
       status: base.answer === "none" ? "no_answer" : assigned.length >= required ? "assigned" : "short",
+      reason: cleanReason(m.reason) || mockReason(base, required, assigned.length),
     });
   }
   const messages = plan.messages.filter((msg) => used.has(msg.participantId));
@@ -153,7 +178,8 @@ export async function planMorning(input: CommanderInput): Promise<Plan> {
   const plan = await askJson({
     task:
       "雪の朝の点呼が終わりました。採点表の importance・requiredPeople・assignment の規則で、家ごとの重要度・必要人数・割り当てを決めてください。" +
-      "「はい」と答えた家はミッションにしません。割り当てた人それぞれに LINE の文面（3文以内、やさしい日本語、開始時刻と家の番号と依頼者の呼び名と一緒に行く人を含む）を書き、町内みんなへのまとめ（2〜3文）も書いてください。",
+      "「はい」と答えた家はミッションにしません。家ごとに reason（30字まで）を書きます: なぜその重要度・人数・その人たちなのかを、レベル・答え・距離・人数などの事実だけで。体調や医療の話は書きません。" +
+      "割り当てた人それぞれに LINE の文面（3文以内、やさしい日本語、開始時刻と家の番号と依頼者の呼び名と一緒に行く人を含む）を書き、町内みんなへのまとめ（2〜3文）も書いてください。",
     input,
     schema: PlanSchema,
     effort: "medium",

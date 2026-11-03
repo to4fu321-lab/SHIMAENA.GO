@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TOWN } from "../town";
 import type { HelperAnswer, RequesterAnswer } from "../types";
 import { AnnounceSchema, mockAnnounce, mockSnowName, SNOW_NAME_MAX, trimSnowName } from "./announce";
-import { type CommanderInput, mockPlan, PlanSchema, sanitizePlan } from "./commander";
+import { type CommanderInput, mockPlan, PlanSchema, REASON_MAX, sanitizePlan } from "./commander";
 import { judgeLevel, LevelResultSchema, mockLevel } from "./level";
 
 const ANSWERS: (RequesterAnswer | "none")[] = ["no", "no", "together", "yes", "no", "none", "together", "no"];
@@ -91,6 +91,15 @@ describe("司令官（モック）", () => {
     }
   });
 
+  it("家ごとに司令官の理由があり、30字以内で体調の話をしない", () => {
+    for (const m of plan.missions) {
+      expect(m.reason.length).toBeGreaterThan(0);
+      expect(m.reason.length).toBeLessThanOrEqual(REASON_MAX);
+      expect(m.reason).not.toMatch(/体調|病気|医|薬/);
+    }
+    expect(plan.missions.find((m) => m.status === "no_answer")!.reason).toContain("声かけ");
+  });
+
   it("割り当てられた人全員に文面があり、時刻と家の番号が入っている", () => {
     const assigned = plan.missions.flatMap((m) => m.assignedHelperIds);
     expect(plan.messages.map((m) => m.participantId).sort()).toEqual([...assigned].sort());
@@ -100,7 +109,14 @@ describe("司令官（モック）", () => {
   it("Claude の作戦に間違いがあっても点検で直る", () => {
     const broken = {
       missions: [
-        { baseId: input.bases[0].baseId, importance: 9, requiredPeople: 2, assignedHelperIds: ["h1", "h1", "nobody", "h4"], status: "assigned" as const },
+        {
+          baseId: input.bases[0].baseId,
+          importance: 9,
+          requiredPeople: 2,
+          assignedHelperIds: ["h1", "h1", "nobody", "h4"],
+          status: "assigned" as const,
+          reason: "とても長い理由を\n改行つきで何度も書いてしまった場合でも三十字に切り詰められるはずです",
+        },
         { baseId: input.bases[0].baseId, importance: 9, requiredPeople: 2, assignedHelperIds: ["h2"], status: "assigned" as const },
         { baseId: "base-nope", importance: 1, requiredPeople: 1, assignedHelperIds: ["h3"], status: "assigned" as const },
         { baseId: input.bases[3].baseId, importance: 1, requiredPeople: 1, assignedHelperIds: ["h5"], status: "assigned" as const },
@@ -112,7 +128,10 @@ describe("司令官（モック）", () => {
     const fixed = sanitizePlan(broken, input);
     expect(fixed.missions.map((m) => m.baseId)).toEqual([input.bases[0].baseId, input.bases[1].baseId]);
     expect(fixed.missions[0]).toMatchObject({ assignedHelperIds: ["h1"], status: "short" });
+    expect(fixed.missions[0].reason).toHaveLength(REASON_MAX);
+    expect(fixed.missions[0].reason).not.toContain("\n");
     expect(fixed.missions[1]).toMatchObject({ assignedHelperIds: ["h6"], status: "assigned" });
+    expect(fixed.missions[1].reason.length).toBeGreaterThan(0); // 理由がなければ規則から補う
     expect(fixed.messages.map((m) => m.participantId)).toEqual(["h1"]);
   });
 });

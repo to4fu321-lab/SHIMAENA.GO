@@ -164,6 +164,7 @@ export function applyPlan(s: MorningRecord, roster: Roster, plan: Plan): void {
       subtasks: decompose(r.clearArea ?? "entrance", r.level ?? 2),
       status: m.status,
       startAt: iso(s, 7 * 60),
+      reason: m.reason,
     });
   }
   s.morning.missions = missions;

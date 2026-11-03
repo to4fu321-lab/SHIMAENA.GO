@@ -6,7 +6,7 @@ import type { Mission, ScoreEvent, Sortie, TeamId } from "../types";
 const rollcall = { id: "rc-20261214", date: "2026-12-14", forecastCm: 12, status: "planned" as const, snowName: "ぼた雪のドンブリ" };
 const at = (hm: string) => `2026-12-14T${hm}:00+09:00`;
 
-const mission = (n: number, status: Mission["status"], requiredPeople: number, importance: number): Mission => ({
+const mission = (n: number, status: Mission["status"], requiredPeople: number, importance: number, reason: string): Mission => ({
   id: `m${n}`,
   rollcallId: rollcall.id,
   baseId: `base${n}`,
@@ -15,17 +15,18 @@ const mission = (n: number, status: Mission["status"], requiredPeople: number, i
   subtasks: [],
   status,
   startAt: at("07:00"),
+  reason,
 });
 
 const missions: Mission[] = [
-  mission(1, "done", 2, 6),
-  mission(2, "done", 3, 9),
-  mission(3, "short", 3, 9),
-  mission(4, "in_progress", 2, 5),
-  mission(5, "assigned", 2, 4),
-  mission(6, "no_answer", 2, 7),
-  mission(7, "open", 1, 2),
-  mission(8, "done", 1, 3),
+  mission(1, "done", 2, 6, "出られない・レベル2 → 2人。近い2人で"),
+  mission(2, "done", 3, 9, "道路まで・いいえ → 3人。近い3人で"),
+  mission(3, "short", 3, 9, "道路まで30分・坂 → 3人。あと2人、近所に声かけ"),
+  mission(4, "in_progress", 2, 5, "出られない・レベル2 → 2人。近い2人で"),
+  mission(5, "assigned", 2, 4, "一緒にやる・レベル3 → 2人。本人も加わる"),
+  mission(6, "no_answer", 2, 7, "返事なし。まず声かけ → 2人"),
+  mission(7, "open", 1, 2, "出られない・レベル1 → 1人"),
+  mission(8, "done", 1, 3, "出られない・レベル1 → 1人。近い1人で"),
 ];
 
 let sortieNo = 0;

@@ -116,6 +116,8 @@ export interface Mission {
   subtasks: SubTask[];
   status: MissionStatus;
   startAt: string; // ISO
+  /** 司令官の理由（30字、v1.1）。地図の「自分の割り当て」と /admin に出す */
+  reason?: string;
 }
 
 // ---- 出撃 ----

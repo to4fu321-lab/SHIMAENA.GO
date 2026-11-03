@@ -224,6 +224,7 @@ async function AdminContent() {
                       <span className="text-sm text-alert"> ヘルプ {radiusLabel(help.stage - 1)}まで</span>
                     )}
                     {help.knockIds && help.knockIds.length > 0 && <span className="text-sm text-ink/60"> 声かけ依頼済み</span>}
+                    {x.reason && <span className="block text-sm text-ink/60">司令官の理由: {x.reason}</span>}
                   </li>
                 );
               })}
