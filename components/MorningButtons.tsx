@@ -60,7 +60,7 @@ export default function MorningButtons({ viewerId, canAct, going }: { viewerId: 
         <button
           disabled={disabled}
           onClick={() => fileRef.current?.click()}
-          className="min-h-16 rounded-2xl bg-neon text-xl font-bold text-white active:scale-95 disabled:opacity-40"
+          className="min-h-16 rounded-2xl bg-neon px-0 text-lg font-bold leading-tight text-white active:scale-95 disabled:opacity-40"
         >
           {pending ? "確認中…" : "終わりました"}
         </button>
