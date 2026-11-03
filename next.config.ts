@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // LIFF のエンドポイントが /map のままでも動くように、/map/map → /map、/map/cards → /cards に送る
   async redirects() {
-    return [{ source: "/map/:page(map|cards|rules|admin)", destination: "/:page", permanent: false }];
+    return [{ source: "/map/:page(map|cards|rules|admin|solo)", destination: "/:page", permanent: false }];
   },
   turbopack: {
     rules: {

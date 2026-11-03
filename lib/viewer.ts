@@ -28,9 +28,9 @@ export function readViewer(value: string | undefined): string | undefined {
   return id;
 }
 
-/** デモの `?as=h3` は架空の手伝う側だけ。本物の人は cookie で */
+/** デモの `?as=h3`（架空の手伝う側）と `?as=r2`（架空のお願いする側、ソロ出動の「自分の家」用）。本物の人は cookie で */
 export function isDemoViewer(id: string): boolean {
-  return /^h\d+$/.test(id);
+  return /^[hr]\d+$/.test(id);
 }
 
 /** 画面が言う「自分」を信じてよいか: デモの架空の人か、cookie で確かめた本人だけ（server action から呼ぶ） */

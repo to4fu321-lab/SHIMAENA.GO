@@ -9,7 +9,8 @@ import { loadMorning } from "@/lib/morning/store";
 import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { TEAMS } from "@/lib/teams";
-import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { soloStatus } from "@/lib/solo/ops";
+import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 今朝の出撃" };
 
@@ -29,7 +30,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   const { as } = await searchParams;
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   const m = record.morning;
-  const demoAs = as && /^h\d+$/.test(as) ? as : undefined;
+  const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
   const q = demoAs ? `?as=${demoAs}` : "";
@@ -49,6 +50,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   const myBase = myMission && roster.bases.find((b) => b.id === myMission.baseId);
   const myView = myMission && viewBases(m).get(myMission.baseId);
   const myTeam = TEAMS.find((t) => t.id === me?.teamId);
+  const solo = me ? await soloStatus(me.id, new Date()) : undefined;
+  // 「5分だけ出動」: 作戦中で手伝う側（チームあり）なら地図の5分だけ参加、そうでなければソロの5分ミッション
+  const fiveHref = planned && me?.role === "helper" && me.teamId ? `/map${q}` : `/solo?pick=5${demoAs ? `&as=${demoAs}` : ""}`;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-paper px-4 pb-6 pt-5 text-ink">
@@ -130,6 +134,16 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
           </div>
         )}
 
+        {me && solo && (
+          <Link href={`/solo${q}`} className="block rounded-2xl bg-[#fff0f6] px-3 py-2 ring-1 ring-neon/40">
+            <span className="text-xs font-bold tracking-widest text-neon">今日の自分</span>
+            <span className="block text-base">
+              羽 <b className="text-lg tabular-nums">{solo.todayFeathers}</b>（合計 {solo.totalFeathers}）・連続出動 <b className="tabular-nums">{solo.streak}</b> 日
+              <span className="text-ink/70">{solo.todayFeathers === 0 ? " ・ まだ今日の出動なし →" : " →"}</span>
+            </span>
+          </Link>
+        )}
+
         {me && (
           <p className="text-base">
             {myTeam ? (
@@ -149,11 +163,18 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
       </section>
 
       <nav className="grid gap-3">
+        <div className="grid grid-cols-2 gap-3">
+          <Link href={`/solo${q}`} className="rounded-2xl bg-neon py-4 text-center text-xl font-bold text-white">
+            ソロ出動
+          </Link>
+          <Link href={fiveHref} className="rounded-2xl bg-neon/85 py-4 text-center text-lg font-bold leading-tight text-white">
+            5分だけ
+            <br />
+            出動
+          </Link>
+        </div>
         <Link href={`/map${q}`} className="rounded-2xl bg-ink py-4 text-center text-xl font-bold text-white">
-          出撃する（地図）
-        </Link>
-        <Link href={`/map${q}`} className="rounded-2xl bg-neon py-4 text-center text-lg font-bold text-white">
-          5分だけ参加
+          チーム出撃（地図）
         </Link>
         <div className="grid grid-cols-2 gap-3">
           <Link href="/rules" className="rounded-2xl bg-white py-4 text-center text-lg font-bold text-ink ring-2 ring-ink/15">
