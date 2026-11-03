@@ -10,6 +10,7 @@ import { latestClear } from "@/lib/morning/clear";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { viewBases } from "@/lib/morning/view";
+import { listShort } from "@/lib/morning/watch";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "地図 ・ シマエナGO" };
@@ -33,8 +34,9 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         state={state}
         cells={cells}
         bases={roster.bases}
-        viewer={viewer ? { teamId: viewer.teamId } : undefined}
+        viewer={viewer ? { teamId: viewer.teamId, role: viewer.role } : undefined}
         clear={latestClear(state, roster, viewerId)}
+        rescue={listShort(record, roster)}
       />
     </>
   );

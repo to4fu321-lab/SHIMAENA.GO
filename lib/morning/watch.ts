@@ -56,6 +56,37 @@ export function pickKnockTargets(s: MorningRecord, roster: Roster, m: Mission): 
   return helpTargets(requester.location, roster.participants, 0, busyIds(s));
 }
 
+/** 画面に出す「人手が足りない家」（spec v1.1: あと1人で救える家） */
+export interface ShortHouse {
+  missionId: string;
+  baseNumber: number | string;
+  missing: number;
+  required: number;
+  going: number;
+  /** 5分でできる仕事（最大2つ） */
+  tasks: string[];
+  importance: number;
+}
+
+/** 人手が足りない家を、あと少しで救える順（足りない人数が少ない順 → 重要度の高い順）に */
+export function listShort(s: MorningRecord, roster: Roster): ShortHouse[] {
+  return s.morning.missions
+    .filter((m) => m.status === "short")
+    .map((m) => {
+      const five = m.subtasks.filter((t) => t.minutes === 5).map((t) => t.label);
+      return {
+        missionId: m.id,
+        baseNumber: roster.bases.find((b) => b.id === m.baseId)?.number ?? "?",
+        missing: missingPeople(s, m),
+        required: m.requiredPeople,
+        going: goingCount(s, m.id),
+        tasks: (five.length > 0 ? five : [SUPPORT_TASKS[0].label]).slice(0, 2),
+        importance: m.importance,
+      };
+    })
+    .sort((a, b) => a.missing - b.missing || b.importance - a.importance);
+}
+
 export interface TaskOffer {
   mission: Mission;
   label: string;

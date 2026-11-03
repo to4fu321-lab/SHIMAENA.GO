@@ -383,8 +383,16 @@ export async function notifyNoAnswer(missionId: string): Promise<void> {
   await saveMorning(s);
 }
 
-/** ヘルプ通知の「行く（5分でも）」: 出撃に加わる。自分の家を終えた人なら駆けつけボーナス */
-export async function joinMission(participantId: string, missionId: string, now = new Date()): Promise<LineMessage[]> {
+/**
+ * ヘルプ通知の「行く（5分でも）」と地図の「5分だけ助けに行く」: 出撃に加わる。自分の家を終えた人なら駆けつけボーナス。
+ * extra: 人がそろっている家にも偵察・補給（5分）として加わる（「5分だけ参加」用）
+ */
+export async function joinMission(
+  participantId: string,
+  missionId: string,
+  now = new Date(),
+  opts: { extra?: boolean } = {},
+): Promise<LineMessage[]> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const m = s.morning.missions.find((x) => x.id === missionId);
@@ -394,22 +402,48 @@ export async function joinMission(participantId: string, missionId: string, now 
   if (s.morning.sorties.some((x) => x.missionId === m.id && x.participantId === p.id && x.status === "going")) {
     return [MSG.helpJoined(number)];
   }
-  if (missingPeople(s, m) <= 0) return [MSG.helpAlreadyEnough(number)];
+  const enough = missingPeople(s, m) <= 0;
+  if (enough && !opts.extra) return [MSG.helpAlreadyEnough(number)];
   const finishedOwn = s.morning.sorties.some((x) => x.participantId === p.id && x.status === "done");
   s.morning.sorties.push({
     id: `s${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
     missionId: m.id,
     participantId: p.id,
     teamId: p.teamId,
-    subtaskIds: [],
+    subtaskIds: enough ? ["scout"] : [], // そろっている家に加わるときは偵察・補給の5分タスク
     status: "going",
     rescue: finishedOwn,
     confirmedAt: now.toISOString(),
   });
-  if (goingCount(s, m.id) >= m.requiredPeople) m.status = "in_progress";
-  s.log.push(`${p.nickname}さんがヘルプで拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`);
+  if (goingCount(s, m.id) >= m.requiredPeople && m.status !== "no_answer") m.status = "in_progress";
+  s.log.push(
+    `${p.nickname}さんが${enough ? "偵察・補給で" : "ヘルプで"}拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`,
+  );
   await saveMorning(s);
   return [MSG.helpJoined(number)];
+}
+
+export interface JoinNearbyResult {
+  joined: boolean;
+  messages: LineMessage[];
+  baseNumber?: number | string;
+}
+
+/**
+ * 地図の「5分だけ参加」: 近く（1km）で人手が足りない家があれば加わり、なければ作業中の家に偵察・補給（5分）で加わる。
+ * どこかに向かっている最中の人には何も出さない（まず自分の家を）。
+ */
+export async function joinNearby(participantId: string, minutes: 5 | 15 | 30 = 5, now = new Date()): Promise<JoinNearbyResult> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const p = roster.participants.find((x) => x.id === participantId);
+  if (!p || p.role !== "helper" || !p.teamId || s.morning.rollcall.status !== "planned") {
+    return { joined: false, messages: [MSG.nowNothing()] };
+  }
+  const offer = pickTaskNow(s, roster, p, minutes);
+  if (!offer) return { joined: false, messages: [MSG.nowNothing()] };
+  const messages = await joinMission(p.id, offer.mission.id, now, { extra: true });
+  return { joined: true, messages, baseNumber: baseNumberOf(roster, offer.mission.baseId) };
 }
 
 // ---- 週末（spec 2 日曜・5・8・9-5） ----

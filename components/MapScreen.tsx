@@ -5,10 +5,12 @@ import type { CellView } from "@/lib/cells";
 import type { BaseView, MorningState } from "@/lib/morning/view";
 import { progress, snowHp, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
-import type { Base, TeamId } from "@/lib/types";
+import type { Base, Role, TeamId } from "@/lib/types";
 import type { ClearSummary } from "@/lib/morning/clear";
+import type { ShortHouse } from "@/lib/morning/watch";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
+import RescueList from "./RescueList";
 
 const TownMap = dynamic(() => import("./TownMap"), {
   ssr: false,
@@ -31,13 +33,16 @@ export default function MapScreen({
   bases,
   viewer,
   clear = null,
+  rescue = [],
 }: {
   state: MorningState;
   cells: CellView[];
   bases: Base[];
-  viewer?: { teamId?: TeamId };
+  viewer?: { teamId?: TeamId; role?: Role };
   /** いちばん最近の完了（他の人の完了に気づくため） */
   clear?: ClearSummary | null;
+  /** 人手が足りない家（あと少しで救える順） */
+  rescue?: ShortHouse[];
 }) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
@@ -48,6 +53,7 @@ export default function MapScreen({
   const viewerTeam = TEAMS.find((t) => t.id === viewer?.teamId);
   const mySortie = state.sorties.find((s) => s.participantId === state.viewerId);
   const myMission = state.missions.find((m) => m.id === mySortie?.missionId);
+  const goingTo = state.sorties.filter((s) => s.participantId === state.viewerId && s.status === "going").map((s) => s.missionId);
   const myBase = bases.find((b) => b.id === myMission?.baseId);
   const myView = views.find((v) => v.baseId === myMission?.baseId);
   const [, month, day] = state.rollcall.date.split("-").map(Number);
@@ -106,12 +112,12 @@ export default function MapScreen({
       </header>
 
       {/* 真ん中: 地図（討伐したら背景が明るくなる） */}
-      <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
+      <main className={`relative min-h-[34dvh] flex-1 ${prog.allDone ? "defeated" : ""}`}>
         <TownMap cells={cells} />
       </main>
 
-      {/* 下: 自分の割り当てとボタン */}
-      <section className="space-y-3 rounded-t-3xl bg-white px-4 pb-5 pt-4 shadow-[0_-4px_16px_rgba(59,42,120,0.12)]">
+      {/* 下: 自分の割り当てとボタン（長くなったら中でスクロール。地図は 34% 以上残す） */}
+      <section className="max-h-[58dvh] space-y-3 overflow-y-auto rounded-t-3xl bg-white px-4 pb-5 pt-4 shadow-[0_-4px_16px_rgba(59,42,120,0.12)]">
         {myBase && myView ? (
           <div>
             <p className="text-sm text-ink/70">
@@ -133,6 +139,13 @@ export default function MapScreen({
           <p className="text-lg font-bold">今朝の割り当てはまだありません</p>
         )}
         <MorningButtons viewerId={state.viewerId} canAct={Boolean(mySortie && mySortie.status === "going")} going={Boolean(mySortie?.confirmedAt)} />
+        <RescueList
+          viewerId={state.viewerId}
+          items={rescue}
+          goingTo={goingTo}
+          isHelper={viewer?.role === "helper"}
+          hasAssignment={goingTo.length > 0}
+        />
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink/70" aria-label="色の見方">
           <li><span className="legend bg-white ring-2 ring-ink" />未対応</li>
           <li><span className="legend bg-white ring-2 ring-alert" />人手不足</li>

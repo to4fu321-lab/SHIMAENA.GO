@@ -123,7 +123,7 @@ export const MSG = {
   goConfirmed: (baseNumber: number | string) =>
     text(`了解です！拠点${baseNumber}へ。7:00 開始です。\n終わったら、玄関前から道路側を写した写真を1枚送ってください。`),
   goDeclined: () => text("承知しました。無理しないでください。ほかの人に声をかけます。"),
-  noSortie: () => text("今朝の割り当てはありません。「いまからやる」は後日の機能です。"),
+  noSortie: () => text("今朝の割り当てはありません。「いまからやる」と送ると、近くの小さな仕事を探します。"),
   photoNotCleared: (comment: string) => text(`${comment}\nもう少しお願いできますか。終わったらまた写真を送ってください。`),
   doneThanks: (baseNumber: number | string, teamName: string, points: number, comment: string) =>
     text(`${comment}\n拠点${baseNumber} 完了！ ${teamName}に +${points} 点。ありがとうカードは後ほど届きます。`),

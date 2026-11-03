@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
 import type { ClearSummary } from "@/lib/morning/clear";
-import { completeWithPhoto, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
+import { completeWithPhoto, joinMission, joinNearby, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
 import { isDemoViewer, readViewer, signViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export interface ActionResult {
@@ -38,6 +38,24 @@ export async function shortAction(viewerId: string): Promise<ActionResult> {
   const messages = await reportShort(id);
   revalidatePath("/map");
   return { ok: true, text: firstText(messages) };
+}
+
+/** 「5分だけ助けに行く」: 人手が足りない家に加わる */
+export async function joinAction(viewerId: string, missionId: string): Promise<ActionResult> {
+  const id = await trustedViewer(viewerId);
+  if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+  const messages = await joinMission(id, missionId);
+  revalidatePath("/map");
+  return { ok: true, text: firstText(messages) };
+}
+
+/** 「5分だけ参加」: 近くの足りない家か、作業中の家の偵察・補給に加わる */
+export async function fiveMinutesAction(viewerId: string): Promise<ActionResult> {
+  const id = await trustedViewer(viewerId);
+  if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+  const r = await joinNearby(id, 5);
+  revalidatePath("/map");
+  return { ok: r.joined, text: firstText(r.messages) };
 }
 
 /** 完了写真（画面で縮小した JPEG）を受け取り、Claude が確認して完了にする */
