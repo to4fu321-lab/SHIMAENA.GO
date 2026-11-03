@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { cardText } from "../claude/card";
 import { jstMinutes } from "../jst";
 import { push } from "../line/client";
+import { MSG } from "../line/messages";
 import type { LineMessage } from "../line/types";
 import type { MorningRecord } from "../morning/flow";
 import type { Roster } from "../morning/roster";
@@ -39,6 +40,8 @@ export interface IssuedCards {
   cards: Card[];
   /** LINE に送った人数 */
   sent: number;
+  /** このカードが最初の1枚だった人（初出撃） */
+  firstFlightIds: string[];
 }
 
 /**
@@ -58,7 +61,10 @@ export async function issueCardsForMission(
     const p = byId.get(x.participantId);
     return p ? [{ id: p.id, name: p.nickname, teamId: x.teamId, lineUserId: p.lineUserId }] : [];
   });
-  if (members.length === 0) return { cards: [], sent: 0 };
+  if (members.length === 0) return { cards: [], sent: 0, firstFlightIds: [] };
+  // 初出撃: まだ1枚もカードがない人（この朝の分を入れる前に調べる）
+  const firstFlightIds: string[] = [];
+  for (const m of members) if ((await r.listCardsByRecipient(m.id)).length === 0) firstFlightIds.push(m.id);
   const completedAt = sorties[0].completedAt ?? new Date().toISOString();
   const base = roster.bases.find((b) => b.id === mission.baseId);
   const requester = base && byId.get(base.requesterId);
@@ -117,20 +123,26 @@ export async function issueCardsForMission(
       teamIds: [...new Set(art.members.map((x) => x.teamId))],
       createdAt: completedAt,
     };
+    const firstFlight = firstFlightIds.includes(m.id);
     const svg = renderCardSvg(art);
     const back = renderCardBackSvg(art, {
       thanks: opts.thanks ?? "今朝はありがとうございました。おかげで玄関から出られます。",
       subtasks: mission.subtasks.map((t) => `${t.label}（${t.minutes}分）`),
+      firstFlight,
     });
     await r.insertCard(card, svg, back);
     cards.push(card);
     if (m.lineUserId) {
-      await push(m.lineUserId, cardImageMessages(card.id));
+      // 初出撃の歓迎は、カードと同じ1回のプッシュにまとめる
+      await push(m.lineUserId, [...(firstFlight ? [MSG.firstFlight(art.townName)] : []), ...cardImageMessages(card.id)]);
       sent++;
     }
   }
-  s.log.push(`拠点${base?.number ?? "?"}のカード「${text.designName}」（${rarity.label} ${"★".repeat(rarity.stars)}）を ${cards.length} 枚発行`);
-  return { cards, sent };
+  s.log.push(
+    `拠点${base?.number ?? "?"}のカード「${text.designName}」（${rarity.label} ${"★".repeat(rarity.stars)}）を ${cards.length} 枚発行` +
+      (firstFlightIds.length > 0 ? `（初出撃 ${firstFlightIds.length} 人）` : ""),
+  );
+  return { cards, sent, firstFlightIds };
 }
 
 /** 保存してあるカードから、裏面を描くのに要る分だけ CardArt を組み立てる（裏面は人の並びを使わない） */
@@ -160,7 +172,10 @@ export async function rerenderBacks(missionId: string, back: { date: string; tha
   const r = repo();
   const cards = await r.listCardsByMission(missionId);
   for (const card of cards) {
-    const svg = renderCardBackSvg(artFromCard(card, back.date), { thanks: back.thanks, subtasks: back.subtasks });
+    // その人のいちばん古いカードなら初出撃のリボンを残す
+    const mine = await r.listCardsByRecipient(card.recipientId);
+    const firstFlight = mine.length > 0 && mine[mine.length - 1].id === card.id;
+    const svg = renderCardBackSvg(artFromCard(card, back.date), { thanks: back.thanks, subtasks: back.subtasks, firstFlight });
     await r.updateCardBack(card.id, svg);
   }
   return cards.length;

@@ -38,6 +38,8 @@ export interface ClearSummary {
   teamTotals: Record<TeamId, number>;
   /** 画面を見ている人が今朝ここまでに入れた点（個人順位は出さない。本人の記録だけ） */
   myPoints?: number;
+  /** 画面を見ている人にとって、これが初出撃（最初のカード） */
+  firstFlight?: boolean;
   hpBefore: number;
   hpAfter: number;
   hpMax: number;
@@ -74,7 +76,7 @@ export function summarizeClear(
   state: MorningState,
   roster: Roster,
   missionId: string,
-  opts: { hpBefore?: number; viewerId?: string } = {},
+  opts: { hpBefore?: number; viewerId?: string; firstFlightIds?: string[] } = {},
 ): ClearSummary | null {
   const mission = state.missions.find((m) => m.id === missionId);
   if (!mission || mission.status !== "done") return null;
@@ -92,6 +94,10 @@ export function summarizeClear(
     opts.viewerId === undefined
       ? undefined
       : state.scores.filter((e) => e.participantId === opts.viewerId).reduce((a, e) => a + e.points, 0);
+  const firstFlight =
+    opts.viewerId === undefined
+      ? undefined
+      : sorties.some((x) => x.participantId === opts.viewerId) && (opts.firstFlightIds ?? []).includes(opts.viewerId);
   return {
     missionId,
     baseNumber: roster.bases.find((b) => b.id === mission.baseId)?.number ?? "?",
@@ -102,6 +108,7 @@ export function summarizeClear(
     totalPoints: events.reduce((a, e) => a + e.points, 0),
     teamTotals: teamTotals(state),
     myPoints,
+    firstFlight,
     hpBefore: opts.hpBefore ?? Math.min(hp.max, hp.current + state.rollcall.forecastCm),
     hpAfter: hp.current,
     hpMax: hp.max,
@@ -116,7 +123,7 @@ export function summarizeClear(
  * いちばん最近に完了した家のまとめ（他の人の完了に気づくため）。なければ null。
  * 「最近」は時刻ではなく完了した順（得点が記録された順）で決める。デモの時計（12月の朝）と本当の時刻が混ざっても狂わない。
  */
-export function latestClear(state: MorningState, roster: Roster, viewerId?: string): ClearSummary | null {
+export function latestClear(state: MorningState, roster: Roster, viewerId?: string, firstFlightIds?: string[]): ClearSummary | null {
   let best: { missionId: string; index: number; at: string } | undefined;
   for (const m of state.missions) {
     if (m.status !== "done") continue;
@@ -125,5 +132,5 @@ export function latestClear(state: MorningState, roster: Roster, viewerId?: stri
     const index = Math.max(-1, ...eventsForMission(state, m.id).map((e) => state.scores.indexOf(e)));
     if (!best || index > best.index || (index === best.index && at > best.at)) best = { missionId: m.id, index, at };
   }
-  return best ? summarizeClear(state, roster, best.missionId, { viewerId }) : null;
+  return best ? summarizeClear(state, roster, best.missionId, { viewerId, firstFlightIds }) : null;
 }

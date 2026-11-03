@@ -68,7 +68,8 @@ export async function completeOne() {
     if (!mission) return;
     const sorties = s.morning.sorties.filter((x) => x.missionId === mission.id);
     try {
-      await issueCardsForMission(s, roster, mission, sorties);
+      const issued = await issueCardsForMission(s, roster, mission, sorties);
+      s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
     } catch (e) {
       s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
     }

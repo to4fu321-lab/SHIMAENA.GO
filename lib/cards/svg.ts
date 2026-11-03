@@ -458,11 +458,16 @@ export interface CardBack {
   /** 依頼者の一言（なければ定型） */
   thanks: string;
   subtasks: string[];
+  /** 受け取る人にとって最初のカード（初出撃） */
+  firstFlight?: boolean;
 }
 
-/** 裏面（LINE では2枚目）: 依頼者の一言、やったこと、排雪 */
+/** 裏面（LINE では2枚目）: 依頼者の一言、やったこと、排雪。初出撃ならリボン */
 export function renderCardBackSvg(art: CardArt, back: CardBack): string {
   const lines = back.subtasks.slice(0, 6).map((t, i) => `<text x="80" y="${430 + i * 34}" font-family="${JP}" font-size="20" fill="#3b2a78">☑ ${escapeXml(t)}</text>`).join("");
+  const ribbon = back.firstFlight
+    ? `<g transform="translate(300 206)"><rect x="-120" y="-17" width="240" height="34" rx="17" fill="#ffd400"/><text x="0" y="6" font-family="${JP}" font-size="16" font-weight="700" fill="#3b2a78" text-anchor="middle" letter-spacing="2">初出撃 ・ FIRST FLIGHT</text></g>`
+    : "";
   const thanks = wrap(back.thanks, 16)
     .slice(0, 4)
     .map((l, i) => `<text x="300" y="${250 + i * 38}" font-family="${JP}" font-size="24" font-weight="700" fill="#6b4fcf" text-anchor="middle">${escapeXml(l)}</text>`)
@@ -473,6 +478,7 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
   <text x="300" y="110" font-family="${EN}" font-style="italic" font-size="34" fill="#ff4f8b" text-anchor="middle">Thank you!</text>
   <text x="300" y="150" font-family="${JP}" font-size="16" fill="#8a7bb5" text-anchor="middle" letter-spacing="2">${escapeXml(art.designName)} ｜ No.${String(art.serial).padStart(3, "0")}/${art.issuedCount}</text>
   <g fill="none" stroke="#ffb3d9" stroke-width="3" stroke-linecap="round"><path d="M80 190 q20 -14 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0"/></g>
+  ${ribbon}
   ${thanks}
   <text x="80" y="395" font-family="${JP}" font-size="14" fill="#8a7bb5" letter-spacing="2">この朝にやったこと</text>
   ${lines}

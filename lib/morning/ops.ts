@@ -267,9 +267,10 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   const me = byId.get(participantId);
   const pointsOf = (teamId: string) => events.filter((e) => e.teamId === teamId).reduce((a, e) => a + e.points, 0);
   s.log.push(`${clockTextJst(now)} 拠点${number} 完了（${names.join("・")}）写真: ${check.comment}`);
-  // その朝だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る
+  // その朝だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る（初出撃の人には歓迎も）
   try {
-    await issueCardsForMission(s, roster, mission, sorties);
+    const issued = await issueCardsForMission(s, roster, mission, sorties);
+    s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
   } catch (e) {
     s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -299,7 +300,8 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   if (prog.allDone) reply.text += `\n「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐！ ${prog.total}軒すべて終わりました。`;
   // 絵文字グリッド（マスの色だけ。そのまま LINE グループや X に貼れる）を返事に添える
   reply.text += `\n\n${emojiGrid(viewCells([...viewBases(s.morning).values()], roster), s.morning)}`;
-  const clear = summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId }) ?? undefined;
+  const clear =
+    summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId, firstFlightIds: s.firstFlights }) ?? undefined;
   if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   return { done: true, messages: [reply], clear };
 }

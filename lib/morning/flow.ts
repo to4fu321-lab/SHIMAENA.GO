@@ -37,6 +37,8 @@ export interface MorningRecord {
   recap?: { text: string; at: string; allDone: boolean };
   /** ありがとう点呼（v1.1）: ミッション ID ごとに、お願いした人の3択と、Claude が整えた一文 */
   thanks?: Record<string, ThanksRecord>;
+  /** 今朝が初出撃だった人（最初のカードを受け取った人、v1.1） */
+  firstFlights?: string[];
 }
 
 export interface ThanksRecord {

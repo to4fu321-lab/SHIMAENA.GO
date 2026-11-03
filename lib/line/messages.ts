@@ -147,6 +147,8 @@ export const MSG = {
   thanksSent: (label: string, count: number) =>
     text(count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。カードの裏面に入ります。`),
   thanksNotFound: () => text("今朝の雪かきの記録が見つかりませんでした。"),
+  /** 初出撃の歓迎（最初のカードと同じプッシュで） */
+  firstFlight: (townName: string) => text(`初出撃おめでとう！\n今日からあなたも、${townName}の群れの一員です。\n最初のありがとうカードをどうぞ。`),
   shortReported: (baseNumber: number | string) => text(`拠点${baseNumber}の人手不足を町内に知らせます。5分だけ来てくれる人を探します。`),
   // ---- ヘルプ通知と見守り（spec 4・8） ----
   helpRequest: (missionId: string, baseNumber: number | string, missing: number, tasks: string[]) =>

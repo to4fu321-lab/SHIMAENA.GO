@@ -50,6 +50,11 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
 
         <p className="text-xs font-bold tracking-[0.3em] text-neon">MISSION CLEAR</p>
         <h2 className="mt-1 text-3xl font-bold leading-tight">拠点{clear.baseNumber} 完了！</h2>
+        {clear.firstFlight && (
+          <p className="mt-2 rounded-2xl bg-[#fff3b0] px-3 py-2 text-base font-bold text-ink">
+            初出撃おめでとう！ 今日からあなたも、町内の群れの一員です。最初のカードが届きます。
+          </p>
+        )}
         {clear.members.length > 0 && <p className="text-base text-ink/80">{clear.members.map((m) => `${m}さん`).join("・")}</p>}
 
         <ul className="mt-2 space-y-1 rounded-2xl bg-white px-4 py-3 ring-1 ring-ink/10" aria-label="点の内訳">
