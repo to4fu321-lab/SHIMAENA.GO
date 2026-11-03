@@ -68,3 +68,22 @@
 - [x] **T30 手袋でも押せる操作** — 「行く／終わりました／人手が足りない」を地図の下に固定、少し大きく・高コントラスト。
   完了条件: スクロールしてもボタンが残る（スクショ）。
 - 時間が余れば: 町内キット `/start`。
+
+## 第6段: ソロ出動と SNS 拡散（11/3 本人の案3回目＋指示書。計画は本人了承済み）
+得点表（spec 5）・採点表の判定規則・個人順位を出さない方針・約束ごとは変えない。羽ポイントはチーム得点と別の個人の記録。
+- [ ] **T31 ソロの土台** — 型（`SoloLog`）、「今日」の決め方 `lib/morning/today.ts`、`lib/solo/{missions,feathers,ops}.ts`、schema（`solo_logs`・`town_cheers`）、repo（メモリ＋Neon）、`lib/claude/solo.ts`（ひとこと、モック）、ソロカード `issueSoloCard`（初回＝かわいい、5日連続＝ドット絵）、`trustedViewer` を `lib/viewer.ts` に。
+  完了条件: テストで 1日1回・連続日数・ボーナス1回だけ・チームなしでも完了・羽がチーム得点に入らない。
+- [ ] **T32 ソロ出動画面 `/solo`** — 今日の自分（羽・連続・次のカード）、ミッション一覧（現地／オンライン、所要時間・難易度・羽）、完了（写真任意）、SoloClear の演出、活動記録、未登録の案内。ホームに「ソロ出動」「5分だけ出動（作戦中なら地図、なければソロ）」。
+  完了条件: `/solo?as=h3` で見回りを完了 → 演出 → 2回目は「今日はもう完了」（スクショ）。
+- [ ] **T33 家の完了にも羽・地図の足あと** — `finishMission`／`/admin` の完了で来た人に `help_house` 10羽（missionId で一意）。今日の現地ソロの台帳を本人の家のマスに羽のピンで。
+  完了条件: `/admin` の「4」→ 来た人の `/solo` で +10、チーム得点は従来どおり（テスト）。
+- [ ] **T35 SNS シェアカード** — `lib/sns/cards.ts`（today／me／town／recruit × 正方形／ストーリーズ／OG）、`/api/share/[kind]`、`SnsShare`（X に投稿／画像で共有／保存／文をコピー）、`/public/share/[kind]`、`metadataBase`、フォント同梱。ホームを PART 4 の順に。
+  完了条件: PNG が3サイズで返る（テスト）。自動投稿はしない。
+- [ ] **T34 公開ページ** — `lib/public/stats.ts`（集計だけ）、`/api/public/stats`、`/public/town`（雪解け・今日の数字・今週・説明・LINE 参加 🔑`NEXT_PUBLIC_LINE_ADD_FRIEND_URL`・診断へ・シェア）。
+  完了条件: テストで氏名・緯度経度・マスのキーが出ない。
+- [ ] **T36 Claude の投稿文** — 採点表 `share`/`solo`/`quiz`、`lib/claude/share.ts`、書き込み点でだけ生成して `shareTexts` に保存、描画時はモック。
+  完了条件: キーなしで文例が出る。数字は入力のみ。
+- [ ] **T37 シマエナ診断** — `lib/public/quiz.ts`（5問→5タイプ）、`/public/diagnosis`、結果カード `quiz-<type>`、`lib/claude/quiz.ts`（1日1回キャッシュ）。登録不要。
+- [ ] **T38 応援ゲージ** — `town_cheers`、`cheerTownAction`（1日1回）、公開ページとホームのゲージ。得点・羽には入れない。
+- [ ] **T39 初参加の歓迎と募集** — 初回ソロの歓迎、LINE 登録完了の1行、公開ページの「あと1人で救える家 N 軒」、`?via=sns`。
+- [ ] **T40 文書とデモ** — spec v1.3、README、demo.md、devlog、スクショ。
