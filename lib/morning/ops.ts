@@ -19,7 +19,8 @@ import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
-import { progress } from "./view";
+import { summarizeClear, type ClearSummary } from "./clear";
+import { progress, snowHp } from "./view";
 import {
   applyLateAnswer,
   goingCount,
@@ -219,6 +220,8 @@ export interface CompleteResult {
   done: boolean;
   /** 写真を送った人への返事 */
   messages: LineMessage[];
+  /** 完了したときの MISSION CLEAR のまとめ（画面用） */
+  clear?: ClearSummary;
 }
 
 /**
@@ -240,6 +243,7 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   }
 
   const at = now.toISOString();
+  const hpBefore = snowHp(s.morning).current;
   const sorties = s.morning.sorties.filter((x) => x.missionId === mission.id);
   for (const x of sorties) {
     x.status = "done";
@@ -288,7 +292,8 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   if (check.icy) reply.text += "\n凍っているところがあるようです。砂をまくと安心です。";
   const prog = progress(s.morning);
   if (prog.allDone) reply.text += `\n「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐！ ${prog.total}軒すべて終わりました。`;
-  return { done: true, messages: [reply] };
+  const clear = summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId }) ?? undefined;
+  return { done: true, messages: [reply], clear };
 }
 
 // ---- ヘルプ通知と見守り（spec 4） ----

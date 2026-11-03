@@ -6,6 +6,8 @@ import type { BaseView, MorningState } from "@/lib/morning/view";
 import { progress, snowHp, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import type { Base, TeamId } from "@/lib/types";
+import type { ClearSummary } from "@/lib/morning/clear";
+import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
 
 const TownMap = dynamic(() => import("./TownMap"), {
@@ -28,11 +30,14 @@ export default function MapScreen({
   cells,
   bases,
   viewer,
+  clear = null,
 }: {
   state: MorningState;
   cells: CellView[];
   bases: Base[];
   viewer?: { teamId?: TeamId };
+  /** いちばん最近の完了（他の人の完了に気づくため） */
+  clear?: ClearSummary | null;
 }) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
@@ -49,6 +54,7 @@ export default function MapScreen({
 
   return (
     <div className="flex h-dvh flex-col bg-paper text-ink">
+      <ClearWatcher clear={clear} />
       {/* 上: 日付・得点バー・雪HP */}
       <header className="space-y-2 px-4 pb-3 pt-3 shadow-sm">
         <div className="flex items-baseline justify-between">

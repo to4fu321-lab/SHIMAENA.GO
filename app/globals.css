@@ -73,6 +73,24 @@ body {
   vertical-align: -1px;
   border-radius: 3px;
 }
+/* MISSION CLEAR: 羽が舞う（軽い CSS だけ）、雪HPバーが縮む */
+.feather {
+  position: absolute;
+  top: -40px;
+  animation: feather-fall 3.2s ease-in infinite;
+  will-change: transform, opacity;
+}
+@keyframes feather-fall {
+  0% { transform: translateY(0) rotate(-20deg); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(260px) rotate(30deg) translateX(14px); }
+  100% { transform: translateY(560px) rotate(-25deg) translateX(-10px); opacity: 0; }
+}
+.hp-shrink { animation: hp-shrink 1.2s ease-out both; }
+@keyframes hp-shrink {
+  from { width: var(--from, 100%); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .blink, .pulse { animation: none; }
+  .blink, .pulse, .hp-shrink { animation: none; }
+  .feathers { display: none; }
 }

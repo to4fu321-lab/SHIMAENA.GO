@@ -4,12 +4,15 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
+import type { ClearSummary } from "@/lib/morning/clear";
 import { completeWithPhoto, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
 import { isDemoViewer, readViewer, signViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export interface ActionResult {
   ok: boolean;
   text: string;
+  /** 完了したときの MISSION CLEAR のまとめ */
+  clear?: ClearSummary;
 }
 
 const firstText = (messages: { type: string }[]) => (messages[0] as TextMessage | undefined)?.text ?? "";
@@ -48,7 +51,7 @@ export async function finishAction(formData: FormData): Promise<ActionResult> {
   if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
   const r = await completeWithPhoto(id, { bytes, mediaType });
   revalidatePath("/map");
-  return { ok: r.done, text: firstText(r.messages) };
+  return { ok: r.done, text: firstText(r.messages), clear: r.clear };
 }
 
 /** LIFF でログインした人を、この画面の「自分」にする */

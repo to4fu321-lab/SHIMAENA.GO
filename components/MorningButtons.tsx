@@ -3,6 +3,7 @@
 // 地図の下の3つのボタン: 行く／終わりました（写真）／人手が足りない。
 import { useRef, useState, useTransition } from "react";
 import { finishAction, goAction, shortAction, type ActionResult } from "@/app/map/actions";
+import { openClear } from "./ClearWatcher";
 
 /** スマホの写真はそのままだと大きいので、送る前に長辺 1280px の JPEG に縮める */
 async function shrink(file: File): Promise<Blob> {
@@ -25,7 +26,9 @@ export default function MorningButtons({ viewerId, canAct, going }: { viewerId: 
   const run = (fn: () => Promise<ActionResult>) =>
     start(async () => {
       try {
-        setResult(await fn());
+        const r = await fn();
+        setResult(r);
+        if (r.clear) openClear(r.clear); // MISSION CLEAR（閉じるまで残る）
       } catch (e) {
         setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
       }

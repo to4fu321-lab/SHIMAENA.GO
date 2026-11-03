@@ -6,6 +6,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import LiffBridge from "@/components/LiffBridge";
 import MapScreen from "@/components/MapScreen";
 import { viewCells } from "@/lib/cells";
+import { latestClear } from "@/lib/morning/clear";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { viewBases } from "@/lib/morning/view";
@@ -28,7 +29,13 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
     <>
       <AutoRefresh />
       <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
-      <MapScreen state={state} cells={cells} bases={roster.bases} viewer={viewer ? { teamId: viewer.teamId } : undefined} />
+      <MapScreen
+        state={state}
+        cells={cells}
+        bases={roster.bases}
+        viewer={viewer ? { teamId: viewer.teamId } : undefined}
+        clear={latestClear(state, roster, viewerId)}
+      />
     </>
   );
 }
