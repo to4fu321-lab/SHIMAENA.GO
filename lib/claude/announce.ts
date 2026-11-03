@@ -29,7 +29,7 @@ export function mockAnnounce(input: AnnounceInput): Announcement {
   const snowName = mockSnowName(input.forecastCm);
   return {
     snowName,
-    text: `エナガ隊長だしま〜！明朝 6:30 に点呼するえな〜！予想は ${input.forecastCm}cm、相手は「${snowName}」だしま〜！長靴と手袋を忘れずにえな〜！`,
+    text: `エナガ隊長だしま〜！明朝 6:30 に点呼します。予想は ${input.forecastCm}cm、相手は「${snowName}」。長靴と手袋を忘れずにえな〜！`,
   };
 }
 

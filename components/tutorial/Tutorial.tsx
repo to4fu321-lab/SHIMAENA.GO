@@ -187,20 +187,20 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
 
   /* --- LINE の会話（押したボタンから組み立てる） --- */
   const rollcall: ChatMsg[] = [
-    { id: "h1", from: "bot", text: "おはようだしま〜！☃️\n今朝は雪12cm、相手は『ぼた雪のドンブリ』だえな〜！" },
-    { id: "h2", from: "bot", text: "今朝、何分動けるしま〜？" },
+    { id: "h1", from: "bot", text: "おはようだしま〜！☃️\n今朝は雪12cm、相手は『ぼた雪のドンブリ』です。" },
+    { id: "h2", from: "bot", text: "今朝、何分動けますか？" },
   ];
   if (minutes !== null) {
     rollcall.push({ id: "a", from: "me", text: minutes === 0 ? "今朝は休む" : `${minutes}分` });
     rollcall.push(
       minutes === 0
-        ? { id: "r", from: "bot", text: "わかったしま〜。今朝はゆっくり休んでえな〜。\nまたの朝に、よろしくしま〜！" }
-        : { id: "r", from: "bot", text: "ありがとうしま〜！\n6:40 に、行き先をお知らせするえな〜！" },
+        ? { id: "r", from: "bot", text: "わかりました。今朝はゆっくり休んでください。\nまたの朝に、よろしくしま〜！" }
+        : { id: "r", from: "bot", text: "ありがとうしま〜！\n6:40 に、行き先をお知らせします。" },
     );
   }
   const report: ChatMsg[] = [
     { id: "g", from: "bot", text: "了解だしま〜！🙌\n拠点3へ 7:00 に集合です！" },
-    { id: "p", from: "bot", text: "終わったら、玄関の前から道路の方を写した写真を1枚送ってほしいえな〜！" },
+    { id: "p", from: "bot", text: "終わったら、玄関の前から道路の方を写した写真を1枚送ってください。" },
   ];
   if (photo) {
     report.push({ id: "ph", from: "me", photo: true });
@@ -247,7 +247,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
     /* 1 参加する: 点呼に答える */
     <>
       <Title id="tut-h-1" sub="雪の朝 6:30、LINE にこの1問が届きます。下のボタンを押してみよう。">
-        今朝、何分動けるしま〜？
+        今朝、何分動けますか？
       </Title>
       <div className="relative flex min-h-0 flex-1 flex-col">
         <LineChat

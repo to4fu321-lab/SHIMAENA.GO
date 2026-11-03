@@ -2,6 +2,7 @@
 // 方針（v1.4）: 1つの吹き出しに1つの話題。短く、やさしい日本語で。次にすることはボタンで出す（最後の吹き出しに付く）。
 // うまくいかなかったときも「失敗」と感じさせない言い方にする。どれも吹き出しの配列を返す。
 // v1.6: エナガ隊長の口調（語尾「〜しま〜」「〜えな〜」）は、手伝う側への文と隊長カードだけ。
+//       付けるのは3文に1つくらい（あいさつ・了解・完了など気持ちが動くところ）。質問・お願い・注意は普通の言い方。
 //       お願いする側・家族・見守り・体調にふれる文は、いつもの丁寧な言い方のまま。
 // v1.5: 質問への答えは吹き出しの中の大きなボタン（choiceCard）、「どこに・何時」は大きな画像の行き先カード（placeCard）。
 import { MENU } from "../brand";
@@ -111,7 +112,7 @@ const hello = (forecastCm?: number, snowName?: string): LineMessage[] =>
           cm: forecastCm,
           snowName,
           when: "morning",
-          lines: ["おはようだしま〜！☃️", snowName ? `今朝は雪${forecastCm}cm、相手は『${snowName}』だえな〜！` : `今朝は雪${forecastCm}cmだえな〜！`],
+          lines: ["おはようだしま〜！☃️", snowName ? `今朝は雪${forecastCm}cm、相手は『${snowName}』です。` : `今朝は雪${forecastCm}cmです。`],
         }),
       ];
 
@@ -199,8 +200,8 @@ export const MSG = {
   /** 作戦のあと、手伝う側へ: 家の数と「5分だけでも」。割り当てがない人には「出動する」ボタン */
   housesToday: (houses: number, withGoButton: boolean) =>
     houses > 0
-      ? bubbles([`助けてほしい家が${houses}軒あるしま〜！`, "5分だけでも大歓迎えな〜！"], withGoButton ? [B.go, B.map] : undefined)
-      : bubbles(["今朝は、助けてほしい家はないしま〜。ありがとうえな〜！"]),
+      ? bubbles([`助けてほしい家が${houses}軒あります。`, "5分だけでも大歓迎えな〜！"], withGoButton ? [B.go, B.map] : undefined)
+      : bubbles(["今朝は、助けてほしい家はありません。ありがとうえな〜！"]),
 
   // ---- 点呼（spec 2） ----
   rollcallRequester: (forecastCm?: number, snowName?: string) => [
@@ -213,7 +214,7 @@ export const MSG = {
   ],
   rollcallHelper: (forecastCm?: number, snowName?: string) => [
     ...hello(forecastCm, snowName),
-    ask("今朝、何分動けるしま〜？", [
+    ask("今朝、何分動けますか？", [
       { label: "5分", data: "rc:ans=5" },
       { label: "15分", data: "rc:ans=15" },
       { label: "30分", data: "rc:ans=30" },
@@ -229,8 +230,8 @@ export const MSG = {
         : answer === "together"
           ? bubbles(["ありがとうございます。一緒にやりましょう。", "6:40 に、来てくれる人をお知らせします。"])
           : answer === "0"
-            ? bubbles(["わかったしま〜。今朝はゆっくり休んでえな〜。", "またの朝に、よろしくしま〜！"])
-            : bubbles(["ありがとうしま〜！", "6:40 に、行き先をお知らせするえな〜！"]),
+            ? bubbles(["わかりました。今朝はゆっくり休んでください。", "またの朝に、よろしくしま〜！"])
+            : bubbles(["ありがとうしま〜！", "6:40 に、行き先をお知らせします。"]),
   rollcallClosed: () => bubbles(["いまは点呼の時間ではありません。", "雪の朝 6:30 に、ここへ届きます。"], [B.go, B.map]),
   notRegistered: () => bubbles(["登録がまだです。1分で終わります。"], [B.register, B.guide]),
   planForRequester: (startTime: string, ns: string[]) =>
@@ -243,10 +244,10 @@ export const MSG = {
   /** 「行く」のあと: 了解 → 行き先カード（大きな画像・地図・ルート）→ 終わったら写真 */
   goConfirmed: (baseNumber: number | string, routeUrl?: string) => [
     text("了解だしま〜！🙌"),
-    placeCard({ time: "7:00", baseNumber, note: "5分でも助かるしま〜。足元に気をつけてえな〜！", mapUrl: liffUrl("/map"), routeUrl }),
-    photoAsk("終わったら、玄関の前から道路の方を写した写真を1枚送ってほしいえな〜！"),
+    placeCard({ time: "7:00", baseNumber, note: "5分でも助かります。足元に気をつけて。", mapUrl: liffUrl("/map"), routeUrl }),
+    photoAsk("終わったら、玄関の前から道路の方を写した写真を1枚送ってください。"),
   ],
-  goDeclined: () => bubbles(["わかったしま〜。無理しないでえな〜。", "ほかの人に声をかけるしま〜！"]),
+  goDeclined: () => bubbles(["わかりました。無理しないでくださいね。", "ほかの人に声をかけるしま〜！"]),
   noSortie: () => bubbles(["今朝の割り当てはありません。", "近くの手伝いを探すときは、下の「出動する」を押してください。"], [B.go, B.map]),
   /** 写真では「まだ」。もう一度送るか、「それでも完了にする」（本人の報告）か */
   photoNotCleared: (comment: string) =>
@@ -297,10 +298,10 @@ export const MSG = {
   ],
   helpJoined: (baseNumber: number | string, routeUrl?: string) => [
     text("ありがとうしま〜！🙌"),
-    placeCard({ time: "now", baseNumber, note: "5分でも助かるしま〜。足元に気をつけてえな〜！", mapUrl: liffUrl("/map"), routeUrl }),
-    photoAsk("終わったら、写真を1枚送ってほしいえな〜！"),
+    placeCard({ time: "now", baseNumber, note: "5分でも助かります。足元に気をつけて。", mapUrl: liffUrl("/map"), routeUrl }),
+    photoAsk("終わったら、写真を1枚送ってください。"),
   ],
-  helpDeclined: () => bubbles(["わかったしま〜。気にしないでえな〜。", "また次の機会に、よろしくしま〜！"]),
+  helpDeclined: () => bubbles(["わかりました。気にしないでくださいね。", "また次の機会に、よろしくしま〜！"]),
   helpAlreadyEnough: (baseNumber: number | string) => bubbles([`拠点${baseNumber}は人がそろいました。`, "ありがとうございます！"], [B.go]),
   supporterRequest: (baseNumber: number | string, missing: number) =>
     bubbles(["【サポーターの方へ】", `拠点${baseNumber}に人が集まりません（あと${missing}人）。`, "1km まで声をかけましたが、足りません。お願いできますか。"], [B.map]),
@@ -340,7 +341,7 @@ export const MSG = {
   lateHelperThanks: () => bubbles(["ありがとうございます！", "人手が足りない家があれば、お知らせします。"]),
 
   // ---- 「出動する」（リッチメニュー）と週末（spec 2・5・10） ----
-  nowAsk: () => [text("近くの手伝いを探すしま〜！☃️"), ask("いまから何分動けるえな〜？", [
+  nowAsk: () => [text("近くの手伝いを探すしま〜！☃️"), ask("いまから何分動けますか？", [
     { label: "5分", data: "now:5" },
     { label: "15分", data: "now:15" },
     { label: "30分", data: "now:30" },
@@ -352,7 +353,7 @@ export const MSG = {
   ],
   /** 近くに仕事がないとき。無駄足や失敗と感じないように */
   nowNothing: () =>
-    bubbles(["今近くに仕事はないしま〜。", "ありがとうえな〜！次の雪の朝に、またお知らせするしま〜。", "ひとりでできる5分（見回りなど）もあるえな〜！"], [B.solo, B.map]),
+    bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる5分（見回りなど）もあります。"], [B.solo, B.map]),
   /** お願いする側の人が「出動する」を押したとき */
   nowForRequester: () =>
     bubbles(

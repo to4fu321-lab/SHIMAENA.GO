@@ -114,14 +114,14 @@ export function mockPlan(input: CommanderInput): Plan {
           const h = input.helpers.find((x) => x.id === o)!;
           return `${TEAM_NAME[h.teamId]}の${h.nickname}さん`;
         });
-      const withWho = others.length > 0 ? `${others.join("、")}と一緒だしま〜！` : "";
+      const withWho = others.length > 0 ? `${others.join("、")}と一緒です。` : "";
       const note =
         m.status === "no_answer"
           ? "点呼に返事がありません。まず玄関で声をかけてください。"
-          : "5分でも助かるしま〜。足元に気をつけてえな〜！";
+          : "5分でも助かるしま〜！足元に気をつけて。";
       messages.push({
         participantId: id,
-        text: `おはようだしま〜！${input.startTime}、拠点${base.number}（${base.requesterName}）へお願いできるえな〜？${withWho}${note}`,
+        text: `おはようございます。${input.startTime}、拠点${base.number}（${base.requesterName}）へお願いできますか。${withWho}${note}`,
       });
     }
   }

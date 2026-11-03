@@ -20,7 +20,7 @@ export function mockWeeklyText(w: WeeklySummary): WeeklyText {
   const goal = w.goalTeams.length > 0 ? `${w.goalTeams.map(teamName).join("と")}は全部の家を8時までに終えて、週の目標ボーナス。` : "";
   return {
     commentary: `エナガ隊長だしま〜！今週の群れ: 雪の朝は${w.days}回、${w.missionsDone}軒の玄関をあけました。${rank}。${goal}${titles}`.trim(),
-    nextWeek: "来週はチームを組み直すしま〜！新しい仲間と、くっついて乗り切るえな〜！",
+    nextWeek: "来週はチームを組み直します。新しい仲間と、くっついて乗り切るえな〜！",
   };
 }
 

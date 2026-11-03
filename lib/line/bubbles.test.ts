@@ -11,7 +11,7 @@ const labels = (m: LineMessage) => actionsOf(m).map((a) => a.label);
 describe("Bot の吹き出し", () => {
   it("点呼は 隊長カード（おはよう・今朝の雪）→ 質問 の2つ。時間は 5・15・30・60分と「今朝は休む」", () => {
     const ms = MSG.rollcallHelper(12, "ぼた雪のドンブリ");
-    expect(texts(ms)).toEqual(["おはようだしま〜！☃️今朝は雪12cm、相手は『ぼた雪のドンブリ』だえな〜！", "今朝、何分動けるしま〜？"]);
+    expect(texts(ms)).toEqual(["おはようだしま〜！☃️今朝は雪12cm、相手は『ぼた雪のドンブリ』です。", "今朝、何分動けますか？"]);
     const hero = (ms[0] as FlexMessage).contents.hero?.url as string;
     expect(hero).toContain("/api/line/hero/snow.png?cm=12&w=morning&s=");
     expect(ms.at(-1)?.type).toBe("flex"); // 答えは吹き出しの中の大きなボタン
@@ -25,7 +25,7 @@ describe("Bot の吹き出し", () => {
 
   it("仕事がないときは、お礼と次の案内（ひとりで5分・町の地図）", () => {
     const ms = MSG.nowNothing();
-    expect(texts(ms)[0]).toBe("今近くに仕事はないしま〜。");
+    expect(texts(ms)[0]).toBe("今近くに仕事はありません。");
     expect(texts(ms).join("")).toContain("ありがとう");
     expect(labels(ms.at(-1)!)).toContain("ひとりで5分を見る");
     expect(labels(ms.at(-1)!)).toContain("町の地図を開く");
@@ -100,5 +100,16 @@ describe("Bot の吹き出し", () => {
   it("お願いする側・見守りの文は、丁寧なまま（しま〜・えな〜を付けない）", () => {
     const plain = [...MSG.rollcallThanks("no"), ...MSG.familyNoAnswer(), ...MSG.knockThanks(), ...MSG.planForRequester("7:00", ["田中"])];
     expect(texts(plain).join("")).not.toMatch(/しま〜|えな〜/);
+  });
+
+  it("語尾「しま〜」「えな〜」は3文に1つくらい（多すぎない）", () => {
+    const all = [
+      ...MSG.rollcallHelper(12, "ぼた雪のドンブリ"), ...MSG.rollcallThanks("15"), ...MSG.goConfirmed(3, "https://x"),
+      ...MSG.nowAsk(), ...MSG.nowNothing(), ...MSG.housesToday(3, true), ...MSG.goDeclined(),
+    ];
+    const lines = texts(all).join("\n").split(/(?<=[。！？!?])(?![！？!?〜])|\n/).map((x) => x.trim()).filter(Boolean);
+    const voiced = lines.filter((l) => /しま〜|えな〜/.test(l)).length;
+    expect(voiced / lines.length).toBeLessThanOrEqual(0.45);
+    expect(voiced).toBeGreaterThan(0);
   });
 });
