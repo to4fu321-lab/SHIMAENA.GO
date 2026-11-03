@@ -6,7 +6,7 @@ import { scoreMission } from "../game/score";
 import { clockText, jstIso } from "../jst";
 import type { HelperAnswer, Mission, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
 import type { Roster } from "./roster";
-import type { MorningState } from "./view";
+import { progress, type MorningState } from "./view";
 
 export { clockText };
 
@@ -54,13 +54,13 @@ const iso = (s: MorningRecord, min: number) => jstIso(s.morning.rollcall.date, m
 
 /** 前夜の予告だけが出ている、まっさらな朝 */
 export function emptyMorning(
-  opts: { date?: string; forecastCm?: number; viewerId?: string; announcement?: string } = {},
+  opts: { date?: string; forecastCm?: number; viewerId?: string; announcement?: string; snowName?: string } = {},
 ): MorningRecord {
   const date = opts.date ?? DEMO_DATE;
   const forecastCm = opts.forecastCm ?? 12;
   return {
     morning: {
-      rollcall: { id: `rc-${date}`, date, forecastCm, status: "announced" },
+      rollcall: { id: `rc-${date}`, date, forecastCm, status: "announced", snowName: opts.snowName },
       missions: [],
       sorties: [],
       scores: [],
@@ -209,6 +209,7 @@ export function completeNext(s: MorningRecord, roster: Roster): string | null {
   s.morning.scores.push(...scoreMission(sorties, at, false));
   const number = roster.bases.find((b) => b.id === m.baseId)?.number ?? "?";
   s.log.push(`${clockText(s.clockMin)} 拠点${number} 完了（${sorties.length}人）`);
+  if (progress(s.morning).allDone) s.log.push(`${clockText(s.clockMin)} 「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐（全軒完了）`);
   return m.id;
 }
 

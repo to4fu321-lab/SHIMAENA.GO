@@ -73,6 +73,8 @@ export interface Rollcall {
   date: string; // YYYY-MM-DD
   forecastCm: number; // 予報の降雪量
   status: RollcallStatus;
+  /** 今朝の雪の名前（前夜の予告で Claude がつける。雪HPバーに出す） */
+  snowName?: string;
 }
 
 /** 依頼者の答え: はい（出られる）／いいえ／一緒なら */

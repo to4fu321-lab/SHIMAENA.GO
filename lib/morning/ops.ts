@@ -19,6 +19,7 @@ import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
+import { progress } from "./view";
 import {
   applyLateAnswer,
   goingCount,
@@ -39,11 +40,11 @@ export async function announce(opts: { date: string; forecastCm: number }): Prom
   if (current.morning.missions.length > 0 && current.morning.rollcall.date !== opts.date && current.answers.length > 0) {
     await archiveMorning(current);
   }
-  const announcement = await announceText({ date: opts.date, forecastCm: opts.forecastCm });
-  const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement });
+  const a = await announceText({ date: opts.date, forecastCm: opts.forecastCm });
+  const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
   const ids = lineIds(roster.participants);
-  await multicast(ids, [text(announcement)]);
+  await multicast(ids, [text(a.text)]);
   s.log.push(`予告を LINE で ${ids.length} 人に送信`);
   await saveMorning(s);
   return s;
@@ -285,6 +286,8 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
     ? MSG.doneThanks(number, myTeam.name, pointsOf(myTeam.id), check.comment)
     : text(`${check.comment}\n拠点${number} 完了！`);
   if (check.icy) reply.text += "\n凍っているところがあるようです。砂をまくと安心です。";
+  const prog = progress(s.morning);
+  if (prog.allDone) reply.text += `\n「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐！ ${prog.total}軒すべて終わりました。`;
   return { done: true, messages: [reply] };
 }
 

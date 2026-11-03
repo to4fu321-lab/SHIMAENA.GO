@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import type { CellView } from "@/lib/cells";
 import type { BaseView, MorningState } from "@/lib/morning/view";
-import { snowHp, teamTotals, viewBases } from "@/lib/morning/view";
+import { progress, snowHp, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import type { Base, TeamId } from "@/lib/types";
 import MorningButtons from "./MorningButtons";
@@ -38,6 +38,8 @@ export default function MapScreen({
   const totals = teamTotals(state);
   const max = Math.max(1, ...Object.values(totals));
   const hp = snowHp(state);
+  const prog = progress(state);
+  const hpPct = hp.max > 0 ? (hp.current / hp.max) * 100 : 100;
   const viewerTeam = TEAMS.find((t) => t.id === viewer?.teamId);
   const mySortie = state.sorties.find((s) => s.participantId === state.viewerId);
   const myMission = state.missions.find((m) => m.id === mySortie?.missionId);
@@ -70,17 +72,35 @@ export default function MapScreen({
             </li>
           ))}
         </ul>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-28 shrink-0 font-bold">今朝の雪HP</span>
-          <span className="h-3 flex-1 overflow-hidden rounded-full bg-ink/10">
-            <span className="block h-full rounded-full bg-snow" style={{ width: `${(hp.current / hp.max) * 100}%` }} />
+        {/* 雪ボス: 今朝の雪の名前と HP。全軒完了で討伐 */}
+        <div className={`rounded-2xl px-3 py-2 ring-1 ${prog.allDone ? "bg-[#fff0f6] ring-neon/40" : "bg-white/70 ring-ink/10"}`} aria-label="今朝の雪HP">
+          <div className="flex items-baseline justify-between gap-2 text-sm">
+            <span className="truncate font-bold">
+              今朝の相手{state.rollcall.snowName ? <>『{state.rollcall.snowName}』</> : null}
+            </span>
+            <span className="shrink-0 tabular-nums">
+              HP {hp.current} / {hp.max}
+            </span>
+          </div>
+          <span className="mt-1 block h-3 overflow-hidden rounded-full bg-ink/10">
+            <span className="block h-full rounded-full bg-snow transition-[width] duration-700" style={{ width: `${hpPct}%` }} />
           </span>
-          <span className="w-10 text-right tabular-nums">{hp.current}</span>
+          <p className="mt-1 text-sm text-ink/70">
+            {prog.total === 0 ? (
+              "作戦はまだです"
+            ) : prog.allDone ? (
+              <b className="text-neon">討伐{prog.defeatedAt ? ` ${prog.defeatedAt}` : ""}！ {prog.total}軒すべて完了</b>
+            ) : (
+              <>
+                {prog.done} / {prog.total} 軒 ・ あと {prog.left} 軒
+              </>
+            )}
+          </p>
         </div>
       </header>
 
-      {/* 真ん中: 地図 */}
-      <main className="relative min-h-0 flex-1">
+      {/* 真ん中: 地図（討伐したら背景が明るくなる） */}
+      <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
         <TownMap cells={cells} />
       </main>
 

@@ -41,7 +41,9 @@ body {
 }
 
 /* 地図: 背景タイルを淡く、拠点の番号ピンと点滅 */
-.town-tiles { filter: grayscale(0.85) brightness(1.08) contrast(0.85); }
+.town-tiles { filter: grayscale(0.85) brightness(1.08) contrast(0.85); transition: filter 1.2s ease; }
+/* 討伐（全軒完了）: 町が色を取り戻して明るくなる */
+.defeated .town-tiles { filter: saturate(1.15) brightness(1.04); }
 .base-pin {
   display: grid;
   place-items: center;

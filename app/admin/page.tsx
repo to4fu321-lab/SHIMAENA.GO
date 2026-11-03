@@ -8,7 +8,7 @@ import { clockText } from "@/lib/morning/flow";
 import { dbStatus, type DbStatus } from "@/lib/db";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
-import { snowHp, teamTotals } from "@/lib/morning/view";
+import { progress, snowHp, teamTotals } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import { helpState, radiusLabel } from "@/lib/morning/watch";
 import {
@@ -67,7 +67,8 @@ async function AdminContent() {
   const m = s.morning;
   const totals = teamTotals(m);
   const hp = snowHp(m);
-  const name = (id: string) => roster.participants.find((p) => p.id === id)?.nickname ?? id;
+  const prog = progress(m);
+  const name =(id: string) => roster.participants.find((p) => p.id === id)?.nickname ?? id;
   const helpers = roster.participants.filter((p) => p.role === "helper");
   const lineCount = roster.participants.filter((p) => p.lineUserId).length;
   const status = m.rollcall.status;
@@ -81,6 +82,12 @@ async function AdminContent() {
         </h1>
         <p className="mt-1 text-base">
           {m.rollcall.date} ・ 時計 <b className="tabular-nums">{clockText(s.clockMin)}</b> ・ 点呼 <b>{ROLLCALL_TEXT[status]}</b>
+          {m.rollcall.snowName && (
+            <>
+              {" "}
+              ・ 相手 <b>「{m.rollcall.snowName}」</b>
+            </>
+          )}
         </p>
         <p className="text-sm text-ink/60">
           司令官: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
@@ -110,7 +117,12 @@ async function AdminContent() {
         <Step n="1" label="6:30 エナガ点呼を鳴らす" action={ringNow} disabled={status !== "announced"} />
         <Step n="2" label="架空の住民の回答を入れる（ランダム）" action={answerRandomly} disabled={status !== "open"} />
         <Step n="3" label="6:40 司令官に作戦を立ててもらう" action={runCommander} disabled={status !== "open" || s.answers.length === 0} />
-        <Step n="4" label="そろった家を1軒、完了にする" action={completeOne} disabled={status !== "planned"} />
+        <Step
+          n="4"
+          label="そろった家を1軒、完了にする"
+          action={completeOne}
+          disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress")}
+        />
         <Step n="5" label="人手不足の家に駆けつける" action={rescue} disabled={!m.missions.some((x) => x.status === "short")} />
         <form action={helpNextRing}>
           <button
@@ -171,7 +183,10 @@ async function AdminContent() {
               <b style={{ color: t.color }}>{t.name}</b> {totals[t.id]} 点
             </li>
           ))}
-          <li>今朝の雪HP {hp.current} / {hp.max}</li>
+          <li>
+            {m.rollcall.snowName ? `「${m.rollcall.snowName}」のHP` : "今朝の雪HP"} {hp.current} / {hp.max} ・ {prog.done}/{prog.total} 軒
+            {prog.allDone && <b className="text-neon"> ・ 討伐{prog.defeatedAt ? ` ${prog.defeatedAt}` : ""}</b>}
+          </li>
         </ul>
       </section>
 

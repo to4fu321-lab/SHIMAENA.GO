@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TOWN } from "../town";
 import type { HelperAnswer, RequesterAnswer } from "../types";
+import { AnnounceSchema, mockAnnounce, mockSnowName, SNOW_NAME_MAX, trimSnowName } from "./announce";
 import { type CommanderInput, mockPlan, PlanSchema, sanitizePlan } from "./commander";
 import { judgeLevel, LevelResultSchema, mockLevel } from "./level";
 
@@ -35,6 +36,23 @@ describe("レベル判定（モック）", () => {
   it("キーがなければモックが返る", async () => {
     if (process.env.ANTHROPIC_API_KEY) return;
     expect(await judgeLevel({ soloMinutes: 30, clearArea: "garage" })).toEqual(mockLevel({ soloMinutes: 30, clearArea: "garage" }));
+  });
+});
+
+describe("前夜の予告と雪の名前（モック）", () => {
+  it("形が正しく、名前は8字まで、文面に降雪量と名前が入る", () => {
+    const a = mockAnnounce({ date: "2026-12-14", forecastCm: 12 });
+    expect(AnnounceSchema.parse(a)).toEqual(a);
+    expect(a.snowName.length).toBeLessThanOrEqual(SNOW_NAME_MAX);
+    expect(a.text).toContain("12cm");
+    expect(a.text).toContain(a.snowName);
+  });
+
+  it("降雪量で名前が変わり、長すぎる名前は切り詰める", () => {
+    expect(mockSnowName(3)).not.toBe(mockSnowName(12));
+    expect(mockSnowName(12)).not.toBe(mockSnowName(30));
+    expect(trimSnowName("『とてもながいなまえのゆきぼす』", 12)).toHaveLength(SNOW_NAME_MAX);
+    expect(trimSnowName("", 12)).toBe(mockSnowName(12));
   });
 });
 

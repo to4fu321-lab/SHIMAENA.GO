@@ -3,7 +3,7 @@
 import type { MorningState } from "./view";
 import type { Mission, ScoreEvent, Sortie, TeamId } from "../types";
 
-const rollcall = { id: "rc-20261214", date: "2026-12-14", forecastCm: 12, status: "planned" as const };
+const rollcall = { id: "rc-20261214", date: "2026-12-14", forecastCm: 12, status: "planned" as const, snowName: "ぼた雪のドンブリ" };
 const at = (hm: string) => `2026-12-14T${hm}:00+09:00`;
 
 const mission = (n: number, status: Mission["status"], requiredPeople: number, importance: number): Mission => ({
