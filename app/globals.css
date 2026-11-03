@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 背の低いスマホ（iPhone SE など）で、スクロールせず1画面に収めるための詰め */
+@custom-variant short (@media (max-height: 720px));
+
 /*
   シマエナGO の配色「白銀の北海道に、家の灯りがともる。」
   - 背景は雪明かり、文字と見出しは冬の深い青、いちばん大事なボタンだけ灯りオレンジ

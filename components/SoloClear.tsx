@@ -3,6 +3,7 @@
 // ソロ出動の完了演出（spec v1.3）。羽が舞い、入った羽・連続出動・カード・ひとことを見せる。
 import Link from "next/link";
 import type { SoloClearSummary } from "@/lib/solo/ops";
+import Mascot, { SnowTown } from "./Mascot";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -37,12 +38,18 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
             </span>
           ))}
         </div>
-        <p className="eyebrow text-center">ソロ出動 完了</p>
-        <h2 className="mt-1 text-center text-2xl font-bold leading-snug">
-          あなたの{s.onsite ? "5分" : "3分"}が、
-          <br />
-          町の力になりました。
-        </h2>
+        <div className="relative -mx-5 -mt-5 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-10 pt-5">
+          <p className="eyebrow">ソロ出動 完了</p>
+          <div className="flex items-center gap-2">
+            <Mascot size={88} mood="happy" className="lamp-glow shrink-0" />
+            <h2 className="whitespace-nowrap text-lg font-bold leading-snug">
+              あなたの<span className="text-2xl text-lamp-deep">{s.onsite ? "5分" : "3分"}</span>が、
+              <br />
+              町の力になりました！
+            </h2>
+          </div>
+          <SnowTown className="absolute inset-x-0 bottom-0 h-10 w-full" />
+        </div>
         <p className="mt-1 text-center text-base text-ink-soft">{s.label}</p>
         {s.firstEver && (
           <p className="mt-2 rounded-2xl bg-camellia-soft px-3 py-2 text-center text-base font-bold ring-1 ring-camellia">

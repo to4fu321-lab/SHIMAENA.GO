@@ -6,6 +6,7 @@
 import { useEffect } from "react";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { TEAMS } from "@/lib/teams";
+import Mascot, { SnowTown } from "./Mascot";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -23,22 +24,6 @@ function Feather({ color }: { color: string }) {
     <svg viewBox="0 0 24 40" width="18" height="30" aria-hidden="true">
       <path d="M12 1 C21 10 21 28 12 39 C3 28 3 10 12 1Z" fill={color} opacity="0.9" />
       <path d="M12 6 V36" stroke="#fff" strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-/** 灯りのともった家（完了の演出の真ん中） */
-function LitHouse() {
-  return (
-    <svg viewBox="0 0 120 110" width="112" height="104" aria-hidden="true" className="lamp-glow mx-auto block">
-      <ellipse cx="60" cy="100" rx="52" ry="7" fill="#e3eef3" />
-      <path d="M18 56 L60 18 L102 56 V96 H18 Z" fill="#fff" stroke="#29445c" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M12 58 L60 14 L108 58" fill="none" stroke="#29445c" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M22 50 L60 18 L98 50 Z" fill="#f4f7fa" />
-      <rect x="44" y="60" width="32" height="26" rx="4" fill="#d9825b" />
-      <rect x="44" y="60" width="32" height="26" rx="4" fill="none" stroke="#29445c" strokeWidth="3" />
-      <path d="M60 60 V86 M44 73 H76" stroke="#29445c" strokeWidth="3" />
-      <circle cx="60" cy="73" r="30" fill="#d9825b" opacity="0.18" />
     </svg>
   );
 }
@@ -67,13 +52,19 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
           ))}
         </div>
 
-        <p className="eyebrow text-center">雪かき 完了</p>
-        <LitHouse />
-        <h2 className="mt-2 text-center text-2xl font-bold leading-snug">
-          {who}の5分で、
-          <br />
-          <span className="text-3xl">1軒</span>が助かりました。
-        </h2>
+        {/* 喜ぶシマエナガと「あなたの5分で、1軒が助かりました！」（イメージの完了カード） */}
+        <div className="relative -mx-5 -mt-5 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-10 pt-5">
+          <p className="eyebrow">雪かき 完了</p>
+          <div className="flex items-center gap-2">
+            <Mascot size={88} mood="happy" className="lamp-glow shrink-0" />
+            <h2 className="whitespace-nowrap text-lg font-bold leading-snug">
+              {who}の<span className="text-2xl">5分</span>で
+              <br />
+              <span className="text-3xl text-lamp-deep">1軒</span>が助かりました！
+            </h2>
+          </div>
+          <SnowTown className="absolute inset-x-0 bottom-0 h-10 w-full" />
+        </div>
         <p className="mt-2 text-center text-base">
           拠点{clear.baseNumber}の家に灯りがともりました。
           {clear.total > 0 && (
