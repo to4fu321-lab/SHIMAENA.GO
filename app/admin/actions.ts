@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { planMorning } from "@/lib/claude/commander";
 import { applySchema, seedTown } from "@/lib/db";
-import { applyPlan, commanderInput, completeNext, emptyMorning, fillAnswers, rescueShort, ringRollcall } from "@/lib/demo/flow";
-import type { DemoState } from "@/lib/demo/flow";
-import { loadDemo, resetToSample, saveDemo } from "@/lib/demo/store";
+import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
+import { announce, checkForecastAndAnnounce, plan, ring } from "@/lib/morning/ops";
+import { loadRoster } from "@/lib/morning/roster";
+import { loadMorning, resetToSample, saveMorning } from "@/lib/morning/store";
 
 function refresh() {
   revalidatePath("/map");
@@ -13,40 +13,53 @@ function refresh() {
 }
 
 /** 読む → 書き換える → 保存する、をひとまとめに */
-async function update(change: (s: DemoState) => void | Promise<void>) {
-  const s = await loadDemo();
+async function update(change: (s: MorningRecord) => void | Promise<void>) {
+  const s = await loadMorning();
   await change(s);
-  await saveDemo(s);
+  await saveMorning(s);
   refresh();
 }
 
+/** 0: デモの日付で予告（予報 12cm）。LINE のある人には予告が届く */
 export async function startEmptyMorning() {
-  const s = await loadDemo();
-  await saveDemo(emptyMorning(s.morning.viewerId));
+  await announce({ date: DEMO_DATE, forecastCm: 12 });
   refresh();
 }
 
-export async function ring() {
-  await update((s) => ringRollcall(s));
+/** 0': 本当の天気を見て、基準（5cm）を超えていれば明朝の予告を出す */
+export async function announceByForecast() {
+  try {
+    await checkForecastAndAnnounce(); // 予告の有無はどちらも記録に残る
+  } catch (e) {
+    await update((s) => void s.log.push(`天気の取得に失敗: ${e instanceof Error ? e.message : String(e)}`));
+    return;
+  }
+  refresh();
+}
+
+export async function ringNow() {
+  await ring();
+  refresh();
 }
 
 export async function answerRandomly() {
-  await update((s) => fillAnswers(s, Date.now() % 100000));
+  const roster = await loadRoster();
+  await update((s) => fillAnswers(s, roster, Date.now() % 100000));
 }
 
 export async function runCommander() {
-  await update(async (s) => {
-    const plan = await planMorning(commanderInput(s));
-    applyPlan(s, plan);
-  });
+  await plan();
+  refresh();
 }
 
 export async function completeOne() {
-  await update((s) => void completeNext(s));
+  const roster = await loadRoster();
+  await update((s) => void completeNext(s, roster));
 }
 
 export async function rescue() {
-  await update((s) => void rescueShort(s));
+  const roster = await loadRoster();
+  await update((s) => void rescueShort(s, roster));
 }
 
 export async function backToSample() {

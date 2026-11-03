@@ -1,7 +1,7 @@
 // デモ用の固定状態: 2026-12-14（日）朝 7:10 ごろ、予報 12cm。
 // 拠点1〜8 がいろいろな状態になっている。人物はすべて架空。
-import type { MorningState } from "./morning";
-import type { Mission, ScoreEvent, Sortie, TeamId } from "./types";
+import type { MorningState } from "./view";
+import type { Mission, ScoreEvent, Sortie, TeamId } from "../types";
 
 const rollcall = { id: "rc-20261214", date: "2026-12-14", forecastCm: 12, status: "planned" as const };
 const at = (hm: string) => `2026-12-14T${hm}:00+09:00`;

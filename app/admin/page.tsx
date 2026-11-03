@@ -4,13 +4,23 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { hasClaudeKey } from "@/lib/claude/client";
 import { hasLineKeys } from "@/lib/line/client";
-import { clockText } from "@/lib/demo/flow";
+import { clockText } from "@/lib/morning/flow";
 import { dbStatus, type DbStatus } from "@/lib/db";
-import { loadDemo } from "@/lib/demo/store";
-import { snowHp, teamTotals } from "@/lib/morning";
+import { loadRoster } from "@/lib/morning/roster";
+import { loadMorning } from "@/lib/morning/store";
+import { snowHp, teamTotals } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
-import { TOWN } from "@/lib/town";
-import { answerRandomly, backToSample, completeOne, prepareDatabase, rescue, ring, runCommander, startEmptyMorning } from "./actions";
+import {
+  announceByForecast,
+  answerRandomly,
+  backToSample,
+  completeOne,
+  prepareDatabase,
+  rescue,
+  ringNow,
+  runCommander,
+  startEmptyMorning,
+} from "./actions";
 
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
 
@@ -49,12 +59,13 @@ function Step({ n, label, action, disabled }: { n: string; label: string; action
 
 async function AdminContent() {
   await connection();
-  const [s, db] = await Promise.all([loadDemo(), dbStatus()]);
+  const [s, db, roster] = await Promise.all([loadMorning(), dbStatus(), loadRoster()]);
   const m = s.morning;
   const totals = teamTotals(m);
   const hp = snowHp(m);
-  const name = (id: string) => TOWN.participants.find((p) => p.id === id)?.nickname ?? id;
-  const helpers = TOWN.participants.filter((p) => p.role === "helper");
+  const name = (id: string) => roster.participants.find((p) => p.id === id)?.nickname ?? id;
+  const helpers = roster.participants.filter((p) => p.role === "helper");
+  const lineCount = roster.participants.filter((p) => p.lineUserId).length;
   const status = m.rollcall.status;
 
   return (
@@ -88,9 +99,12 @@ async function AdminContent() {
       )}
 
       <section className="space-y-2" aria-label="操作">
-        <Step n="0" label="まっさらな朝にする（前夜の予告だけ）" action={startEmptyMorning} />
-        <Step n="1" label="6:30 エナガ点呼を鳴らす" action={ring} disabled={status !== "announced"} />
-        <Step n="2" label="みんなの回答を入れる（ランダム）" action={answerRandomly} disabled={status !== "open"} />
+        <Step n="0" label="前夜の予告を出す（予報 12cm のデモの朝にする）" action={startEmptyMorning} />
+        <form action={announceByForecast}>
+          <button className="w-full rounded-2xl px-4 py-1 text-sm text-ink/60 underline">本当の天気（Open-Meteo）を見て判断する</button>
+        </form>
+        <Step n="1" label="6:30 エナガ点呼を鳴らす" action={ringNow} disabled={status !== "announced"} />
+        <Step n="2" label="架空の住民の回答を入れる（ランダム）" action={answerRandomly} disabled={status !== "open"} />
         <Step n="3" label="6:40 司令官に作戦を立ててもらう" action={runCommander} disabled={status !== "open" || s.answers.length === 0} />
         <Step n="4" label="そろった家を1軒、完了にする" action={completeOne} disabled={status !== "planned"} />
         <Step n="5" label="人手不足の家に駆けつける" action={rescue} disabled={!m.missions.some((x) => x.status === "short")} />
@@ -101,8 +115,11 @@ async function AdminContent() {
 
       <section className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
         <h2 className="font-bold">地図を開く（3台のスマホで別の人として）</h2>
+        <p className="text-sm text-ink/60">
+          LINE で登録した人 {lineCount} 人には、予告・点呼・作戦が LINE に届きます（点呼の答えは LINE のボタンで）。
+        </p>
         <div className="flex flex-wrap gap-2">
-          {helpers.slice(0, 6).map((h) => (
+          {helpers.slice(0, 9).map((h) => (
             <Link
               key={h.id}
               href={`/map?as=${h.id}`}
@@ -127,9 +144,18 @@ async function AdminContent() {
         </ul>
       </section>
 
+      {s.answers.length > 0 && (
+        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
+          <h2 className="font-bold">点呼の答え（{s.answers.length} 件）</h2>
+          <p className="mt-1 text-base">
+            {s.answers.map((a) => `${name(a.participantId)}: ${String(a.answer) === "yes" ? "はい" : String(a.answer) === "no" ? "いいえ" : a.answer === "together" ? "一緒なら" : `${a.answer}分`}`).join(" ・ ")}
+          </p>
+        </section>
+      )}
+
       {s.briefing && (
         <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">町内へのまとめ</h2>
+          <h2 className="font-bold">{status === "announced" ? "前夜の予告" : "町内へのまとめ"}</h2>
           <p className="mt-1">{s.briefing}</p>
         </section>
       )}
@@ -141,11 +167,11 @@ async function AdminContent() {
             {[...m.missions]
               .sort((a, b) => b.importance - a.importance)
               .map((x) => {
-                const base = TOWN.bases.find((b) => b.id === x.baseId)!;
+                const base = roster.bases.find((b) => b.id === x.baseId);
                 const going = m.sorties.filter((so) => so.missionId === x.id);
                 return (
                   <li key={x.id}>
-                    拠点{base.number}：<b>{MISSION_TEXT[x.status]}</b>（{going.length}/{x.requiredPeople}人）
+                    拠点{base?.number ?? "?"}：<b>{MISSION_TEXT[x.status]}</b>（{going.length}/{x.requiredPeople}人）
                     <span className="text-sm text-ink/60"> {going.map((so) => name(so.participantId)).join("・")}</span>
                   </li>
                 );

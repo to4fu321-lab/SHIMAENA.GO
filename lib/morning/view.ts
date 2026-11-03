@@ -1,6 +1,6 @@
 // 「ある雪の朝」の状態。地図・得点バー・雪HP はこの形を読む。
 // T03 では固定のデモ状態、T06 以降は保存先から組み立てる。
-import type { Mission, Rollcall, ScoreEvent, Sortie, TeamId } from "./types";
+import type { Mission, Rollcall, ScoreEvent, Sortie, TeamId } from "../types";
 
 export interface MorningState {
   rollcall: Rollcall;

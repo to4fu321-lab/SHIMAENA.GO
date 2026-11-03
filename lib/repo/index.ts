@@ -8,9 +8,11 @@ import type { Base, FamilyLink, Participant, TeamId } from "../types";
 export interface Repo {
   findParticipantByLineUserId(lineUserId: string): Promise<Participant | undefined>;
   findParticipant(id: string): Promise<Participant | undefined>;
+  listParticipants(): Promise<Participant[]>;
   upsertParticipant(p: Participant): Promise<void>;
   countHelpersByTeam(): Promise<Record<TeamId, number>>;
   findBaseByRequester(requesterId: string): Promise<Base | undefined>;
+  listBases(): Promise<Base[]>;
   nextBaseNumber(): Promise<number>;
   upsertBase(b: Base): Promise<void>;
   addFamilyLink(link: FamilyLink): Promise<void>;
@@ -46,6 +48,9 @@ export const memoryRepo: Repo = {
   async findParticipant(id) {
     return mem().participants.get(id);
   },
+  async listParticipants() {
+    return [...mem().participants.values()].map((p) => structuredClone(p));
+  },
   async upsertParticipant(p) {
     mem().participants.set(p.id, structuredClone(p));
   },
@@ -56,6 +61,9 @@ export const memoryRepo: Repo = {
   },
   async findBaseByRequester(requesterId) {
     return [...mem().bases.values()].find((b) => b.requesterId === requesterId);
+  },
+  async listBases() {
+    return [...mem().bases.values()].sort((a, b) => a.number - b.number).map((b) => structuredClone(b));
   },
   async nextBaseNumber() {
     return Math.max(0, ...[...mem().bases.values()].map((b) => b.number)) + 1;
@@ -123,6 +131,10 @@ export const dbRepo: Repo = {
     const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants where id = $1`, [id]);
     return rows[0] ? rowToParticipant(rows[0]) : undefined;
   },
+  async listParticipants() {
+    const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants order by created_at, id`);
+    return rows.map(rowToParticipant);
+  },
   async upsertParticipant(p) {
     await query(
       `insert into participants
@@ -164,6 +176,10 @@ export const dbRepo: Repo = {
       [requesterId],
     );
     return rows[0] ? { id: rows[0].id, number: Number(rows[0].number), requesterId: rows[0].requester_id } : undefined;
+  },
+  async listBases() {
+    const rows = await query<{ id: string; number: number; requester_id: string }>("select id, number, requester_id from bases order by number");
+    return rows.map((r) => ({ id: r.id, number: Number(r.number), requesterId: r.requester_id }));
   },
   async nextBaseNumber() {
     const rows = await query<{ n: number }>("select coalesce(max(number), 0) + 1 as n from bases");

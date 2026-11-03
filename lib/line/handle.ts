@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { judgeLevel } from "../claude/level";
 import { assignTeam, makeLinkCode } from "../game/team";
+import { answerRollcall, planIfDue } from "../morning/ops";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import type { FamilyLink, Participant } from "../types";
@@ -105,6 +106,14 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
 
   if (ev.type === "unfollow") {
     await r.setSession(lineUserId, null);
+    return;
+  }
+
+  // 点呼の答え（rc:ans=...）は登録の会話とは別に扱う
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("rc:")) {
+    const messages = await answerRollcall(lineUserId, ev.postback.data);
+    if (ev.replyToken) await reply(ev.replyToken, messages);
+    await planIfDue();
     return;
   }
 

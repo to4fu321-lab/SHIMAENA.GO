@@ -1,6 +1,7 @@
 // 50m マス。拠点の位置（50m 単位に丸めた点）をマスの中心として、地図はマスを塗る。
 // どの家かは特定できない大きさにしてある（札幌の住宅の間口は 15〜20m ほど）。
-import type { BaseView } from "./morning";
+import type { Roster } from "./morning/roster";
+import type { BaseView } from "./morning/view";
 import { TOWN } from "./town";
 import type { LatLng, TeamId } from "./types";
 
@@ -47,12 +48,15 @@ export interface CellView {
 // 助けが要る状態を優先して見せる
 const PRIORITY: CellStatus[] = ["short", "no_answer", "in_progress", "assigned", "open", "done", "none"];
 
-/** 拠点ごとの見え方を、50m マスごとにまとめる */
-export function viewCells(views: BaseView[]): CellView[] {
+/**
+ * 拠点ごとの見え方を、50m マスごとにまとめる。
+ * 名簿には家の正確な位置が入っているので、これはサーバー側で呼び、画面にはマスだけを渡す。
+ */
+export function viewCells(views: BaseView[], roster: Roster): CellView[] {
   const byBase = new Map(views.map((v) => [v.baseId, v]));
   const cells = new Map<string, { numbers: number[]; views: (BaseView | undefined)[] }>();
-  for (const base of TOWN.bases) {
-    const requester = TOWN.participants.find((p) => p.id === base.requesterId);
+  for (const base of roster.bases) {
+    const requester = roster.participants.find((p) => p.id === base.requesterId);
     if (!requester) continue;
     const key = cellKey(requester.location);
     const cell = cells.get(key) ?? { numbers: [], views: [] };

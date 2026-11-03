@@ -58,6 +58,12 @@ npm run dev
 3. LINE Official Account Manager の「応答設定」で、あいさつメッセージ・応答メッセージをオフ（オンのままだと LINE 側の定型文も届く）。
 4. 公式アカウントを友だち追加すると、「どちらですか？」から登録が始まる（役割 → 位置情報 → 2問）。家族は「家族の代わりに登録」→ 6桁の連携コードで本人や他の家族を紐づける。
 
+### 点呼を自動で動かす（Vercel Cron）
+1. Vercel の環境変数に `CRON_SECRET`（長いランダムな文字列）を入れる。ないと `/api/cron/*` は動かない。
+2. `vercel.json` の cron が、前夜 21:00 JST に予告（Open-Meteo で翌朝 6:00 までの降雪が 5cm 以上のときだけ）、6:30 JST に点呼を送る。
+3. 6:40 の作戦配信は Hobby プラン（cron は1日1回・2本まで）では cron に置いていない。6:40 以降に点呼の答えが届いたとき自動で配信される。Pro なら `vercel.json` に `{ "path": "/api/cron/plan", "schedule": "40 21 * * *" }` を足す。
+4. 同じことは `/admin` のボタンで手動でもできる（デモはこちら）。
+
 ## データの出典
 - 地図と建物の形: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）
 - 天気: [Open-Meteo](https://open-meteo.com/)

@@ -80,6 +80,40 @@ export const MSG = {
     text(
       `連携コード: ${code}\n\nご本人の LINE でこのアカウントを友だち追加し、この6桁を送ると、ご本人にも点呼が届きます。\nほかのご家族も、同じ番号を送るとお知らせを受け取れます。`,
     ),
+  // ---- 点呼（spec 2） ----
+  rollcallRequester: () =>
+    ask("おはようございます。エナガ点呼です。\n今朝、玄関は出られそうですか？", [
+      { label: "はい", data: "rc:ans=yes" },
+      { label: "いいえ", data: "rc:ans=no" },
+      { label: "一緒なら", data: "rc:ans=together" },
+    ]),
+  rollcallHelper: () =>
+    ask("おはようございます。エナガ点呼です。\n今朝、何分動けますか？", [
+      { label: "0分", data: "rc:ans=0" },
+      { label: "15分", data: "rc:ans=15" },
+      { label: "30分", data: "rc:ans=30" },
+      { label: "60分", data: "rc:ans=60" },
+    ]),
+  rollcallThanks: (answer: string) =>
+    text(
+      answer === "yes"
+        ? "よかったです。今朝はゆっくりどうぞ。"
+        : answer === "no"
+          ? "承知しました。6:40 に作戦をお届けします。"
+          : answer === "together"
+            ? "ありがとうございます。一緒にやりましょう。6:40 に作戦をお届けします。"
+            : answer === "0"
+              ? "了解です。今朝は休んでください。"
+              : "ありがとうございます！6:40 に作戦をお届けします。",
+    ),
+  rollcallClosed: () => text("いまは点呼の時間ではありません。雪の朝 6:30 に届きます。"),
+  notRegistered: () => text("登録がまだです。「登録」と送ってください。"),
+  planForRequester: (startTime: string, names: string[]) =>
+    text(
+      names.length > 0
+        ? `${startTime} に ${names.map((n) => `${n}さん`).join("、")}が向かいます。玄関の鍵を開けておいてください。`
+        : "人手を集めています。決まり次第お知らせします。",
+    ),
   linkedSelf: () => text("紐づけました。雪の朝 6:30 に「今朝、玄関は出られそうですか？」と1回だけ聞きます。"),
   linkedFamily: () => text("家族として紐づけました。雪かきが終わったときや、点呼に返事がないときにお知らせします。"),
 } satisfies Record<string, (...args: never[]) => LineMessage>;

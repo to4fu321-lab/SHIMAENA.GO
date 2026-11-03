@@ -3,8 +3,7 @@
 // 建物のぬりえ地図。Leaflet はブラウザでしか動かないので、ここは画面側だけで読み込む。
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
-import { type CellView, cellCenter, cellPolygon, viewCells } from "@/lib/cells";
-import type { BaseView } from "@/lib/morning";
+import { type CellView, cellCenter, cellPolygon } from "@/lib/cells";
 import { TEAMS } from "@/lib/teams";
 import { TOWN } from "@/lib/town";
 import type { TeamId } from "@/lib/types";
@@ -62,7 +61,7 @@ function cellStyle(cell: CellView): StyleSpec {
   }
 }
 
-export default function TownMap({ views }: { views: BaseView[] }) {
+export default function TownMap({ cells }: { cells: CellView[] }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,7 +93,7 @@ export default function TownMap({ views }: { views: BaseView[] }) {
       }
 
       // 50m マスを塗る（どの家かは出さない）
-      for (const cell of viewCells(views)) {
+      for (const cell of cells) {
         const style = cellStyle(cell);
         L.polygon(cellPolygon(cell.key), { ...style, interactive: false }).addTo(map);
         L.marker(cellCenter(cell.key), {
@@ -112,7 +111,7 @@ export default function TownMap({ views }: { views: BaseView[] }) {
       cancelled = true;
       map?.remove();
     };
-  }, [views]);
+  }, [cells]);
 
   return <div ref={ref} className="h-full w-full" aria-label="町内の地図" />;
 }

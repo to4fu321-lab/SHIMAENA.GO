@@ -40,6 +40,12 @@ export async function push(to: string, messages: LineMessage[]): Promise<void> {
   await post("/message/push", { to, messages: messages.slice(0, 5) });
 }
 
+/** 同じ文面を何人かに送る（500 人まで。通数は人数ぶん数える） */
+export async function multicast(to: string[], messages: LineMessage[]): Promise<void> {
+  if (to.length === 0 || messages.length === 0) return;
+  await post("/message/multicast", { to: to.slice(0, 500), messages: messages.slice(0, 5) });
+}
+
 /** 表示名を取る（呼び名に使う）。取れなければ undefined */
 export async function getProfile(userId: string): Promise<{ displayName: string } | undefined> {
   const t = token();

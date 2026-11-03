@@ -38,59 +38,13 @@ create table if not exists bases (
   requester_id text not null references participants(id)
 );
 
-create table if not exists rollcalls (
-  id text primary key,
-  date date not null unique,
-  forecast_cm real not null,
-  status text not null check (status in ('announced', 'open', 'planned', 'closed'))
-);
-
-create table if not exists rollcall_answers (
-  rollcall_id text not null references rollcalls(id),
-  participant_id text not null references participants(id),
-  answer text not null,           -- yes / no / together / 0 / 15 / 30 / 60
-  answered_at timestamptz not null default now(),
-  primary key (rollcall_id, participant_id)
-);
-
-create table if not exists missions (
-  id text primary key,
-  rollcall_id text not null references rollcalls(id),
-  base_id text not null references bases(id),
-  importance real not null,
-  required_people smallint not null,
-  subtasks jsonb not null,
-  status text not null,
-  start_at timestamptz not null
-);
-
-create table if not exists sorties (
-  id text primary key,
-  mission_id text not null references missions(id),
-  participant_id text not null references participants(id),
-  team_id text not null references teams(id),
-  subtask_ids jsonb not null default '[]',
-  status text not null check (status in ('going', 'done')),
-  rescue boolean not null default false,
-  photo_url text,
-  photo_check jsonb,
-  completed_at timestamptz
-);
-
-create table if not exists score_events (
-  id text primary key,
-  team_id text not null references teams(id),
-  participant_id text references participants(id),
-  points integer not null,
-  reason text not null,
-  at timestamptz not null default now()
-);
+-- 点呼・ミッション・出撃・得点は morning_state の JSON の中（1朝ぶんをまとめて読み書きするため）。
 
 create table if not exists cards (
   id text primary key,
   recipient_id text not null references participants(id),
-  rollcall_id text not null references rollcalls(id),
-  mission_id text not null references missions(id),
+  rollcall_id text not null,
+  mission_id text not null,
   serial integer not null,
   issued_count integer not null,
   design_name text not null,
@@ -106,9 +60,9 @@ create table if not exists cards (
   created_at timestamptz not null default now()
 );
 
--- デモの「朝の状態」をまるごと JSON で持つ（/admin のボタンで動かす分）。
+-- 「今朝の状態」（点呼・回答・ミッション・出撃・得点・文面）をまるごと JSON で1行に持つ。
 -- Vercel はリクエストごとに別のサーバーになるので、メモリではなくここに置く。
-create table if not exists demo_state (
+create table if not exists morning_state (
   key text primary key,
   state jsonb not null,
   updated_at timestamptz not null default now()

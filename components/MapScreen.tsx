@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { BaseView, MorningState } from "@/lib/morning";
-import { snowHp, teamTotals, viewBases } from "@/lib/morning";
+import type { CellView } from "@/lib/cells";
+import type { BaseView, MorningState } from "@/lib/morning/view";
+import { snowHp, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
-import { TOWN } from "@/lib/town";
+import type { Base, TeamId } from "@/lib/types";
 
 const TownMap = dynamic(() => import("./TownMap"), {
   ssr: false,
@@ -21,16 +22,25 @@ const STATUS_TEXT: Record<BaseView["status"], string> = {
   none: "",
 };
 
-export default function MapScreen({ state }: { state: MorningState }) {
+export default function MapScreen({
+  state,
+  cells,
+  bases,
+  viewer,
+}: {
+  state: MorningState;
+  cells: CellView[];
+  bases: Base[];
+  viewer?: { teamId?: TeamId };
+}) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
   const max = Math.max(1, ...Object.values(totals));
   const hp = snowHp(state);
-  const viewer = TOWN.participants.find((p) => p.id === state.viewerId);
   const viewerTeam = TEAMS.find((t) => t.id === viewer?.teamId);
   const mySortie = state.sorties.find((s) => s.participantId === state.viewerId);
   const myMission = state.missions.find((m) => m.id === mySortie?.missionId);
-  const myBase = TOWN.bases.find((b) => b.id === myMission?.baseId);
+  const myBase = bases.find((b) => b.id === myMission?.baseId);
   const myView = views.find((v) => v.baseId === myMission?.baseId);
   const [, month, day] = state.rollcall.date.split("-").map(Number);
 
@@ -70,7 +80,7 @@ export default function MapScreen({ state }: { state: MorningState }) {
 
       {/* 真ん中: 地図 */}
       <main className="relative min-h-0 flex-1">
-        <TownMap views={views} />
+        <TownMap cells={cells} />
       </main>
 
       {/* 下: 自分の割り当てとボタン */}

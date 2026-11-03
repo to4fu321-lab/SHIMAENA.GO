@@ -16,13 +16,8 @@ describe("splitSql（schema.sql を1文ずつに分ける）", () => {
       "participants",
       "family_links",
       "bases",
-      "rollcalls",
-      "rollcall_answers",
-      "missions",
-      "sorties",
-      "score_events",
       "cards",
-      "demo_state",
+      "morning_state",
       "line_sessions",
     ]);
     expect(out.at(-1)).toMatch(/^insert into teams/);
