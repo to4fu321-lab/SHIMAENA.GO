@@ -29,7 +29,7 @@ export function mockAnnounce(input: AnnounceInput): Announcement {
   const snowName = mockSnowName(input.forecastCm);
   return {
     snowName,
-    text: `明朝 6:30 に点呼します。予想 ${input.forecastCm}cm、相手は「${snowName}」。長靴と手袋を。`,
+    text: `エナガ隊長です。明朝 6:30 に点呼します。予想 ${input.forecastCm}cm、相手は「${snowName}」。長靴と手袋を。`,
   };
 }
 
@@ -44,7 +44,7 @@ export async function announceText(input: AnnounceInput): Promise<Announcement> 
   const res = await askJson({
     task:
       "前夜の予告を書いてください。snowName は採点表 snowName の規則で、明朝の雪につける名前（8文字まで）。" +
-      "text は2文以内、やさしい日本語。明朝 6:30 に点呼があること、予想の降雪量（cm）、相手の名前（「相手は『名前』」の形）、持ち物（長靴・手袋など）を入れます。体調の話はしません。",
+      "text は採点表 voice のエナガ隊長の口調で3文以内、やさしい日本語。最初に「エナガ隊長です。」と名乗り、明朝 6:30 に点呼があること、予想の降雪量（cm）、相手の名前（「相手は『名前』」の形）、持ち物（長靴・手袋など）を入れます。体調の話はしません。",
     input,
     schema: AnnounceSchema,
     effort: "low",

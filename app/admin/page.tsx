@@ -93,7 +93,7 @@ async function AdminContent() {
           )}
         </p>
         <p className="text-sm text-ink/60">
-          司令官: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
+          司令官「エナガ隊長」: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
           {hasLineKeys() ? "設定済み" : "未設定"}
         </p>
       </header>
