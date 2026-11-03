@@ -48,25 +48,26 @@ export default function MorningButtons({ viewerId, canAct, going }: { viewerId: 
   const disabled = pending || !canAct;
   return (
     <div className="space-y-2">
+      {/* 手袋でも押せるように: 高さ 64px 以上、濃い色に白い文字 */}
       <div className="grid grid-cols-3 gap-2">
         <button
           disabled={disabled || going}
           onClick={() => run(() => goAction(viewerId))}
-          className="rounded-2xl bg-ink py-4 text-lg font-bold text-white disabled:opacity-40"
+          className="min-h-16 rounded-2xl bg-ink text-xl font-bold text-white active:scale-95 disabled:opacity-40"
         >
           {going ? "行く ✓" : "行く"}
         </button>
         <button
           disabled={disabled}
           onClick={() => fileRef.current?.click()}
-          className="rounded-2xl bg-neon py-4 text-lg font-bold text-white disabled:opacity-40"
+          className="min-h-16 rounded-2xl bg-neon text-xl font-bold text-white active:scale-95 disabled:opacity-40"
         >
           {pending ? "確認中…" : "終わりました"}
         </button>
         <button
           disabled={disabled}
           onClick={() => run(() => shortAction(viewerId))}
-          className="rounded-2xl border-2 border-alert py-4 text-base font-bold leading-tight text-alert disabled:opacity-40"
+          className="min-h-16 rounded-2xl bg-alert text-base font-bold leading-tight text-white active:scale-95 disabled:opacity-40"
         >
           人手が
           <br />

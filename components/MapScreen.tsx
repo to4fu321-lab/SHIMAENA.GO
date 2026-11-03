@@ -136,8 +136,8 @@ export default function MapScreen({
         <TownMap cells={cells} />
       </main>
 
-      {/* 下: 自分の割り当てとボタン（長くなったら中でスクロール。地図は 34% 以上残す） */}
-      <section className="max-h-[58dvh] space-y-3 overflow-y-auto rounded-t-3xl bg-white px-4 pb-5 pt-4 shadow-[0_-4px_16px_rgba(59,42,120,0.12)]">
+      {/* 下: 自分の割り当てなど（長くなったら中でスクロール。地図は 34% 以上残す）。操作ボタンはさらに下に固定 */}
+      <section className="max-h-[44dvh] space-y-3 overflow-y-auto rounded-t-3xl bg-white px-4 pb-3 pt-4 shadow-[0_-4px_16px_rgba(59,42,120,0.12)]">
         {prog.allDone && recap && (
           <div className="rounded-2xl bg-[#fff0f6] px-3 py-2 ring-1 ring-neon/40">
             <p className="text-xs font-bold tracking-widest text-neon">今朝の実況</p>
@@ -174,7 +174,6 @@ export default function MapScreen({
         ) : (
           <p className="text-lg font-bold">今朝の割り当てはまだありません</p>
         )}
-        <MorningButtons viewerId={state.viewerId} canAct={Boolean(mySortie && mySortie.status === "going")} going={Boolean(mySortie?.confirmedAt)} />
         <RescueList
           viewerId={state.viewerId}
           items={rescue}
@@ -192,6 +191,11 @@ export default function MapScreen({
           <li className="w-full">マスは 50m 四方。どの家かは、割り当てられた人の LINE にだけ届きます。</li>
         </ul>
       </section>
+
+      {/* いちばん下に固定: 手袋でも片手で押せる大きなボタン（spec v1.2） */}
+      <footer className="border-t border-ink/10 bg-white px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2">
+        <MorningButtons viewerId={state.viewerId} canAct={Boolean(mySortie && mySortie.status === "going")} going={Boolean(mySortie?.confirmedAt)} />
+      </footer>
     </div>
   );
 }
