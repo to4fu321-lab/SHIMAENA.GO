@@ -11,6 +11,7 @@ import type { ShortHouse } from "@/lib/morning/watch";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
 import RescueList from "./RescueList";
+import ShareButton from "./ShareButton";
 
 const TownMap = dynamic(() => import("./TownMap"), {
   ssr: false,
@@ -36,6 +37,7 @@ export default function MapScreen({
   rescue = [],
   recap,
   thanks,
+  shareText,
 }: {
   state: MorningState;
   cells: CellView[];
@@ -49,6 +51,8 @@ export default function MapScreen({
   recap?: string;
   /** 自分が行った家の、お願いした人からのひとこと（ありがとう点呼） */
   thanks?: { label: string; sentence: string };
+  /** 絵文字グリッド（共有用の文字） */
+  shareText?: string;
 }) {
   const views = [...viewBases(state).values()];
   const totals = teamTotals(state);
@@ -163,6 +167,7 @@ export default function MapScreen({
           isHelper={viewer?.role === "helper"}
           hasAssignment={goingTo.length > 0}
         />
+        {shareText && prog.total > 0 && <ShareButton text={shareText} />}
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink/70" aria-label="色の見方">
           <li><span className="legend bg-white ring-2 ring-ink" />未対応</li>
           <li><span className="legend bg-white ring-2 ring-alert" />人手不足</li>

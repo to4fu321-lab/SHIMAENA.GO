@@ -23,7 +23,9 @@ import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning }
 import { recapText } from "../claude/recap";
 import { summarizeClear, type ClearSummary } from "./clear";
 import { buildRecapInput } from "./recap";
-import { progress, snowHp } from "./view";
+import { progress, snowHp, viewBases } from "./view";
+import { viewCells } from "../cells";
+import { emojiGrid } from "../share";
 import {
   applyLateAnswer,
   goingCount,
@@ -295,6 +297,8 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   if (check.icy) reply.text += "\n凍っているところがあるようです。砂をまくと安心です。";
   const prog = progress(s.morning);
   if (prog.allDone) reply.text += `\n「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐！ ${prog.total}軒すべて終わりました。`;
+  // 絵文字グリッド（マスの色だけ。そのまま LINE グループや X に貼れる）を返事に添える
+  reply.text += `\n\n${emojiGrid(viewCells([...viewBases(s.morning).values()], roster), s.morning)}`;
   const clear = summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId }) ?? undefined;
   if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   return { done: true, messages: [reply], clear };

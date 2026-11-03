@@ -11,6 +11,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { viewBases } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
+import { emojiGrid } from "@/lib/share";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "地図 ・ シマエナGO" };
@@ -41,6 +42,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         rescue={listShort(record, roster)}
         recap={record.recap?.text}
         thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
+        shareText={emojiGrid(cells, state)}
       />
     </>
   );
