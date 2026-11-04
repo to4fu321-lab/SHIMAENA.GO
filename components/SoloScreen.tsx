@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fiveMinutesAction } from "@/app/map/actions";
-import { completeSoloAction, type SoloActionResult } from "@/app/solo/actions";
+import { completeSoloAction, startHomeAction, stopHomeAction, type SoloActionResult } from "@/app/solo/actions";
 import { soloTeamPoints, type SoloMission } from "@/lib/solo/missions";
 import { allowedAtNight, NIGHT_TEXT } from "@/lib/night";
 import type { SoloClearSummary, SoloStatus } from "@/lib/solo/ops";
@@ -98,7 +98,16 @@ export default function SoloScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 自分の家の雪かき: 出撃でホームの「いま自宅で雪かき中」に入り、やめたら抜ける（クリアでも抜ける）
+  const homeSignal = (kind: string, on: boolean) => {
+    if (kind !== "own_house") return;
+    const fd = new FormData();
+    fd.set("viewerId", viewerId);
+    void (on ? startHomeAction(fd) : stopHomeAction(fd)).catch(() => {});
+  };
+
   const begin = (m: SoloMission) => {
+    homeSignal(m.kind, true);
     setResult(null);
     setFlash({ kind: "start", label: m.label });
     setTimeout(() => {
@@ -253,7 +262,10 @@ export default function SoloScreen({
           before={before}
           onBefore={setBefore}
           onReport={(file, note) => submit(runMission.kind, file, note, Math.max(1, Math.round((Date.now() - running.startedAt) / 60000)))}
-          onQuit={() => setRunning(null)}
+          onQuit={() => {
+            homeSignal(runMission.kind, false);
+            setRunning(null);
+          }}
         />
       )}
       {/* ミッションのカード（左右スワイプで選ぶ） */}

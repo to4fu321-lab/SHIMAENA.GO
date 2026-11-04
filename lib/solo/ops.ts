@@ -11,7 +11,8 @@ import { soloHitokoto } from "../claude/solo";
 import { scoreSolo, SOLO_TEAM_DAILY_CAP } from "../game/score";
 import { getTeam } from "../teams";
 import { addDays } from "../jst";
-import { loadMorning } from "../morning/store";
+import { loadMorning, saveMorning } from "../morning/store";
+import { endHome, startHome } from "./home-now";
 import { appToday } from "../morning/today";
 import { repo } from "../repo";
 import { refreshShareTextsLater } from "../sns/refresh";
@@ -193,6 +194,8 @@ export async function completeSolo(
       (m) => m.onsite && m.kind !== "help_house" && m.kind !== mission.kind && !after.some((l) => l.date === today && l.kind === m.kind),
     )?.label,
   };
+  // 自宅の雪かきを終えた人は「いま雪かき中」から抜ける
+  if (mission.kind === "own_house") await finishHomeNow(p.id);
   return { ok: true, summary };
 }
 
@@ -271,4 +274,25 @@ export async function soloStatus(participantId: string, now: Date): Promise<Solo
     nextCard: nextCard(cards, streak),
     cards: cards.length,
   };
+}
+
+// ---- いま自宅で雪かき中（11/4）: 「いまから始める」と「クリア！」 ----
+
+/** 自分の家の雪かきを「いまから始める」。夜でも自分の家は OK（lib/night.ts） */
+export async function startHomeNow(participantId: string, now: Date): Promise<{ ok: boolean; text: string }> {
+  const p = await repo().findParticipant(participantId);
+  if (!p) return { ok: false, text: "登録が見つかりません。LINE から開いてください。" };
+  const s = await loadMorning();
+  startHome(s, p.id, now);
+  await saveMorning(s);
+  return { ok: true, text: "いま自宅で雪かき中。終わったら「クリア！」を押してください。" };
+}
+
+export async function stopHomeNow(participantId: string): Promise<void> {
+  return finishHomeNow(participantId);
+}
+
+async function finishHomeNow(participantId: string): Promise<void> {
+  const s = await loadMorning();
+  if (endHome(s, participantId)) await saveMorning(s);
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { sniffImageType } from "@/lib/image";
 import type { PhotoInput } from "@/lib/claude/photo";
-import { completeSolo, type SoloClearSummary } from "@/lib/solo/ops";
+import { completeSolo, startHomeNow, stopHomeNow, type SoloClearSummary } from "@/lib/solo/ops";
 import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
 
@@ -34,5 +34,27 @@ export async function completeSoloAction(formData: FormData): Promise<SoloAction
     revalidatePath("/map");
     if (!r.ok) return { ok: false, text: r.text };
     return { ok: true, text: `「${r.summary.label}」完了！ +${r.summary.feathers}羽`, summary: r.summary };
+  });
+}
+
+/** 自分の家の雪かきを「いまから始める」（ホームの「自宅で雪かき中」に入る） */
+export async function startHomeAction(formData: FormData): Promise<{ ok: boolean; text: string }> {
+  return withStateLock("solo:startHomeAction", async () => {
+    const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
+    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から開いてください。" };
+    const r = await startHomeNow(id, new Date());
+    revalidatePath("/");
+    return r;
+  });
+}
+
+/** 自分の家の雪かきを途中でやめた（「いま自宅で雪かき中」から抜ける） */
+export async function stopHomeAction(formData: FormData): Promise<{ ok: boolean }> {
+  return withStateLock("solo:stopHomeAction", async () => {
+    const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
+    if (!id) return { ok: false };
+    await stopHomeNow(id);
+    revalidatePath("/");
+    return { ok: true };
   });
 }

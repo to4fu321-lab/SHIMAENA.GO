@@ -23,6 +23,7 @@ import { currentWeatherCode, parseSkyParam, timeOfDay, weatherOf } from "@/lib/s
 import { TOWN } from "@/lib/town";
 import { repo } from "@/lib/repo";
 import { appToday } from "@/lib/morning/today";
+import { countHomeNow } from "@/lib/solo/home-now";
 import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 
@@ -89,7 +90,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   );
   const safety = rc.status !== "closed" ? safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs }) : undefined;
   const night = !open;
-  // 夜（19時〜6時）は、よその家の数字（あと何軒・雪かき中）の代わりに、今日 自分の家の雪かきをした人の数
+  // いま自宅で雪かき中の人（ソロの「いまから始める」、リアルタイム）。夜はこれだけを出す
+  const homeNow = countHomeNow(record, new Date());
+  // 夜（19時〜6時）は、よその家の数字（あと何軒）の代わりに、今日 自分の家の雪かきを終えた人の数も
   const homeToday = night
     ? await repo()
         .listSoloLogsBetween(appToday(record), appToday(record))
@@ -101,10 +104,11 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     safety: safety && safety !== captain ? safety : undefined,
     snowCm: rc.status !== "closed" ? rc.forecastCm : undefined,
     snowName: rc.status !== "closed" ? rc.snowName : undefined,
-    active: activeNow,
+    active: activeNow + homeNow,
     left: planned ? prog.left : 0,
     night,
     homeToday,
+    homeNow,
     morningBonus: bonuses.includes("朝ボーナス+5"),
     dokayuki: bonuses.includes("ドカ雪+5"),
     teamName: myTeam?.team.name,
@@ -114,7 +118,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
       <AutoRefresh seconds={8} />
       {/* 上: ロゴ・ひとこと・くわしく */}
-      <header className="flex shrink-0 items-center gap-2 bg-ice-soft px-4 pt-3 short:pt-1.5" style={myTeam ? { background: myTeam.soft } : undefined}>
+      <header className="flex shrink-0 flex-wrap items-center gap-x-2 bg-ice-soft px-4 pt-3 short:pt-1.5" style={myTeam ? { background: myTeam.soft } : undefined}>
         <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
           <Mascot size={40} team={myTeam?.team.id} />
         </span>
@@ -122,24 +126,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           <h1 className="text-2xl font-bold">
             シマエナ<span className="text-lamp-deep">GO</span>
           </h1>
-          {myTeam ? (
-            <Link href={`/team${q}`} className="mt-0.5 flex max-w-full items-center gap-1.5 whitespace-nowrap" aria-label={`今週のあなたのチームは${myTeam.team.name}（チームを見る）`}>
-              <span className="text-xs font-bold leading-tight">
-                今週の
-                <br />
-                あなたのチーム
-              </span>
-              <span
-                className="inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-lg font-black shadow-md ring-2 ring-white max-[380px]:text-base"
-                style={{ background: myTeam.team.color, color: myTeam.onColor }}
-              >
-                {myTeam.team.name}
-                <span aria-hidden="true">›</span>
-              </span>
-            </Link>
-          ) : (
-            <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">10分の雪かきで、町が変わる。</p>
-          )}
+          {!myTeam && <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">10分の雪かきで、町が変わる。</p>}
         </div>
         <Link href={`/today${q}`} className="relative flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="くわしく（今朝のようす）">
           <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -151,6 +138,23 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             <span className="absolute -right-1 top-0 grid size-5 place-items-center rounded-full bg-lamp text-xs text-white">{shorts.length}</span>
           )}
         </Link>
+        {/* 今週のあなたのチーム（1行まるごと。チーム名を大きな札に） */}
+        {myTeam && (
+          <Link
+            href={`/team${q}`}
+            className="mb-1.5 mt-1 flex basis-full items-center gap-2 whitespace-nowrap text-sm font-bold"
+            aria-label={`今週のあなたのチームは${myTeam.team.name}（チームを見る）`}
+          >
+            今週のあなたのチームは
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-3.5 py-0.5 text-lg font-black shadow-md ring-2 ring-white max-[380px]:text-base"
+              style={{ background: myTeam.team.color, color: myTeam.onColor }}
+            >
+              {myTeam.team.name}
+              <span aria-hidden="true">›</span>
+            </span>
+          </Link>
+        )}
       </header>
 
       {/* 真ん中: 空と雪の町（天気と時間で変わる）、しゃべるシマエナ隊長 */}
@@ -208,18 +212,36 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <path d="M20 32 C21 25 37 24 37 32 Z" fill="#3b6584" />
               </svg>
               {night ? (
-                <span className="whitespace-nowrap">
-                  自宅で <b className="text-2xl tabular-nums">{homeToday}</b>人
+                <span className="flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-xs leading-tight">
+                    いま自宅で
+                    <br />
+                    雪かき中
+                  </span>
+                  <b className="text-2xl tabular-nums">{homeNow}</b>人
                 </span>
               ) : (
                 <span className="whitespace-nowrap">
-                  雪かき中 <b className="text-2xl tabular-nums">{activeNow}</b>人
+                  雪かき中 <b className="text-2xl tabular-nums">{activeNow + homeNow}</b>人
                 </span>
               )}
             </p>
             <p className="flex items-center justify-center gap-2 text-base font-bold">
               <Icon name="house" size={28} accent="var(--lamp)" className="text-ink" />
-              {night ? "今日" : "達成"} <b className="text-2xl tabular-nums">{prog.done}</b>軒
+              {night ? (
+                <span className="flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-xs leading-tight">
+                    今日 自宅を
+                    <br />
+                    終えた人
+                  </span>
+                  <b className="text-2xl tabular-nums">{homeToday}</b>人
+                </span>
+              ) : (
+                <>
+                  達成 <b className="text-2xl tabular-nums">{prog.done}</b>軒
+                </>
+              )}
             </p>
           </div>
         </section>

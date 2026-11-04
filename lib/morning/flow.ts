@@ -51,6 +51,8 @@ export interface MorningRecord {
   awaitingTip?: string[];
   /** あなたが主役の招待文（spec v1.6）: 完了した人ごとに3案 */
   invites?: Record<string, string[]>;
+  /** いま自分の家の雪かきをしている人（参加者 ID → 始めた時刻 ISO）。lib/solo/home-now.ts */
+  homeNow?: Record<string, string>;
 }
 
 export interface ThanksRecord {
