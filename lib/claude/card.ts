@@ -1,20 +1,26 @@
 // カードの文字: デザイン名・英語副題・排雪量と身近な換算（spec 7, 9-4）。絵は lib/cards/svg.ts が描く。
+// v1.8: 排雪 kg はプログラムが計算する（lib/snow-estimate.ts。写真の深さ・予報・積雪深を突き合わせる）。Claude は名前と副題とひとことだけ。
 import { z } from "zod";
 import { STYLE_NAME } from "../cards/rarity";
 import type { CardStyle, ClearArea, SnowType } from "../types";
 import { askJson, hasClaudeKey } from "./client";
-import { SNOW_DENSITY, SNOW_TYPE_LABEL } from "./photo";
+import { SNOW_TYPE_LABEL } from "./photo";
+import { estimateDepth, kgBasis, snowKgOf, type PhotoDepth } from "../snow-estimate";
 import { snowComparison } from "../snowkg";
 
+/** Claude に書いてもらうのは名前・副題・ひとことだけ */
 export const CardTextSchema = z.object({
   designName: z.string(), // 例: 玄関までの三十歩
   designNameEn: z.string(), // 例: Thirty Steps to the Door
-  snowKg: z.number().int(),
-  snowKgComparison: z.string(), // 例: 軽トラ1台分
   /** 絵の中の英語のひとこと（5語まで） */
   flavor: z.string(),
 });
-export type CardText = z.infer<typeof CardTextSchema>;
+export interface CardText extends z.infer<typeof CardTextSchema> {
+  snowKg: number;
+  snowKgComparison: string; // 例: 軽トラ1台分
+  /** 計算の元（例: 写真から約20〜30cm × 玄関前 12m² × 重い湿り雪） */
+  snowKgBasis: string;
+}
 
 export interface CardTextInput {
   date: string;
@@ -28,14 +34,21 @@ export interface CardTextInput {
   rarityLabel: string;
   /** 写真から見えた雪質（v1.2）。排雪 kg の密度に使う */
   snowType?: SnowType;
+  /** v1.8: 写真から読んだ雪の断面の深さと、朝の積雪深（モデル） */
+  photoDepth?: PhotoDepth;
+  modelDepthCm?: number;
 }
 
-/** 面積（m²）の目安: 玄関前 12 / 車庫前 30 / 道路まで 50 */
-const AREA_M2: Record<ClearArea, number> = { entrance: 12, garage: 30, road: 50 };
+/** 排雪 kg と換算と計算の元（プログラムが決める） */
+export function cardSnow(input: Pick<CardTextInput, "forecastCm" | "clearArea" | "snowType" | "photoDepth" | "modelDepthCm">): Pick<CardText, "snowKg" | "snowKgComparison" | "snowKgBasis"> {
+  const d = estimateDepth({ forecastCm: input.forecastCm, modelDepthCm: input.modelDepthCm, photo: input.photoDepth });
+  const snowKg = snowKgOf(d.cm, input.clearArea, input.snowType);
+  return { snowKg, snowKgComparison: snowComparison(snowKg), snowKgBasis: kgBasis(d, input.clearArea, input.snowType) };
+}
 
-/** 排雪 kg = 面積 × 深さ × 雪質の密度（粉雪 100 / ふつう 150 / 湿り雪 300 / 凍結 400 kg/m³） */
+/** 排雪 kg = 面積 × 深さ × 雪質の密度（粉雪 100 / ふつう 150 / 湿り雪 300 / 凍結 400 kg/m³）。予報の降雪量だけで計算するとき */
 export function estimateSnowKg(forecastCm: number, clearArea: ClearArea, snowType: SnowType = "unknown"): number {
-  return Math.max(20, Math.round((AREA_M2[clearArea] * (forecastCm / 100) * SNOW_DENSITY[snowType]) / 10) * 10);
+  return snowKgOf(forecastCm, clearArea, snowType);
 }
 
 export { snowComparison };
@@ -68,22 +81,20 @@ export function mockCardText(input: CardTextInput): CardText {
   const list = NAMES[input.style];
   const seed = Number(input.date.replace(/-/g, "")) + input.memberCount + input.level;
   const [designName, designNameEn, flavor] = list[seed % list.length];
-  const snowKg = estimateSnowKg(input.forecastCm, input.clearArea, input.snowType);
-  return { designName, designNameEn, snowKg, snowKgComparison: snowComparison(snowKg), flavor };
+  return { designName, designNameEn, flavor, ...cardSnow(input) };
 }
 
 export async function cardText(input: CardTextInput): Promise<CardText> {
   if (!hasClaudeKey()) return mockCardText(input);
-  const density = SNOW_DENSITY[input.snowType ?? "unknown"];
+  const snow = cardSnow(input);
   const res = await askJson({
     task:
-      "ありがとうカードの文字を作ってください。designName は日本語 6〜12 文字で、その朝の状況（時刻・人数・雪の量・雪質・チームの混成）が伝わる詩的だが分かりやすい名前。" +
-      `designNameEn は英語の副題。snowKg は面積の目安（玄関前 12m²／車庫前 30m²／道路まで 50m²）× 降雪 cm × 雪質の密度（今回は ${SNOW_TYPE_LABEL[input.snowType ?? "unknown"]}＝${density}kg/m³）から整数で。` +
-      "snowKgComparison は身近な換算（軽トラ1台分 など）。flavor は絵の中に入れる英語のひとこと（5語まで）。タッチの名前: " +
+      "ありがとうカードの文字を作ってください。designName は日本語 6〜12 文字で、その時の状況（時刻・人数・雪の量・雪質・チームの混成）が伝わる詩的だが分かりやすい名前。" +
+      "designNameEn は英語の副題。flavor は絵の中に入れる英語のひとこと（5語まで）。数字は input にあるものだけ。タッチの名前: " +
       STYLE_NAME[input.style],
-    input,
+    input: { ...input, snowKg: snow.snowKg, snowKgComparison: snow.snowKgComparison, snowType: SNOW_TYPE_LABEL[input.snowType ?? "unknown"] },
     schema: CardTextSchema,
     effort: "low",
   });
-  return { ...res, snowKg: Math.max(10, Math.round(res.snowKg)) };
+  return { ...res, ...snow };
 }

@@ -15,6 +15,11 @@ const raw = (x: Partial<Parameters<typeof tidyPhotoCheck>[0]> = {}) => ({
   width: "one" as const,
   hazards: [] as ("roof_snow" | "icicle" | "icy_step")[],
   unrelated: false,
+  snowTypeReason: "塊が光って水気がある",
+  depthCmMin: 15,
+  depthCmMax: 25,
+  depthRef: "玄関の段差",
+  depthConfidence: "mid" as const,
   ...x,
 });
 

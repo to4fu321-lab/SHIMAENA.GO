@@ -81,6 +81,8 @@ export async function issueCardsForMission(
     style: rarity.style,
     rarityLabel: rarity.label,
     snowType: sorties.find((x) => x.photoCheck?.snowType)?.photoCheck?.snowType,
+    photoDepth: sorties.find((x) => x.photoCheck?.depth)?.photoCheck?.depth,
+    modelDepthCm: s.morning.rollcall.depthCm,
   });
   mission.snowKg = text.snowKg; // 町内の「どけた雪の合計」に使う
   const issuedCount = s.morning.sorties.length;
@@ -99,6 +101,7 @@ export async function issueCardsForMission(
       townName: TOWN.name.replace(/（.*）$/, ""),
       snowKg: text.snowKg,
       snowKgComparison: text.snowKgComparison,
+      snowKgBasis: text.snowKgBasis,
       serial: already + i + 1,
       issuedCount: Math.max(issuedCount, already + members.length),
       flavor: text.flavor,

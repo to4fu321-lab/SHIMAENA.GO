@@ -11,6 +11,8 @@ export interface HourlySnow {
   /** 気温（℃）と風（m/s）。安全のひとこと用（spec v1.6）。古い答えにはない */
   temperature_2m?: number[];
   wind_speed_10m?: number[];
+  /** 積雪深（m、モデルの解析値。spec v1.8 雪量の推定の目安） */
+  snow_depth?: number[];
 }
 
 /** from 以上 until 未満の時間帯の最小値・最大値（値がなければ undefined） */
@@ -33,7 +35,7 @@ export async function fetchHourlySnow(center: LatLng, fetchFn: typeof fetch = fe
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(center[0]));
   url.searchParams.set("longitude", String(center[1]));
-  url.searchParams.set("hourly", "snowfall,temperature_2m,wind_speed_10m");
+  url.searchParams.set("hourly", "snowfall,temperature_2m,wind_speed_10m,snow_depth");
   url.searchParams.set("wind_speed_unit", "ms");
   url.searchParams.set("timezone", "Asia/Tokyo");
   url.searchParams.set("forecast_days", "2");
@@ -53,6 +55,8 @@ export interface SnowForecast {
   /** 朝 9:00 までの最低気温（℃）と最大の風（m/s）。安全のひとこと用 */
   tempMinC?: number;
   windMaxMs?: number;
+  /** 朝の積雪深（cm、モデルの解析値）。写真の深さの推定と突き合わせる目安 */
+  depthCm?: number;
 }
 
 /** いまから「次の朝 6:00」までの降雪量。夜に呼ぶ想定（朝 6 時前に呼ばれたら今朝が対象） */
@@ -74,5 +78,13 @@ export async function forecastSnowUntilMorning(
     morningDate,
     tempMinC: pick(hourly, hourly.temperature_2m, from, workUntil, Math.min),
     windMaxMs: pick(hourly, hourly.wind_speed_10m, from, workUntil, Math.max),
+    depthCm: depthAt(hourly, until),
   };
+}
+
+/** その時刻の積雪深（cm）。値がなければ undefined */
+export function depthAt(hourly: HourlySnow, at: string): number | undefined {
+  const i = hourly.time.indexOf(at);
+  const m = i >= 0 ? hourly.snow_depth?.[i] : undefined;
+  return typeof m === "number" && m >= 0 ? Math.round(m * 100) : undefined;
 }

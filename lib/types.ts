@@ -78,6 +78,8 @@ export interface Rollcall {
   /** 朝までの最低気温（℃）と最大の風（m/s）。安全のひとこと用（spec v1.6） */
   tempMinC?: number;
   windMaxMs?: number;
+  /** 朝の積雪深（cm、Open-Meteo のモデルの解析値。spec v1.8 雪量の推定の目安） */
+  depthCm?: number;
 }
 
 /** 依頼者の答え: はい（出られる）／いいえ／一緒なら */
@@ -169,6 +171,10 @@ export interface PhotoCheck {
   hazards?: Hazard[];
   /** v1.8: 雪かきと関係ない写真（室内・人物だけ・画面のスクショ など） */
   unrelated?: boolean;
+  /** v1.8: 雪質の根拠（見た目、15字） */
+  snowTypeReason?: string;
+  /** v1.8: 写真から読んだ雪の断面の深さ（範囲・自信・目印）。使うかはプログラムが決める（lib/snow-estimate.ts） */
+  depth?: { min: number; max: number; confidence: "low" | "mid" | "high"; ref?: string };
 }
 
 export type PathWidth = "narrow" | "one" | "two" | "unknown";

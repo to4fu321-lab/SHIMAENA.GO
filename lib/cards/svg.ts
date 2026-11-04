@@ -16,6 +16,8 @@ export interface CardArt {
   townName: string;
   snowKg: number;
   snowKgComparison: string;
+  /** v1.8: 排雪 kg の計算の元（裏面に小さく。例: 写真から約20〜30cm × 玄関前 12m² × 重い湿り雪） */
+  snowKgBasis?: string;
   serial: number;
   issuedCount: number;
   /** 絵の中の英語のひとこと */
@@ -487,7 +489,8 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
   ${lines}
   <rect x="60" y="650" width="480" height="110" rx="20" fill="#f1ecff"/>
   <text x="300" y="692" font-family="${JP}" font-size="16" fill="#6b4fcf" text-anchor="middle">どけた雪 およそ</text>
-  <text x="300" y="736" font-family="${JP}" font-size="34" font-weight="700" fill="#6b4fcf" text-anchor="middle">${art.snowKg}kg ・ ${escapeXml(art.snowKgComparison)}</text>
+  <text x="300" y="${art.snowKgBasis ? 728 : 736}" font-family="${JP}" font-size="34" font-weight="700" fill="#6b4fcf" text-anchor="middle">${art.snowKg}kg ・ ${escapeXml(art.snowKgComparison)}</text>
+  ${art.snowKgBasis ? `<text x="300" y="752" font-family="${JP}" font-size="12" fill="#8a7bb5" text-anchor="middle">推定: ${escapeXml(art.snowKgBasis)}</text>` : ""}
   <text x="300" y="800" font-family="${JP}" font-size="12" fill="#8a7bb5" text-anchor="middle" letter-spacing="2">${escapeXml(dateLabel(art.date))} ・ ${escapeXml(art.townName)} ・ #シマエナGO</text>
 </svg>`;
 }

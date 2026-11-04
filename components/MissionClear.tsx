@@ -87,9 +87,11 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
         {(clear.care || clear.snowTypeLabel) && (
           <p className="mt-2 rounded-2xl bg-warm px-3 py-2 text-base">
             {clear.snowTypeLabel && <span className="mr-2 rounded-full bg-ice-soft px-2 py-0.5 text-sm font-bold">{clear.snowTypeLabel}</span>}
+            {clear.snowTypeReason && <span className="mr-2 text-sm text-ink-soft">（{clear.snowTypeReason}）</span>}
             {clear.care}
           </p>
         )}
+        {clear.depthLabel && <p className="mt-1 text-center text-sm text-ink-soft">雪の深さ（推定）: {clear.depthLabel}</p>}
         {clear.evidence && (
           <p className="mt-2 rounded-2xl bg-ice-soft px-3 py-2 text-base">
             <b>📷 Claude が写真で見たこと</b>

@@ -1,6 +1,7 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
 import { isNight } from "../night";
+import { consistentSnowType } from "../snow-estimate";
 import { issueCardsForMission, rerenderBacks } from "../cards/issue";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
@@ -60,7 +61,7 @@ import {
 } from "./watch";
 
 /** 前夜の予告: 今朝の状態を作り直し、LINE のある全員に送る */
-export async function announce(opts: { date: string; forecastCm: number; tempMinC?: number; windMaxMs?: number }): Promise<MorningRecord> {
+export async function announce(opts: { date: string; forecastCm: number; tempMinC?: number; windMaxMs?: number; depthCm?: number }): Promise<MorningRecord> {
   const current = await loadMorning();
   // 前の朝の記録は日付で残す（週のまとめに使う）。見本やまっさらな朝は残さない
   if (current.morning.missions.length > 0 && current.morning.rollcall.date !== opts.date && current.answers.length > 0) {
@@ -87,7 +88,7 @@ export async function checkForecastAndAnnounce(now = new Date()): Promise<{ fore
     await saveMorning(s);
     return { forecastCm: f.snowfallCm, announced: false, date: f.morningDate };
   }
-  await announce({ date: f.morningDate, forecastCm: Math.round(f.snowfallCm), tempMinC: f.tempMinC, windMaxMs: f.windMaxMs });
+  await announce({ date: f.morningDate, forecastCm: Math.round(f.snowfallCm), tempMinC: f.tempMinC, windMaxMs: f.windMaxMs, depthCm: f.depthCm });
   return { forecastCm: f.snowfallCm, announced: true, date: f.morningDate };
 }
 
@@ -387,6 +388,12 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
     return { done: false, retry: true, messages: MSG.photoNotCleared("前に送られた写真と同じでした。いまの玄関前から道路側を、新しく撮ってください。") };
   }
   const check = await checkPhoto(image);
+  // 雪質が気温と食い違えば「ふつうの雪」に戻す（写真の見た目だけで決めつけない。spec v1.8）
+  const type = consistentSnowType(check.snowType, s.morning.rollcall.tempMinC);
+  if (type !== check.snowType) {
+    check.snowType = type;
+    check.snowTypeReason = undefined;
+  }
   const outcome = decidePhoto(check);
   if (outcome === "retry") {
     s.log.push(`拠点${number}の写真: ${check.unrelated ? "雪かきの場所ではない" : "まだ"}（${check.comment}）`);
@@ -483,7 +490,7 @@ async function finishMission(
   }
   const myTeam = me?.teamId ? getTeam(me.teamId) : undefined;
   const notes: string[] = [];
-  if (check.snowType && check.snowType !== "unknown") notes.push(`雪質: ${SNOW_TYPE_LABEL[check.snowType]}。`);
+  if (check.snowType && check.snowType !== "unknown") notes.push(`雪質: ${SNOW_TYPE_LABEL[check.snowType]}${check.snowTypeReason ? `（${check.snowTypeReason}）` : ""}。`);
   if (check.care) notes.push(check.care);
   if (check.evidence) notes.push(`Claude の確認: ${check.evidence}${check.width && check.width !== "unknown" ? `（${WIDTH_LABEL[check.width]}）` : ""}`);
   notes.push(...hazardLines(check).map((x) => `⚠️ ${x}`));
