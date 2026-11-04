@@ -9,6 +9,7 @@ import type { ClearSummary } from "@/lib/morning/clear";
 import { completeManually, completeWithPhoto, joinMission, joinNearby, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
 import { signViewer, trustedViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
+import { INVITE_COOKIE, isInviteCode, linkInvitee } from "@/lib/invite";
 
 export interface ActionResult {
   ok: boolean;
@@ -102,6 +103,9 @@ export async function signInWithLiff(accessToken: string): Promise<{ ok: boolean
   if (!found) return { ok: false };
   // 前に登録したお願いする側の人も、アプリを開いたらチームに入る（spec v1.10）
   const p = await ensureTeam(found).catch(() => found);
+  // LINE の中で招待リンクを開いてから登録した人を、誘った人と結びつける（v1.8 仲間を増やす。最初の1回だけ）
+  const inv = (await cookies()).get(INVITE_COOKIE)?.value;
+  if (isInviteCode(inv)) await linkInvitee(p.id, inv);
   (await cookies()).set(VIEWER_COOKIE, signViewer(p.id), {
     httpOnly: true,
     sameSite: "none", // LINE の中のブラウザから開くため

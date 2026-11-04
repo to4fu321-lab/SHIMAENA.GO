@@ -13,6 +13,8 @@ import { loadPublicStats } from "@/lib/public/load";
 import { shareTextsFor } from "@/lib/sns/refresh";
 import { TEAMS } from "@/lib/teams";
 import { baseUrl } from "@/lib/url";
+import InviteBeacon from "@/components/InviteBeacon";
+import { isInviteCode } from "@/lib/invite";
 
 const TITLE = "しらかば町内の雪解け";
 const DESC = "町の雪解け率・今日の出動人数・今週の活動。雪かきゲーム「シマエナGO」の公開ページです。";
@@ -41,9 +43,9 @@ function Num({ label, value, unit }: { label: string; value: string | number; un
   );
 }
 
-async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> }) {
+async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?: string }> }) {
   await connection();
-  const { via } = await searchParams;
+  const { via, r: inviteFrom } = await searchParams;
   const st = await loadPublicStats();
   const texts = await shareTextsFor(st);
   const already = cheeredToday((await cookies()).get(CHEER_COOKIE)?.value, st.today);
@@ -61,6 +63,22 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         <p className="text-base text-ink-soft">寒い冬は、くっついて乗り切る。</p>
       </header>
 
+      {via === "invite" && (
+        <section className="rounded-3xl bg-camellia-soft p-4 ring-1 ring-camellia" aria-label="友だちからの招待">
+          {isInviteCode(inviteFrom) && <InviteBeacon code={inviteFrom} />}
+          <p className="text-lg font-bold">友だちから、雪かきのお誘いが届きました！⛄</p>
+          <p className="text-base">
+            町内の雪かきを、10分だけ・自分の家の前だけでも。まずは見るだけ、
+            <a href="#cheer" className="font-bold underline">
+              町を応援する
+            </a>
+            だけでも、誘ってくれた友だちに届きます。
+          </p>
+          <p className="mt-2 rounded-2xl bg-white/70 px-3 py-2 text-base font-bold">
+            🎴 このページから LINE で参加して最初の出動をすると、あなたと誘ってくれた友だちの<b>二人に限定カード「ふたりの群れ」</b>が届きます。
+          </p>
+        </section>
+      )}
       {via === "cheer" && (
         <section className="rounded-3xl bg-camellia-soft p-4 ring-1 ring-camellia" aria-label="応援のお願い">
           <p className="text-lg font-bold">友だちから応援のお願いが届きました！</p>
@@ -196,7 +214,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
   );
 }
 
-export default function TownPage({ searchParams }: { searchParams: Promise<{ via?: string }> }) {
+export default function TownPage({ searchParams }: { searchParams: Promise<{ via?: string; r?: string }> }) {
   return (
     <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
       <Town searchParams={searchParams} />

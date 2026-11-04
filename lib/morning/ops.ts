@@ -15,9 +15,9 @@ import { readWords, requestLabel } from "../claude/words";
 import { safetyLine } from "../safety";
 import { captainLines } from "../claude/captain";
 import { pickTeacher } from "../claude/teacher";
-import { inviteDrafts } from "../claude/invite";
+import { inviteDrafts, mockInvites } from "../claude/invite";
+import { inviteResultLine, inviteUrl, readInviteStats } from "../invite";
 import { lineShareUrl } from "../share-links";
-import { baseUrl } from "../url";
 import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
@@ -516,13 +516,18 @@ async function finishMission(
       snowCm: s.morning.rollcall.forecastCm,
       snowName: s.morning.rollcall.snowName,
       teamName: myTeam?.name,
+      snowKg: mission.snowKg,
+      cardName: myCard?.designName,
     });
     s.invites = { ...(s.invites ?? {}), [participantId]: invites };
     await saveMorning(s);
   } catch (e) {
     console.error("[invite] 招待文を書けませんでした:", e instanceof Error ? e.message : e);
   }
-  const joinUrl = process.env.NEXT_PUBLIC_LINE_ADD_FRIEND_URL || `${baseUrl()}/public/town?via=invite`;
+  // 招待リンクには「あなたからの招待」の印（v1.8）。誘った結果（見てくれた人・応援してくれた人）を返事に添える（返信なので通数は使わない）
+  const joinUrl = inviteUrl(participantId);
+  const inviteResult = inviteResultLine(await readInviteStats(participantId));
+  if (inviteResult) notes.push(`🎉 ${inviteResult}`);
   // 1つの吹き出しに1つの話題: 完了 → ひとこと → 雪質と労い → 点 → 絵文字グリッド（そのまま LINE グループや X に貼れる）
   const reply = MSG.doneReport({
     baseNumber: number,
@@ -536,6 +541,10 @@ async function finishMission(
   const clear =
     withInvites(summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId, firstFlightIds: s.firstFlights }), invites) ?? undefined;
   if (clear && myCard) clear.card = myCard;
+  if (clear) {
+    clear.inviteUrl = joinUrl;
+    clear.inviteResult = inviteResult;
+  }
   if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
   return { done: true, messages: reply, clear };
@@ -576,7 +585,9 @@ export async function applyThanks(
   for (const x of sorties) {
     const p = byId.get(x.participantId);
     if (!p?.lineUserId) continue;
-    if (await push(p.lineUserId, MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence))) sentTo++;
+    // 「ありがとう」がいちばんうれしい瞬間に、誘う文とボタンを添える（同じ1回のプッシュの中。v1.8）
+    const draft = s.invites?.[p.id]?.[0] ?? mockInvites({ minutes: 10, firstTime: false, snowCm: s.morning.rollcall.forecastCm, thanks: label })[0];
+    if (await push(p.lineUserId, MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence, lineShareUrl(draft, inviteUrl(p.id))))) sentTo++;
   }
   const record: ThanksRecord = { choice, label, sentence, at: now.toISOString(), sentTo };
   s.thanks = { ...(s.thanks ?? {}), [m.id]: record };

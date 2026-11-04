@@ -53,6 +53,9 @@ export interface ClearSummary {
   mine?: boolean;
   /** あなたが主役の招待文（本人の完了のときだけ、spec v1.6） */
   invites?: string[];
+  /** v1.8: 招待リンク（あなたからの招待の印つき）と、誘った結果のひとこと */
+  inviteUrl?: string;
+  inviteResult?: string;
   /** 写真から見えた雪質（v1.2）と労いの一言 */
   snowTypeLabel?: string;
   care?: string;

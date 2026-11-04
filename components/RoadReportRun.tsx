@@ -2,11 +2,15 @@
 
 // 道の危険を知らせる（11/4 本人の指示）: どんな危険か → 写真 → いまいる場所 → 地図に報告。
 // 場所は写真を撮ったその場（道なので家とちがい丸めない）。報告した人の名前は地図にも通知にも出さない。
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { HAZARDS, type HazardId } from "@/lib/road/hazards";
 import { shrink } from "./shrink";
 
-type Loc = { state: "wait" } | { state: "ok"; lat: number; lng: number; acc: number } | { state: "ng"; why: string };
+// 地図（Leaflet）はブラウザでだけ読む
+const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
+
+type Loc = { state: "wait" } | { state: "ok"; lat: number; lng: number; acc: number; adjusted?: boolean } | { state: "ng"; why: string };
 
 export default function RoadReportRun({
   pending,
@@ -23,6 +27,7 @@ export default function RoadReportRun({
   const [note, setNote] = useState("");
   const [loc, setLoc] = useState<Loc>({ state: "wait" });
   const [busy, setBusy] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const locate = () => {
@@ -110,7 +115,12 @@ export default function RoadReportRun({
         <div className="min-w-0 flex-1 rounded-2xl bg-paper px-3 py-2 text-sm" role="status">
           {loc.state === "wait" && <span>📍 場所を調べています…</span>}
           {loc.state === "ok" && (
-            <span className="font-bold">📍 場所OK（誤差 約{loc.acc}m）</span>
+            <span className="flex flex-wrap items-center gap-x-2">
+              <b>📍 {loc.adjusted ? "場所OK（地図で合わせた）" : `場所OK（誤差 約${loc.acc}m）`}</b>
+              <button onClick={() => setAdjusting(true)} disabled={pending} className="min-h-8 font-bold text-lamp-deep underline">
+                地図で直す
+              </button>
+            </span>
           )}
           {loc.state === "ng" && (
             <span>
@@ -137,6 +147,18 @@ export default function RoadReportRun({
       >
         {pending || busy ? "報告中…" : ready ? "地図に報告してクリア！" : !hz ? "危険の種類をえらんでね" : !file ? "写真を撮ってね" : "場所を調べています…"}
       </button>
+
+      {adjusting && loc.state === "ok" && (
+        <PinAdjust
+          start={[loc.lat, loc.lng]}
+          emoji={HAZARDS.find((h) => h.id === hz)?.emoji}
+          onCancel={() => setAdjusting(false)}
+          onDone={([lat, lng]) => {
+            setLoc({ state: "ok", lat, lng, acc: loc.acc, adjusted: true });
+            setAdjusting(false);
+          }}
+        />
+      )}
 
       <input
         ref={fileRef}

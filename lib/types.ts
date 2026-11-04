@@ -262,7 +262,11 @@ export type SoloKind =
   | "find_online" // 助けが必要な場所を発見（3分・オンライン）
   | "bonus_first" // 初回出動
   | "bonus_streak3" // 3日連続出動
-  | "bonus_streak5"; // 5日連続出動
+  | "bonus_streak5" // 5日連続出動
+  // v1.8 仲間を増やす: 誘ったリンクを開いてくれた・町を応援してくれた・仲間になって初出動した（ごほうびの行。活動日には数えない）
+  | "bonus_invite_open"
+  | "bonus_invite_cheer"
+  | "bonus_invite_join";
 
 /** ソロ活動の台帳の1行。date はアプリの「今日」（lib/morning/today.ts）。オンラインの活動は雪かき完了にはしない */
 export interface SoloLog {

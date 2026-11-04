@@ -1,6 +1,8 @@
 // ソロ出動の「本番の操作」（spec v1.3）。台帳を読み、ミッションを完了にして、羽・ボーナス・ひとこと・カードを付ける。
 // v1.7: チームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2・オンライン +1〔1日3点まで〕、1人1日 15点まで。lib/solo/team-points.ts）。
 //家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
+import { inviteDrafts } from "../claude/invite";
+import { claimPairing, inviteResultLine, inviteUrl, readInviteStats } from "../invite";
 import { allowedAtNight, isNight, nightRefusal } from "../night";
 import { onTeam } from "../member";
 import { randomBytes } from "node:crypto";
@@ -41,6 +43,10 @@ export interface SoloClearSummary {
   card?: Card;
   /** v1.8: カード発行の演出に渡す形 */
   reveal?: RevealCard;
+  /** v1.8: 仲間を誘う3案（友だちへ・家族へ・職場や学校の人へ）・招待リンク・誘った結果 */
+  invites?: string[];
+  inviteUrl?: string;
+  inviteResult?: string;
   /** v1.8: 自宅の雪かきでどけた雪（手がかりがない日はなし） */
   snowKg?: number;
   snowKgComparison?: string;
@@ -193,13 +199,36 @@ export async function completeSolo(
       snowType: check?.snowType,
       photoDepth: check && !check.unrelated ? check.depth : undefined,
     };
-    const variant = firstEver ? "first" : due.includes("bonus_streak5") ? "streak5" : "daily";
+    // 誘われて仲間になった人の初出動: 本人は「ふたりの群れ」、誘った人にも同じカード（v1.8）
+    const inviter = firstEver ? await claimPairing(p.id) : undefined;
+    const variant = inviter ? "pair" : firstEver ? "first" : due.includes("bonus_streak5") ? "streak5" : "daily";
     card = await issueSoloCard(p, { variant, date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: firstEver, at, snow, weather });
+    if (inviter) {
+      const friend = await r.findParticipant(inviter);
+      if (friend) {
+        await issueSoloCard(friend, { variant: "pair", date: today, logId: `${log.id}-pair`, hitokoto: "あなたの誘いで、仲間がひとり増えました。", missionLabel: "仲間を誘う", firstFlight: false, at });
+      }
+    }
   } catch (e) {
     console.error("[solo] カードを発行できませんでした:", e instanceof Error ? e.message : e);
   }
 
   await refreshShareTextsLater(); // 今日の出動人数が変わったので、投稿文を作り直す（返事のあとで）
+  // 仲間を誘う（v1.8）: いまの本当の出来事（kg・カード）から3案。リンクには「あなたからの招待」の印。失敗しても完了は止めない
+  let invites: string[] | undefined;
+  try {
+    invites = await inviteDrafts({
+      minutes: mission.minutes,
+      firstTime: firstEver,
+      snowCm: record.morning.rollcall.date === today ? record.morning.rollcall.forecastCm : 0,
+      teamName: p.teamId ? getTeam(p.teamId).name : undefined,
+      snowKg: snow?.snowKg,
+      cardName: card?.designName,
+      solo: true,
+    });
+  } catch (e) {
+    console.error("[solo] 招待文を書けませんでした:", e instanceof Error ? e.message : e);
+  }
   const summary: SoloClearSummary = {
     kind: mission.kind,
     label: mission.label,
@@ -219,6 +248,9 @@ export async function completeSolo(
     teamPoints,
     teamName: p.teamId ? getTeam(p.teamId).name : undefined,
     teamCapped,
+    invites,
+    inviteUrl: inviteUrl(p.id),
+    inviteResult: inviteResultLine(await readInviteStats(p.id)),
     nextMission: SOLO_MISSIONS.find(
       (m) => m.onsite && m.kind !== "help_house" && m.kind !== mission.kind && !after.some((l) => l.date === today && l.kind === m.kind),
     )?.label,
