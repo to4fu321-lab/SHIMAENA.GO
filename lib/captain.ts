@@ -59,3 +59,43 @@ export function captainLineOk(state: CaptainState, line: string, allowedNumbers:
 export function captainLine(state: CaptainState, saved?: Partial<Record<CaptainState, string>>): string {
   return saved?.[state] ?? CAPTAIN_TEMPLATES[state];
 }
+
+// ---- ホームの吹き出しで順番に話す（11/4 本人の指示「隊長の言葉がずっと同じ」） ----
+// 1つめは状態別のひとこと（上の captainLine）。そのあとに、いまの様子から計算した文を足す（AI は使わない）。
+
+export interface CaptainScene {
+  /** 状態別のひとこと（captainLine の結果） */
+  main: string;
+  /** 安全の一文が要る朝か（あれば2つおきに挟む） */
+  safety?: string;
+  snowCm?: number;
+  snowName?: string;
+  /** いま雪かき中の人数・待っている家の数 */
+  active: number;
+  left: number;
+  night: boolean;
+  morningBonus: boolean;
+  dokayuki: boolean;
+  teamName?: string;
+}
+
+/** 前の版で書いた文に残った「5分」を、いまの最小単位（10分）に直す */
+function tenMinutes(line: string): string {
+  return line.replace(/(^|[^0-9])5分/g, "$110分");
+}
+
+/** 吹き出しで順番に話す文（1つめは状態別のひとこと） */
+export function captainRotation(s: CaptainScene): string[] {
+  const lines = [tenMinutes(s.main)];
+  if (s.night) lines.push("夜は自分の家の雪かきだけにしようね。");
+  if (s.snowCm && s.snowCm > 0) lines.push(`今日の雪は${s.snowCm}cm${s.snowName ? `、${s.snowName}` : ""}だしま〜！`);
+  if (!s.night && s.active > 0) lines.push(`いま${s.active}人が雪かき中えな〜！`);
+  if (!s.night && s.left > 0) lines.push(`待っている家が、あと${s.left}軒あるしま〜。`);
+  if (!s.night && s.morningBonus) lines.push("朝9時までに終えると、+5点えな〜！");
+  if (!s.night && s.dokayuki) lines.push("ドカ雪の日は、+5点のごほうびしま〜！");
+  if (s.teamName) lines.push(`今週は${s.teamName}チーム。いっしょにがんばるえな〜！`);
+  lines.push("ぼくをタップすると、飛ぶしま〜！");
+  if (!s.safety) return lines;
+  // 安全の一文は、2つおきに必ず挟む
+  return lines.flatMap((l, i) => (i % 2 === 0 ? [s.safety!, l] : [l]));
+}

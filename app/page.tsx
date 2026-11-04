@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import Icon from "@/components/Icon";
 import Mascot from "@/components/Mascot";
+import CaptainStage from "@/components/CaptainStage";
 import SkyBackdrop from "@/components/SkyBackdrop";
 import TabBar from "@/components/TabBar";
 import { loadRoster } from "@/lib/morning/roster";
@@ -14,7 +15,7 @@ import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
-import { captainLine, captainState } from "@/lib/captain";
+import { captainLine, captainRotation, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
 import { soloStatus } from "@/lib/solo/ops";
 import { jstMinutes } from "@/lib/jst";
@@ -27,7 +28,7 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 
 /**
  * ホーム = 今朝の出撃画面（spec v1.1 10.6）。スクロールしない1画面:
- * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 出動する／10分だけ手伝う → 下のタブ。
+ * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 出動する／ソロ活動をする → 下のタブ。
  * チームの得点・実況・応援・カード・SNS は「くわしく」（/today）へ。
  */
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
@@ -62,7 +63,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 出動する: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && me?.role === "helper" && Boolean(me.teamId);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
-  // 10分だけ手伝う: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
+  // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
   const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
@@ -84,6 +85,20 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     }),
     record.captainLines,
   );
+  const safety = rc.status !== "closed" ? safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs }) : undefined;
+  const night = !open;
+  const captainLines = captainRotation({
+    main: captain,
+    safety: safety && safety !== captain ? safety : undefined,
+    snowCm: rc.status !== "closed" ? rc.forecastCm : undefined,
+    snowName: rc.status !== "closed" ? rc.snowName : undefined,
+    active: activeNow,
+    left: planned ? prog.left : 0,
+    night,
+    morningBonus: bonuses.includes("朝ボーナス+5"),
+    dokayuki: bonuses.includes("ドカ雪+5"),
+    teamName: myTeam?.team.name,
+  });
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
@@ -98,13 +113,19 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             シマエナ<span className="text-lamp-deep">GO</span>
           </h1>
           {myTeam ? (
-            <Link
-              href={`/team${q}`}
-              className="mt-0.5 inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold shadow-sm max-[380px]:text-xs"
-              style={{ background: myTeam.team.color, color: myTeam.onColor }}
-            >
-              <span className="truncate">今週は{myTeam.team.name}</span>
-              <span aria-hidden="true">›</span>
+            <Link href={`/team${q}`} className="mt-0.5 flex max-w-full items-center gap-1.5 whitespace-nowrap" aria-label={`今週のあなたのチームは${myTeam.team.name}（チームを見る）`}>
+              <span className="text-xs font-bold leading-tight">
+                今週の
+                <br />
+                あなたのチーム
+              </span>
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-lg font-black shadow-md ring-2 ring-white max-[380px]:text-base"
+                style={{ background: myTeam.team.color, color: myTeam.onColor }}
+              >
+                {myTeam.team.name}
+                <span aria-hidden="true">›</span>
+              </span>
             </Link>
           ) : (
             <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">10分の雪かきで、町が変わる。</p>
@@ -125,24 +146,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       {/* 真ん中: 空と雪の町（天気と時間で変わる）、しゃべるシマエナ隊長 */}
       <div className="relative min-h-10 flex-1 overflow-hidden">
         <SkyBackdrop sky={sky} />
-        {/* 隊長の吹き出し（しっぽは隊長の口元へ） */}
-        <div className="speech-pop absolute left-3 top-2 z-10 max-w-[78%] short:top-1">
-          <p className="relative rounded-3xl bg-card px-4 py-2 text-lg font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
-            <span className="block text-sm font-bold text-lamp-deep">シマエナ隊長</span>
-            {captain}
-          </p>
-          <svg viewBox="0 0 40 30" className="absolute -bottom-[22px] right-[14%] h-[26px] w-9" aria-hidden="true">
-            <path d="M2 0 C10 10 24 22 38 28 C30 18 26 8 26 0 Z" fill="var(--card)" stroke="rgba(41,68,92,.15)" strokeWidth="2" strokeLinejoin="round" />
-            <path d="M3 -2 H25 V3 H3 Z" fill="var(--card)" />
-          </svg>
-        </div>
-        {/* 枝にとまるシマエナ隊長 */}
-        <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="absolute bottom-[14%] right-0 h-6 w-3/5" aria-hidden="true">
-          <path d="M0 30 C60 22 120 18 200 8" stroke="#7a5a44" strokeWidth="9" strokeLinecap="round" fill="none" />
-          <path d="M120 19 L150 2" stroke="#7a5a44" strokeWidth="5" strokeLinecap="round" />
-          <path d="M10 26 C60 18 120 14 196 4" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" fill="none" />
-        </svg>
-        <Mascot team={myTeam?.team.id} className="absolute bottom-[17%] right-[10%] h-[66%] max-h-40 w-auto drop-shadow-md" />
+        {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
+        <CaptainStage lines={captainLines} team={myTeam?.team.id} />
       </div>
 
       <main className="relative -mt-4 shrink-0 space-y-2.5 px-4 pb-3 short:space-y-2 short:pb-2">
@@ -166,14 +171,18 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <p className="text-xl font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
               ) : (
                 <p className="text-xl font-bold">
-                  {m.rollcall.status === "open" ? "点呼中です" : "今日は作戦がありません"}
-                  <span className="block text-sm">{m.rollcall.status === "open" ? "（6:40 に行き先。そのあと19時までいつでも）" : "1人の10分でも町は変わります"}</span>
+                  {rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
+                  <span className="block text-sm">
+                    {rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "朝6:40に、手伝ってほしい家が地図に出ます"}
+                  </span>
                 </p>
               )}
             </div>
-            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-sm font-bold tabular-nums" aria-label={`進み具合 ${pct}%`}>
-              {pct}%
-            </span>
+            {prog.total > 0 && (
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-sm font-bold tabular-nums" aria-label={`進み具合 ${pct}%`}>
+                {pct}%
+              </span>
+            )}
           </div>
           <div className="mt-2 grid grid-cols-2 divide-x divide-ink/15 border-t border-ink/10 pt-2 short:mt-1 short:pt-1">
             <p className="flex items-center justify-center gap-2 text-base font-bold">
@@ -194,7 +203,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           </div>
         </section>
 
-        {/* 出動（いちばん大事なボタン）と、10分だけ */}
+        {/* 出動（いちばん大事なボタン）と、ソロ活動 */}
         <Link
           href={goHref}
           className={`btn ${open ? "btn-lamp" : "btn-ink opacity-80"} min-h-18 justify-start gap-3 rounded-full px-5 short:min-h-15 short:py-1.5`}
@@ -217,8 +226,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             <path d="M12 7 V12 L15.5 14" />
           </svg>
           <span className="text-left leading-tight">
-            <span className="block text-lg">10分だけ手伝う</span>
-            <span className="block text-sm font-normal">ひとりでOK・自分の家の雪かきも</span>
+            <span className="block text-lg">ソロ活動をする</span>
+            <span className="block text-sm font-normal">自分の家の雪かき・積雪の報告など</span>
           </span>
         </Link>
       </main>

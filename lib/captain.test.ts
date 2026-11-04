@@ -40,3 +40,25 @@ describe("隊長のひとこと", () => {
     expect(record.captainLines?.normal).toBe(CAPTAIN_TEMPLATES.normal);
   });
 });
+
+import { captainRotation } from "./captain";
+
+describe("吹き出しで順番に話す（11/4）", () => {
+  const base = { main: "どか雪のモッサリ、12cm。5分の出番だしま〜！", active: 3, left: 2, night: false, morningBonus: true, dokayuki: false };
+  it("状態別のひとことのあとに、いまの様子。古い「5分」は10分に直す", () => {
+    const ls = captainRotation({ ...base, snowCm: 12, teamName: "サルビア" });
+    expect(ls[0]).toBe("どか雪のモッサリ、12cm。10分の出番だしま〜！");
+    expect(ls).toContain("いま3人が雪かき中えな〜！");
+    expect(ls).toContain("待っている家が、あと2軒あるしま〜。");
+    expect(ls.some((l) => l.includes("サルビア"))).toBe(true);
+  });
+  it("夜はよその家にさそわない", () => {
+    const ls = captainRotation({ ...base, night: true });
+    expect(ls.join("")).not.toContain("雪かき中");
+    expect(ls).toContain("夜は自分の家の雪かきだけにしようね。");
+  });
+  it("安全の一文は何度も挟む", () => {
+    const ls = captainRotation({ ...base, safety: "ひとりでやらず、15分ごとに休みましょう。" });
+    expect(ls.filter((l) => l.includes("休み")).length).toBeGreaterThanOrEqual(2);
+  });
+});

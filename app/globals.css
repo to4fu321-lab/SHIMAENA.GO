@@ -292,7 +292,30 @@ body {
 .speech-pop { animation: speech-pop 0.45s cubic-bezier(.2,1.4,.4,1) both; transform-origin: 85% 100%; }
 @keyframes speech-pop { from { transform: scale(0.6); opacity: 0; } }
 
+/* シマエナ隊長: 枝の上でゆれる・ときどき跳ねる／タップで飛んでいって戻る */
+.captain-idle { animation: captain-bob 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes captain-bob {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  20% { transform: translateY(-3px) rotate(-3deg); }
+  40% { transform: translateY(0) rotate(0); }
+  55% { transform: translateY(-14px) rotate(4deg); }
+  65% { transform: translateY(0) scale(1.04, 0.96); }
+  75% { transform: translateY(0) rotate(0); }
+}
+.captain-fly { animation: captain-fly 2.6s ease-in-out both; }
+@keyframes captain-fly {
+  0% { transform: translate(0, 0) rotate(0); }
+  10% { transform: translate(0, 8px) scale(1.05, 0.92); }
+  40% { transform: translate(140%, -160%) rotate(18deg) scale(0.6); opacity: 1; }
+  41% { opacity: 0; }
+  59% { transform: translate(-260%, -120%) rotate(-12deg) scale(0.6); opacity: 0; }
+  60% { opacity: 1; }
+  90% { transform: translate(0, -10px) rotate(-4deg) scale(1); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+.speech-away { animation: speech-pop 0.3s ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .sky-flake, .sky-star, .speech-pop { animation: none; }
+  .sky-flake, .sky-star, .speech-pop, .captain-idle, .captain-fly { animation: none; }
   .sky-flake { display: none; }
 }
