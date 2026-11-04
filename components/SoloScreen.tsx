@@ -156,7 +156,8 @@ export default function SoloScreen({
           }, 1700);
         }
       } catch (e) {
-        setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
+        console.error(e);
+        setResult({ ok: false, text: "うまくいきませんでした。電波のよい所で、もう一度押してください。" });
       }
     });
   };
@@ -184,7 +185,8 @@ export default function SoloScreen({
           }
         }, 1700);
       } catch (e) {
-        setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
+        console.error(e);
+        setResult({ ok: false, text: "うまくいきませんでした。電波のよい所で、もう一度押してください。" });
       }
     });
   };

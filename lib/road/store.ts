@@ -2,6 +2,28 @@
 import { hasDb, query } from "../db";
 import type { HazardId, RoadReport } from "./hazards";
 
+// 表がまだなければ、最初に使うときに作る（/admin のボタンを押し忘れても止まらないように。何度でも安全）
+const TABLES = [
+  `create table if not exists road_reports (
+    id text primary key, participant_id text not null references participants(id), hazard text not null,
+    lat double precision not null, lng double precision not null, note text, photo text,
+    date text not null, at timestamptz not null, notified_at timestamptz)`,
+  `create table if not exists road_alert_prefs (
+    participant_id text primary key references participants(id), enabled boolean not null, updated_at timestamptz not null default now())`,
+  `create table if not exists road_alert_sends (
+    participant_id text not null, date text not null, count integer not null default 0, primary key (participant_id, date))`,
+];
+let ready: Promise<void> | undefined;
+function ensure(): Promise<void> {
+  ready ??= (async () => {
+    for (const t of TABLES) await query(t);
+  })().catch((e) => {
+    ready = undefined; // 次の呼び出しでもう一度
+    throw e;
+  });
+  return ready;
+}
+
 interface Mem {
   reports: Map<string, RoadReport & { photo?: string }>;
   prefs: Map<string, boolean>;
@@ -42,6 +64,7 @@ export async function insertRoadReport(r: RoadReport, photoBase64?: string): Pro
     mem().reports.set(r.id, { ...r, photo: photoBase64 });
     return;
   }
+  await ensure();
   await query(
     `insert into road_reports (id, participant_id, hazard, lat, lng, note, photo, date, at)
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
@@ -61,12 +84,14 @@ export async function listRoadReportsSince(since: string): Promise<RoadReport[]>
       })
       .sort((a, b) => b.at.localeCompare(a.at));
   }
+  await ensure();
   const rows = await query<Row>(`select ${COLS} from road_reports where at > $1 order by at desc`, [since]);
   return rows.map(toReport);
 }
 
 export async function roadPhoto(id: string): Promise<string | undefined> {
   if (!hasDb()) return mem().reports.get(id)?.photo;
+  await ensure();
   const rows = await query<{ photo: string | null }>("select photo from road_reports where id = $1", [id]);
   return rows[0]?.photo ?? undefined;
 }
@@ -77,12 +102,14 @@ export async function markNotified(id: string, at: string): Promise<void> {
     if (r) r.notifiedAt = at;
     return;
   }
+  await ensure();
   await query("update road_reports set notified_at = $2 where id = $1", [id, at]);
 }
 
 // ---- 通知の希望（未回答は undefined） ----
 export async function getAlertPref(participantId: string): Promise<boolean | undefined> {
   if (!hasDb()) return mem().prefs.get(participantId);
+  await ensure();
   const rows = await query<{ enabled: boolean }>("select enabled from road_alert_prefs where participant_id = $1", [participantId]);
   return rows[0]?.enabled;
 }
@@ -92,6 +119,7 @@ export async function setAlertPref(participantId: string, enabled: boolean): Pro
     mem().prefs.set(participantId, enabled);
     return;
   }
+  await ensure();
   await query(
     `insert into road_alert_prefs (participant_id, enabled, updated_at) values ($1, $2, now())
      on conflict (participant_id) do update set enabled = excluded.enabled, updated_at = now()`,
@@ -102,6 +130,7 @@ export async function setAlertPref(participantId: string, enabled: boolean): Pro
 /** 受け取るにした人の ID */
 export async function listAlertOn(): Promise<Set<string>> {
   if (!hasDb()) return new Set([...mem().prefs].filter(([, on]) => on).map(([id]) => id));
+  await ensure();
   const rows = await query<{ participant_id: string }>("select participant_id from road_alert_prefs where enabled");
   return new Set(rows.map((r) => r.participant_id));
 }
@@ -113,6 +142,7 @@ export async function sendCounts(date: string): Promise<Map<string, number>> {
     for (const [k, n] of mem().sends) if (k.endsWith(`|${date}`)) out.set(k.split("|")[0], n);
     return out;
   }
+  await ensure();
   const rows = await query<{ participant_id: string; count: number }>("select participant_id, count from road_alert_sends where date = $1", [date]);
   return new Map(rows.map((r) => [r.participant_id, Number(r.count)]));
 }
@@ -123,6 +153,7 @@ export async function addSend(participantId: string, date: string): Promise<void
     mem().sends.set(k, (mem().sends.get(k) ?? 0) + 1);
     return;
   }
+  await ensure();
   await query(
     `insert into road_alert_sends (participant_id, date, count) values ($1, $2, 1)
      on conflict (participant_id, date) do update set count = road_alert_sends.count + 1`,

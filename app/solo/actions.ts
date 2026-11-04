@@ -104,7 +104,12 @@ export async function reportRoadAction(formData: FormData): Promise<SoloActionRe
     date: jstDate(now),
   };
   if (note) report.note = note;
-  await insertRoadReport(report, Buffer.from((thumb && thumb !== "bad" ? thumb : photo).bytes).toString("base64"));
+  try {
+    await insertRoadReport(report, Buffer.from((thumb && thumb !== "bad" ? thumb : photo).bytes).toString("base64"));
+  } catch (e) {
+    console.error("[road] 報告を保存できませんでした:", e instanceof Error ? e.message : e);
+    return { ok: false, text: "報告を保存できませんでした。少し待って、もう一度「地図に報告」を押してください。" };
+  }
   after(() => notifyRoadReport(report).catch((e) => console.error("[road] 通知できませんでした:", e instanceof Error ? e.message : e)));
 
   // 羽とチームの点（1日1回）。写真は Claude が確認する
