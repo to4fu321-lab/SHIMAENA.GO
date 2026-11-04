@@ -186,17 +186,20 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
 
       <main className="relative -mt-3 shrink-0 space-y-2 px-4 pb-2.5 short:space-y-1.5 short:pb-1.5">
         {/* 今日のミッション・数字（1枚のカード） */}
-        <section className="rounded-3xl bg-card px-4 pb-2 pt-2 shadow-md ring-1 ring-ink/10 short:pt-1.5 short:pb-1.5" aria-label="今日のミッション">
+        <section
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#eaf3fa] to-card px-4 pb-2 pt-2 shadow-md ring-2 ring-[#8fb8d9] short:pt-1.5 short:pb-1.5"
+          aria-label="今日のミッション"
+        >
+          {/* 雪の結晶の飾り（枠で目立たせる） */}
+          <span aria-hidden="true" className="pointer-events-none absolute right-3 top-1.5 text-lg text-[#8fb8d9]/80">❄</span>
+          <span aria-hidden="true" className="pointer-events-none absolute right-8 top-6 text-xs text-[#8fb8d9]/70">❄</span>
           <div className="flex items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-warm">
               <Icon name="map" size={26} accent="var(--lamp)" />
             </span>
             <div className="min-w-0 flex-1 leading-tight">
               {night ? (
-                <p className="text-lg font-bold">
-                  今夜は自分の家の雪かき
-                  <span className="block text-sm">よその家の手伝いは、朝6時から</span>
-                </p>
+                <p className="text-lg font-bold">今夜は自分の家の雪かき</p>
               ) : prog.total > 0 && !prog.allDone ? (
                 <>
                   <p className="text-lg font-bold">
@@ -267,10 +270,35 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           {me && cheerBtn && <HomeCheerButtons viewerId={me.id} {...cheerBtn} />}
         </section>
 
-        {/* 出動（いちばん大事なボタン）と、ソロ活動 */}
+        {/* 出動（いちばん大事なボタン）と、ソロ活動。夜は「近隣の雪かき（明日6時から）」をグレーにして、ソロと半分ずつ1行に */}
+        {!open ? (
+          <div className="grid grid-cols-2 gap-2">
+            <p
+              aria-disabled="true"
+              className="flex min-h-14 items-center gap-2 rounded-full bg-ink/10 px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink/55 ring-1 ring-ink/10"
+            >
+              <span aria-hidden="true" className="text-xl">🌙</span>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">近隣の雪かき</span>
+                <span className="block text-xs font-bold">明日6時から</span>
+              </span>
+            </p>
+            <Link href={fiveHref} className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md">
+              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" className="shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7 V12 L15.5 14" />
+              </svg>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">ソロ活動</span>
+                <span className="block whitespace-nowrap text-xs font-bold max-[380px]:text-[11px]">自分の家の雪かき</span>
+              </span>
+            </Link>
+          </div>
+        ) : (
+          <>
         <Link
           href={goHref}
-          className={`btn ${open ? "btn-lamp" : "btn-ink opacity-80"} min-h-16 justify-start gap-3 rounded-full px-5 py-1.5 short:min-h-14 short:py-1`}
+          className={`btn btn-lamp min-h-16 justify-start gap-3 rounded-full px-5 py-1.5 short:min-h-14 short:py-1`}
         >
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lamp">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -278,9 +306,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             </svg>
           </span>
           <span className="text-left leading-tight">
-            <span className="block text-2xl">{open ? "出動する" : "夜は自分の家だけ"}</span>
+            <span className="block text-2xl">出動する</span>
             <span className="block text-sm font-bold">
-              {!open ? "よその家の雪かきは6時〜19時" : bonuses.length > 0 ? `いまなら ${bonuses.join("・")}点` : "19時までなら、いつでも10分から"}
+              {bonuses.length > 0 ? `いまなら ${bonuses.join("・")}点` : "19時までなら、いつでも10分から"}
             </span>
           </span>
         </Link>
@@ -294,6 +322,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             <span className="block text-sm font-normal">自分の家の雪かき・積雪の報告など</span>
           </span>
         </Link>
+          </>
+        )}
       </main>
 
       <TabBar active="home" q={q} />
