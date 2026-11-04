@@ -21,11 +21,11 @@ describe("夜の判定", () => {
     expect(isNight(at("06:00"))).toBe(false);
     expect(isNight(at("10:00"))).toBe(false);
   });
-  it("夜にしてよいのは、自分の家と家の中でできることだけ", () => {
+  it("夜にしてよいのは、自分の家・家の中でできること・道の危険の報告だけ", () => {
     expect(allowedAtNight("own_house", true)).toBe(true);
     expect(allowedAtNight("check_area", false)).toBe(true);
     expect(allowedAtNight("patrol", true)).toBe(false);
-    expect(allowedAtNight("report_snow", true)).toBe(false);
+    expect(allowedAtNight("report_snow", true)).toBe(true); // 11/4 本人の答え「夜も報告は OK」
   });
 });
 
@@ -36,13 +36,11 @@ describe("夜はよその家に行かない（入口ぜんぶ）", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("ソロ: 夜の見回りは断り、自分の家の雪かきとアプリでの参加はできる", async () => {
+  it("ソロ: 夜でも自分の家の雪かきと道の危険の報告はできる", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const night = at("21:00");
-    expect(await completeSolo("h3", "patrol", { now: night })).toMatchObject({ ok: false, reason: "night" });
     expect((await completeSolo("h3", "own_house", { now: night })).ok).toBe(true);
-    expect((await completeSolo("h3", "check_area", { now: night })).ok).toBe(true);
-    expect((await completeSolo("h3", "patrol", { now: at("10:00") })).ok).toBe(true);
+    expect((await completeSolo("h3", "report_snow", { now: night })).ok).toBe(true);
   });
 
   it("家の手伝い: 夜は「行く」「助けに行く」「10分だけ参加」「出動する」を断り、自分の家へ案内する", async () => {

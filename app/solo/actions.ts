@@ -1,6 +1,13 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { jstDate } from "@/lib/jst";
+import { isNight } from "@/lib/night";
+import { hazard, type RoadReport } from "@/lib/road/hazards";
+import { notifyRoadReport } from "@/lib/road/notify";
+import { getAlertPref, insertRoadReport, setAlertPref } from "@/lib/road/store";
 import { sniffImageType } from "@/lib/image";
 import type { PhotoInput } from "@/lib/claude/photo";
 import { completeSolo, startHomeNow, stopHomeNow, type SoloClearSummary } from "@/lib/solo/ops";
@@ -11,6 +18,8 @@ export interface SoloActionResult {
   ok: boolean;
   text: string;
   summary?: SoloClearSummary;
+  /** 道の報告: 地図に出した。夜は通知を朝に回す */
+  road?: { id: string; later: boolean };
 }
 
 /** ソロミッションを完了にする。写真（任意）は画面で縮小した JPEG */
@@ -57,4 +66,60 @@ export async function stopHomeAction(formData: FormData): Promise<{ ok: boolean 
     revalidatePath("/");
     return { ok: true };
   });
+}
+
+async function readPhoto(file: FormDataEntryValue | null): Promise<PhotoInput | undefined | "bad"> {
+  if (!(file instanceof File) || file.size === 0) return undefined;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mediaType = sniffImageType(bytes);
+  return mediaType ? { bytes, mediaType } : "bad";
+}
+
+/**
+ * 道の危険を知らせる（11/4 本人の指示）: 種類・写真・その場所。地図にピンを立て、近くの人へ知らせる。
+ * 羽とチームの点は1日1回（2回目からは報告だけ受け付ける）。
+ */
+export async function reportRoadAction(formData: FormData): Promise<SoloActionResult> {
+  const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
+  if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から開いてください。" };
+  const h = hazard(String(formData.get("hazard") ?? ""));
+  if (!h) return { ok: false, text: "どんな危険かを選んでください。" };
+  const lat = Number(formData.get("lat"));
+  const lng = Number(formData.get("lng"));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return { ok: false, text: "場所がわかりませんでした。位置情報をオンにして、もう一度どうぞ。" };
+  }
+  const photo = await readPhoto(formData.get("photo"));
+  if (!photo || photo === "bad") return { ok: false, text: "写真を1枚つけてください（JPEG・PNG・WebP）。" };
+  const thumb = await readPhoto(formData.get("thumb"));
+  const note = String(formData.get("note") ?? "").trim().slice(0, 60) || undefined;
+
+  const now = new Date();
+  const report: RoadReport = {
+    id: `rd-${randomBytes(6).toString("base64url")}`,
+    participantId: id,
+    hazard: h.id,
+    location: [lat, lng],
+    at: now.toISOString(),
+    date: jstDate(now),
+  };
+  if (note) report.note = note;
+  await insertRoadReport(report, Buffer.from((thumb && thumb !== "bad" ? thumb : photo).bytes).toString("base64"));
+  after(() => notifyRoadReport(report).catch((e) => console.error("[road] 通知できませんでした:", e instanceof Error ? e.message : e)));
+
+  // 羽とチームの点（1日1回）。写真は Claude が確認する
+  const r = await withStateLock("solo:reportRoad", () => completeSolo(id, "report_snow", { photo, note: `${h.label}${note ? `: ${note}` : ""}`, now }));
+  revalidatePath("/solo");
+  revalidatePath("/map");
+  const road = { id: report.id, later: isNight(now) };
+  if (!r.ok) return { ok: true, text: `地図に「${h.label}」を出しました。ありがとうございます！`, road };
+  return { ok: true, text: `「${h.label}」を報告しました！ +${r.summary.feathers}羽`, summary: r.summary, road };
+}
+
+/** 道の報告を LINE で受け取るか（アプリの切りかえ） */
+export async function setRoadAlertAction(viewerId: string, enabled: boolean): Promise<boolean | undefined> {
+  const id = await trustedViewer(viewerId);
+  if (!id) return undefined;
+  await setAlertPref(id, enabled);
+  return getAlertPref(id);
 }

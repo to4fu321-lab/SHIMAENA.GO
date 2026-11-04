@@ -415,3 +415,21 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .card-rise, .card-flip, .card-shine, .card-stamp, .card-stamp-ring, .card-shake, .card-caption { animation: none; opacity: 1; transform: none; }
 }
+
+/* 道の危険のピン（地図）。赤・緑は使わず、紺の丸に絵文字 */
+.road-pin {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50% 50% 50% 6px;
+  transform: rotate(-45deg);
+  background: #2f4a5f;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  font-size: 18px;
+}
+.road-pin > * { transform: rotate(45deg); }
+.road-pop { display: grid; gap: 4px; font-size: 14px; color: #29445c; }
+.road-pop img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; background: #eef2f6; }
+.road-pop b { font-size: 16px; }

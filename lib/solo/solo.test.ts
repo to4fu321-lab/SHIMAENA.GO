@@ -7,7 +7,7 @@ import { appToday, dayDiff } from "../morning/today";
 import { memoryRepo } from "../repo";
 import type { SoloLog } from "../types";
 import { activeDates, bonusesDue, feathersOn, nextCard, streakDays, totalFeathers } from "./feathers";
-import { SOLO_MISSIONS, soloMission } from "./missions";
+import { SOLO_MISSIONS, soloLabel, soloMission } from "./missions";
 import { completeSolo, recordHouseFeathers, soloStatus } from "./ops";
 import { addSoloScores, listSoloScores, soloPointsToday } from "./team-points";
 import { scoreSolo, SOLO_TEAM_DAILY_CAP } from "../game/score";
@@ -25,14 +25,11 @@ const log = (date: string, kind: SoloLog["kind"] = "patrol", feathers = 5): Solo
 });
 
 describe("ミッションの一覧", () => {
-  it("現地とオンラインがはっきり分かれ、オンラインは羽が少ない", () => {
-    const onsite = SOLO_MISSIONS.filter((m) => m.onsite);
-    const online = SOLO_MISSIONS.filter((m) => !m.onsite);
-    expect(onsite.length).toBeGreaterThanOrEqual(5);
-    expect(online.length).toBe(3);
-    for (const m of online) expect(m.minutes).toBe(3);
-    expect(Math.max(...online.map((m) => m.feathers))).toBeLessThan(Math.min(...onsite.map((m) => m.feathers)));
-    expect(soloMission("own_house")?.photo).toBe("optional");
+  it("選べるのは「道の危険を知らせる」「自分の家の雪かき」（と作戦中の家の手伝い）だけ（11/4 本人の指示）", () => {
+    expect(SOLO_MISSIONS.map((m) => m.kind)).toEqual(["report_snow", "own_house", "help_house"]);
+    expect(soloMission("own_house")?.beforeAfter).toBe(true);
+    expect(soloMission("patrol")).toBeUndefined();
+    expect(soloLabel("patrol")).toBe("雪の状況を見回る"); // 前の記録の名前は出せる
   });
 });
 
@@ -95,7 +92,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     const before = await loadMorning();
     const scoresBefore = before.morning.scores.length;
     const totalsBefore = { ...teamTotals(before.morning) }; // メモリ保存では before と after が同じ物なので、数を先に控える
-    const r1 = await completeSolo("h3", "patrol", { now });
+    const r1 = await completeSolo("h3", "report_snow", { now });
     expect(r1.ok).toBe(true);
     if (!r1.ok) return;
     expect(r1.summary.feathers).toBe(5);
@@ -113,22 +110,22 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     expect(after.morning.scores.at(-1)).toMatchObject({ reason: "solo_onsite", points: 3, participantId: "h3" });
     expect(teamTotals(after.morning)[h3Team]).toBe(totalsBefore[h3Team] + 3);
 
-    const r2 = await completeSolo("h3", "patrol", { now });
+    const r2 = await completeSolo("h3", "report_snow", { now });
     expect(r2.ok).toBe(false);
     if (!r2.ok) expect(r2.reason).toBe("already");
-    const r3 = await completeSolo("h3", "check_area", { now });
+    expect(await completeSolo("h3", "patrol", { now })).toMatchObject({ ok: false, reason: "unknown" }); // もう選べない
+    const r3 = await completeSolo("h3", "own_house", { now });
     expect(r3.ok).toBe(true);
     if (r3.ok) {
-      expect(r3.summary.onsite).toBe(false);
       expect(r3.summary.bonuses).toEqual([]);
       expect(r3.summary.card).toBeUndefined();
-      expect(r3.summary.teamPoints).toBe(1); // アプリを開いての参加は +1（1日3点まで）
+      expect(r3.summary.teamPoints).toBe(5);
     }
     expect((await loadMorning()).morning.scores.length).toBe(scoresBefore + 2);
     const st = await soloStatus("h3", now);
     expect(st.today).toBe(DEMO_DATE);
-    expect(st.todayFeathers).toBe(10);
-    expect(st.doneToday.sort()).toEqual(["check_area", "patrol"]);
+    expect(st.todayFeathers).toBe(16);
+    expect(st.doneToday.sort()).toEqual(["own_house", "report_snow"]);
     expect(st.cards).toBe(1);
     expect((await memoryRepo.listSoloLogsByParticipant("h3")).every((l) => !("lat" in l))).toBe(true);
   });
@@ -157,13 +154,13 @@ describe("初参加の歓迎（T39）", () => {
     for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive"]) delete (globalThis as Record<string, unknown>)[k];
   });
 
-  it("次のおすすめは、今日まだの外の5分ミッション", async () => {
+  it("次のおすすめは、今日まだのもう1つのミッション", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const now = new Date("2026-11-03T03:00:00Z");
-    const r1 = await completeSolo("h4", "patrol", { now });
-    expect(r1.ok && r1.summary.nextMission).toBe("雪の多い場所を報告する");
-    const r2 = await completeSolo("h4", "report_snow", { now });
-    expect(r2.ok && r2.summary.nextMission).toBe("雪かき可能な場所を確認する");
+    const r1 = await completeSolo("h4", "report_snow", { now });
+    expect(r1.ok && r1.summary.nextMission).toBe("自分の家の雪かき");
+    const r2 = await completeSolo("h4", "own_house", { now });
+    expect(r2.ok && r2.summary.nextMission).toBeUndefined();
   });
 
   it("LINE 登録が終わったら、ソロ出動への1行が届く（家族の代理登録には付けない）", async () => {
@@ -199,21 +196,21 @@ describe("ソロのチーム得点（v1.7）", () => {
     expect(sum(scoreSolo({ ...base, kind: "patrol", onsite: true }, SOLO_TEAM_DAILY_CAP))).toBe(0);
   });
 
-  it("雪の朝: 5つの現地ミッションを全部しても、チームに入るのは 15点まで", async () => {
+  it("雪の朝: 2つのミッションでチームに +8点（上限 15点の内）", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     let total = 0;
     let capped = false;
-    for (const kind of ["own_house", "patrol", "report_snow", "check_spot", "find_help"]) {
+    for (const kind of ["own_house", "report_snow"]) {
       const r = await completeSolo("h3", kind, { now });
       if (r.ok) {
         total += r.summary.teamPoints;
         capped = r.summary.teamCapped;
       }
     }
-    expect(total).toBe(SOLO_TEAM_DAILY_CAP);
-    expect(capped).toBe(true);
+    expect(total).toBe(8);
+    expect(capped).toBe(false);
     const s = await loadMorning();
-    expect(s.morning.scores.filter((e) => e.participantId === "h3" && e.reason.startsWith("solo_")).reduce((a, e) => a + e.points, 0)).toBe(15);
+    expect(s.morning.scores.filter((e) => e.participantId === "h3" && e.reason.startsWith("solo_")).reduce((a, e) => a + e.points, 0)).toBe(8);
   });
 
   it("雪のない日: 日付ごとの記録に入り、日曜の集計で合わさる", async () => {

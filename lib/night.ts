@@ -12,9 +12,9 @@ export function isNight(now: Date = new Date()): boolean {
   return h >= NIGHT_FROM || h < NIGHT_UNTIL;
 }
 
-/** 夜でもしてよいソロの活動（自分の家と、家の中でできること） */
+/** 夜でもしてよいソロの活動（自分の家と、家の中でできること）。道の危険は、通りがかりに見つけたら夜でも報告してよい（11/4 本人の答え） */
 export function allowedAtNight(kind: string, onsite: boolean): boolean {
-  return kind === "own_house" || !onsite;
+  return kind === "own_house" || kind === "report_snow" || !onsite;
 }
 
 export const NIGHT_TEXT = {

@@ -17,6 +17,7 @@ import MorningButtons from "./MorningButtons";
 import RescueList from "./RescueList";
 import ShareButton from "./ShareButton";
 
+import type { RoadPin } from "./TownMap";
 const TownMap = dynamic(() => import("./TownMap"), {
   ssr: false,
   loading: () => <div className="grid h-full place-items-center text-ink-soft">地図を読み込み中…</div>,
@@ -47,10 +48,16 @@ export default function MapScreen({
   home,
   destinations = [],
   solo = [],
+  road = [],
+  focusRoad,
 }: {
   state: MorningState;
   /** ソロ出動の足あと（今日） */
   solo?: SoloCell[];
+  /** 道の危険の報告（24時間以内） */
+  road?: RoadPin[];
+  /** LINE の通知から開いたときに、その報告を開く */
+  focusRoad?: string;
   cells: CellView[];
   bases: Base[];
   viewer?: { teamId?: TeamId; role?: Role };
@@ -132,7 +139,7 @@ export default function MapScreen({
       {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と救助待ちの札を浮かべる */}
       <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
         <div className="absolute inset-0 isolate">
-          <TownMap cells={cells} home={home} destinations={destinations} solo={solo} />
+          <TownMap cells={cells} home={home} destinations={destinations} solo={solo} road={road} focusRoad={focusRoad} />
         </div>
         <div className="pointer-events-none absolute inset-x-2 top-2 z-[500] flex gap-1.5">
           <p className="flex items-center gap-1.5 rounded-2xl bg-card/95 px-2.5 py-1 shadow-md">
@@ -173,6 +180,7 @@ export default function MapScreen({
 
       {/* 下のシート: つまみをスライドで畳める（畳むと地図が大きくなる） */}
       <MapSheet
+        startClosed={Boolean(focusRoad)}
         peek={peekNode}
         footer={
           <MorningButtons

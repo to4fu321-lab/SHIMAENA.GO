@@ -418,4 +418,28 @@ export const MSG = {
   weeklyFamily: (count: number) => bubbles([`今週は、ご家族の家の雪かきを ${count} 回手伝ってもらいました。`]),
   linkedSelf: () => bubbles(["紐づけができました。", "雪の朝 6:30 に「今朝、玄関から外に出られそうですか？」と1回だけ聞きます。"]),
   linkedFamily: () => bubbles(["家族として紐づけました。", "雪かきが終わったときや、点呼に返事がないときにお知らせします。"]),
+  // ---- 道の危険の報告（11/4 本人の指示） ----
+  /** コンシェルジュが登録のあとに聞く: 近くの道の報告を受け取るか */
+  roadAsk: (): LineMessage[] => [
+    ask(
+      "シマエナコンシェルジュです。\n家の近く（300m）で「除雪が来ていない」「凍って転びやすい」などの報告があったら、LINE でお知らせしましょうか？（1日3回まで・いつでも変えられます）",
+      [
+        { label: "知らせてほしい", data: "road:on" },
+        { label: "いらない", data: "road:off", tone: "soft" },
+      ],
+    ),
+  ],
+  roadPref: (on: boolean) =>
+    bubbles(
+      [on ? "近くの道の報告をお知らせします。歩くときの参考にどうぞ。" : "道の報告のお知らせは止めました。地図ではいつでも見られます。", "変えたいときは「道の通知」と送ってください。"],
+      [B.map],
+    ),
+  /** 近くの道の危険（写真つき）。報告した人の名前は出さない */
+  roadAlert: (o: { emoji: string; label: string; sentence: string; distance: number; ago: string; photoUrl?: string; reportId: string }): LineMessage[] => [
+    ...(o.photoUrl ? [{ type: "image", originalContentUrl: o.photoUrl, previewImageUrl: o.photoUrl } as LineMessage] : []),
+    withButtons(`${o.emoji} 近くの道の報告（約${o.distance}m・${o.ago}）\n「${o.label}」\n${o.sentence}`, [
+      open("地図で場所を見る", `/map?road=${o.reportId}`),
+      pb("通知を止める", "road:off"),
+    ]),
+  ],
 } satisfies Record<string, (...args: never[]) => LineMessage[]>;

@@ -22,11 +22,12 @@ import {
 } from "../morning/ops";
 import { NOW_MINUTES, type NowMinutes } from "../morning/watch";
 import { concierge, CONSULT_WORDS, inConversation } from "../concierge/run";
+import { setAlertPref } from "../road/store";
 import { repo } from "../repo";
 import { jstDate } from "../jst";
 import { teamTerm } from "../team-theme";
 import type { FamilyLink, Participant } from "../types";
-import { getMessageContent, getProfile, reply } from "./client";
+import { getMessageContent, getProfile, push, reply } from "./client";
 import { liffUrl } from "../url";
 import { MSG } from "./messages";
 import { parseText, step, type RegInput, type Registration } from "./registration";
@@ -217,6 +218,23 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     return;
   }
 
+  // 道の報告を受け取るか（11/4 本人の指示。コンシェルジュが登録のあとに聞く・「道の通知」でいつでも）
+  if (ev.type === "postback" && "postback" in ev && (ev.postback.data === "road:on" || ev.postback.data === "road:off")) {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    let messages: LineMessage[] = MSG.notRegistered();
+    if (p) {
+      await setAlertPref(p.id, ev.postback.data === "road:on");
+      messages = MSG.roadPref(ev.postback.data === "road:on");
+    }
+    if (ev.replyToken) await reply(ev.replyToken, messages);
+    return;
+  }
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^\s*道の?通知\s*$/.test(ev.message.text)) {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    if (ev.replyToken) await reply(ev.replyToken, p ? MSG.roadAsk() : MSG.notRegistered());
+    return;
+  }
+
   // コンシェルジュの「今朝の点呼に答える」（spec v1.7）
   if (ev.type === "postback" && "postback" in ev && ev.postback.data === "cc:rollcall") {
     if (ev.replyToken) await reply(ev.replyToken, await rollcallQuestion(lineUserId));
@@ -276,4 +294,6 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (out.link) messages.push(...(await applyLink(lineUserId, out.link.code, out.link.who)));
   await r.setSession(lineUserId, out.session);
   if (ev.replyToken && messages.length > 0) await reply(ev.replyToken, messages);
+  // 登録を終えた本人に、コンシェルジュが「近くの道の報告を受け取るか」を聞く（返信は5通までなので別に送る）
+  if (out.done && !(out.done.role === "requester" && out.done.proxy)) await push(lineUserId, MSG.roadAsk());
 }

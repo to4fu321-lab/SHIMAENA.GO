@@ -1,12 +1,13 @@
 // Vercel Cron の入口（vercel.json）。CRON_SECRET を Vercel の環境変数に入れると、Vercel が Authorization に付けて呼んでくる。
 //   announce: 前夜 21:00 JST — Open-Meteo を見て予告
-//   rollcall: 6:30 JST — 点呼
+//   rollcall: 6:30 JST — 点呼（その前に、夜に届いた道の報告を近くの人へ）
 //   plan:     6:40 JST — 作戦配信（Hobby プランの cron は2本までなので、GitHub Actions の .github/workflows/plan.yml から呼ぶ。答えが届いた時の planIfDue は予備）
 //   noon / pm: 11:30・16:30 JST — お昼・夕方の出番（降り続いていれば終わった家を開き直し、その時間に動ける人へ）。.github/workflows/later.yml から
 //   weekly:   日曜の「今週の群れ」（announce が日曜なら先に行う。単独で呼ぶ用）
 import { checkForecastAndAnnounce, laterShift, plan, ring, weeklyRecap } from "@/lib/morning/ops";
 import { withStateLock } from "@/lib/ops/lock";
 import { recordProblem } from "@/lib/ops/problems";
+import { flushRoadAlerts } from "@/lib/road/notify";
 
 export async function GET(req: Request, ctx: { params: Promise<{ job: string }> }): Promise<Response> {
   const secret = process.env.CRON_SECRET;
@@ -25,8 +26,13 @@ async function run(job: string): Promise<Response> {
         return Response.json({ ok: true, job, ...r });
       }
       case "rollcall": {
+        // 夜のあいだに届いた道の報告を、近くの人へまとめて知らせる（失敗しても点呼は進める）
+        const road = await flushRoadAlerts().catch(async (e) => {
+          await recordProblem("cron/road", e);
+          return 0;
+        });
         const r = await ring();
-        return Response.json({ ok: true, job, status: r.record.morning.rollcall.status, sent: r.sent });
+        return Response.json({ ok: true, job, status: r.record.morning.rollcall.status, sent: r.sent, road });
       }
       case "plan": {
         const r = await plan();

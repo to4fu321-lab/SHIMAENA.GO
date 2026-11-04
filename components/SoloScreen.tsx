@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fiveMinutesAction } from "@/app/map/actions";
-import { completeSoloAction, startHomeAction, stopHomeAction, type SoloActionResult } from "@/app/solo/actions";
+import { completeSoloAction, reportRoadAction, setRoadAlertAction, startHomeAction, stopHomeAction, type SoloActionResult } from "@/app/solo/actions";
 import { soloTeamPoints, type SoloMission } from "@/lib/solo/missions";
 import { allowedAtNight, NIGHT_TEXT } from "@/lib/night";
 import type { SoloClearSummary, SoloStatus } from "@/lib/solo/ops";
@@ -18,6 +18,7 @@ import { clearMessage } from "@/lib/share-links";
 import SoloClear from "./SoloClear";
 import MissionFlash from "./MissionFlash";
 import MissionRun from "./MissionRun";
+import RoadReportRun from "./RoadReportRun";
 import BragShare from "./BragShare";
 import Mascot, { SnowTown } from "./Mascot";
 import TabBar from "./TabBar";
@@ -37,6 +38,7 @@ export default function SoloScreen({
   night = false,
   q,
   shareOptions = [],
+  roadAlerts,
 }: {
   viewerId: string;
   nickname: string;
@@ -55,6 +57,8 @@ export default function SoloScreen({
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
   shareOptions?: ShareOption[];
+  /** 近くの道の報告を LINE で受け取るか（未回答は undefined） */
+  roadAlerts?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<SoloActionResult | null>(null);
@@ -141,6 +145,7 @@ export default function SoloScreen({
                 }
               : null,
           );
+          setRoadDone(null);
           setRunning(null);
           setFlash({ kind: "clear", label: summary.label });
           setTimeout(() => {
@@ -155,6 +160,40 @@ export default function SoloScreen({
       }
     });
   };
+
+  // 道の危険を知らせる: 地図にピン → 近くの人へ通知。羽は1日1回（2回目からは報告だけ）
+  const [roadDone, setRoadDone] = useState<{ id: string; later: boolean } | null>(null);
+  const submitRoad = (fd: FormData) => {
+    fd.set("viewerId", viewerId);
+    start(async () => {
+      try {
+        const r = await reportRoadAction(fd);
+        setResult(r);
+        if (!r.ok) return;
+        setRunning(null);
+        setRoadDone(r.road ?? null);
+        setFlash({ kind: "clear", label: "道の危険を知らせる" });
+        const summary = r.summary;
+        setTimeout(() => {
+          setFlash(null);
+          if (summary) {
+            setBrag(null);
+            setClear(summary);
+            setTodayFeathers(summary.todayFeathers);
+            setDoneToday((d) => (d.includes("report_snow") ? d : [...d, "report_snow"]));
+          }
+        }, 1700);
+      } catch (e) {
+        setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
+      }
+    });
+  };
+  const [alertsOn, setAlertsOn] = useState<boolean | undefined>(roadAlerts);
+  const toggleAlerts = () =>
+    start(async () => {
+      const v = await setRoadAlertAction(viewerId, !alertsOn).catch(() => undefined);
+      if (v !== undefined) setAlertsOn(v);
+    });
 
   const helpHouse = () =>
     start(async () => {
@@ -217,9 +256,18 @@ export default function SoloScreen({
     <main className="min-w-0 flex-1 space-y-3 px-4 pb-4 pt-3">
       {flash && <MissionFlash kind={flash.kind} label={flash.label} />}
       {clear && (
-        <SoloClear summary={clear} onClose={() => setClear(null)} q={q} minutesLabel={brag ? `${brag.minutes}分` : undefined}>
+        <SoloClear summary={clear} onClose={() => setClear(null)} q={q} minutesLabel={brag ? `${brag.minutes}分` : roadDone ? "報告" : undefined}>
+          {roadDone && (
+            <p className="mt-3 rounded-2xl bg-ice-soft px-3 py-2 text-center text-base ring-1 ring-ice">
+              📍 地図にピンを立てました。
+              <span className="block text-sm">{roadDone.later ? "近くの人には、朝 6:30 にお知らせします。" : "近くで「受け取る」にした人へ LINE でお知らせします。"}</span>
+              <Link href={`/map${q ? `${q}&` : "?"}road=${roadDone.id}`} className="mt-1 inline-block font-bold underline">
+                地図で見る
+              </Link>
+            </p>
+          )}
           {brag && <BragShare before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />}
-          <QuickShare text={clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
+          <QuickShare text={roadDone ? "近所の道の危険を、写真と場所で知らせました。⚠️\nみんなで冬の道を安全に。\n#シマエナGO #雪道" : clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
           {shareOptions.length > 0 && (
             <details className="mt-3 rounded-2xl bg-card ring-1 ring-ink/10">
               <summary className="flex min-h-12 cursor-pointer items-center justify-between px-3 text-base font-bold">
@@ -233,7 +281,7 @@ export default function SoloScreen({
           )}
         </SoloClear>
       )}
-      <header className="snowfield relative -mx-4 -mt-3 h-24 overflow-hidden px-4 pt-2">
+      <header hidden={Boolean(runMission)} className="snowfield relative -mx-4 -mt-3 h-24 overflow-hidden px-4 pt-2">
         <SnowTown className="absolute inset-x-0 bottom-0 h-[55%] w-full" />
         <Link href={`/${q}`} aria-label="ホームへ戻る" className="absolute left-3 top-3 z-10 grid size-12 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
           ‹
@@ -257,13 +305,21 @@ export default function SoloScreen({
           <span>連続 {status.streak}日</span>
         </p>
       </div>
-      {result && !result.ok && (
-        <p className="rounded-2xl bg-warm px-3 py-2 text-base" role="status">
+      {result && (!result.ok || (result.road && !result.summary && !flash)) && (
+        <p className={`rounded-2xl px-3 py-2 text-base ${result.ok ? "bg-ice-soft" : "bg-warm"}`} role="status">
           {result.text}
+          {result.road && (
+            <Link href={`/map${q ? `${q}&` : "?"}road=${result.road.id}`} className="ml-1 font-bold underline">
+              地図で見る
+            </Link>
+          )}
         </p>
       )}
 
-      {runMission && running && (
+      {runMission && running && runMission.kind === "report_snow" && (
+        <RoadReportRun pending={pending} onSend={submitRoad} onQuit={() => setRunning(null)} />
+      )}
+      {runMission && running && runMission.kind !== "report_snow" && (
         <MissionRun
           mission={runMission}
           startedAt={running.startedAt}
@@ -307,7 +363,7 @@ export default function SoloScreen({
                 <h2 className="text-2xl font-bold leading-tight">{done ? "✓ " : ""}{m.label}</h2>
                 <p className="text-base leading-snug">{m.description}</p>
                 <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-2 text-center text-sm font-bold">
-                  <p><span className="block text-2xl tabular-nums">{m.beforeAfter ? "自由" : `${m.minutes}分`}</span>時間</p>
+                  <p><span className="block text-2xl tabular-nums">{m.timeLabel ?? `${m.minutes}分`}</span>時間</p>
                   <p><span className="block text-2xl text-lamp">{DIFF[m.difficulty]}</span>むずかしさ</p>
                   <p>
                     <span className="block text-2xl tabular-nums text-camellia-deep">+{m.feathers}羽</span>
@@ -423,6 +479,24 @@ export default function SoloScreen({
           </div>
         )}
       </section>
+
+      {/* 近くの道の報告を LINE で受け取る（11/4 本人の指示。コンシェルジュが登録のあとにも聞く） */}
+      <div className="flex min-h-14 items-center gap-3 rounded-2xl bg-card px-4 py-2 ring-1 ring-ink/15">
+        <span className="min-w-0 flex-1 text-base font-bold leading-snug">
+          🔔 近くの道の報告を LINE で受け取る
+          <span className="block text-sm font-normal text-ink-soft">家から300m・1日3回まで</span>
+        </span>
+        <button
+          role="switch"
+          aria-checked={Boolean(alertsOn)}
+          disabled={pending}
+          onClick={toggleAlerts}
+          className={`relative h-9 w-16 shrink-0 rounded-full transition-colors ${alertsOn ? "bg-lamp" : "bg-ink/25"}`}
+        >
+          <span className={`absolute top-1 size-7 rounded-full bg-white shadow transition-all ${alertsOn ? "left-8" : "left-1"}`} />
+          <span className="sr-only">{alertsOn ? "オン" : "オフ"}</span>
+        </button>
+      </div>
 
       <FriendShare />
 

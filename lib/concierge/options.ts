@@ -77,33 +77,33 @@ const O = {
   }),
   own_house: (ctx: ConciergeContext): ConciergeOption => ({
     id: "own_house",
-    button: "自分の家の前を10分",
+    button: "自分の家の雪かき",
     title: "自分の家の雪かき",
     minutes: 10,
     points: ctx.hasTeam ? 5 : 0,
-    about: "いちばん始めやすい。自分の家の玄関前を10分。写真を付けると確認済みに",
+    about: "いちばん始めやすい。自分の家の玄関前を終わるまで。始めと終わりの写真で、Before/After を自慢できる",
     prop: "shovel",
     action: { kind: "uri", path: "/solo?pick=10&focus=own_house" },
   }),
   patrol: (ctx: ConciergeContext): ConciergeOption => ({
     id: "patrol",
-    button: "家のまわりを10分見回る",
-    title: "雪の状況を見回る",
+    button: "道の危険を知らせる",
+    title: "道の危険を知らせる",
     minutes: 10,
     points: ctx.hasTeam ? 3 : 0,
-    about: "スコップがなくてもできる。家のまわりを10分歩いて雪の様子を見る",
+    about: "スコップがなくてもできる。除雪がまだ・道が細い・歩道がない・ぐさぐさ・つるつるの所を、写真と場所で近所に知らせる",
     prop: "map",
-    action: { kind: "uri", path: "/solo?pick=10&focus=patrol" },
+    action: { kind: "uri", path: "/solo?pick=10&focus=report_snow" },
   }),
-  online: (ctx: ConciergeContext): ConciergeOption => ({
+  online: (): ConciergeOption => ({
     id: "online",
-    button: "アプリで町の様子を見る（3分）",
+    button: "地図で道の報告を見る",
     title: "町の雪を確認する",
     minutes: 3,
-    points: ctx.hasTeam ? 1 : 0,
-    about: "外に出られない・時間がない人向け。家の中で3分、今朝の地図と雪解けを見る",
+    points: 0,
+    about: "外に出られない・時間がない人向け。家の中で、地図の道の危険と雪解けの進みを見る",
     prop: "phone",
-    action: { kind: "uri", path: "/solo?focus=check_area" },
+    action: { kind: "uri", path: "/map" },
   }),
   tip: (): ConciergeOption => ({
     id: "tip",
@@ -139,13 +139,13 @@ export function buildOptions(ctx: ConciergeContext): ConciergeOption[] {
   if (ctx.role === "helper") {
     if (ctx.going) list.push(O.my_mission());
     else if (ctx.rollcall === "planned" && ctx.shortHouses > 0) list.push(O.join(ctx));
-    const outside = [open("own_house") && O.own_house(ctx), open("patrol") && O.patrol(ctx)].filter((x): x is ConciergeOption => Boolean(x));
-    const inside = [open("check_area") && O.online(ctx)].filter((x): x is ConciergeOption => Boolean(x));
+    const outside = [open("own_house") && O.own_house(ctx), open("report_snow") && O.patrol(ctx)].filter((x): x is ConciergeOption => Boolean(x));
+    const inside = [open("check_area") && O.online()].filter((x): x is ConciergeOption => Boolean(x));
     list.push(...(ctx.safety ? [...inside, ...outside] : [...outside, ...inside]));
     list.push(O.cheer());
   } else {
     if (ctx.tipOk) list.push(O.tip());
-    if (open("check_area")) list.push(O.online(ctx));
+    if (open("check_area")) list.push(O.online());
     list.push(O.cheer());
     if (!ctx.safety && open("own_house")) list.push(O.own_house(ctx));
   }

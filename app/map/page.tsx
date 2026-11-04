@@ -13,15 +13,17 @@ import { viewBases } from "@/lib/morning/view";
 import { appToday } from "@/lib/morning/today";
 import { listShort } from "@/lib/morning/watch";
 import { repo } from "@/lib/repo";
+import { agoText, hazard, SHOW_MS } from "@/lib/road/hazards";
+import { listRoadReportsSince } from "@/lib/road/store";
 import { destinationsFor } from "@/lib/nav";
 import { emojiGrid } from "@/lib/share";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "地図 ・ シマエナGO" };
 
-async function MapContent({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+async function MapContent({ searchParams }: { searchParams: Promise<{ as?: string; road?: string }> }) {
   await connection(); // 毎回いまの状態を読む
-  const { as } = await searchParams;
+  const { as, road: focusRoad } = await searchParams;
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   // 誰の画面か: ?as=h3（デモで3台のスマホに別の人を出す）→ LIFF でログインした本人（cookie）→ 既定の人
   const demoAs = as && /^h\d+$/.test(as) ? as : undefined;
@@ -35,6 +37,12 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   // ソロ出動の足あと（今日）。表がまだなければ出さない（画面は止めない）
   const today = appToday(record);
   const solo = soloCells(await repo().listSoloLogsBetween(today, today).catch(() => []));
+  // 道の危険（24時間以内）。表がまだなければ出さない
+  const now = new Date();
+  const road = (await listRoadReportsSince(new Date(now.getTime() - SHOW_MS).toISOString()).catch(() => [])).flatMap((r) => {
+    const h = hazard(r.hazard);
+    return h ? [{ id: r.id, emoji: h.emoji, label: h.label, location: r.location, ago: agoText(r.at, now), note: r.note }] : [];
+  });
   return (
     <>
       <AutoRefresh />
@@ -54,12 +62,14 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         home={viewer?.location}
         destinations={destinationsFor(record, roster, viewerId)}
         solo={solo}
+        road={road}
+        focusRoad={focusRoad}
       />
     </>
   );
 }
 
-export default function MapPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+export default function MapPage({ searchParams }: { searchParams: Promise<{ as?: string; road?: string }> }) {
   return (
     <Suspense fallback={<div className="grid h-dvh place-items-center bg-paper text-ink">読み込み中…</div>}>
       <MapContent searchParams={searchParams} />

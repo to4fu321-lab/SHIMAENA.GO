@@ -4,8 +4,8 @@
 // peek = 畳んでも見える1行、children = 開いたときの中身（中でスクロール）、footer = 開いたときの下のボタン。
 import { useRef, useState, type ReactNode } from "react";
 
-export default function MapSheet({ peek, children, footer }: { peek: ReactNode; children: ReactNode; footer?: ReactNode }) {
-  const [open, setOpen] = useState(true);
+export default function MapSheet({ peek, children, footer, startClosed = false }: { peek: ReactNode; children: ReactNode; footer?: ReactNode; startClosed?: boolean }) {
+  const [open, setOpen] = useState(!startClosed);
   const start = useRef<{ y: number; moved: boolean } | null>(null);
 
   const down = (e: React.PointerEvent) => {

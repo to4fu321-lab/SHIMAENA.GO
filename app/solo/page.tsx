@@ -11,6 +11,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { listShort } from "@/lib/morning/watch";
 import { SOLO_MISSIONS } from "@/lib/solo/missions";
+import { getAlertPref } from "@/lib/road/store";
 import { soloStatus } from "@/lib/solo/ops";
 import { loadPublicStats } from "@/lib/public/load";
 import { loadMeStats } from "@/lib/sns/me";
@@ -64,7 +65,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   const planned = record.morning.rollcall.status === "planned";
   const canHelpHouse = planned && me.role === "helper" && Boolean(me.teamId);
   const shorts = listShort(record, roster);
-  const [stats, meStats] = await Promise.all([loadPublicStats(), loadMeStats(me.id)]);
+  const [stats, meStats, roadAlerts] = await Promise.all([loadPublicStats(), loadMeStats(me.id), getAlertPref(me.id).catch(() => undefined)]);
   const texts = await shareTextsFor(stats);
   const site = baseUrl();
   const v = `v=${status.totalFeathers}`; // 羽が増えたら画像を取り直す
@@ -94,6 +95,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         focus={SOLO_MISSIONS.some((m) => m.kind === focus && m.kind !== "help_house") ? focus : undefined}
         q={q}
         shareOptions={shareOptions}
+        roadAlerts={roadAlerts}
       />
     </>
   );

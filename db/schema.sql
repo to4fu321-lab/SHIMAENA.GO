@@ -116,6 +116,35 @@ create table if not exists state_locks (
   until timestamptz not null
 );
 
+-- 道の危険の報告（11/4 本人の指示）。写真の場所にピンを立てる（道なので家とちがい丸めない）。報告した人の名前は出さない。
+create table if not exists road_reports (
+  id text primary key,
+  participant_id text not null references participants(id),
+  hazard text not null,           -- no_plow / narrow / no_sidewalk / slush / ice
+  lat double precision not null,
+  lng double precision not null,
+  note text,
+  photo text,                     -- 小さく縮めた JPEG（base64）
+  date text not null,             -- YYYY-MM-DD（日本時間）
+  at timestamptz not null,
+  notified_at timestamptz         -- 近くの人へ知らせた時刻（夜は朝まで空）
+);
+
+-- 道の報告を LINE で受け取るか（本人が選ぶ。コンシェルジュが登録のあとに聞く）
+create table if not exists road_alert_prefs (
+  participant_id text primary key references participants(id),
+  enabled boolean not null,
+  updated_at timestamptz not null default now()
+);
+
+-- 道の報告の通知を、1人に1日何回送ったか（1日3回まで）
+create table if not exists road_alert_sends (
+  participant_id text not null,
+  date text not null,
+  count integer not null default 0,
+  primary key (participant_id, date)
+);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

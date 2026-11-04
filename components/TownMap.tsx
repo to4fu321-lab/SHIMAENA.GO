@@ -64,12 +64,28 @@ function cellStyle(cell: CellView): StyleSpec {
   }
 }
 
+/** 道の危険のピン（報告した人の名前は持たない） */
+export interface RoadPin {
+  id: string;
+  emoji: string;
+  label: string;
+  location: LatLng;
+  ago: string;
+  note?: string;
+}
+
+const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
 export default function TownMap({
   cells,
   home,
   destinations = [],
   solo = [],
+  road = [],
+  focusRoad,
 }: {
+  road?: RoadPin[];
+  focusRoad?: string;
   cells: CellView[];
   /** ソロ出動の足あと（今日、そのマスで活動した件数） */
   solo?: SoloCell[];
@@ -142,6 +158,22 @@ export default function TownMap({
         }).addTo(map);
       }
 
+      // 道の危険（写真の場所にピン）。押すと写真と内容
+      for (const rp of road) {
+        const mk = L.marker(rp.location, {
+          icon: L.divIcon({ className: "", html: `<div class="road-pin" aria-label="${esc(rp.label)}">${rp.emoji}</div>`, iconSize: [38, 38], iconAnchor: [19, 38] }),
+        })
+          .bindPopup(
+            `<div class="road-pop"><img src="/api/road/${encodeURIComponent(rp.id)}/photo" alt="" loading="lazy" /><b>${rp.emoji} ${esc(rp.label)}</b><span>${esc(rp.ago)}${rp.note ? `・${esc(rp.note)}` : ""}</span></div>`,
+            { maxWidth: 200, minWidth: 180 },
+          )
+          .addTo(map);
+        if (rp.id === focusRoad) {
+          map.setView(rp.location, 17);
+          mk.openPopup();
+        }
+      }
+
       // 自分の家（登録した位置）と、向かっている家（本人だけ）。家までは点線で結ぶ
       if (home) {
         L.marker(home, {
@@ -168,7 +200,7 @@ export default function TownMap({
       mapRef.current = null;
       map?.remove();
     };
-  }, [cells, home, destinations, solo]);
+  }, [cells, home, destinations, solo, road, focusRoad]);
 
   // 現在地（GPS）: 許可があれば青い点を動かす。許可がなければ何も出さない
   useEffect(() => {
