@@ -868,6 +868,17 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
 }
 
 /** 「出動する（10／20／30／60分）」: 近くの小タスクを1件さがして提案する */
+/** いま、この人に手伝える家があるか（「出動する」を行き止まりにしないため。spec v1.10） */
+export async function helpOpenFor(participantId: string, minutes: NowMinutes = 60, now = new Date()): Promise<boolean> {
+  if (isNight(now)) return true; // 夜は offerTaskNow が夜の案内を返す
+  const s = await loadMorning();
+  if (s.morning.rollcall.status !== "planned") return false;
+  const roster = await loadRoster();
+  const p = roster.participants.find((x) => x.id === participantId);
+  if (!p || p.role !== "helper") return true; // お願いする側の案内は offerTaskNow のまま
+  return pickTaskNow(s, roster, p, minutes) !== null;
+}
+
 export async function offerTaskNow(participantId: string, minutes: NowMinutes, now = new Date()): Promise<LineMessage[]> {
   if (isNight(now)) return MSG.nightOwnHouseOnly();
   const s = await loadMorning();

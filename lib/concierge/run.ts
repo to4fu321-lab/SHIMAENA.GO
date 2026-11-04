@@ -51,14 +51,15 @@ export async function conciergeContext(p: Participant, record: MorningRecord, no
 /**
  * 登録した人の自由な文に答える。登録していない人・お願いする側でも手伝う側でもない人は null（登録の会話へ）。
  */
-export async function concierge(lineUserId: string, text: string, now = new Date()): Promise<LineMessage[] | null> {
+export async function concierge(lineUserId: string, text: string, now = new Date(), opts: { force?: boolean } = {}): Promise<LineMessage[] | null> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p || (p.role !== "helper" && p.role !== "requester")) return null;
   const record = await loadMorning();
   const ctx = await conciergeContext(p, record, now);
   const options = buildOptions(ctx);
   const session = await loadSession(lineUserId, now);
-  const turn = Math.min(MAX_TURNS, (session?.turn ?? 0) + 1);
+  // force: 聞き返さずに1つ選ぶ（「出動する」で家がなかったとき。spec v1.10）
+  const turn = opts.force ? MAX_TURNS : Math.min(MAX_TURNS, (session?.turn ?? 0) + 1);
   const rc = record.morning.rollcall;
   const input: ConciergeInput = {
     turn,

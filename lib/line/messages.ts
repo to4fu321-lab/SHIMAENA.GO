@@ -404,6 +404,22 @@ export const MSG = {
   nightOwnHouseOnly: () => bubbles([NIGHT_TEXT.short, NIGHT_TEXT.why], [open("自分の家の雪かきへ", "/solo?focus=own_house")]),
   nowNothing: () =>
     bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる10分（見回りなど）もあります。"], [B.solo, B.map]),
+  // ---- 隊長に相談（spec v1.10）: 入口とよくある質問。どれも返信なので通数0 ----
+  consultStart: (registered: boolean) =>
+    registered
+      ? bubbles(
+          ["隊長だしま〜！なんでも聞いてね☃️", "文でも、声で入力した文でも大丈夫です。手伝う・頼む・見るだけ、どれでも一緒に考えます。"],
+          [say("何をすればいい？"), say("今日の雪は？"), say("チームの様子"), say("使い方"), open("きょうの町を開く", "/")],
+        )
+      : bubbles(["隊長だしま〜！なんでも聞いてね☃️", "まず登録すると、あなたに合う活動をおすすめできます（1分）。"], [B.register, say("今日の雪は？"), say("使い方")]),
+  consultSnow: (lines: string[]) => bubbles(lines, [open("きょうの町を開く", "/"), B.map, say("何をすればいい？")]),
+  consultTeam: (hasTeam: boolean) =>
+    hasTeam
+      ? bubbles(["今週のあなたのチームの点数と、仲間の活動が見られます。"], [open("チームを見る", "/team"), open("きょうの町を開く", "/")])
+      : bubbles(["チームはまだ決まっていません。", "次に雪かきや見回りをすると、チームに入って点が入ります。"], [open("きょうの町を開く", "/"), say("何をすればいい？")]),
+  consultGuide: () => bubbles(["使い方は1ページにまとめてあります。触って覚えるチュートリアルもあります。"], [B.guide, say("何をすればいい？")]),
+  /** 「出動する」で近くに手伝える家がないとき、コンシェルジュのおすすめの前に置く */
+  nowNoneLead: () => [text("今は近くに手伝える家はありません。かわりに、こんなのはどうしま〜？")],
   /** お願いする側の人が「出動する」を押したとき */
   nowForRequester: () =>
     bubbles(

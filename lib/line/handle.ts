@@ -11,6 +11,7 @@ import {
   completeWithPhoto,
   escalateHelpIfDue,
   joinMission,
+  helpOpenFor,
   offerTaskNow,
   planIfDue,
   rollcallQuestion,
@@ -22,6 +23,8 @@ import {
 } from "../morning/ops";
 import { NOW_MINUTES, type NowMinutes } from "../morning/watch";
 import { concierge, CONSULT_WORDS, inConversation } from "../concierge/run";
+import { faqKind, faqReply } from "../concierge/faq";
+import { clearSession as clearConcierge } from "../concierge/session";
 import { setAlertPref } from "../road/store";
 import { repo } from "../repo";
 import { jstDate } from "../jst";
@@ -121,6 +124,12 @@ export async function applyLink(lineUserId: string, code: string, who: "self" | 
   return MSG.linkedFamily();
 }
 
+/** 近くに手伝える家がないとき: ひとこと＋コンシェルジュが1つすすめる（使えなければ今までの案内） */
+async function nothingNow(lineUserId: string): Promise<LineMessage[]> {
+  const cc = await concierge(lineUserId, "近くに手伝える家がない。ほかに何ができる？", new Date(), { force: true }).catch(() => null);
+  return cc ? [...MSG.nowNoneLead(), ...cc] : MSG.nowNothing();
+}
+
 export async function handleEvent(ev: LineEvent): Promise<void> {
   const lineUserId = ev.source.userId;
   if (!lineUserId) return;
@@ -142,17 +151,32 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
 
   // 「出動する」（リッチメニュー／文字。前の名前「いまからやる」も受け付ける）→ 何分？ → 近くの小タスクを1件
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^(出動する|出動|いまからやる)$/.test(ev.message.text.trim())) {
-    if (ev.replyToken) await reply(ev.replyToken, MSG.nowAsk());
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    // 手伝える家がない日は、何分？を聞かずにコンシェルジュのおすすめへ（行き止まりにしない）
+    const messages = p && !(await helpOpenFor(p.id)) ? await nothingNow(lineUserId) : MSG.nowAsk();
+    if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
+  }
+  // 隊長に相談とよくある質問（spec v1.10）
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text") {
+    const kind = faqKind(ev.message.text);
+    if (kind) {
+      await clearConcierge(lineUserId);
+      if (ev.replyToken) await reply(ev.replyToken, await faqReply(lineUserId, kind));
+      return;
+    }
   }
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("now:")) {
     const p = await r.findParticipantByLineUserId(lineUserId);
     const minutes = Number(ev.postback.data.slice(4));
+    const ok = (NOW_MINUTES as readonly number[]).includes(minutes);
     const messages = !p
       ? MSG.notRegistered()
-      : (NOW_MINUTES as readonly number[]).includes(minutes)
-        ? await offerTaskNow(p.id, minutes as NowMinutes)
-        : MSG.nowAsk();
+      : !ok
+        ? MSG.nowAsk()
+        : !(await helpOpenFor(p.id, minutes as NowMinutes))
+          ? await nothingNow(lineUserId)
+          : await offerTaskNow(p.id, minutes as NowMinutes);
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
