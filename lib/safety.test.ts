@@ -21,7 +21,7 @@ describe("安全のひとこと", () => {
 
   it("前夜の予告と朝の点呼の隊長カードに、最後の行として必ず入る", () => {
     const line = safetyLine({ cm: 20 })!;
-    const eve = MSG.announce("エナガ隊長だしま〜！明朝 6:30 に点呼します。", 20, "どか雪のモッサリ", line)[0] as FlexMessage;
+    const eve = MSG.announce("シマエナ隊長だしま〜！明朝 6:30 に点呼します。", 20, "どか雪のモッサリ", line)[0] as FlexMessage;
     const lines = (eve.contents.body?.contents as { text: string }[]).map((x) => x.text);
     expect(lines.at(-1)).toBe(line);
     const morning = MSG.rollcallHelper(20, "どか雪のモッサリ", line);

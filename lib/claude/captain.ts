@@ -28,7 +28,7 @@ export async function captainLines(input: CaptainInput): Promise<Record<CaptainS
   if (!hasClaudeKey()) return { ...CAPTAIN_TEMPLATES };
   const res = await askJson({
     task:
-      "アプリのホームで、エナガ隊長が状態ごとにかける一言を書いてください。それぞれ1〜2文で24字まで・やさしい日本語。" +
+      "アプリのホームで、シマエナ隊長が状態ごとにかける一言を書いてください。それぞれ1〜2文で24字まで・やさしい日本語。" +
       "語尾『しま〜』『えな〜』は、語尾を付けてよい状態だけ、1つまで。数字は input の積雪と、5・15・1 だけ使ってよい。" +
       "もっとやれ、とは言わない。名前は書かない。状態の説明:\n" +
       CAPTAIN_STATES.map((s) => `- ${s}: ${STATE_GUIDE[s]}`).join("\n"),

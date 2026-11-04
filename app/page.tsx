@@ -5,7 +5,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import Icon from "@/components/Icon";
-import Mascot, { SnowTown } from "@/components/Mascot";
+import Mascot from "@/components/Mascot";
+import SkyBackdrop from "@/components/SkyBackdrop";
 import TabBar from "@/components/TabBar";
 import { loadPublicStats } from "@/lib/public/load";
 import { loadRoster } from "@/lib/morning/roster";
@@ -17,6 +18,9 @@ import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { captainLine, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
 import { soloStatus } from "@/lib/solo/ops";
+import { jstMinutes } from "@/lib/jst";
+import { currentWeatherCode, parseSkyParam, timeOfDay, weatherOf } from "@/lib/sky";
+import { TOWN } from "@/lib/town";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
@@ -25,11 +29,19 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
  * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 出動する／10分だけ手伝う → 下のタブ。
  * チームの得点・実況・応援・カード・SNS は「くわしく」（/today）へ。
  */
-async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
-  const { as } = await searchParams;
-  const [record, roster, cookieStore, stats] = await Promise.all([loadMorning(), loadRoster(), cookies(), loadPublicStats()]);
+  const { as, sky: skyParam } = await searchParams;
+  const [record, roster, cookieStore, stats, weatherCode] = await Promise.all([
+    loadMorning(),
+    loadRoster(),
+    cookies(),
+    loadPublicStats(),
+    parseSkyParam(skyParam) ? Promise.resolve(undefined) : currentWeatherCode(TOWN.center),
+  ]);
   const m = record.morning;
+  // 背景の空: いまの天気と時間（デモでは ?sky=night-snow のように上書きできる）
+  const sky = parseSkyParam(skyParam) ?? { time: timeOfDay(jstMinutes()), weather: weatherOf(weatherCode, m.rollcall.status === "closed" ? 0 : m.rollcall.forecastCm) };
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
@@ -102,21 +114,27 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
         </Link>
       </header>
 
-      {/* 真ん中: キャラクターと雪の町（画面の高さに合わせて縮む） */}
-      <div className="snowfield relative min-h-10 flex-1 overflow-hidden">
-        <SnowTown tower className="absolute inset-x-0 bottom-0 h-[70%] w-full" />
-        {/* 隊長のひとこと（吹き出し。しっぽはシマエナガのほう） */}
-        <p className="absolute left-3 top-2 z-10 max-w-[80%] rounded-2xl bg-card px-3 py-1.5 text-lg font-bold leading-snug shadow-md ring-1 ring-ink/10 short:top-1 short:py-1">
-          <span className="block text-sm font-bold text-lamp-deep">エナガ隊長</span>
-          {captain}
-        </p>
-        {/* 枝にとまるシマエナガ */}
+      {/* 真ん中: 空と雪の町（天気と時間で変わる）、しゃべるシマエナ隊長 */}
+      <div className="relative min-h-10 flex-1 overflow-hidden">
+        <SkyBackdrop sky={sky} />
+        {/* 隊長の吹き出し（しっぽは隊長の口元へ） */}
+        <div className="speech-pop absolute left-3 top-2 z-10 max-w-[78%] short:top-1">
+          <p className="relative rounded-3xl bg-card px-4 py-2 text-lg font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
+            <span className="block text-sm font-bold text-lamp-deep">シマエナ隊長</span>
+            {captain}
+          </p>
+          <svg viewBox="0 0 40 30" className="absolute -bottom-[22px] right-[14%] h-[26px] w-9" aria-hidden="true">
+            <path d="M2 0 C10 10 24 22 38 28 C30 18 26 8 26 0 Z" fill="var(--card)" stroke="rgba(41,68,92,.15)" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M3 -2 H25 V3 H3 Z" fill="var(--card)" />
+          </svg>
+        </div>
+        {/* 枝にとまるシマエナ隊長 */}
         <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="absolute bottom-[14%] right-0 h-6 w-3/5" aria-hidden="true">
           <path d="M0 30 C60 22 120 18 200 8" stroke="#7a5a44" strokeWidth="9" strokeLinecap="round" fill="none" />
           <path d="M120 19 L150 2" stroke="#7a5a44" strokeWidth="5" strokeLinecap="round" />
           <path d="M10 26 C60 18 120 14 196 4" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" fill="none" />
         </svg>
-        <Mascot team={myTeam?.team.id} className="absolute bottom-[17%] right-[10%] h-[74%] max-h-44 w-auto drop-shadow-md" />
+        <Mascot team={myTeam?.team.id} className="absolute bottom-[17%] right-[10%] h-[66%] max-h-40 w-auto drop-shadow-md" />
       </div>
 
       <main className="relative -mt-4 shrink-0 space-y-2.5 px-4 pb-3 short:space-y-2 short:pb-2">
@@ -195,7 +213,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   );
 }
 
-export default function Home({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+export default function Home({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   return (
     <Suspense fallback={<main className="grid min-h-dvh place-items-center bg-paper text-ink">読み込み中…</main>}>
       <Today searchParams={searchParams} />

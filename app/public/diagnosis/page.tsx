@@ -33,7 +33,7 @@ async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string 
         <p className="text-lg font-bold">{t.catchphrase}</p>
         <p className="text-left">{t.description}</p>
         <p className="rounded-2xl bg-warm px-3 py-2 text-left text-base">
-          <span className="block eyebrow">エナガ隊長から</span>
+          <span className="block eyebrow">シマエナ隊長から</span>
           {comment.text}
         </p>
         <p className="rounded-2xl bg-ice-soft px-3 py-2 text-left text-base">

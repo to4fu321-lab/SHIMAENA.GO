@@ -185,7 +185,7 @@ export default function MapScreen({
       >
                 {prog.allDone && recap && (
           <div className="rounded-2xl bg-warm px-3 py-2">
-            <p className="eyebrow">今朝の実況（エナガ隊長）</p>
+            <p className="eyebrow">今朝の実況（シマエナ隊長）</p>
             <p className="text-base">{recap}</p>
           </div>
         )}
@@ -230,7 +230,7 @@ export default function MapScreen({
             )}
             {myMission?.reason && (
               <p className="rounded-2xl bg-warm px-3 py-2 text-base">
-                <span className="eyebrow block">エナガ隊長から</span>
+                <span className="eyebrow block">シマエナ隊長から</span>
                 {myMission.reason}
               </p>
             )}

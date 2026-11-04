@@ -66,7 +66,7 @@ export async function announce(opts: { date: string; forecastCm: number; tempMin
   const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
   const ids = lineIds(roster.participants);
-const ok =   await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName, safetyLine({ cm: opts.forecastCm, tempMinC: opts.tempMinC, windMaxMs: opts.windMaxMs }))); // 予告はエナガ隊長のカード1枚に
+const ok =   await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName, safetyLine({ cm: opts.forecastCm, tempMinC: opts.tempMinC, windMaxMs: opts.windMaxMs }))); // 予告はシマエナ隊長のカード1枚に
   s.log.push(ok ? `予告を LINE で ${ids.length} 人に送信` : "⚠ 予告を LINE で送れませんでした（/admin の「問題」を見てください）");
   await saveMorning(s);
   return s;
@@ -258,7 +258,7 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   }
   // 1人1回のプッシュにまとめる。1つの吹き出しに1つの話題（v1.4）:
   // 隊長カード（おはよう・今朝の雪）→（手伝う側）「助けてほしい家が○軒」「10分だけでも大歓迎！」→ 個別の文面（ボタンは最後）
-  // 町内へのまとめ（s.briefing、エナガ隊長の文）は /admin と記録に残す。LINE は短くする
+  // 町内へのまとめ（s.briefing、シマエナ隊長の文）は /admin と記録に残す。LINE は短くする
   const houses = s.morning.missions.filter((m) => m.status !== "no_answer").length;
   let sent = 0;
   let failed = 0;

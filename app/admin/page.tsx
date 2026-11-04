@@ -139,7 +139,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           )}
         </p>
         <p className="text-sm text-ink-soft">
-          司令官「エナガ隊長」: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
+          司令官「シマエナ隊長」: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
           {hasLineKeys() ? "設定済み" : "未設定"} ・ デモ操作: {demoEnabled() ? "オン" : "オフ（DEMO_MODE=off）"}
         </p>
         <p className="text-sm text-ink-soft">

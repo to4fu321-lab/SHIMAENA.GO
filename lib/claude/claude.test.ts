@@ -46,7 +46,7 @@ describe("前夜の予告と雪の名前（モック）", () => {
     expect(a.snowName.length).toBeLessThanOrEqual(SNOW_NAME_MAX);
     expect(a.text).toContain("12cm");
     expect(a.text).toContain(a.snowName);
-    expect(a.text.startsWith("エナガ隊長だしま〜！")).toBe(true); // 採点表 voice の名乗り
+    expect(a.text.startsWith("シマエナ隊長だしま〜！")).toBe(true); // 採点表 voice の名乗り
   });
 
   it("降雪量で名前が変わり、長すぎる名前は切り詰める", () => {

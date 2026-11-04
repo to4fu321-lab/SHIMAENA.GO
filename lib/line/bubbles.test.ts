@@ -49,8 +49,8 @@ describe("Bot の吹き出し", () => {
   });
 
   it("長い予告は文ごとに分ける", () => {
-    const ms = splitSentences("エナガ隊長です。明朝 6:30 に点呼します。予想 12cm。長靴と手袋を。", 3);
-    expect(texts(ms)).toEqual(["エナガ隊長です。", "明朝 6:30 に点呼します。", "予想 12cm。長靴と手袋を。"]);
+    const ms = splitSentences("シマエナ隊長です。明朝 6:30 に点呼します。予想 12cm。長靴と手袋を。", 3);
+    expect(texts(ms)).toEqual(["シマエナ隊長です。", "明朝 6:30 に点呼します。", "予想 12cm。長靴と手袋を。"]);
   });
 
   it("お願いする側が「出動する」を押しても、責めずに案内する", () => {
@@ -92,9 +92,9 @@ describe("Bot の吹き出し", () => {
     const svg = renderSnowSvg(35, "大雪のドッシリ", "eve");
     expect(svg).toContain("明日の朝の相手");
     expect(svg).toContain("大雪のドッシリ");
-    const [card] = MSG.announce("エナガ隊長だしま〜！明朝 6:30 に点呼するえな〜！予想は 12cm、相手は「ぼた雪のドンブリ」だしま〜！", 12, "ぼた雪のドンブリ");
+    const [card] = MSG.announce("シマエナ隊長だしま〜！明朝 6:30 に点呼するえな〜！予想は 12cm、相手は「ぼた雪のドンブリ」だしま〜！", 12, "ぼた雪のドンブリ");
     const lines = ((card as FlexMessage).contents.body?.contents as { text: string }[]).map((x) => x.text);
-    expect(lines).toEqual(["エナガ隊長だしま〜！", "明朝 6:30 に点呼するえな〜！", "予想は 12cm、相手は「ぼた雪のドンブリ」だしま〜！"]);
+    expect(lines).toEqual(["シマエナ隊長だしま〜！", "明朝 6:30 に点呼するえな〜！", "予想は 12cm、相手は「ぼた雪のドンブリ」だしま〜！"]);
   });
 
   it("お願いする側・見守りの文は、丁寧なまま（しま〜・えな〜を付けない）", () => {

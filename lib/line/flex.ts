@@ -159,7 +159,7 @@ export interface CaptainCard {
   lines: string[];
 }
 
-/** エナガ隊長のカード: 帽子のシマエナガと積雪ゲージの大きな画像＋隊長のことば */
+/** シマエナ隊長のカード: 帽子のシマエナガと積雪ゲージの大きな画像＋隊長のことば */
 export function captainCard(c: CaptainCard): FlexMessage {
   return {
     type: "flex",

@@ -94,7 +94,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
         {!s.onsite && <p className="mt-2 text-center text-xs text-ink-soft">オンラインの確認は雪かき完了にはなりません。次は10分、外へ。</p>}
         {s.photoNote && <p className="mt-2 rounded-2xl bg-card px-3 py-2 text-sm ring-1 ring-ink/10">{s.photoNote}</p>}
         <p className="mt-3 rounded-2xl bg-warm px-3 py-2 text-center text-base">
-          <span className="eyebrow block">エナガ隊長から</span>
+          <span className="eyebrow block">シマエナ隊長から</span>
           {s.hitokoto}
         </p>
         {s.card ? (

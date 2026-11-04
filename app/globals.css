@@ -278,3 +278,21 @@ body {
 
 /* 地図の拡大ボタンは、上の札（今朝の雪など）の下に置く */
 .leaflet-top.leaflet-right { top: 64px; }
+
+/* ホームの空（components/SkyBackdrop.tsx）: 降る雪・またたく星 */
+.sky-flake { animation: sky-fall linear infinite; }
+@keyframes sky-fall {
+  from { transform: translate3d(0, -10px, 0); }
+  to { transform: translate3d(18px, 320px, 0); }
+}
+.sky-star { animation: sky-twinkle 2.4s ease-in-out infinite; }
+@keyframes sky-twinkle { 50% { opacity: 0.3; } }
+
+/* 隊長の吹き出し: ふわっと出る */
+.speech-pop { animation: speech-pop 0.45s cubic-bezier(.2,1.4,.4,1) both; transform-origin: 85% 100%; }
+@keyframes speech-pop { from { transform: scale(0.6); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-flake, .sky-star, .speech-pop { animation: none; }
+  .sky-flake { display: none; }
+}

@@ -128,7 +128,7 @@ export function mockPlan(input: CommanderInput): Plan {
 
   const short = missions.filter((m) => m.status === "short").length;
   const briefing =
-    `エナガ隊長だしま〜！今朝の予報は${input.forecastCm}cm。${missions.length}軒を${input.startTime}から始めます。` +
+    `シマエナ隊長だしま〜！今朝の予報は${input.forecastCm}cm。${missions.length}軒を${input.startTime}から始めます。` +
     (short > 0 ? `人手が足りない家が${short}軒あります。10分だけでも、近くの人お願いします。` : "全部の家に人がそろいました。");
   return { missions, messages, briefing };
 }
@@ -180,7 +180,7 @@ export async function planMorning(input: CommanderInput): Promise<Plan> {
       "雪の朝の点呼が終わりました。採点表の importance・requiredPeople・assignment の規則で、家ごとの重要度・必要人数・割り当てを決めてください。" +
       "「はい」と答えた家はミッションにしません。家ごとに reason（30字まで）を書きます: なぜその重要度・人数・その人たちなのかを、レベル・答え・距離・人数などの事実だけで。体調や医療の話は書きません。" +
       "割り当てた人それぞれに LINE の文面（3文以内、やさしい日本語、開始時刻と家の番号と依頼者の呼び名と一緒に行く人を含む。名乗らない）を書き、" +
-      "町内みんなへのまとめ（2〜3文。採点表 voice のエナガ隊長の口調で、最初に「エナガ隊長だしま〜！」）も書いてください。",
+      "町内みんなへのまとめ（2〜3文。採点表 voice のシマエナ隊長の口調で、最初に「シマエナ隊長だしま〜！」）も書いてください。",
     input,
     schema: PlanSchema,
     effort: "medium",

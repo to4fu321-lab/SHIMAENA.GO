@@ -29,11 +29,15 @@ export default function Mascot({
 }
 
 /** 雪の町（家と木の並び）。見出しや画面の下の飾り */
-export function SnowTown({ className = "", tower = false }: { className?: string; tower?: boolean }) {
+export function SnowTown({ className = "", tower = false, dark = false }: { className?: string; tower?: boolean; dark?: boolean }) {
+  // dark: 夕方・夜。家と木を暗くして、窓に灯りをともす
+  const tree = dark ? "#5f7790" : "#a9c1d4";
+  const wall = dark ? "#71869c" : "#c9d8e4";
+  const lamp = dark ? "#ffd27a" : "#f3c48a";
   return (
     <svg viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true" className={className}>
       {tower && (
-        <g stroke="#8fa9bf" strokeWidth="2.2" fill="none">
+        <g stroke={dark ? "#9fb4c8" : "#8fa9bf"} strokeWidth="2.2" fill="none">
           <path d="M40 112 L52 20 L64 112" />
           <path d="M44 84 H60 M47 60 H57 M49 40 H55" />
           <path d="M52 20 V6" />
@@ -41,7 +45,7 @@ export function SnowTown({ className = "", tower = false }: { className?: string
       )}
       {/* 木 */}
       {[[18, 0.9], [96, 1.1], [300, 1], [372, 1.2], [250, 0.8]].map(([x, s], i) => (
-        <path key={i} d={`M${x} ${112 - 46 * s} L${x + 14 * s} ${112 - 10 * s} H${x - 14 * s} Z`} fill="#a9c1d4" />
+        <path key={i} d={`M${x} ${112 - 46 * s} L${x + 14 * s} ${112 - 10 * s} H${x - 14 * s} Z`} fill={tree} />
       ))}
       {/* 家 */}
       {[
@@ -52,9 +56,9 @@ export function SnowTown({ className = "", tower = false }: { className?: string
         [320, 40, 34],
       ].map(([x, w, h], i) => (
         <g key={i}>
-          <path d={`M${x} ${112 - h + 12} L${x + w / 2} ${112 - h - 6} L${x + w} ${112 - h + 12} V112 H${x} Z`} fill="#c9d8e4" />
+          <path d={`M${x} ${112 - h + 12} L${x + w / 2} ${112 - h - 6} L${x + w} ${112 - h + 12} V112 H${x} Z`} fill={wall} />
           <path d={`M${x - 3} ${112 - h + 13} L${x + w / 2} ${112 - h - 8} L${x + w + 3} ${112 - h + 13}`} fill="none" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" />
-          <rect x={x + w / 2 - 5} y={112 - h + 18} width="10" height="9" rx="1.5" fill="#f3c48a" />
+          <rect x={x + w / 2 - 5} y={112 - h + 18} width="10" height="9" rx="1.5" fill={lamp} style={dark ? { filter: "drop-shadow(0 0 4px #ffd27a)" } : undefined} />
         </g>
       ))}
       {/* 雪の地面 */}

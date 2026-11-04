@@ -150,7 +150,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         </ul>
         {st.recap && (
           <div className="rounded-2xl bg-warm px-3 py-2">
-            <p className="eyebrow">今朝の実況（エナガ隊長）</p>
+            <p className="eyebrow">今朝の実況（シマエナ隊長）</p>
             <p className="text-base">{st.recap}</p>
           </div>
         )}

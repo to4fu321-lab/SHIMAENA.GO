@@ -128,7 +128,7 @@ export async function askConcierge(input: ConciergeInput, options: ConciergeOpti
   try {
     const res = await askJson({
       task:
-        "あなたは参加コンシェルジュとしてのエナガ隊長です。LINE に届いた文を読み、採点表 concierge の規則で、その人に合う参加の方法を options の中から1つ選んでください。" +
+        "あなたは参加コンシェルジュとしてのシマエナ隊長です。LINE に届いた文を読み、採点表 concierge の規則で、その人に合う参加の方法を options の中から1つ選んでください。" +
         `いまは ${MAX_TURNS} 往復のうち ${input.turn} 往復目です。何をしたいか分からないときだけ、pick を null にして question で1つだけ聞いてください（${MAX_TURNS} 往復目は必ず選ぶ）。` +
         "reply は2文まで。input の数字（分・点）だけを使う。caption は画像に入れるその人へのひとこと（14字まで、名前は書かない）。sky は時刻と雪に合わせる。",
       input,

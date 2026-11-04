@@ -37,13 +37,13 @@ describe("今朝の実況（spec v1.1 9-6）", () => {
     const r = mockRecap(i);
     expect(RecapSchema.parse(r)).toEqual(r);
     expect(r.text).toContain("討伐");
-    expect(r.text.startsWith("エナガ隊長だしま〜！")).toBe(true);
+    expect(r.text.startsWith("シマエナ隊長だしま〜！")).toBe(true);
     expect(r.text).toContain(`${i.housesDone}軒`);
     expect(r.text).toContain(`${i.movers}人`);
     expect(r.text).toContain("ぼた雪のドンブリ");
     expect(r.text).not.toMatch(/体調|医/);
     // 文は3〜5つ（名乗りは数えない）
-    const sentences = r.text.replace("エナガ隊長だしま〜！", "").split("。").filter(Boolean).length;
+    const sentences = r.text.replace("シマエナ隊長だしま〜！", "").split("。").filter(Boolean).length;
     expect(sentences).toBeGreaterThanOrEqual(3);
     expect(sentences).toBeLessThanOrEqual(5);
   });
