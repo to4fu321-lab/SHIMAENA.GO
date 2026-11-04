@@ -37,6 +37,7 @@ export async function soloHitokoto(input: SoloHitokotoInput): Promise<{ text: st
     input,
     schema: SoloHitokotoSchema,
     effort: "low",
+    model: "light", // 短い文なので安いモデル（spec v1.6）
   });
   return { text: trimHitokoto(res.text) || mockSoloHitokoto(input).text };
 }

@@ -52,6 +52,7 @@ export async function thanksSentence(input: ThanksInput): Promise<string> {
     input,
     schema: ThanksSchema,
     effort: "low",
+    model: "light", // 短い文なので安いモデル（spec v1.6）
   });
   return trimThanks(res.sentence) || mockThanks(input);
 }

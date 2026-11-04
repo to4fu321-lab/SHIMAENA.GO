@@ -48,6 +48,7 @@ export async function announceText(input: AnnounceInput): Promise<Announcement> 
     input,
     schema: AnnounceSchema,
     effort: "low",
+    model: "light", // 短い文なので安いモデル（spec v1.6）
   });
   return { text: res.text, snowName: trimSnowName(res.snowName, input.forecastCm) };
 }

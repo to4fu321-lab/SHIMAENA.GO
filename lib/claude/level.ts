@@ -46,5 +46,6 @@ export async function judgeLevel(input: LevelInput): Promise<LevelResult> {
     input,
     schema: LevelResultSchema,
     effort: "low",
+    model: "light", // 短い文なので安いモデル（spec v1.6）
   });
 }

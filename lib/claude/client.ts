@@ -5,6 +5,8 @@ import type { z } from "zod";
 import rubric from "@/data/rubric.json";
 
 export const CLAUDE_MODEL = "claude-opus-5-5";
+/** 短い文・簡単な言葉の仕事に使う安いモデル（spec v1.6、本人の了承済み） */
+export const CLAUDE_LIGHT_MODEL = "claude-haiku-5-5";
 
 /** キーがあれば本物の Claude、なければモック（T04 の計算）で同じ形の答えを返す */
 export function hasClaudeKey(): boolean {
@@ -37,18 +39,20 @@ export interface AskJsonOptions<S extends z.ZodType> {
   schema: S;
   /** 考える深さ。単純な判定は low、作戦は medium */
   effort?: "low" | "medium" | "high";
+  /** main = Opus（判断・写真・ことばの読み取り）、light = Haiku（短い文）。既定は main */
+  model?: "main" | "light";
   /** 写真（完了写真の確認などで使う） */
   images?: { mediaType: "image/jpeg" | "image/png" | "image/webp"; base64: string }[];
 }
 
 /** Claude に JSON で答えてもらう。形は schema で保証される */
 export async function askJson<S extends z.ZodType>(opts: AskJsonOptions<S>): Promise<z.infer<S>> {
+  const light = opts.model === "light";
   const res = await getClient().beta.messages.parse({
-    model: CLAUDE_MODEL,
+    model: light ? CLAUDE_LIGHT_MODEL : CLAUDE_MODEL,
     max_tokens: 16000,
-    // 安全のための自動判定で断られたときは、サーバー側で別のモデルに切り替えて続ける
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
+    // 安全のための自動判定で断られたときは、サーバー側で別のモデルに切り替えて続ける（Haiku にはこの仕組みがない）
+    ...(light ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }),
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
     output_config: { effort: opts.effort ?? "low", format: betaZodOutputFormat(opts.schema) },
     messages: [

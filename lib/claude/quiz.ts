@@ -26,6 +26,7 @@ export async function quizComment(type: QuizType, today: string): Promise<{ text
       input: { typeName: t.name, catchphrase: t.catchphrase, mission: t.mission },
       schema: QuizCommentSchema,
       effort: "low",
+    model: "light", // 短い文なので安いモデル（spec v1.6）
     });
     const text = res.text.replace(/\s+/g, " ").trim().slice(0, QUIZ_COMMENT_MAX) || mockQuizComment(type);
     await saveShareText(key, { text, key: today, at: new Date().toISOString(), byClaude: true });

@@ -60,6 +60,7 @@ export async function shareText(kind: TownShareKind, st: PublicStats): Promise<{
     input,
     schema: ShareTextSchema,
     effort: "low",
+    model: "light", // 短い文なので安いモデル（spec v1.6）
   });
   const text = finishShareText(res.text);
   if (!text || !usesOnlyGivenNumbers(text, input)) return mock;
