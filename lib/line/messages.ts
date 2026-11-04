@@ -330,8 +330,11 @@ export const MSG = {
       ]),
     ];
   },
-  thanksToHelper: (fromName: string, label: string, baseNumber: number | string, sentence: string) =>
-    bubbles([`${fromName}さん（拠点${baseNumber}）から「${label}」が届きました。💌`, sentence, "カードの裏にも入りました。"], [B.card]),
+  thanksToHelper: (fromName: string, label: string, baseNumber: number | string, sentence: string, inviteShareUrl?: string) =>
+    bubbles(
+      [`${fromName}さん（拠点${baseNumber}）から「${label}」が届きました。💌`, sentence, "カードの裏にも入りました。", inviteShareUrl && "このうれしさ、友だちにも分けませんか？"],
+      [B.card, ...(inviteShareUrl ? [{ type: "uri", label: "友だちを誘う", uri: inviteShareUrl } as Button] : [])],
+    ),
   thanksSent: (label: string, count: number) =>
     bubbles([count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。カードの裏に入ります。`]),
   thanksNotFound: () => bubbles(["今朝の雪かきの記録が見つかりませんでした。", "少し時間をおいて、もう一度押してみてください。"]),

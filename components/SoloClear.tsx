@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { SoloClearSummary } from "@/lib/solo/ops";
 import Mascot, { SnowTown } from "./Mascot";
 import CardReveal from "./CardReveal";
+import InviteDrafts from "./InviteDrafts";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -127,6 +128,7 @@ export default function SoloClear({ summary, onClose, q, minutesLabel, children 
           </div>
         </div>
         {children}
+        {s.invites && s.invites.length > 0 && <InviteDrafts drafts={s.invites} url={s.inviteUrl} result={s.inviteResult} />}
         {!s.onsite && <p className="mt-2 text-center text-xs text-ink-soft">オンラインの確認は雪かき完了にはなりません。次は10分、外へ。</p>}
         {s.photoNote && <p className="mt-2 rounded-2xl bg-card px-3 py-2 text-sm ring-1 ring-ink/10">{s.photoNote}</p>}
         <p className="mt-3 rounded-2xl bg-warm px-3 py-2 text-center text-base">
