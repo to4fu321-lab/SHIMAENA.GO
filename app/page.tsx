@@ -20,29 +20,6 @@ import { soloStatus } from "@/lib/solo/ops";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
-/** 今日の数字の小さなカード */
-function Stat({ label, value, unit, icon }: { label: string; value: number; unit: string; icon: "house" | "people" }) {
-  return (
-    <div className="flex items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-sm ring-1 ring-ink/10 short:py-1">
-      {icon === "house" ? (
-        <Icon name="house" size={34} accent="var(--lamp)" className="shrink-0 text-ink" />
-      ) : (
-        <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true" className="shrink-0">
-          <circle cx="14" cy="13" r="6" fill="#29445c" />
-          <circle cx="27" cy="14" r="5" fill="#3b6584" />
-          <path d="M3 33 C3 24 25 24 25 33 Z" fill="#29445c" />
-          <path d="M20 32 C21 25 37 24 37 32 Z" fill="#3b6584" />
-        </svg>
-      )}
-      <p className="min-w-0 leading-tight">
-        <span className="block text-sm font-bold">{label}</span>
-        <span className="text-3xl font-bold tabular-nums short:text-2xl">{value}</span>
-        <span className="ml-0.5 text-base font-bold">{unit}</span>
-      </p>
-    </div>
-  );
-}
-
 /**
  * ホーム = 今朝の出撃画面（spec v1.1 10.6）。スクロールしない1画面:
  * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 出動する／10分だけ手伝う → 下のタブ。
@@ -130,7 +107,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
         <SnowTown tower className="absolute inset-x-0 bottom-0 h-[70%] w-full" />
         {/* 隊長のひとこと（吹き出し。しっぽはシマエナガのほう） */}
         <p className="absolute left-3 top-2 z-10 max-w-[80%] rounded-2xl bg-card px-3 py-1.5 text-lg font-bold leading-snug shadow-md ring-1 ring-ink/10 short:top-1 short:py-1">
-          <span className="block text-xs font-bold text-lamp-deep">エナガ隊長</span>
+          <span className="block text-sm font-bold text-lamp-deep">エナガ隊長</span>
           {captain}
         </p>
         {/* 枝にとまるシマエナガ */}
@@ -143,52 +120,53 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
       </div>
 
       <main className="relative -mt-4 shrink-0 space-y-2.5 px-4 pb-3 short:space-y-2 short:pb-2">
-        {/* 今日のミッション */}
-        <section className="rounded-3xl bg-card px-4 pb-3 pt-2.5 shadow-md ring-1 ring-ink/10 short:pb-2 short:pt-1.5" aria-label="今日のミッション">
-          <p className="flex items-center gap-1 text-sm font-bold">
-            <Icon name="map" size={20} accent="var(--lamp)" />
-            今日のミッション
-          </p>
-          {prog.total > 0 && !prog.allDone ? (
-            <>
-              <p className="leading-tight">
-                <span className="text-2xl font-bold">あと</span>
-                <span className="mx-1 text-6xl font-bold tabular-nums text-lamp short:text-5xl">{prog.left}</span>
-                <span className="text-2xl font-bold">軒</span>
-              </p>
-              <p className="text-lg font-bold leading-tight">で今朝の雪をどけきれます！</p>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="h-3 flex-1 overflow-hidden rounded-full bg-ice-soft">
-                  <span className="block h-full rounded-full bg-lamp" style={{ width: `${pct}%` }} />
-                </span>
-                <span className="text-base font-bold tabular-nums">{pct}%</span>
-              </div>
-              {next && (
-                <p className="mt-1 text-sm font-bold text-alert">
-                  ！ 拠点{next.baseNumber}はあと{next.missing}人で救えます
+        {/* 今日のミッション・数字（1枚のカード） */}
+        <section className="rounded-3xl bg-card px-4 pb-2 pt-3 shadow-md ring-1 ring-ink/10 short:pt-2" aria-label="今日のミッション">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-warm">
+              <Icon name="map" size={26} accent="var(--lamp)" />
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              {prog.total > 0 && !prog.allDone ? (
+                <>
+                  <p className="text-xl font-bold">
+                    あと<span className="mx-1 text-4xl tabular-nums text-lamp">{prog.left}</span>軒で完了！
+                  </p>
+                  <p className="text-sm font-bold">
+                    {next ? `！ 拠点${next.baseNumber}は あと${next.missing}人` : "今朝の雪をどけきれます"}
+                  </p>
+                </>
+              ) : prog.allDone && prog.total > 0 ? (
+                <p className="text-xl font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
+              ) : (
+                <p className="text-xl font-bold">
+                  {m.rollcall.status === "open" ? "点呼中です" : "今朝は作戦がありません"}
+                  <span className="block text-sm">{m.rollcall.status === "open" ? "（6:40 に作戦）" : "1人の10分でも町は変わります"}</span>
                 </p>
               )}
-            </>
-          ) : prog.allDone && prog.total > 0 ? (
-            <p className="py-1 text-2xl font-bold leading-snug">
-              {prog.total}軒すべて完了！
-              <span className="block text-base">町じゅうに灯りがともりました。</span>
+            </div>
+            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-sm font-bold tabular-nums" aria-label={`進み具合 ${pct}%`}>
+              {pct}%
+            </span>
+          </div>
+          <div className="mt-2 grid grid-cols-2 divide-x divide-ink/15 border-t border-ink/10 pt-2 short:mt-1 short:pt-1">
+            <p className="flex items-center justify-center gap-2 text-base font-bold">
+              <svg viewBox="0 0 40 40" width="28" height="28" aria-hidden="true">
+                <circle cx="14" cy="13" r="6" fill="#29445c" />
+                <circle cx="27" cy="14" r="5" fill="#3b6584" />
+                <path d="M3 33 C3 24 25 24 25 33 Z" fill="#29445c" />
+                <path d="M20 32 C21 25 37 24 37 32 Z" fill="#3b6584" />
+              </svg>
+              仲間 <b className="text-2xl tabular-nums">{stats.todayPeople}</b>人
             </p>
-          ) : (
-            <p className="py-1 text-xl font-bold leading-snug">
-              {m.rollcall.status === "open" ? "点呼中です（6:40 に作戦）" : "今朝は雪かきの作戦がありません"}
-              <span className="block text-base">1人の10分でも、町を変えられます。</span>
+            <p className="flex items-center justify-center gap-2 text-base font-bold">
+              <Icon name="house" size={28} accent="var(--lamp)" className="text-ink" />
+              達成 <b className="text-2xl tabular-nums">{prog.done}</b>軒
             </p>
-          )}
+          </div>
         </section>
 
-        {/* 今日の数字 */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <Stat label="今日の仲間" value={stats.todayPeople} unit="人" icon="people" />
-          <Stat label="今日の達成" value={prog.done} unit="軒" icon="house" />
-        </div>
-
-        {/* 出動（いちばん大事なボタン）と、10分だけ */}
+        {/* 出動（いちばん大事なボタン）と、5分だけ */}
         <Link href={goHref} className="btn btn-lamp min-h-18 justify-start gap-3 rounded-full px-5 short:min-h-15 short:py-1.5">
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lamp">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -206,7 +184,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
             <path d="M12 7 V12 L15.5 14" />
           </svg>
           <span className="text-left leading-tight">
-            <span className="block text-lg">10分だけ手伝う（ソロ出動）</span>
+            <span className="block text-lg">10分だけ手伝う</span>
             <span className="block text-sm font-normal">ひとりでOK・自分の家の雪かきも</span>
           </span>
         </Link>

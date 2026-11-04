@@ -11,6 +11,7 @@ import type { Destination } from "@/lib/nav";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { requestLabel } from "@/lib/request-note";
 import type { ShortHouse } from "@/lib/morning/watch";
+import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
 import RescueList from "./RescueList";
@@ -86,7 +87,30 @@ export default function MapScreen({
   const myBase = bases.find((b) => b.id === myMission?.baseId);
   const myView = views.find((v) => v.baseId === myMission?.baseId);
   const [, month, day] = state.rollcall.date.split("-").map(Number);
+  const activeCount = new Set(state.sorties.filter((s) => s.status === "going").map((s) => s.participantId)).size;
   const q = /^h\d+$/.test(state.viewerId) ? `?as=${state.viewerId}` : "";
+
+  const peekNode = (
+    <div aria-label="今朝の雪のこり">
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="truncate font-bold">今朝の雪{state.rollcall.snowName ? <>『{state.rollcall.snowName}』</> : null}</span>
+        <span className="shrink-0 tabular-nums">
+          {prog.total === 0 ? (
+            "作戦はまだ"
+          ) : prog.allDone ? (
+            <b>{prog.defeatedAt ? `${prog.defeatedAt} ` : ""}すべて完了！</b>
+          ) : (
+            <>
+              <b className="text-base">{prog.done}</b> / {prog.total} 軒 ・ あと <b className="text-base">{prog.left}</b> 軒
+            </>
+          )}
+        </span>
+      </div>
+      <span className="mt-1 block h-2.5 overflow-hidden rounded-full bg-ice-soft">
+        <span className="block h-full rounded-full bg-ice transition-[width] duration-700" style={{ width: `${hpPct}%` }} />
+      </span>
+    </div>
+  );
 
   return (
     <div className="flex h-dvh flex-col bg-paper text-ink">
@@ -106,10 +130,12 @@ export default function MapScreen({
       </header>
 
       {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と救助待ちの札を浮かべる */}
-      <main className={`relative min-h-[22dvh] flex-1 ${prog.allDone ? "defeated" : ""}`}>
-        <TownMap cells={cells} home={home} destinations={destinations} solo={solo} />
-        <div className="pointer-events-none absolute inset-x-3 top-3 z-[500] flex gap-2">
-          <p className="flex items-center gap-2 rounded-2xl bg-card/95 px-3 py-1.5 shadow-md">
+      <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
+        <div className="absolute inset-0 isolate">
+          <TownMap cells={cells} home={home} destinations={destinations} solo={solo} />
+        </div>
+        <div className="pointer-events-none absolute inset-x-2 top-2 z-[500] flex gap-1.5">
+          <p className="flex items-center gap-1.5 rounded-2xl bg-card/95 px-2.5 py-1 shadow-md">
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" fill="none" stroke="#29445c" strokeWidth="2" strokeLinecap="round">
               <path d="M12 2 V22 M3.3 7 L20.7 17 M3.3 17 L20.7 7 M9 3.5 L12 6 L15 3.5 M9 20.5 L12 18 L15 20.5" />
             </svg>
@@ -119,7 +145,7 @@ export default function MapScreen({
               <span className="text-sm font-bold">cm</span>
             </span>
           </p>
-          <p className="flex items-center gap-2 rounded-2xl bg-card/95 px-3 py-1.5 shadow-md">
+          <p className="flex items-center gap-1.5 rounded-2xl bg-card/95 px-2.5 py-1 shadow-md">
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
               <path d="M12 2 C7.6 2 5 5.3 5 8.8 C5 14 12 22 12 22 S19 14 19 8.8 C19 5.3 16.4 2 12 2 Z" fill="var(--lamp)" />
               <circle cx="12" cy="9" r="3" fill="#fff" />
@@ -130,32 +156,34 @@ export default function MapScreen({
               <span className="text-sm font-bold">軒</span>
             </span>
           </p>
-        </div>
-      </main>
-
-      {/* 下: 自分の割り当てなど（長くなったら中でスクロール。地図は 34% 以上残す）。操作ボタンはさらに下に固定 */}
-      <section className="relative z-[600] -mt-4 max-h-[40dvh] shrink-0 space-y-3 overflow-y-auto rounded-t-3xl bg-card px-4 pb-3 pt-3 shadow-[0_-4px_16px_rgba(41,68,92,0.12)]">
-        {/* 今朝の進み具合（1行） */}
-        <div aria-label="今朝の雪のこり">
-          <div className="flex items-baseline justify-between gap-2 text-sm">
-            <span className="truncate font-bold">今朝の雪{state.rollcall.snowName ? <>『{state.rollcall.snowName}』</> : null}</span>
-            <span className="shrink-0 tabular-nums">
-              {prog.total === 0 ? (
-                "作戦はまだ"
-              ) : prog.allDone ? (
-                <b>{prog.defeatedAt ? `${prog.defeatedAt} ` : ""}すべて完了！</b>
-              ) : (
-                <>
-                  <b className="text-base">{prog.done}</b> / {prog.total} 軒 完了 ・ あと <b className="text-base">{prog.left}</b> 軒
-                </>
-              )}
+          <p className="flex items-center gap-1.5 rounded-2xl bg-card/95 px-2.5 py-1 shadow-md">
+            <svg viewBox="0 0 40 40" width="24" height="24" aria-hidden="true">
+              <circle cx="14" cy="13" r="6" fill="#29445c" />
+              <circle cx="27" cy="14" r="5" fill="#3b6584" />
+              <path d="M3 33 C3 24 25 24 25 33 Z" fill="#29445c" />
+              <path d="M20 32 C21 25 37 24 37 32 Z" fill="#3b6584" />
+            </svg>
+            <span className="leading-tight">
+              <span className="block text-xs font-bold">活動中</span>
+              <b className="text-xl tabular-nums">{activeCount}</b>
+              <span className="text-sm font-bold">人</span>
             </span>
-          </div>
-          <span className="mt-1 block h-2.5 overflow-hidden rounded-full bg-ice-soft">
-            <span className="block h-full rounded-full bg-ice transition-[width] duration-700" style={{ width: `${hpPct}%` }} />
-          </span>
+          </p>
         </div>
-        {prog.allDone && recap && (
+
+      {/* 下のシート: つまみをスライドで畳める（畳むと地図が大きくなる） */}
+      <MapSheet
+        peek={peekNode}
+        footer={
+          <MorningButtons
+            viewerId={state.viewerId}
+            canAct={Boolean(mySortie && mySortie.status === "going")}
+            going={Boolean(mySortie?.confirmedAt)}
+            note={mySortie?.status === "done" ? "✓ 今朝の雪かきは完了しました。おつかれさまでした。" : mySortie ? undefined : "今朝の割り当てが届くと、ここのボタンが押せるようになります。"}
+          />
+        }
+      >
+                {prog.allDone && recap && (
           <div className="rounded-2xl bg-warm px-3 py-2">
             <p className="eyebrow">今朝の実況（エナガ隊長）</p>
             <p className="text-base">{recap}</p>
@@ -284,17 +312,8 @@ export default function MapScreen({
             </Link>
           </div>
         </details>
-      </section>
-
-      {/* いちばん下に固定: 手袋でも片手で押せる大きなボタン（spec v1.2） */}
-      <footer className="border-t border-ink/10 bg-card px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2">
-        <MorningButtons
-          viewerId={state.viewerId}
-          canAct={Boolean(mySortie && mySortie.status === "going")}
-          going={Boolean(mySortie?.confirmedAt)}
-          note={mySortie?.status === "done" ? "✓ 今朝の雪かきは完了しました。おつかれさまでした。" : mySortie ? undefined : "今朝の割り当てが届くと、ここのボタンが押せるようになります。"}
-        />
-      </footer>
+      </MapSheet>
+      </main>
     </div>
   );
 }

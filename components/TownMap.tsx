@@ -83,10 +83,14 @@ export default function TownMap({
 
   useEffect(() => {
     let map: import("leaflet").Map | undefined;
+    let ro: ResizeObserver | undefined;
     let cancelled = false;
     import("leaflet").then((L) => {
       if (cancelled || !ref.current) return;
       map = L.map(ref.current, { zoomControl: false, attributionControl: true }).setView(TOWN.center, 16);
+      const m = map;
+      ro = new ResizeObserver(() => m.invalidateSize());
+      ro.observe(ref.current);
       mapRef.current = map;
       L.control.zoom({ position: "topright" }).addTo(map);
       // OpenStreetMap 標準タイル。雪明かりの画面に合わせて CSS（.town-tiles）で色を淡くする
@@ -160,6 +164,7 @@ export default function TownMap({
     });
     return () => {
       cancelled = true;
+      ro?.disconnect();
       mapRef.current = null;
       map?.remove();
     };

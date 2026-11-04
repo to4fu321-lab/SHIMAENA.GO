@@ -275,3 +275,6 @@ body {
   .confetti { display: none; }
   .tut-track { transition: none; }
 }
+
+/* 地図の拡大ボタンは、上の札（今朝の雪など）の下に置く */
+.leaflet-top.leaflet-right { top: 64px; }
