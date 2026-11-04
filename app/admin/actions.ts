@@ -20,6 +20,7 @@ import {
   escalateHelpIfDue,
   notifyHelp,
   plan,
+  reopenIfStillSnowing,
   ring,
   weeklyRecap,
   writeRecap,
@@ -89,6 +90,14 @@ export async function answerRandomly() {
 export async function runCommander() {
   return guarded("runCommander", async () => {
     await plan();
+    refresh();
+  });
+}
+
+/** 降り続く日（v1.8 デモ）: 天気を見ずに、終わった家をもう一度開く（2回目・3回目） */
+export async function reopenDemo() {
+  return guarded("reopenDemo", async () => {
+    await reopenIfStillSnowing(new Date(), { force: true });
     refresh();
   });
 }

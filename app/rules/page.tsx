@@ -116,7 +116,8 @@ export default function RulesPage() {
       </p>
       <p className="text-ink-soft">町の地図のマスと、シマエナガのマフラーが、あなたのチームの色になります。</p>
       <ul className="list-inside list-disc space-y-1 text-ink-soft">
-        <li>1軒終わると 10点。7:30 までなら +5点</li>
+        <li>1軒終わると 10点。朝 9時までなら +5点、ドカ雪の日（15cm 以上）も +5点</li>
+        <li>雪かきは 6時〜19時なら、いつ始めても・いつ終えても OK（19時以降はお休み）</li>
         <li>同じチームで2人以上なら、ひとり +5点</li>
         <li>ほかのチームを手伝うと、<b>両方のチームに</b> +5点</li>
         <li>人手が足りない家（赤く点滅）に駆けつけると +10点</li>

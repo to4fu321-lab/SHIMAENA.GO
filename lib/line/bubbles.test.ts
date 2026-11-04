@@ -9,13 +9,13 @@ const texts = (ms: LineMessage[]) => ms.map(textOf);
 const labels = (m: LineMessage) => actionsOf(m).map((a) => a.label);
 
 describe("Bot の吹き出し", () => {
-  it("点呼は 隊長カード（おはよう・今朝の雪）→ 質問 の2つ。時間は 10・20・30・60分と「今朝は休む」", () => {
+  it("点呼は 隊長カード（おはよう・今朝の雪）→ 質問 の2つ。いつ手伝えそうか（朝・お昼・夕方）と「今日は休む」（v1.8）", () => {
     const ms = MSG.rollcallHelper(12, "ぼた雪のドンブリ");
-    expect(texts(ms)).toEqual(["おはようだしま〜！☃️今朝は雪12cm、相手は『ぼた雪のドンブリ』です。", "今朝、何分動けますか？"]);
+    expect(texts(ms)).toEqual(["おはようだしま〜！☃️今朝は雪12cm、相手は『ぼた雪のドンブリ』です。", "今日、いつ手伝えそうですか？\n（6時〜19時なら、いつでも10分から）"]);
     const hero = (ms[0] as FlexMessage).contents.hero?.url as string;
     expect(hero).toContain("/api/line/hero/snow.png?cm=12&w=morning&s=");
     expect(ms.at(-1)?.type).toBe("flex"); // 答えは吹き出しの中の大きなボタン
-    expect(labels(ms.at(-1)!)).toEqual(["10分", "20分", "30分", "60分", "今朝は休む"]);
+    expect(labels(ms.at(-1)!)).toEqual(["朝（〜9時）", "お昼（〜13時）", "夕方（〜19時）", "今日は休む"]);
     expect(ms.slice(0, -1).every((m) => actionsOf(m).length === 0)).toBe(true);
   });
 

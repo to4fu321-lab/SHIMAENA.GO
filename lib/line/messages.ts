@@ -216,6 +216,16 @@ export const MSG = {
       ? bubbles([`助けてほしい家が${houses}軒あります。`, "10分だけでも大歓迎えな〜！"], withGoButton ? [B.go, B.map] : undefined)
       : bubbles(["今朝は、助けてほしい家はありません。ありがとうえな〜！"]),
 
+  /** お昼・夕方に動ける人へ（spec v1.8）: まだ待っている家の数 */
+  laterNudge: (when: "noon" | "pm", houses: number, people: number) =>
+    bubbles(
+      [
+        `${when === "noon" ? "お昼" : "夕方"}の出番だしま〜！まだ待っている家が${houses}軒。`,
+        people > 0 ? `いま${people}人が雪かき中。10分だけでも一緒にどうぞ。` : "10分だけでも、大きな助けになります。",
+      ],
+      [B.go, B.map],
+    ),
+
   // ---- 点呼（spec 2） ----
   rollcallRequester: (forecastCm?: number, snowName?: string, safety?: string) => [
     ...hello(forecastCm, snowName, safety),
@@ -227,12 +237,11 @@ export const MSG = {
   ],
   rollcallHelper: (forecastCm?: number, snowName?: string, safety?: string) => [
     ...hello(forecastCm, snowName, safety),
-    ask("今朝、何分動けますか？", [
-      { label: "10分", data: "rc:ans=10" },
-      { label: "20分", data: "rc:ans=20" },
-      { label: "30分", data: "rc:ans=30" },
-      { label: "60分", data: "rc:ans=60" },
-      { label: "今朝は休む", data: "rc:ans=0", tone: "soft" },
+    ask("今日、いつ手伝えそうですか？\n（6時〜19時なら、いつでも10分から）", [
+      { label: "朝（〜9時）", data: "rc:ans=am" },
+      { label: "お昼（〜13時）", data: "rc:ans=noon" },
+      { label: "夕方（〜19時）", data: "rc:ans=pm" },
+      { label: "今日は休む", data: "rc:ans=0", tone: "soft" },
     ]),
   ],
   rollcallThanks: (answer: string) =>
@@ -243,8 +252,12 @@ export const MSG = {
         : answer === "together"
           ? bubbles(["ありがとうございます。一緒にやりましょう。", "6:40 に、来てくれる人をお知らせします。"])
           : answer === "0"
-            ? bubbles(["わかりました。今朝はゆっくり休んでください。", "またの朝に、よろしくしま〜！"])
-            : bubbles(["ありがとうしま〜！", "6:40 に、行き先をお知らせします。"]),
+            ? bubbles(["わかりました。今日はゆっくり休んでください。", "またの雪の日に、よろしくしま〜！"])
+            : answer === "noon"
+              ? bubbles(["ありがとうしま〜！", "11:30 ごろ、まだ待っている家をお知らせします。地図からなら、いつでも行けます。"])
+              : answer === "pm"
+                ? bubbles(["ありがとうしま〜！", "16:30 ごろ、まだ待っている家をお知らせします。19時までにどうぞ。"])
+                : bubbles(["ありがとうしま〜！", "6:40 に、行き先をお知らせします。"]),
   /** ことばの答えを受け取ったとき（spec v1.6）。段取りがあれば読み取った内容を返して確かめてもらう */
   wordsHeard: (role: "requester" | "helper", answer: string, label: string) =>
     role === "requester" && label

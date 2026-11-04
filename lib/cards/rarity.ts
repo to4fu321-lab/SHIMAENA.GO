@@ -1,5 +1,8 @@
 // レア度（spec 7）: レアでタッチが変わる。早朝＝80sレトロウェーブ／大雪＝切り絵／連続5日＝ドット絵／混成＝鈴木英人系。
-import { isEarly } from "../game/score";
+import { jstMinutes } from "../jst";
+
+/** 「早朝の群れ」のカード: 7:30 までに完了（得点の朝ボーナスは 9:00 まで。カードの絵柄は前のまま） */
+const isEarly = (iso: string) => jstMinutes(new Date(iso)) <= 7 * 60 + 30;
 import type { CardStyle, TeamId } from "../types";
 
 export const BIG_SNOW_CM = 20;

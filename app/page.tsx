@@ -8,7 +8,6 @@ import Icon from "@/components/Icon";
 import Mascot from "@/components/Mascot";
 import SkyBackdrop from "@/components/SkyBackdrop";
 import TabBar from "@/components/TabBar";
-import { loadPublicStats } from "@/lib/public/load";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { progress } from "@/lib/morning/view";
@@ -21,6 +20,8 @@ import { soloStatus } from "@/lib/solo/ops";
 import { jstMinutes } from "@/lib/jst";
 import { currentWeatherCode, parseSkyParam, timeOfDay, weatherOf } from "@/lib/sky";
 import { TOWN } from "@/lib/town";
+import { activeHelpers } from "@/lib/morning/rounds";
+import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
@@ -32,11 +33,10 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
   const { as, sky: skyParam } = await searchParams;
-  const [record, roster, cookieStore, stats, weatherCode] = await Promise.all([
+  const [record, roster, cookieStore, weatherCode] = await Promise.all([
     loadMorning(),
     loadRoster(),
     cookies(),
-    loadPublicStats(),
     parseSkyParam(skyParam) ? Promise.resolve(undefined) : currentWeatherCode(TOWN.center),
   ]);
   const m = record.morning;
@@ -48,6 +48,14 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const q = demoAs ? `?as=${demoAs}` : "";
 
   const prog = progress(m);
+  // 1日に何回でも（spec v1.8）: 6〜19時ならいつでも。いま雪かき中の人数と、朝・ドカ雪のボーナス
+  const nowMin = jstMinutes();
+  const open = isWorkHours();
+  const activeNow = activeHelpers(m);
+  const bonuses = [
+    open && nowMin < MORNING_BONUS_UNTIL_MIN ? "朝ボーナス+5" : "",
+    open && m.rollcall.status !== "closed" && isDokayuki(m.rollcall.forecastCm) ? "ドカ雪+5" : "",
+  ].filter(Boolean);
   const shorts = listShort(record, roster);
   const planned = m.rollcall.status === "planned";
   const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
@@ -158,8 +166,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <p className="text-xl font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
               ) : (
                 <p className="text-xl font-bold">
-                  {m.rollcall.status === "open" ? "点呼中です" : "今朝は作戦がありません"}
-                  <span className="block text-sm">{m.rollcall.status === "open" ? "（6:40 に作戦）" : "1人の10分でも町は変わります"}</span>
+                  {m.rollcall.status === "open" ? "点呼中です" : "今日は作戦がありません"}
+                  <span className="block text-sm">{m.rollcall.status === "open" ? "（6:40 に行き先。そのあと19時までいつでも）" : "1人の10分でも町は変わります"}</span>
                 </p>
               )}
             </div>
@@ -175,7 +183,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <path d="M3 33 C3 24 25 24 25 33 Z" fill="#29445c" />
                 <path d="M20 32 C21 25 37 24 37 32 Z" fill="#3b6584" />
               </svg>
-              仲間 <b className="text-2xl tabular-nums">{stats.todayPeople}</b>人
+              <span className="whitespace-nowrap">
+                雪かき中 <b className="text-2xl tabular-nums">{activeNow}</b>人
+              </span>
             </p>
             <p className="flex items-center justify-center gap-2 text-base font-bold">
               <Icon name="house" size={28} accent="var(--lamp)" className="text-ink" />
@@ -185,15 +195,20 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         </section>
 
         {/* 出動（いちばん大事なボタン）と、10分だけ */}
-        <Link href={goHref} className="btn btn-lamp min-h-18 justify-start gap-3 rounded-full px-5 short:min-h-15 short:py-1.5">
+        <Link
+          href={goHref}
+          className={`btn ${open ? "btn-lamp" : "btn-ink opacity-80"} min-h-18 justify-start gap-3 rounded-full px-5 short:min-h-15 short:py-1.5`}
+        >
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lamp">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
               <path d="M8 5 L19 12 L8 19 Z" fill="currentColor" />
             </svg>
           </span>
           <span className="text-left leading-tight">
-            <span className="block text-2xl">出動する</span>
-            <span className="block text-sm font-bold">近くの雪かきを探す</span>
+            <span className="block text-2xl">{open ? "出動する" : "夜は自分の家だけ"}</span>
+            <span className="block text-sm font-bold">
+              {!open ? "よその家の雪かきは6時〜19時" : bonuses.length > 0 ? `いまなら ${bonuses.join("・")}点` : "19時までなら、いつでも10分から"}
+            </span>
           </span>
         </Link>
         <Link href={fiveHref} className="btn btn-white min-h-14 gap-3 rounded-full bg-ice-soft/60 short:py-1">

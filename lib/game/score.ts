@@ -1,9 +1,11 @@
 // 得点計算。spec 5 の得点表をそのまま関数にしたもの。お金には換えない。
 import type { ScoreEvent, ScoreReason, Sortie, TeamId } from "../types";
+import { isDokayuki, isMorningDone } from "./hours";
 
 export const POINTS = {
   mission_done: 10, // 完了した人1人につき
-  early: 5, // 7:30 までに完了（1人につき）
+  early: 5, // 朝ボーナス: 9:00 までに完了（1人につき。v1.8 で 7:30 から 9:00 に）
+  dokayuki: 5, // v1.8: ドカ雪の日（予報 15cm 以上）に完了（1人につき）
   rescue: 10, // 赤点滅の家に、自分の割り当て完了後に駆けつけ
   flock: 5, // 同じチーム2人以上で1軒（その人たち各自）
   mixed: 5, // 2チーム以上が同じ家で合流（各チームに1回）
@@ -24,10 +26,9 @@ export const SOLO_ONLINE_DAILY_CAP = 3;
 
 const SOLO_REASONS: ScoreReason[] = ["solo_home", "solo_onsite", "solo_photo", "solo_online"];
 
-/** 早朝ボーナスの締め切り（日本時間 7:30） */
+/** 朝ボーナスの締め切り（日本時間 9:00、v1.8） */
 export function isEarly(completedAtIso: string): boolean {
-  const jst = new Date(new Date(completedAtIso).getTime() + 9 * 3600 * 1000);
-  return jst.getUTCHours() * 60 + jst.getUTCMinutes() <= 7 * 60 + 30;
+  return isMorningDone(completedAtIso);
 }
 
 let seq = 0;
@@ -44,8 +45,9 @@ const ev = (teamId: TeamId, points: number, reason: ScoreReason, at: string, par
  * 1軒のミッションが完了したときの得点。
  * @param sorties そのミッションの出撃（完了したものだけが対象）
  * @param requesterJoined 依頼者が「一緒なら」と答えて一緒に作業したか
+ * @param forecastCm 今日の予報の積雪。ドカ雪の日（15cm 以上）は来た人に +5（v1.8）
  */
-export function scoreMission(sorties: Sortie[], at: string, requesterJoined = false): ScoreEvent[] {
+export function scoreMission(sorties: Sortie[], at: string, requesterJoined = false, forecastCm = 0): ScoreEvent[] {
   const done = sorties.filter((s) => s.status === "done");
   const events: ScoreEvent[] = [];
   const byTeam = new Map<TeamId, Sortie[]>();
@@ -55,6 +57,7 @@ export function scoreMission(sorties: Sortie[], at: string, requesterJoined = fa
     events.push(ev(s.teamId, POINTS.mission_done, "mission_done", at, s.participantId));
     if (s.completedAt && isEarly(s.completedAt)) events.push(ev(s.teamId, POINTS.early, "early", at, s.participantId));
     if (s.rescue) events.push(ev(s.teamId, POINTS.rescue, "rescue", at, s.participantId));
+    if (isDokayuki(forecastCm)) events.push(ev(s.teamId, POINTS.dokayuki, "dokayuki", at, s.participantId));
   }
   for (const [teamId, members] of byTeam) {
     if (members.length >= 2) for (const m of members) events.push(ev(teamId, POINTS.flock, "flock", at, m.participantId));

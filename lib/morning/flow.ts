@@ -129,9 +129,15 @@ export function autoAnswerProxyHomes(s: MorningRecord, roster: Roster, answeredA
 }
 
 /** 点呼の答えを入れる（同じ人の前の答えは置き換える） */
-export function putAnswer(s: MorningRecord, participantId: string, answer: RollcallAnswer["answer"], answeredAt: string): void {
+export function putAnswer(
+  s: MorningRecord,
+  participantId: string,
+  answer: RollcallAnswer["answer"],
+  answeredAt: string,
+  when?: RollcallAnswer["when"],
+): void {
   s.answers = s.answers.filter((a) => a.participantId !== participantId);
-  s.answers.push({ rollcallId: s.morning.rollcall.id, participantId, answer, answeredAt });
+  s.answers.push({ rollcallId: s.morning.rollcall.id, participantId, answer, answeredAt, ...(when ? { when } : {}) });
 }
 
 /**
@@ -163,6 +169,11 @@ export function fillAnswers(s: MorningRecord, roster: Roster, seed = 7): void {
 /** 司令官に渡す材料を作る */
 export function commanderInput(s: MorningRecord, roster: Roster): CommanderInput {
   const answerOf = (id: string) => s.answers.find((a) => a.participantId === id)?.answer;
+  // 6:40 の作戦に入れるのは朝に動ける人だけ（v1.8）。お昼・夕方の人は、その時間に開いている家をお知らせする
+  const laterOf = (id: string) => {
+    const w = s.answers.find((a) => a.participantId === id)?.when;
+    return w === "noon" || w === "pm";
+  };
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
   return {
     date: s.morning.rollcall.date,
@@ -188,7 +199,7 @@ export function commanderInput(s: MorningRecord, roster: Roster): CommanderInput
         id: h.id,
         nickname: h.nickname,
         teamId: h.teamId!,
-        minutes: (answerOf(h.id) as HelperAnswer | undefined) ?? 0,
+        minutes: laterOf(h.id) ? 0 : ((answerOf(h.id) as HelperAnswer | undefined) ?? 0),
         location: h.location,
       })),
   };
@@ -259,7 +270,7 @@ export function completeNext(s: MorningRecord, roster: Roster): string | null {
     so.completedAt = at;
   }
   m.status = "done";
-  s.morning.scores.push(...scoreMission(sorties, at, false));
+  s.morning.scores.push(...scoreMission(sorties, at, false, s.morning.rollcall.forecastCm));
   const number = roster.bases.find((b) => b.id === m.baseId)?.number ?? "?";
   s.log.push(`${clockText(s.clockMin)} 拠点${number} 完了（${sorties.length}人）`);
   if (progress(s.morning).allDone) s.log.push(`${clockText(s.clockMin)} 「${s.morning.rollcall.snowName ?? "今朝の雪"}」討伐（全軒完了）`);

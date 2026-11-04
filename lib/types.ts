@@ -86,10 +86,15 @@ export type RequesterAnswer = "yes" | "no" | "together";
 /** 手伝う側の点呼の答え（分）。v1.7 から 10・20・30・60。5・15 は前の版の答え（読み込みだけ） */
 export type HelperAnswer = 0 | 5 | 10 | 15 | 20 | 30 | 60;
 
+/** 手伝う側の「いつ手伝えそう？」（spec v1.8）。am = 朝（〜9時）、noon = お昼（〜13時）、pm = 夕方（〜19時） */
+export type HelperWhen = "am" | "noon" | "pm";
+
 export interface RollcallAnswer {
   rollcallId: string;
   participantId: string;
   answer: RequesterAnswer | HelperAnswer;
+  /** 手伝う側がいつ動けるか（v1.8）。ない答えは前の版（朝） */
+  when?: HelperWhen;
   answeredAt: string; // ISO
   /** ことばで頼んだときの段取り（spec v1.6）。原文は残さない */
   request?: RequestNote;
@@ -135,6 +140,8 @@ export interface Mission {
   snowKg?: number;
   /** お願いする人がことばで伝えた段取り（spec v1.6） */
   request?: RequestNote;
+  /** その日の何回目の雪かきか（v1.8）。降り続く日は終わった家がもう一度開く。ないときは1回目 */
+  round?: number;
 }
 
 // ---- 出撃 ----
@@ -186,7 +193,8 @@ export interface Sortie {
 // ---- 得点 ----
 export type ScoreReason =
   | "mission_done" // 10
-  | "early" // +5（7:30 まで）
+  | "early" // 朝ボーナス +5（9:00 まで、v1.8）
+  | "dokayuki" // v1.8: ドカ雪の日 +5
   | "rescue" // +10
   | "flock" // 同じチーム2人以上 各+5
   | "mixed" // 2チーム合流 両チーム+5

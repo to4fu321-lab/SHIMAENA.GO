@@ -18,7 +18,7 @@ import { baseUrl } from "../url";
 import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
-import { jstDate, jstMinutes, jstIso } from "../jst";
+import { jstDate, jstHourMinute, jstMinutes, jstIso } from "../jst";
 import { getProfileByAccessToken, multicast, push } from "../line/client";
 import { MSG } from "../line/messages";
 import type { LineMessage } from "../line/types";
@@ -28,8 +28,10 @@ import { getTeam } from "../teams";
 import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
 import type { NowMinutes } from "./watch";
-import type { HelperAnswer, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
-import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
+import type { HelperAnswer, HelperWhen, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
+import { SNOW_THRESHOLD_CM, fetchHourlySnow, forecastSnowUntilMorning, sumSnowfall } from "../weather";
+import { activeHelpers, reopenDone } from "./rounds";
+import { recordProblem } from "../ops/problems";
 import { applyPlan, autoAnswerProxyHomes, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
@@ -117,7 +119,9 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
 
 const REQUESTER_ANSWERS: Record<string, RequesterAnswer> = { yes: "yes", no: "no", together: "together" };
 // v1.7: 10・20・30・60分。前の版のボタン（5・15）が押されても受け付ける
-const HELPER_ANSWERS: Record<string, HelperAnswer> = { "0": 0, "5": 5, "10": 10, "15": 15, "20": 20, "30": 30, "60": 60 };
+const HELPER_ANSWERS: Record<string, HelperAnswer> = { "0": 0, "5": 5, "10": 10, "15": 15, "20": 20, "30": 30, "60": 60, am: 20, noon: 20, pm: 20 };
+// v1.8: いつ手伝えそうか（朝・お昼・夕方）。分の答え（前の版）は朝として扱う
+const HELPER_WHEN: Record<string, HelperWhen> = { am: "am", noon: "noon", pm: "pm" };
 
 /** LINE のボタン（rc:ans=...）で届いた点呼の答えを記録する */
 export async function answerRollcall(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
@@ -133,6 +137,8 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
     // 作戦配信のあとの答え（spec 4-c）: 「いいえ」なら人を集め、「はい」なら取り下げる
     const roster = await loadRoster();
     const late = applyLateAnswer(s, roster, p, answer, now.toISOString());
+    const mine = s.answers.find((a) => a.participantId === p.id);
+    if (mine && p.role === "helper" && HELPER_WHEN[value]) mine.when = HELPER_WHEN[value];
     s.log.push(`${p.nickname}さんが遅れて点呼に回答（${value}）`);
     await saveMorning(s);
     if (late.kind === "short") await notifyHelp(late.mission.id, now);
@@ -140,7 +146,7 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
     if (late.kind === "short") return MSG.lateRequesterShort();
     return MSG.lateHelperThanks();
   }
-  putAnswer(s, p.id, answer, now.toISOString());
+  putAnswer(s, p.id, answer, now.toISOString(), p.role === "helper" ? HELPER_WHEN[value] : undefined);
   s.log.push(`${p.nickname}さんが点呼に回答（${value}）`);
   await saveMorning(s);
   // お願いする側には、まだ教えてもらっていなければ（または2週間ぶりなら）雪かきのコツを聞く（任意、spec v1.6）
@@ -438,7 +444,7 @@ async function finishMission(
   const base = roster.bases.find((b) => b.id === mission.baseId);
   const requester = base && roster.participants.find((p) => p.id === base.requesterId);
   const requesterJoined = s.answers.some((a) => a.participantId === requester?.id && a.answer === "together");
-  const events = scoreMission(sorties, at, requesterJoined);
+  const events = scoreMission(sorties, at, requesterJoined, s.morning.rollcall.forecastCm);
   s.morning.scores.push(...events);
   s.clockMin = Math.max(s.clockMin, jstMinutes(now));
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
@@ -879,3 +885,55 @@ export async function resolveViewerByLiff(accessToken: string): Promise<Particip
 }
 
 export { jstIso };
+
+// ---- 1日に何回でも（spec v1.8）: お昼と夕方の出番 ----
+
+/** 終わってから これだけ積もったら、もう一度開く（cm） */
+export const REOPEN_SNOW_CM = 3;
+
+/**
+ * 降り続いていれば、終わった家をもう一度「雪かき待ち」に（2回目・3回目）。
+ * force: /admin のデモ用（天気を見ずに開く）。開いた家の数を返す
+ */
+export async function reopenIfStillSnowing(now = new Date(), opts: { force?: boolean } = {}): Promise<number> {
+  const s = await loadMorning();
+  if (s.morning.rollcall.status !== "planned") return 0;
+  let since: ((doneAt: string) => boolean) | undefined;
+  if (opts.force) since = () => true;
+  else {
+    if (s.morning.rollcall.date !== jstDate(now)) return 0;
+    const hourly = await fetchHourlySnow(TOWN.center);
+    const nowKey = jstHourMinute(now);
+    since = (doneAt) => sumSnowfall(hourly, jstHourMinute(new Date(doneAt)).slice(0, 13) + ":00", nowKey) >= REOPEN_SNOW_CM;
+  }
+  const added = reopenDone(s.morning, now.toISOString(), since);
+  if (added.length === 0) return 0;
+  const roster = await loadRoster();
+  s.log.push(`${clockTextJst(now)} 降り続いているので、終わった家をもう一度: ${added.map((m) => `拠点${baseNumberOf(roster, m.baseId)}（${m.round}回目）`).join("・")}`);
+  await saveMorning(s);
+  return added.length;
+}
+
+/**
+ * お昼（11:30）・夕方（16:30）の出番: 降り続いていれば終わった家を開き直し、
+ * 点呼で「お昼」「夕方」と答えた人に、まだ待っている家の数といま雪かき中の人数を送る。
+ */
+export async function laterShift(when: "noon" | "pm", now = new Date()): Promise<{ reopened: number; sent: number }> {
+  const reopened = await reopenIfStillSnowing(now).catch(async (e) => {
+    await recordProblem("laterShift/reopen", e);
+    return 0;
+  });
+  const s = await loadMorning();
+  if (s.morning.rollcall.status !== "planned" || isNight(now)) return { reopened, sent: 0 };
+  const houses = s.morning.missions.filter((m) => m.status !== "done" && m.status !== "no_answer").length;
+  if (houses === 0) return { reopened, sent: 0 };
+  const roster = await loadRoster();
+  const busy = new Set(s.morning.sorties.filter((x) => x.status === "going").map((x) => x.participantId));
+  const ids = s.answers.filter((a) => a.when === when && !busy.has(a.participantId)).map((a) => a.participantId);
+  const to = lineIds(roster.participants.filter((p) => ids.includes(p.id)));
+  if (to.length === 0) return { reopened, sent: 0 };
+  const ok = await multicast(to, MSG.laterNudge(when, houses, activeHelpers(s.morning)));
+  s.log.push(`${when === "noon" ? "お昼" : "夕方"}の出番を LINE で ${ok ? to.length : 0} 人に（待っている家 ${houses} 軒）`);
+  await saveMorning(s);
+  return { reopened, sent: ok ? to.length : 0 };
+}

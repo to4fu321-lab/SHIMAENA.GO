@@ -26,11 +26,16 @@ describe("得点表（spec 5 の全行）", () => {
     expect(sum(e, "mission_done")).toBe(10);
   });
 
-  it("7:30 までに完了: +5（7:30 ちょうどは含み、7:31 は含まない）", () => {
-    expect(isEarly("2026-12-14T07:30:00+09:00")).toBe(true);
-    expect(isEarly("2026-12-14T07:31:00+09:00")).toBe(false);
+  it("朝ボーナス 9:00 までに完了: +5（9:00 ちょうどは含み、9:01 は含まない。v1.8）", () => {
+    expect(isEarly("2026-12-14T09:00:00+09:00")).toBe(true);
+    expect(isEarly("2026-12-14T09:01:00+09:00")).toBe(false);
     const e = scoreMission([sortie("a", "salvia")], AT);
     expect(sum(e, "early")).toBe(5);
+  });
+
+  it("ドカ雪の日（予報 15cm 以上）は来た人それぞれに +5（v1.8）", () => {
+    expect(sum(scoreMission([sortie("a", "salvia"), sortie("b", "lupinus")], AT, false, 15), "dokayuki")).toBe(10);
+    expect(sum(scoreMission([sortie("a", "salvia")], AT, false, 14), "dokayuki")).toBe(0);
   });
 
   it("赤点滅の家に駆けつけ: +10", () => {

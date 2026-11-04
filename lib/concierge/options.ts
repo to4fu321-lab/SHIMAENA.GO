@@ -23,7 +23,7 @@ export interface ConciergeContext {
   firstTime: boolean;
   /** 今朝の先生にコツを教えられるか（お願いする側で、2週間に1回まで） */
   tipOk: boolean;
-  /** 夜（18時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
+  /** 夜（19時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
   night?: boolean;
 }
 

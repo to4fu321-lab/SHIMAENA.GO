@@ -46,7 +46,7 @@ export default function SoloScreen({
   pickFive: boolean;
   /** LINE のコンシェルジュがすすめたミッション（最初に大きく出す） */
   focus?: string;
-  /** 夜（18時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
+  /** 夜（19時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
   night?: boolean;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */

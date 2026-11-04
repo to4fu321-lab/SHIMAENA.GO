@@ -1,0 +1,25 @@
+# お昼（11:30）と夕方（16:30）の出番（spec v1.8）。日本時間。
+# 降り続いていれば終わった家をもう一度開き、点呼で「お昼」「夕方」と答えた人にお知らせする。
+# 必要な設定は plan.yml と同じ（APP_URL・CRON_SECRET）。
+name: later-shifts
+on:
+  schedule:
+    - cron: "30 2 * * *" # UTC 2:30 = 日本時間 11:30
+    - cron: "30 7 * * *" # UTC 7:30 = 日本時間 16:30
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "noon か pm"
+        default: "noon"
+jobs:
+  later:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 出番を呼ぶ
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          JOB: ${{ github.event.inputs.job || (github.event.schedule == '30 2 * * *' && 'noon' || 'pm') }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then echo "APP_URL と CRON_SECRET を Secrets に入れてください"; exit 1; fi
+          curl -fsS --retry 3 --retry-delay 20 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/$JOB"

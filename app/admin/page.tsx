@@ -25,6 +25,7 @@ import {
   rescue,
   ringNow,
   runCommander,
+  reopenDemo,
   runWeekly,
   startEmptyMorning,
   thanksDemo,
@@ -200,6 +201,12 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress")}
         />
         <Step n="5" label="人手不足の家に駆けつける" action={rescue} disabled={!m.missions.some((x) => x.status === "short")} />
+        <Step
+          n="5b"
+          label="まだ降っている → 終わった家をもう一度（2回目・3回目）"
+          action={reopenDemo}
+          disabled={status !== "planned" || !m.missions.some((x) => x.status === "done")}
+        />
         <form action={helpNextRing}>
           <button
             disabled={!m.missions.some((x) => x.status === "short")}

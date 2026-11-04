@@ -1,4 +1,4 @@
-// 夜の防犯ルール（spec v1.8）: 夜（18時〜6時）は自分の家と家の中でできることだけ。よその家には行かない
+// 夜の防犯ルール（spec v1.8）: 夜（19時〜6時）は自分の家と家の中でできることだけ。よその家には行かない
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildOptions, type ConciergeContext } from "./concierge/options";
 import { DEMO_DATE } from "./morning/flow";
@@ -14,8 +14,8 @@ const t = (ms: LineMessage[]) => ms.map(textOf).join("\n");
 
 describe("夜の判定", () => {
   it(`${NIGHT_FROM}時から翌${NIGHT_UNTIL}時までが夜`, () => {
-    expect(isNight(at("17:59"))).toBe(false);
-    expect(isNight(at("18:00"))).toBe(true);
+    expect(isNight(at("18:59"))).toBe(false);
+    expect(isNight(at("19:00"))).toBe(true);
     expect(isNight(at("23:30"))).toBe(true);
     expect(isNight(at("05:59"))).toBe(true);
     expect(isNight(at("06:00"))).toBe(false);

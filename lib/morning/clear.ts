@@ -7,7 +7,8 @@ import { type MorningState, progress, snowHp, teamTotals } from "./view";
 
 export const REASON_LABEL: Record<ScoreReason, string> = {
   mission_done: "完了",
-  early: "7:30 までに完了",
+  early: "朝ボーナス（9時まで）",
+  dokayuki: "ドカ雪ボーナス",
   rescue: "駆けつけ",
   flock: "同じチーム2人以上",
   mixed: "2チームが合流",

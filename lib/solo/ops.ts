@@ -68,7 +68,7 @@ export async function completeSolo(
   if (mission.kind === "help_house") {
     return { ok: false, reason: "help_house", text: "家の雪かきは、地図の「10分だけ参加」から加わって、写真で完了にしてください。" };
   }
-  // 夜（18時〜6時）は、自分の家と家の中でできることだけ（spec v1.8 防犯）
+  // 夜（19時〜6時）は、自分の家と家の中でできることだけ（spec v1.8 防犯）
   if (isNight(opts.now) && !allowedAtNight(mission.kind, mission.onsite)) {
     return { ok: false, reason: "night", text: nightRefusal() };
   }
