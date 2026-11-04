@@ -10,6 +10,7 @@ import { completeManually, completeWithPhoto, joinMission, joinNearby, reportSho
 import { signViewer, trustedViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
 import { INVITE_COOKIE, isInviteCode, linkInvitee } from "@/lib/invite";
+import { stormStopText } from "@/lib/storm";
 
 export interface ActionResult {
   ok: boolean;
@@ -32,6 +33,8 @@ export async function goAction(viewerId: string): Promise<ActionResult> {
   return withStateLock("map:goAction", async () => {
     const id = await trustedViewer(viewerId);
     if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+    const stop = await stormStopText();
+    if (stop) return { ok: false, text: stop };
     const messages = await setGoing(id, true);
     revalidatePath("/map");
     return { ok: true, text: firstText(messages) };
@@ -53,6 +56,8 @@ export async function joinAction(viewerId: string, missionId: string): Promise<A
   return withStateLock("map:joinAction", async () => {
     const id = await trustedViewer(viewerId);
     if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+    const stop = await stormStopText();
+    if (stop) return { ok: false, text: stop };
     const messages = await joinMission(id, missionId);
     revalidatePath("/map");
     return { ok: true, text: firstText(messages) };
@@ -64,6 +69,8 @@ export async function fiveMinutesAction(viewerId: string): Promise<ActionResult>
   return withStateLock("map:fiveMinutesAction", async () => {
     const id = await trustedViewer(viewerId);
     if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+    const stop = await stormStopText();
+    if (stop) return { ok: false, text: stop };
     const r = await joinNearby(id, 10);
     revalidatePath("/map");
     return { ok: r.joined, text: firstText(r.messages) };

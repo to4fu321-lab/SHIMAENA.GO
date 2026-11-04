@@ -8,6 +8,14 @@ import { checkForecastAndAnnounce, laterShift, plan, ring, weeklyRecap } from "@
 import { withStateLock } from "@/lib/ops/lock";
 import { recordProblem } from "@/lib/ops/problems";
 import { flushRoadAlerts } from "@/lib/road/notify";
+import { firstStormNotice, STORM_LINES, stormHeadline, stormStatus } from "@/lib/storm";
+import { loadRoster, lineIds } from "@/lib/morning/roster";
+import { multicast } from "@/lib/line/client";
+import { MSG } from "@/lib/line/messages";
+import { jstDate } from "@/lib/jst";
+
+/** 警報で止める仕事（週のまとめは止めない） */
+const STORM_JOBS = new Set(["announce", "rollcall", "plan", "noon", "pm"]);
 
 export async function GET(req: Request, ctx: { params: Promise<{ job: string }> }): Promise<Response> {
   const secret = process.env.CRON_SECRET;
@@ -20,6 +28,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ job: string }> 
 
 async function run(job: string): Promise<Response> {
   try {
+    // 警報の日はお休み（spec v1.11）: 予告・点呼・作戦・お昼／夕方の出番を送らず、全員にお休みを1日1回だけ知らせる
+    if (STORM_JOBS.has(job)) {
+      const storm = await stormStatus();
+      if (storm.stopped) {
+        let notified = 0;
+        if (await firstStormNotice(jstDate())) {
+          const ids = lineIds((await loadRoster()).participants);
+          if (await multicast(ids, MSG.stormStop(stormHeadline(storm), STORM_LINES))) notified = ids.length;
+        }
+        return Response.json({ ok: true, job, stopped: true, warnings: storm.names, notified });
+      }
+    }
     switch (job) {
       case "announce": {
         const r = await checkForecastAndAnnounce();

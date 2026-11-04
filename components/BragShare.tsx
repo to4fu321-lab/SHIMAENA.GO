@@ -2,8 +2,10 @@
 
 // 自分の家の雪かき: Before / After の2枚を1枚の自慢画像にして、SNS に投稿できるようにする。
 // v1.8: 縦長（4:5）にして、どけた雪の kg（推定）と、その日のカード（なければ消印）を入れる。カードは2枚目としても投稿できる。
-// 画像はこの端末の中で作る（サーバーには送らない）。自動では投稿しない。
+// 画像はこの端末の中で作る。自動では投稿しない。
+// v1.11: 作る前に、2枚の写真のナンバー・表札・顔・家を AI でぼかす（ぼかす場所を聞くために写真をサーバーへ送るが、保存はしない）。
 import { useEffect, useState } from "react";
+import { blurNote, blurPrivate } from "./blur";
 
 const W = 1080;
 const H = 1350; // Instagram の縦長（4:5）。X でもそのまま見られる
@@ -392,6 +394,7 @@ async function compose(before: string, after: string, minutes: number, snow?: Br
 }
 
 export default function BragShare({
+  viewerId,
   before,
   after,
   minutes,
@@ -399,6 +402,7 @@ export default function BragShare({
   snow,
   cardId,
 }: {
+  viewerId: string;
   before: string;
   after: string;
   minutes: number;
@@ -430,12 +434,35 @@ export default function BragShare({
     };
   }, [cardSrc]);
 
+  // SNS に出す前に、AI でナンバー・表札・顔・家をぼかす（spec v1.11）。2枚とも終わるまで画像は作らない
+  const [blurredPair, setBlurredPair] = useState<{ key: string; before: string; after: string; note: string } | null>(null);
+  const pairKey = `${before}|${after}`;
+  const safe = blurredPair?.key === pairKey ? blurredPair : null; // 写真が変わったら、前のぼかしは使わない
+  useEffect(() => {
+    let alive = true;
+    const urls: string[] = [];
+    const one = async (src: string) => {
+      const r = await blurPrivate(await (await fetch(src)).blob(), viewerId);
+      const u = URL.createObjectURL(r.blob);
+      urls.push(u);
+      return { u, note: blurNote(r.result) };
+    };
+    Promise.all([one(before), one(after)])
+      .then(([b, a]) => alive && setBlurredPair({ key: `${before}|${after}`, before: b.u, after: a.u, note: [...new Set([b.note, a.note])].join("／") }))
+      .catch(() => alive && setMsg("ぼかしを入れられませんでした。もう一度開いてください。"));
+    return () => {
+      alive = false;
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [before, after, viewerId]);
+
   // snow は毎回新しい物になるので、中の数字だけで作り直しを決める
   const snowKg = snow?.kg;
   const snowCmp = snow?.comparison;
   useEffect(() => {
     let u: string | null = null;
-    compose(before, after, minutes, snowKg && snowCmp ? { kg: snowKg, comparison: snowCmp } : undefined, cardSrc)
+    if (!safe) return;
+    compose(safe.before, safe.after, minutes, snowKg && snowCmp ? { kg: snowKg, comparison: snowCmp } : undefined, cardSrc)
       .then((blob) => {
         u = URL.createObjectURL(blob);
         setFile(new File([blob], "shimaena-go-before-after.jpg", { type: "image/jpeg" }));
@@ -445,7 +472,7 @@ export default function BragShare({
     return () => {
       if (u) URL.revokeObjectURL(u);
     };
-  }, [before, after, minutes, snowKg, snowCmp, cardSrc]);
+  }, [safe, minutes, snowKg, snowCmp, cardSrc]);
 
   const share = async () => {
     if (!file) return;
@@ -482,7 +509,7 @@ export default function BragShare({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="雪かきの前と後の写真と、どけた雪の量" className="aspect-[4/5] w-full rounded-xl object-cover" />
       ) : (
-        <div className="grid aspect-[4/5] w-full place-items-center rounded-xl bg-paper text-sm">画像をつくっています…</div>
+        <div className="grid aspect-[4/5] w-full place-items-center rounded-xl bg-paper text-sm">{safe ? "画像をつくっています…" : "🔍 AI がナンバー・表札・顔・家をぼかしています…"}</div>
       )}
       <button type="button" disabled={!file} onClick={share} className="btn btn-lamp w-full rounded-full text-lg">
         この画像を SNS に投稿する
@@ -495,7 +522,8 @@ export default function BragShare({
           {msg}
         </p>
       )}
-      <p className="text-xs text-ink-soft">表札・番地・車のナンバーが写っていないか確かめてから投稿してね。自動では投稿しません。</p>
+      {safe && <p className="text-sm font-bold">🫥 {safe.note}</p>}
+      <p className="text-xs text-ink-soft">AI のぼかしにも漏れはあります。表札・番地・車のナンバーが見えていないか確かめてから投稿してね。自動では投稿しません。</p>
     </div>
   );
 }

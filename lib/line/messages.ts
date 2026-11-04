@@ -454,6 +454,8 @@ export const MSG = {
   weeklyFamily: (count: number) => bubbles([`今週は、ご家族の家の雪かきを ${count} 回手伝ってもらいました。`]),
   linkedSelf: () => bubbles(["紐づけができました。", "雪の朝 6:30 に「今朝、玄関から外に出られそうですか？」と1回だけ聞きます。"]),
   linkedFamily: () => bubbles(["家族として紐づけました。", "雪かきが終わったときや、点呼に返事がないときにお知らせします。"]),
+  // ---- 警報の日はお休み（spec v1.11）。文は決まった文 ----
+  stormStop: (headline: string, lines: readonly string[]) => bubbles([`⛔ ${headline}`, ...lines]),
   // ---- 道の危険の報告（11/4 本人の指示） ----
   /** コンシェルジュが登録のあとに聞く: 近くの道の報告を受け取るか */
   roadAsk: (): LineMessage[] => [

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { HAZARDS, type HazardId } from "@/lib/road/hazards";
 import { shrink } from "./shrink";
+import { blurNote, blurPrivate } from "./blur";
 
 // 地図（Leaflet）はブラウザでだけ読む
 const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
@@ -13,10 +14,12 @@ const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
 type Loc = { state: "wait" } | { state: "ok"; lat: number; lng: number; acc: number; adjusted?: boolean } | { state: "ng"; why: string };
 
 export default function RoadReportRun({
+  viewerId,
   pending,
   onSend,
   onQuit,
 }: {
+  viewerId: string;
   pending: boolean;
   onSend: (fd: FormData) => void;
   onQuit: () => void;
@@ -24,6 +27,8 @@ export default function RoadReportRun({
   const [hz, setHz] = useState<HazardId | null>(null);
   const [file, setFile] = useState<File | undefined>();
   const [preview, setPreview] = useState<string | null>(null);
+  // 地図と LINE に出す小さい写真は、AI でナンバー・表札・顔・家をぼかしてから（spec v1.11）
+  const [blurred, setBlurred] = useState<{ blob: Blob; note: string } | "wait" | null>(null);
   const [note, setNote] = useState("");
   const [loc, setLoc] = useState<Loc>({ state: "wait" });
   const [busy, setBusy] = useState(false);
@@ -50,9 +55,25 @@ export default function RoadReportRun({
     if (preview) URL.revokeObjectURL(preview);
   }, [preview]);
 
-  const ready = Boolean(hz && file && loc.state === "ok");
+  const pickId = useRef(0);
+  const pickPhoto = (f: File) => {
+    const my = ++pickId.current; // 撮り直したら、前の写真のぼかしの結果は使わない
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+    setBlurred("wait");
+    shrink(f, 640)
+      .then((small) => blurPrivate(small, viewerId))
+      .then(({ blob, result }) => {
+        if (my !== pickId.current) return;
+        setBlurred({ blob, note: blurNote(result) });
+        setPreview(URL.createObjectURL(blob));
+      })
+      .catch(() => my === pickId.current && setBlurred(null));
+  };
+
+  const ready = Boolean(hz && file && loc.state === "ok" && blurred && blurred !== "wait");
   const send = async () => {
-    if (!hz || !file || loc.state !== "ok") return;
+    if (!hz || !file || loc.state !== "ok" || !blurred || blurred === "wait") return;
     setBusy(true);
     try {
       const fd = new FormData();
@@ -61,7 +82,7 @@ export default function RoadReportRun({
       fd.set("lng", String(loc.lng));
       if (note.trim()) fd.set("note", note.trim());
       fd.set("photo", new File([await shrink(file)], "road.jpg", { type: "image/jpeg" }));
-      fd.set("thumb", new File([await shrink(file, 640)], "road-s.jpg", { type: "image/jpeg" }));
+      fd.set("thumb", new File([blurred.blob], "road-s.jpg", { type: "image/jpeg" }));
       onSend(fd);
     } finally {
       setBusy(false);
@@ -132,7 +153,9 @@ export default function RoadReportRun({
               </button>
             </span>
           )}
-          <span className="block text-xs text-ink-soft">顔や車のナンバーは写さない</span>
+          <span className="block text-xs text-ink-soft">
+            {blurred === "wait" ? "🔍 AI がナンバー・表札・顔・家をぼかしています…" : blurred ? `🫥 ${blurred.note}（地図と通知にはこの写真が出ます）` : file ? "ぼかしを入れられませんでした。撮り直してください" : "ナンバー・表札・顔・家は AI がぼかします"}
+          </span>
         </div>
       </div>
       <input
@@ -147,7 +170,7 @@ export default function RoadReportRun({
         onClick={send}
         className={`btn btn-lamp w-full whitespace-nowrap rounded-full text-lg ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
       >
-        {pending || busy ? "報告中…" : ready ? "地図に報告してクリア！" : !hz ? "危険の種類をえらんでね" : !file ? "写真を撮ってね" : "場所を調べています…"}
+        {pending || busy ? "報告中…" : ready ? "地図に報告してクリア！" : !hz ? "危険の種類をえらんでね" : !file ? "写真を撮ってね" : blurred === "wait" ? "ぼかしを入れています…" : !blurred ? "写真を撮り直してね" : "場所を調べています…"}
       </button>
 
       {adjusting && loc.state === "ok" && (
@@ -170,10 +193,7 @@ export default function RoadReportRun({
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) {
-            setFile(f);
-            setPreview(URL.createObjectURL(f));
-          }
+          if (f) pickPhoto(f);
           e.target.value = "";
         }}
       />

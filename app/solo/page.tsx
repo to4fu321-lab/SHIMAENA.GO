@@ -1,4 +1,5 @@
 import { isNight } from "@/lib/night";
+import StormBanner from "@/components/StormBanner";
 import type { Metadata } from "next";
 import { onTeam } from "@/lib/member";
 import Link from "next/link";
@@ -83,6 +84,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   return (
     <>
       <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
+      <StormBanner />
       <SoloScreen
         viewerId={me.id}
         nickname={me.nickname}

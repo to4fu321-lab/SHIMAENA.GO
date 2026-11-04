@@ -13,6 +13,8 @@ import type { PhotoInput } from "@/lib/claude/photo";
 import { completeSolo, startHomeNow, stopHomeNow, type SoloClearSummary } from "@/lib/solo/ops";
 import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
+import { stormStopText } from "@/lib/storm";
+import { findPrivateAreas, WHOLE, type PrivacyResult } from "@/lib/claude/privacy";
 
 export interface SoloActionResult {
   ok: boolean;
@@ -51,6 +53,8 @@ export async function startHomeAction(formData: FormData): Promise<{ ok: boolean
   return withStateLock("solo:startHomeAction", async () => {
     const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
     if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から開いてください。" };
+    const stop = await stormStopText();
+    if (stop) return { ok: false, text: stop };
     const r = await startHomeNow(id, new Date());
     revalidatePath("/");
     return r;
@@ -82,6 +86,8 @@ async function readPhoto(file: FormDataEntryValue | null): Promise<PhotoInput | 
 export async function reportRoadAction(formData: FormData): Promise<SoloActionResult> {
   const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
   if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から開いてください。" };
+  const stop = await stormStopText();
+  if (stop) return { ok: false, text: stop };
   const h = hazard(String(formData.get("hazard") ?? ""));
   if (!h) return { ok: false, text: "どんな危険かを選んでください。" };
   const lat = Number(formData.get("lat"));
@@ -91,7 +97,9 @@ export async function reportRoadAction(formData: FormData): Promise<SoloActionRe
   }
   const photo = await readPhoto(formData.get("photo"));
   if (!photo || photo === "bad") return { ok: false, text: "写真を1枚つけてください（JPEG・PNG・WebP）。" };
+  // 地図と LINE に出すのは、画面でぼかしを入れた小さい写真だけ（spec v1.11）。元の写真は残さない
   const thumb = await readPhoto(formData.get("thumb"));
+  if (!thumb || thumb === "bad") return { ok: false, text: "ぼかしを入れた写真が届きませんでした。写真を撮り直してください。" };
   const note = String(formData.get("note") ?? "").trim().slice(0, 60) || undefined;
 
   const now = new Date();
@@ -105,7 +113,7 @@ export async function reportRoadAction(formData: FormData): Promise<SoloActionRe
   };
   if (note) report.note = note;
   try {
-    await insertRoadReport(report, Buffer.from((thumb && thumb !== "bad" ? thumb : photo).bytes).toString("base64"));
+    await insertRoadReport(report, Buffer.from(thumb.bytes).toString("base64"));
   } catch (e) {
     console.error("[road] 報告を保存できませんでした:", e instanceof Error ? e.message : e);
     return { ok: false, text: "報告を保存できませんでした。少し待って、もう一度「地図に報告」を押してください。" };
@@ -127,4 +135,12 @@ export async function setRoadAlertAction(viewerId: string, enabled: boolean): Pr
   if (!id) return undefined;
   await setAlertPref(id, enabled);
   return getAlertPref(id);
+}
+
+/** 人に見せる写真のぼかす場所（spec v1.11）。ぼかすのは画面。確かめられなければ全体をぼかす */
+export async function privacyAction(formData: FormData): Promise<PrivacyResult> {
+  const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
+  const photo = await readPhoto(formData.get("photo"));
+  if (!id || !photo || photo === "bad") return WHOLE;
+  return findPrivateAreas(photo);
 }

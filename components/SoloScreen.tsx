@@ -380,7 +380,7 @@ export default function SoloScreen({
               </Link>
             </p>
           )}
-          {brag && <BragShare before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />}
+          {brag && <BragShare viewerId={viewerId} before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />}
           <QuickShare text={roadDone ? "近所の道の危険を、写真と場所で知らせました。⚠️\nみんなで冬の道を安全に。\n#シマエナGO #雪道" : clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
           {shareOptions.length > 0 && (
             <details className="mt-3 rounded-2xl bg-card ring-1 ring-ink/10">
@@ -447,7 +447,7 @@ export default function SoloScreen({
                 className={`h-full w-[88%] shrink-0 snap-center overflow-y-auto rounded-3xl transition-transform [scrollbar-width:none] ${i === active ? "" : "scale-95 opacity-70"}`}
               >
                 {m && running?.kind === m.kind && m.kind === "report_snow" ? (
-                  <RoadReportRun pending={pending} onSend={submitRoad} onQuit={() => setRunning(null)} />
+                  <RoadReportRun viewerId={viewerId} pending={pending} onSend={submitRoad} onQuit={() => setRunning(null)} />
                 ) : m && running?.kind === m.kind ? (
                   <MissionRun
                     mission={m}

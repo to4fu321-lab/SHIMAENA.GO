@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import StormBanner from "@/components/StormBanner";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -46,6 +47,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   return (
     <>
       <AutoRefresh />
+      <StormBanner />
       <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
       <MapScreen
         state={state}

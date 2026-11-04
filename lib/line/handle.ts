@@ -35,6 +35,7 @@ import { getMessageContent, getProfile, push, reply } from "./client";
 import { liffUrl } from "../url";
 import { ensureTeam } from "../member";
 import { MSG } from "./messages";
+import { STORM_LINES, stormHeadline, stormStatus } from "../storm";
 import { parseText, step, type RegInput, type Registration } from "./registration";
 import type { LineEvent, LineMessage } from "./types";
 
@@ -137,6 +138,18 @@ async function nothingNow(lineUserId: string): Promise<LineMessage[]> {
   return cc ? [...MSG.nowNoneLead(), ...cc] : MSG.nowNothing();
 }
 
+/** 外に出る遊びを始める操作か（お休みの日に止めるもの） */
+function startsGame(ev: LineEvent): boolean {
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text") {
+    return /^(出動する|出動|いまからやる|雪かきを頼む|雪かきをたのむ|雪かき頼む)$/.test(ev.message.text.trim());
+  }
+  if (ev.type === "postback" && "postback" in ev) {
+    const d = ev.postback.data;
+    return d.startsWith("now:") || d.startsWith("help:go=") || d === "go:yes";
+  }
+  return false;
+}
+
 export async function handleEvent(ev: LineEvent): Promise<void> {
   const lineUserId = ev.source.userId;
   if (!lineUserId) return;
@@ -151,6 +164,15 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "message" || ev.type === "postback") {
     const me = await r.findParticipantByLineUserId(lineUserId);
     if (me) await ensureTeam(me);
+  }
+
+  // 警報の日はお休み（spec v1.11）: 出動・手伝いに行く・雪かきを頼むは受け付けず、家の中で過ごすよう伝える
+  if (ev.replyToken && startsGame(ev)) {
+    const storm = await stormStatus();
+    if (storm.stopped) {
+      await reply(ev.replyToken, MSG.stormStop(stormHeadline(storm), STORM_LINES));
+      return;
+    }
   }
 
   // 点呼の答え（rc:ans=...）は登録の会話とは別に扱う

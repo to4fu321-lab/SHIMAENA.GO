@@ -18,6 +18,7 @@ import {
   backToSample,
   cheerDemo,
   clearProblemsAction,
+  stormToggleAction,
   completeOne,
   helpNextRing,
   makeRichMenu,
@@ -38,6 +39,7 @@ import { makeNameMasker } from "@/lib/admin-names";
 import { demoEnabled } from "@/lib/env";
 import { readLineUsage } from "@/lib/ops/line-usage";
 import { listProblems } from "@/lib/ops/problems";
+import { manualStop, stormStatus } from "@/lib/storm";
 import { loginAction, logoutAction } from "./auth-actions";
 
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
@@ -112,7 +114,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
     const { login } = await searchParams;
     return <Login failed={login === "failed"} unconfigured={gate === "unconfigured"} />;
   }
-  const [s, db, roster, problems, usage] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), readLineUsage()]);
+  const [s, db, roster, problems, usage, storm, manualStorm] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), readLineUsage(), stormStatus(), manualStop()]);
   const names = makeNameMasker(roster.participants);
   const m = s.morning;
   const totals = teamTotals(m);
@@ -185,6 +187,20 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           </form>
         </section>
       )}
+
+      <section className="space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="警報の日のお休み">
+        <h2 className="font-bold">警報の日のお休み</h2>
+        <p className="text-base">
+          {storm.stopped ? `⛔ お休み中（${storm.source === "jma" ? `気象庁: ${storm.names.join("・")}` : "手動"}）` : "ふつうに動いています"}
+        </p>
+        <p className="text-sm text-ink-soft">
+          気象庁の警報（暴風雪・暴風・大雪、特別警報も）が札幌市に出たら、自動で止まります（予告・点呼・作戦・出動・道の報告）。下は訓練・デモ用の手動の切りかえ。
+        </p>
+        <form action={stormToggleAction}>
+          <input type="hidden" name="on" value={manualStorm ? "0" : "1"} />
+          <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">{manualStorm ? "手動のお休みをやめる" : "手動でお休みにする"}</button>
+        </form>
+      </section>
 
       <section className="space-y-2" aria-label="操作">
         <Step n="0" label="前夜の予告を出す（予報 12cm のデモの朝にする）" action={startEmptyMorning} />

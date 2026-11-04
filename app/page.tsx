@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import StormBanner from "@/components/StormBanner";
 import Link from "next/link";
 import { onTeam } from "@/lib/member";
 import { cookies } from "next/headers";
@@ -140,6 +141,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
       <AutoRefresh seconds={8} />
+      <StormBanner />
       {/* 上: ロゴ・ひとこと・くわしく */}
       <header className="flex shrink-0 flex-wrap items-center gap-x-2 bg-ice-soft px-4 pt-3 short:pt-1.5" style={myTeam ? { background: myTeam.soft } : undefined}>
         <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
