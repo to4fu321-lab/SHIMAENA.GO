@@ -2,6 +2,7 @@
 // v1.7: チームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2・オンライン +1〔1日3点まで〕、1人1日 15点まで。lib/solo/team-points.ts）。
 //家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
 import { allowedAtNight, isNight, nightRefusal } from "../night";
+import { onTeam } from "../member";
 import { randomBytes } from "node:crypto";
 import { issueSoloCard, revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
@@ -169,7 +170,7 @@ export async function completeSolo(
   // チームの得点（現地だけ・1人1日 15点まで）。失敗しても羽と記録は残す
   let teamPoints = 0;
   let teamCapped = false;
-  if (p.role === "helper" && p.teamId) {
+  if (onTeam(p) && p.teamId) {
     try {
       const already = await soloPointsToday(record, p.id, today);
       const events = scoreSolo({ kind: mission.kind, onsite: mission.onsite, photoChecked, teamId: p.teamId, participantId: p.id, at }, already.all, already.online);

@@ -1,5 +1,6 @@
 import { isNight } from "@/lib/night";
 import type { Metadata } from "next";
+import { onTeam } from "@/lib/member";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
@@ -63,7 +64,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
 
   const status = await soloStatus(me.id, new Date());
   const planned = record.morning.rollcall.status === "planned";
-  const canHelpHouse = planned && me.role === "helper" && Boolean(me.teamId);
+  const canHelpHouse = planned && onTeam(me);
   const shorts = listShort(record, roster);
   const [stats, meStats, roadAlerts] = await Promise.all([loadPublicStats(), loadMeStats(me.id), getAlertPref(me.id).catch(() => undefined)]);
   const texts = await shareTextsFor(stats);

@@ -1,6 +1,7 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
 import { isNight } from "../night";
+import { onTeam } from "../member";
 import { consistentSnowType } from "../snow-estimate";
 import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
@@ -796,7 +797,7 @@ export async function joinNearby(participantId: string, minutes: NowMinutes = 10
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);
-  if (!p || p.role !== "helper" || !p.teamId || s.morning.rollcall.status !== "planned") {
+  if (!p || !onTeam(p) || s.morning.rollcall.status !== "planned") {
     return { joined: false, messages: MSG.nowNothing() };
   }
   const offer = pickTaskNow(s, roster, p, minutes);
@@ -834,7 +835,7 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
   s.morning.scores = [...s.morning.scores.filter((e) => e.reason !== "weekly_goal"), ...summary.goalEvents];
 
   // 翌週のチーム: 出撃回数と体力でバランス（Claude の案ではなく計算。週ごとの種で毎週変わる）
-  const helpers = roster.participants.filter((p) => p.role === "helper");
+  const helpers = roster.participants.filter((p) => p.role === "helper" || onTeam(p));
   const seed = Number(from.replace(/-/g, "")) % 100000;
   const nextTeams = shuffleTeams(helpers, summary.sortieDays, seed);
   for (const h of helpers) {
@@ -849,7 +850,7 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
     const msgs: LineMessage[] = MSG.weeklyToAll(text.commentary, text.nextWeek);
     const title = titleOf.get(p.id);
     if (title) msgs.push(...MSG.weeklyTitle(title.title, title.rareCard));
-    if (p.role === "helper" && nextTeams[p.id]) {
+    if (nextTeams[p.id]) {
       msgs.push(...MSG.weeklyNewTeam(nextTeams[p.id], nextTeamTerm(today)));
     }
     if (await push(p.lineUserId, msgs)) sent++;
@@ -875,7 +876,7 @@ export async function helpOpenFor(participantId: string, minutes: NowMinutes = 6
   if (s.morning.rollcall.status !== "planned") return false;
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);
-  if (!p || p.role !== "helper") return true; // お願いする側の案内は offerTaskNow のまま
+  if (!p || !(p.role === "helper" || onTeam(p))) return true; // チームのないお願いする側の案内は offerTaskNow のまま
   return pickTaskNow(s, roster, p, minutes) !== null;
 }
 
@@ -884,8 +885,8 @@ export async function offerTaskNow(participantId: string, minutes: NowMinutes, n
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);
-  if (p?.role === "requester") return MSG.nowForRequester();
-  if (!p || p.role !== "helper") return MSG.nowNothing();
+  if (p?.role === "requester" && !onTeam(p)) return MSG.nowForRequester();
+  if (!p || !(p.role === "helper" || onTeam(p))) return MSG.nowNothing();
   if (s.morning.rollcall.status !== "planned") return MSG.nowNothing();
   const offer = pickTaskNow(s, roster, p, minutes);
   if (!offer) return MSG.nowNothing();

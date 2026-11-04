@@ -1,5 +1,6 @@
 // 週の集計（月〜日。チームの期間と同じ）とチームのシャッフル。spec 5。
 import type { MorningRecord } from "../morning/flow";
+import { onTeam } from "../member";
 import type { Roster } from "../morning/roster";
 import type { Participant, ScoreEvent, TeamId } from "../types";
 import { scoreWeeklyGoal } from "./score";
@@ -74,7 +75,7 @@ export function weeklySummary(records: MorningRecord[], roster: Roster, weekStar
   const goalTeams: TeamId[] = [];
   const goalEvents: ScoreEvent[] = [];
   for (const [team, completed] of completedByTeam) {
-    const members = roster.participants.filter((p) => p.role === "helper" && p.teamId === team).map((p) => p.id);
+    const members = roster.participants.filter((p) => onTeam(p) && p.teamId === team).map((p) => p.id);
     const events = scoreWeeklyGoal(team, completed, members, at);
     if (events.length > 0) {
       goalTeams.push(team);
@@ -84,7 +85,7 @@ export function weeklySummary(records: MorningRecord[], roster: Roster, weekStar
   }
   const ranking = (Object.keys(teamTotals) as TeamId[]).sort((a, b) => teamTotals[b] - teamTotals[a]);
   const titles = roster.participants
-    .filter((p) => p.role === "helper")
+    .filter((p) => p.role === "helper" || onTeam(p))
     .map((p) => ({ p, t: weeklyTitle(sortieDays[p.id] ?? 0) }))
     .filter(({ t }) => t.title)
     .map(({ p, t }) => ({ participantId: p.id, nickname: p.nickname, title: t.title!, rareCard: t.rareCard }));

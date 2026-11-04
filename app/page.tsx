@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { onTeam } from "@/lib/member";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -68,13 +69,13 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const planned = m.rollcall.status === "planned";
   const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
   // 出動する: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
-  const canHelpHouse = planned && me?.role === "helper" && Boolean(me.teamId);
+  const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
   const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
-  const myTeam = me?.role === "helper" && me.teamId ? teamTheme(me.teamId) : undefined;
+  const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
   // 隊長のひとこと（spec v1.6）: 状態は計算、文は朝に1回だけ書いたもの（なければ定型）
   const st = me ? await soloStatus(me.id, new Date()).catch(() => undefined) : undefined;
   const last = st?.recent[0]?.date;

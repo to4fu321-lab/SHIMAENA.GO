@@ -110,6 +110,7 @@ export function pickTaskNow(s: MorningRecord, roster: Roster, p: Participant, mi
     const base = roster.bases.find((b) => b.id === m.baseId);
     const requester = base && roster.participants.find((x) => x.id === base.requesterId);
     if (!requester) continue;
+    if (requester.id === p.id) continue; // 自分の家は手伝いの候補にしない（お願いする側もチームに入るので）
     const d = distanceM(p.location, requester.location);
     if (d > HELP_RADII[2]) continue;
     if (m.status === "short" || m.status === "open") {

@@ -1,6 +1,7 @@
 // 今週のチーム（T47）。LINE のチーム発表の「チームを見る」から開く。
 // 1週間（月曜〜日曜）のチームを、チームの色・チーム色のマフラーのシマエナガ・期間で大きく見せる。名前は出さない（人数だけ）。
 import type { Metadata } from "next";
+import { onTeam } from "@/lib/member";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
@@ -30,7 +31,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
   const term = teamTerm(jstDate());
   const mine = me?.teamId ? teamTheme(me.teamId) : undefined;
   const totals = teamTotals(record.morning);
-  const members = (id: string) => roster.participants.filter((p) => p.role === "helper" && p.teamId === id).length;
+  const members = (id: string) => roster.participants.filter((p) => onTeam(p) && p.teamId === id).length;
 
   return (
     <main className="mx-auto min-h-dvh max-w-md bg-paper pb-6 text-ink">

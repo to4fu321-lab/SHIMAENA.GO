@@ -1,5 +1,6 @@
 "use server";
 
+import { ensureTeam } from "@/lib/member";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { sniffImageType } from "@/lib/image";
@@ -97,8 +98,10 @@ export async function manualFinishAction(viewerId: string): Promise<ActionResult
 
 /** LIFF でログインした人を、この画面の「自分」にする */
 export async function signInWithLiff(accessToken: string): Promise<{ ok: boolean; nickname?: string }> {
-  const p = await resolveViewerByLiff(accessToken);
-  if (!p) return { ok: false };
+  const found = await resolveViewerByLiff(accessToken);
+  if (!found) return { ok: false };
+  // 前に登録したお願いする側の人も、アプリを開いたらチームに入る（spec v1.10）
+  const p = await ensureTeam(found).catch(() => found);
   (await cookies()).set(VIEWER_COOKIE, signViewer(p.id), {
     httpOnly: true,
     sameSite: "none", // LINE の中のブラウザから開くため

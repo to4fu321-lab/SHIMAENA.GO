@@ -1,6 +1,7 @@
 // AI参加コンシェルジュの本体（spec v1.7）: 自由な文 → その人の今の状況 → 開いている参加の方法 → Claude が1つ選ぶ（3往復まで）
 // → その人用の画像つきのカードで、アプリの活動へ誘う。返信（reply）だけで完結するので、LINE の月の通数は使わない。
 import { isNight } from "../night";
+import { onTeam } from "../member";
 import { askConcierge, MAX_TURNS, type ConciergeInput } from "../claude/concierge";
 import { jstHourMinute } from "../jst";
 import { youImagePath } from "../line/you-image";
@@ -35,7 +36,7 @@ export async function conciergeContext(p: Participant, record: MorningRecord, no
   const rc = m.rollcall;
   return {
     role: p.role === "requester" ? "requester" : "helper",
-    hasTeam: p.role === "helper" && Boolean(p.teamId),
+    hasTeam: onTeam(p),
     rollcall: isToday ? rc.status : "none",
     answered: record.answers.some((a) => a.participantId === p.id),
     going: m.sorties.some((x) => x.participantId === p.id && x.status === "going"),
@@ -83,7 +84,7 @@ export async function concierge(lineUserId: string, text: string, now = new Date
       title: res.option.title,
       minutes: res.option.minutes,
       points: res.option.points,
-      teamId: p.role === "helper" ? p.teamId : undefined,
+      teamId: onTeam(p) ? p.teamId : undefined,
     });
     const outside = res.option.id === "own_house" || res.option.id === "patrol" || res.option.id === "join";
     const safety = ctx.safety && outside ? "大雪・寒さの朝です。ひとりでやらず、15分ごとに休みましょう。" : undefined;

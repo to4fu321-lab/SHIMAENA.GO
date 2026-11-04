@@ -32,6 +32,7 @@ import { teamTerm } from "../team-theme";
 import type { FamilyLink, Participant } from "../types";
 import { getMessageContent, getProfile, push, reply } from "./client";
 import { liffUrl } from "../url";
+import { ensureTeam } from "../member";
 import { MSG } from "./messages";
 import { parseText, step, type RegInput, type Registration } from "./registration";
 import type { LineEvent, LineMessage } from "./types";
@@ -97,6 +98,11 @@ export async function finishRegistration(lineUserId: string, reg: Registration):
   const base = await r.findBaseByRequester(p.id);
   if (!base) await r.upsertBase({ id: `base-${p.id}`, number: await r.nextBaseNumber(), requesterId: p.id });
 
+  // お互いさま（v1.10）: 本人の登録ならチームに入る（家族の代理はまだ本人の LINE がないので入れない）
+  if (!reg.proxy) {
+    p.teamId = existing?.teamId ?? assignTeam(await r.countHelpersByTeam());
+    await r.upsertParticipant(p);
+  }
   const messages: LineMessage[] = MSG.requesterDone(level.message, level.level, level.requiredPeople);
   if (reg.proxy) {
     const link: FamilyLink = { familyLineUserId: lineUserId, requesterId: p.id, linkCode: makeLinkCode() };
@@ -138,6 +144,12 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "unfollow") {
     await r.setSession(lineUserId, null);
     return;
+  }
+
+  // 前に登録したお願いする側の人も、LINE を使ったらチームに入る（v1.10）
+  if (ev.type === "message" || ev.type === "postback") {
+    const me = await r.findParticipantByLineUserId(lineUserId);
+    if (me) await ensureTeam(me);
   }
 
   // 点呼の答え（rc:ans=...）は登録の会話とは別に扱う

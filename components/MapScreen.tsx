@@ -262,7 +262,7 @@ export default function MapScreen({
           viewerId={state.viewerId}
           items={rescue}
           goingTo={goingTo}
-          isHelper={viewer?.role === "helper"}
+          isHelper={viewer?.role === "helper" || Boolean(viewer?.teamId)}
           hasAssignment={goingTo.length > 0}
         />
         <details className="rounded-2xl bg-paper px-3 py-2 ring-1 ring-ink/10">

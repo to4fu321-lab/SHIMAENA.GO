@@ -81,7 +81,7 @@ export const memoryRepo: Repo = {
   },
   async countHelpersByTeam() {
     const counts = EMPTY_COUNTS();
-    for (const p of mem().participants.values()) if (p.role === "helper" && p.teamId) counts[p.teamId]++;
+    for (const p of mem().participants.values()) if (p.teamId) counts[p.teamId]++; // お願いする側もチームに入る（v1.10）
     return counts;
   },
   async findBaseByRequester(requesterId) {
@@ -401,7 +401,7 @@ export const dbRepo: Repo = {
   async countHelpersByTeam() {
     const counts = EMPTY_COUNTS();
     const rows = await query<{ team_id: TeamId; n: string }>(
-      "select team_id, count(*)::text as n from participants where role = 'helper' and team_id is not null group by team_id",
+      "select team_id, count(*)::text as n from participants where team_id is not null group by team_id",
     );
     for (const r of rows) counts[r.team_id] = Number(r.n);
     return counts;
