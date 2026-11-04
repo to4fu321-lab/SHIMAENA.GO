@@ -181,14 +181,19 @@ export async function completeSolo(
     }
   }
 
-  // カード: 最初の1枚（初出撃）、5日連続のボーナスが付いた朝はドット絵
+  // カード（v1.8: 毎回1枚）: 最初の1枚は「はじめてのソロ出動」、5日連続はドット絵、それ以外はその時だけの1枚（名前と場面は Claude）
   let card: Card | undefined;
   try {
-    if (firstEver) {
-      card = await issueSoloCard(p, { variant: "first", date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: true, at, snow });
-    } else if (due.includes("bonus_streak5")) {
-      card = await issueSoloCard(p, { variant: "streak5", date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: false, at, snow });
-    }
+    const rc = record.morning.rollcall;
+    const same = rc.date === today;
+    const weather = {
+      forecastCm: same ? rc.forecastCm : 0,
+      depthCm: same ? rc.depthCm : undefined,
+      snowType: check?.snowType,
+      photoDepth: check && !check.unrelated ? check.depth : undefined,
+    };
+    const variant = firstEver ? "first" : due.includes("bonus_streak5") ? "streak5" : "daily";
+    card = await issueSoloCard(p, { variant, date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: firstEver, at, snow, weather });
   } catch (e) {
     console.error("[solo] カードを発行できませんでした:", e instanceof Error ? e.message : e);
   }

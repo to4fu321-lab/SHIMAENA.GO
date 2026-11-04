@@ -1,4 +1,6 @@
 // 完了した家の人にカードを発行する: レア判定 → Claude が文字 → SVG → 保存 → LINE で2枚（表・裏）。
+import type { PhotoDepth } from "../snow-estimate";
+import type { CardScene } from "./scene";
 import type { RevealCard } from "./reveal";
 import { randomBytes } from "node:crypto";
 import { cardText } from "../claude/card";
@@ -12,7 +14,7 @@ import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { TOWN } from "../town";
 import { baseUrl } from "../url";
-import type { Card, Mission, Participant, Sortie } from "../types";
+import type { Card, Mission, Participant, SnowType, Sortie } from "../types";
 import { decideRarity } from "./rarity";
 import { backExtras, renderCardBackSvg, renderCardSvg, type CardArt } from "./svg";
 
@@ -189,11 +191,13 @@ export function artFromCard(card: Card, date: string): CardArt {
 }
 
 /** ソロ出動のカードの種類: 初回＝かわいい、5日連続＝ドット絵（図鑑の「五日連続の群れ」が埋まる）。カードの種類は増やさない */
-export type SoloCardVariant = "first" | "streak5";
+export type SoloCardVariant = "first" | "streak5" | "daily";
 
 const SOLO_CARD: Record<SoloCardVariant, { style: Card["style"]; designName: string; designNameEn: string; rarityLabel: string; stars: 1 | 2 | 3; flavor: string }> = {
   first: { style: "kawaii", designName: "はじめてのソロ出動", designNameEn: "First Solo Flight", rarityLabel: "ひとりの群れ", stars: 1, flavor: "Five minutes, one bird" },
   streak5: { style: "pixel", designName: "五日目のドット", designNameEn: "Day Five, Pixel Perfect", rarityLabel: "五日連続の群れ", stars: 3, flavor: "5 DAYS STREAK" },
+  // v1.8: ふだんのソロ出動も毎回1枚（名前・副題・場面はその時の事実から Claude が。1枚限定）
+  daily: { style: "kawaii", designName: "ひとりの十分間", designNameEn: "Ten Minutes, One Bird", rarityLabel: "ひとりの群れ", stars: 1, flavor: "One bird, one path" },
 };
 
 /**
@@ -212,13 +216,37 @@ export async function issueSoloCard(
     at: string;
     /** v1.8: 自宅の雪かきでどけた雪（手がかりがあるときだけ） */
     snow?: { snowKg: number; snowKgComparison: string; snowKgBasis: string };
+    /** v1.8: 場面とカードの名前の材料（その時の雪・写真の深さ・雪質） */
+    weather?: { forecastCm: number; depthCm?: number; snowType?: SnowType; photoDepth?: PhotoDepth };
   },
 ): Promise<Card> {
   const v = SOLO_CARD[opts.variant];
+  // その時だけの場面（と、ふだんの1枚なら名前・副題）を Claude に。失敗しても決まった名前で発行する
+  let named: { designName: string; designNameEn: string; flavor: string; scene?: CardScene } = { designName: v.designName, designNameEn: v.designNameEn, flavor: v.flavor };
+  try {
+    const t = await cardText({
+      date: opts.date,
+      completedAtJst: hm(opts.at),
+      forecastCm: opts.weather?.forecastCm ?? 0,
+      level: 1,
+      clearArea: p.clearArea ?? "entrance",
+      memberCount: 1,
+      teamNames: p.teamId ? [getTeam(p.teamId).name] : [],
+      style: v.style,
+      rarityLabel: v.rarityLabel,
+      snowType: opts.weather?.snowType,
+      photoDepth: opts.weather?.photoDepth,
+      modelDepthCm: opts.weather?.depthCm,
+      seed: `solo|${opts.logId}`,
+    });
+    named = opts.variant === "daily" ? { designName: t.designName, designNameEn: t.designNameEn, flavor: t.flavor, scene: t.scene } : { ...named, scene: t.scene };
+  } catch (e) {
+    console.error("[solo] カードの名前と場面を作れませんでした（決まった名前で発行します）:", e instanceof Error ? e.message : e);
+  }
   const art: CardArt = {
     style: v.style,
-    designName: v.designName,
-    designNameEn: v.designNameEn,
+    designName: named.designName,
+    designNameEn: named.designNameEn,
     rarityLabel: v.rarityLabel,
     stars: v.stars,
     members: [{ name: p.nickname, teamId: p.teamId }],
@@ -229,8 +257,9 @@ export async function issueSoloCard(
     ...(opts.snow ? { snowKgBasis: opts.snow.snowKgBasis } : {}),
     serial: 1,
     issuedCount: 1,
-    flavor: v.flavor,
+    flavor: named.flavor,
     stampText: opts.snow ? `${opts.snow.snowKg}kg` : "ソロ",
+    ...(named.scene ? { scene: named.scene } : {}),
   };
   const card: Card = {
     id: `c-${randomBytes(6).toString("base64url")}`,

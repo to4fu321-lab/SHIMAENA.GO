@@ -118,7 +118,10 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     expect(r3.ok).toBe(true);
     if (r3.ok) {
       expect(r3.summary.bonuses).toEqual([]);
-      expect(r3.summary.card).toBeUndefined();
+      // v1.8: 毎回1枚。2回目からは「その時だけの1枚」（名前と場面はその時の事実から）
+      expect(r3.summary.card?.rarityLabel).toBe("ひとりの群れ");
+      expect(r3.summary.card?.designName).not.toBe("はじめてのソロ出動");
+      expect(r3.summary.reveal?.code).toBeUndefined(); // ソロの演出は設計図の番号なし（カードの裏に出る）
       expect(r3.summary.teamPoints).toBe(5);
     }
     expect((await loadMorning()).morning.scores.length).toBe(scoresBefore + 2);
@@ -126,7 +129,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     expect(st.today).toBe(DEMO_DATE);
     expect(st.todayFeathers).toBe(16);
     expect(st.doneToday.sort()).toEqual(["own_house", "report_snow"]);
-    expect(st.cards).toBe(1);
+    expect(st.cards).toBe(2);
     expect((await memoryRepo.listSoloLogsByParticipant("h3")).every((l) => !("lat" in l))).toBe(true);
   });
 
