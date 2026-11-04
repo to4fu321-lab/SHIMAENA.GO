@@ -1,6 +1,6 @@
 // ソロ出動の「本番の操作」（spec v1.3）。台帳を読み、ミッションを完了にして、羽・ボーナス・ひとこと・カードを付ける。
-// v1.7: 現地の活動はチームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2、1人1日 15点まで。lib/solo/team-points.ts）。
-// オンラインの活動は羽だけ。家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
+// v1.7: チームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2・オンライン +1〔1日3点まで〕、1人1日 15点まで。lib/solo/team-points.ts）。
+//家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
 import { randomBytes } from "node:crypto";
 import { issueSoloCard } from "../cards/issue";
 import { cellKey } from "../cells";
@@ -125,13 +125,13 @@ export async function completeSolo(
   // チームの得点（現地だけ・1人1日 15点まで）。失敗しても羽と記録は残す
   let teamPoints = 0;
   let teamCapped = false;
-  if (p.role === "helper" && p.teamId && mission.onsite) {
+  if (p.role === "helper" && p.teamId) {
     try {
       const already = await soloPointsToday(record, p.id, today);
-      const events = scoreSolo({ kind: mission.kind, onsite: mission.onsite, photoChecked, teamId: p.teamId, participantId: p.id, at }, already);
+      const events = scoreSolo({ kind: mission.kind, onsite: mission.onsite, photoChecked, teamId: p.teamId, participantId: p.id, at }, already.all, already.online);
       await addSoloScores(record, today, events);
       teamPoints = events.reduce((a, e) => a + e.points, 0);
-      teamCapped = already + teamPoints >= SOLO_TEAM_DAILY_CAP;
+      teamCapped = already.all + teamPoints >= SOLO_TEAM_DAILY_CAP;
     } catch (e) {
       console.error("[solo] チームの得点を記録できませんでした:", e instanceof Error ? e.message : e);
     }

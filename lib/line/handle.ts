@@ -13,6 +13,7 @@ import {
   joinMission,
   offerTaskNow,
   planIfDue,
+  rollcallQuestion,
   sendCheer,
   sendThanks,
   setGoing,
@@ -20,6 +21,7 @@ import {
   tipStart,
 } from "../morning/ops";
 import { NOW_MINUTES, type NowMinutes } from "../morning/watch";
+import { concierge, CONSULT_WORDS, inConversation } from "../concierge/run";
 import { repo } from "../repo";
 import { jstDate } from "../jst";
 import { teamTerm } from "../team-theme";
@@ -215,6 +217,12 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     return;
   }
 
+  // コンシェルジュの「今朝の点呼に答える」（spec v1.7）
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data === "cc:rollcall") {
+    if (ev.replyToken) await reply(ev.replyToken, await rollcallQuestion(lineUserId));
+    return;
+  }
+
   // 今朝の先生（spec v1.6）: 「教える」「また今度」
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("tip:")) {
     const messages = await tipStart(lineUserId, ev.postback.data);
@@ -230,11 +238,26 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       if (ev.replyToken) await reply(ev.replyToken, tip);
       return;
     }
+    // AI参加コンシェルジュ（spec v1.7）: 会話の続き・相談らしい文は、点呼の答えより先にコンシェルジュへ
+    const consult = CONSULT_WORDS.test(ev.message.text) || (await inConversation(lineUserId));
+    if (consult) {
+      const cc = await concierge(lineUserId, ev.message.text);
+      if (cc) {
+        if (ev.replyToken) await reply(ev.replyToken, cc);
+        return;
+      }
+    }
     const messages = await answerByWords(lineUserId, ev.message.text);
     if (messages) {
       if (ev.replyToken) await reply(ev.replyToken, messages);
       await planIfDue();
       await escalateHelpIfDue();
+      return;
+    }
+    // 点呼の時間でなければ、登録した人の自由な文はコンシェルジュへ（「下のボタンから」で止めない）
+    const cc = await concierge(lineUserId, ev.message.text);
+    if (cc) {
+      if (ev.replyToken) await reply(ev.replyToken, cc);
       return;
     }
   }

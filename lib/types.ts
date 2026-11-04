@@ -186,7 +186,8 @@ export type ScoreReason =
   // v1.7: ソロ出動の現地の活動もチームの得点に（1人1日 15点まで）
   | "solo_home" // 自分の家の雪かき 10分 +5
   | "solo_onsite" // 見回り・報告など現地 10分 +3
-  | "solo_photo"; // 写真を Claude が確認できた +2
+  | "solo_photo" // 写真を Claude が確認できた +2
+  | "solo_online"; // オンライン（アプリで地図を見る・報告）+1、1人1日 3点まで
 
 export interface ScoreEvent {
   id: string;

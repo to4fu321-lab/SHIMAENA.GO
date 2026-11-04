@@ -14,10 +14,15 @@ export const POINTS = {
   solo_home: 5, // v1.7: ソロの自分の家の雪かき（10分・現地）
   solo_onsite: 3, // v1.7: ソロの見回り・報告など（10分・現地）
   solo_photo: 2, // v1.7: ソロの写真を Claude が確認できた
+  solo_online: 1, // v1.7: オンライン（アプリを開いて地図を見る・報告する）
 } as const satisfies Record<ScoreReason, number>;
 
 /** ソロ出動からチームに入る点の、1人1日の上限（spec v1.7） */
 export const SOLO_TEAM_DAILY_CAP = 15;
+/** そのうちオンラインの分の上限（1人1日） */
+export const SOLO_ONLINE_DAILY_CAP = 3;
+
+const SOLO_REASONS: ScoreReason[] = ["solo_home", "solo_onsite", "solo_photo", "solo_online"];
 
 /** 早朝ボーナスの締め切り（日本時間 7:30） */
 export function isEarly(completedAtIso: string): boolean {
@@ -64,18 +69,27 @@ export function scoreMission(sorties: Sortie[], at: string, requesterJoined = fa
 }
 
 /**
- * ソロ出動（現地）のチーム得点（spec v1.7）。オンライン（地図を見る・一言の報告）は外に出ていないので 0。
- * 自分の家の雪かき +5、それ以外の現地 +3、写真を Claude が確認できたら +2。1人1日 15点まで（alreadyToday はその日にもう入った点）。
- * チームのない人（お願いする側）には付けない。
+ * ソロ出動のチーム得点（spec v1.7）。
+ * 現地: 自分の家の雪かき +5、それ以外 +3、写真を Claude が確認できたら +2。
+ * オンライン（アプリを開いて地図を見る・報告する）: +1。アプリを開くこと自体が参加の入口なので、少しだけ。1人1日 3点まで。
+ * 全部あわせて 1人1日 15点まで（alreadyToday はその日にもう入った点、onlineToday はそのうちオンラインの点）。
+ * チームのない人（お願いする側）・家の手伝い（朝の一本道で数える）には付けない。
  */
 export function scoreSolo(
   opts: { kind: string; onsite: boolean; photoChecked?: boolean; teamId?: TeamId; participantId: string; at: string },
   alreadyToday: number,
+  onlineToday = 0,
 ): ScoreEvent[] {
-  if (!opts.onsite || !opts.teamId || opts.kind === "help_house") return [];
-  const wanted: [ScoreReason, number][] = [[opts.kind === "own_house" ? "solo_home" : "solo_onsite", opts.kind === "own_house" ? POINTS.solo_home : POINTS.solo_onsite]];
-  if (opts.photoChecked) wanted.push(["solo_photo", POINTS.solo_photo]);
+  if (!opts.teamId || opts.kind === "help_house") return [];
   let room = Math.max(0, SOLO_TEAM_DAILY_CAP - alreadyToday);
+  const wanted: [ScoreReason, number][] = [];
+  if (!opts.onsite) {
+    room = Math.min(room, Math.max(0, SOLO_ONLINE_DAILY_CAP - onlineToday));
+    wanted.push(["solo_online", POINTS.solo_online]);
+  } else {
+    wanted.push([opts.kind === "own_house" ? "solo_home" : "solo_onsite", opts.kind === "own_house" ? POINTS.solo_home : POINTS.solo_onsite]);
+    if (opts.photoChecked) wanted.push(["solo_photo", POINTS.solo_photo]);
+  }
   const events: ScoreEvent[] = [];
   for (const [reason, points] of wanted) {
     const p = Math.min(points, room);
@@ -86,10 +100,10 @@ export function scoreSolo(
   return events;
 }
 
-/** その人のソロのチーム得点（その日の分）。上限の計算に使う */
-export function soloPointsOf(events: ScoreEvent[], participantId: string): number {
+/** その人のソロのチーム得点（その日の分）。online=true ならオンラインの分だけ。上限の計算に使う */
+export function soloPointsOf(events: ScoreEvent[], participantId: string, online = false): number {
   return events
-    .filter((e) => e.participantId === participantId && (e.reason === "solo_home" || e.reason === "solo_onsite" || e.reason === "solo_photo"))
+    .filter((e) => e.participantId === participantId && (online ? e.reason === "solo_online" : SOLO_REASONS.includes(e.reason)))
     .reduce((a, e) => a + e.points, 0);
 }
 

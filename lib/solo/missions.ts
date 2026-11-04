@@ -55,8 +55,9 @@ export function soloLabel(kind: SoloKind): string {
   return soloMission(kind)?.label ?? SOLO_BONUS[kind as SoloBonusKind]?.label ?? kind;
 }
 
-/** チームに入る点の目安（spec v1.7）。現地だけ。オンラインは null（羽だけ） */
+/** チームに入る点の目安（spec v1.7）。家の手伝いは朝の一本道で数えるので null */
 export function soloTeamPoints(m: Pick<SoloMission, "kind" | "onsite">): number | null {
-  if (!m.onsite || m.kind === "help_house") return null;
+  if (m.kind === "help_house") return null;
+  if (!m.onsite) return 1;
   return m.kind === "own_house" ? 5 : 3;
 }

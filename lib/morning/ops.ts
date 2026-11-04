@@ -170,6 +170,16 @@ export async function tipReceive(lineUserId: string, text: string, now = new Dat
   return MSG.tipThanks(ok);
 }
 
+/** コンシェルジュの「今朝の点呼に答える」: その人の役割の点呼の質問をもう一度出す（点呼の時間でなければ締め切りの案内） */
+export async function rollcallQuestion(lineUserId: string): Promise<LineMessage[]> {
+  const p = await repo().findParticipantByLineUserId(lineUserId);
+  if (!p) return MSG.notRegistered();
+  const s = await loadMorning();
+  const status = s.morning.rollcall.status;
+  if (status !== "open" && status !== "planned") return MSG.rollcallClosed();
+  return p.role === "requester" ? MSG.rollcallRequester(...rcArgs(s)) : MSG.rollcallHelper(...rcArgs(s));
+}
+
 /** 隊長カードに渡す今朝の雪（量・名前・安全の一文） */
 function rcArgs(s: MorningRecord): [number, string | undefined, string | undefined] {
   const rc = s.morning.rollcall;

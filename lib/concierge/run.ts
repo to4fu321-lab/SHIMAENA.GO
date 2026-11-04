@@ -1,0 +1,104 @@
+// AI参加コンシェルジュの本体（spec v1.7）: 自由な文 → その人の今の状況 → 開いている参加の方法 → Claude が1つ選ぶ（3往復まで）
+// → その人用の画像つきのカードで、アプリの活動へ誘う。返信（reply）だけで完結するので、LINE の月の通数は使わない。
+import { askConcierge, MAX_TURNS, type ConciergeInput } from "../claude/concierge";
+import { jstHourMinute } from "../jst";
+import { youImagePath } from "../line/you-image";
+import type { LineMessage } from "../line/types";
+import type { MorningRecord } from "../morning/flow";
+import { loadMorning } from "../morning/store";
+import { lastTipAt } from "../morning/tips";
+import { appToday } from "../morning/today";
+import { repo } from "../repo";
+import { safetyLine } from "../safety";
+import type { Participant } from "../types";
+import { baseUrl } from "../url";
+import { conciergeAsk, conciergePick } from "./messages";
+import { BODY_WORDS, buildOptions, type ConciergeContext } from "./options";
+import { clearSession, loadSession, saveSession } from "./session";
+
+/** その人の今の状況（名前・場所は含めない） */
+export async function conciergeContext(p: Participant, record: MorningRecord, now: Date): Promise<ConciergeContext> {
+  const m = record.morning;
+  const today = appToday(record, now);
+  const isToday = m.rollcall.date === today;
+  const r = repo();
+  const [logs, cards] = await Promise.all([
+    r.listSoloLogsByParticipant(p.id).catch(() => []),
+    r.listCardsByRecipient(p.id).catch(() => []),
+  ]);
+  let tipOk = false;
+  if (p.role === "requester") {
+    const last = await lastTipAt(p.id);
+    tipOk = last === undefined || now.getTime() - Date.parse(last) > 14 * 86400000;
+  }
+  const rc = m.rollcall;
+  return {
+    role: p.role === "requester" ? "requester" : "helper",
+    hasTeam: p.role === "helper" && Boolean(p.teamId),
+    rollcall: isToday ? rc.status : "none",
+    answered: record.answers.some((a) => a.participantId === p.id),
+    going: m.sorties.some((x) => x.participantId === p.id && x.status === "going"),
+    shortHouses: isToday ? m.missions.filter((x) => x.status === "short").length : 0,
+    soloDoneToday: logs.filter((l) => l.date === today).map((l) => l.kind),
+    safety: isToday && Boolean(safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs })),
+    firstTime: logs.length === 0 && cards.length === 0,
+    tipOk,
+  };
+}
+
+/**
+ * 登録した人の自由な文に答える。登録していない人・お願いする側でも手伝う側でもない人は null（登録の会話へ）。
+ */
+export async function concierge(lineUserId: string, text: string, now = new Date()): Promise<LineMessage[] | null> {
+  const p = await repo().findParticipantByLineUserId(lineUserId);
+  if (!p || (p.role !== "helper" && p.role !== "requester")) return null;
+  const record = await loadMorning();
+  const ctx = await conciergeContext(p, record, now);
+  const options = buildOptions(ctx);
+  const session = await loadSession(lineUserId, now);
+  const turn = Math.min(MAX_TURNS, (session?.turn ?? 0) + 1);
+  const rc = record.morning.rollcall;
+  const input: ConciergeInput = {
+    turn,
+    role: ctx.role,
+    firstTime: ctx.firstTime,
+    snowCm: ctx.rollcall === "none" ? 0 : rc.forecastCm,
+    safety: ctx.safety,
+    hour: Number(jstHourMinute(now).slice(0, 2)),
+    options: options.map(({ id, title, minutes, points, about }) => ({ id, title, minutes, points, about })),
+    history: session?.history ?? [],
+    text: text.slice(0, 200),
+  };
+  const res = await askConcierge(input, options);
+
+  if (res.option) {
+    await clearSession(lineUserId);
+    const img = youImagePath({
+      sky: res.sky,
+      prop: res.option.prop,
+      caption: res.caption,
+      title: res.option.title,
+      minutes: res.option.minutes,
+      points: res.option.points,
+      teamId: p.role === "helper" ? p.teamId : undefined,
+    });
+    const outside = res.option.id === "own_house" || res.option.id === "patrol" || res.option.id === "join";
+    const safety = ctx.safety && outside ? "大雪・寒さの朝です。ひとりでやらず、15分ごとに休みましょう。" : undefined;
+    return conciergePick(res.reply, res.option, `${baseUrl()}${img}`, safety);
+  }
+  // まだ選べない: 聞き返して、続きを10分だけ覚えておく（体のことばを含む文は残さない）
+  await saveSession(lineUserId, {
+    turn,
+    history: [...(session?.history ?? []), { user: BODY_WORDS.test(text) ? "（体のこと）" : text.slice(0, 100), captain: `${res.reply} ${res.question ?? ""}`.trim() }].slice(-MAX_TURNS),
+    at: now.toISOString(),
+  });
+  return conciergeAsk(res.reply, res.question ?? "今日は、外に出られそうですか？", options);
+}
+
+/** コンシェルジュの続きの会話があるか（あれば自由な文は先にコンシェルジュへ） */
+export async function inConversation(lineUserId: string, now = new Date()): Promise<boolean> {
+  return Boolean(await loadSession(lineUserId, now));
+}
+
+/** 相談らしい文か（点呼の時間でも、点呼の答えより先にコンシェルジュへ回す） */
+export const CONSULT_WORDS = /分からない|わからない|何から|なにから|初めて|はじめて|どうすれば|何をすれば|なにをすれば|何ができ|なにができ|できること|手伝いたい|参加したい|参加できる|応援したい|教えたい|コツ|迷って|不安/;

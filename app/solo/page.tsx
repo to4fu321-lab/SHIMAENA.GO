@@ -20,9 +20,9 @@ import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "出動する ・ シマエナGO" };
 
-async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string }> }) {
+async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string; focus?: string }> }) {
   await connection();
-  const { as, pick } = await searchParams;
+  const { as, pick, focus } = await searchParams;
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
@@ -89,6 +89,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         canHelpHouse={canHelpHouse}
         shortHouses={shorts.length}
         pickFive={pick === "10" || pick === "5"}
+        focus={SOLO_MISSIONS.some((m) => m.kind === focus && m.kind !== "help_house") ? focus : undefined}
         q={q}
         shareOptions={shareOptions}
       />
@@ -96,7 +97,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   );
 }
 
-export default function SoloPage({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string }> }) {
+export default function SoloPage({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string; focus?: string }> }) {
   return (
     <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
       <SoloContent searchParams={searchParams} />

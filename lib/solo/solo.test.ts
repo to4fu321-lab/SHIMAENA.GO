@@ -90,7 +90,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
   });
   const now = new Date("2026-11-03T12:00:00Z");
 
-  it("1日1回、初回はボーナスとカード。現地はチームに +3点、オンラインは羽だけ（v1.7）", async () => {
+  it("1日1回、初回はボーナスとカード。現地はチームに +3点、オンラインは +1点（v1.7）", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const before = await loadMorning();
     const scoresBefore = before.morning.scores.length;
@@ -122,9 +122,9 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
       expect(r3.summary.onsite).toBe(false);
       expect(r3.summary.bonuses).toEqual([]);
       expect(r3.summary.card).toBeUndefined();
-      expect(r3.summary.teamPoints).toBe(0); // オンラインは外に出ていないので、チームの点にしない
+      expect(r3.summary.teamPoints).toBe(1); // アプリを開いての参加は +1（1日3点まで）
     }
-    expect((await loadMorning()).morning.scores.length).toBe(scoresBefore + 1);
+    expect((await loadMorning()).morning.scores.length).toBe(scoresBefore + 2);
     const st = await soloStatus("h3", now);
     expect(st.today).toBe(DEMO_DATE);
     expect(st.todayFeathers).toBe(10);
@@ -183,13 +183,16 @@ describe("ソロのチーム得点（v1.7）", () => {
   });
   const now = new Date("2026-11-03T12:00:00Z");
 
-  it("計算: 自分の家 +5、ほかの現地 +3、写真の確認 +2、オンライン・チームなし・家の手伝いは 0、1日 15点まで", () => {
+  it("計算: 自分の家 +5、ほかの現地 +3、写真の確認 +2、オンライン +1（1日3点まで）、チームなし・家の手伝いは 0、1日 15点まで", () => {
     const base = { teamId: "salvia" as const, participantId: "h3", at: now.toISOString() };
     const sum = (es: { points: number }[]) => es.reduce((a, e) => a + e.points, 0);
     expect(sum(scoreSolo({ ...base, kind: "own_house", onsite: true }, 0))).toBe(5);
     expect(sum(scoreSolo({ ...base, kind: "own_house", onsite: true, photoChecked: true }, 0))).toBe(7);
     expect(sum(scoreSolo({ ...base, kind: "patrol", onsite: true }, 0))).toBe(3);
-    expect(sum(scoreSolo({ ...base, kind: "check_area", onsite: false }, 0))).toBe(0);
+    expect(sum(scoreSolo({ ...base, kind: "check_area", onsite: false }, 0))).toBe(1);
+    expect(sum(scoreSolo({ ...base, kind: "check_area", onsite: false }, 2, 2))).toBe(1);
+    expect(sum(scoreSolo({ ...base, kind: "check_area", onsite: false }, 3, 3))).toBe(0); // オンラインは1日3点まで
+    expect(sum(scoreSolo({ ...base, kind: "check_area", onsite: false }, 15, 0))).toBe(0); // 全体の上限
     expect(sum(scoreSolo({ ...base, kind: "help_house", onsite: true }, 0))).toBe(0);
     expect(sum(scoreSolo({ ...base, teamId: undefined, kind: "own_house", onsite: true }, 0))).toBe(0);
     expect(sum(scoreSolo({ ...base, kind: "own_house", onsite: true, photoChecked: true }, 12))).toBe(3); // 上限まで
@@ -222,7 +225,7 @@ describe("ソロのチーム得点（v1.7）", () => {
     expect((await loadMorning()).morning.scores.some((e) => e.reason === "solo_home")).toBe(false);
     const side = await listSoloScores("2026-12-14", "2026-12-20");
     expect(side.map((e) => e.points)).toEqual([5]);
-    expect(await soloPointsToday(s, "h3", noSnowDay)).toBe(5);
+    expect(await soloPointsToday(s, "h3", noSnowDay)).toEqual({ all: 5, online: 0 });
     const w = weeklySummary([], TOWN_ROSTER, "2026-12-14", now.toISOString(), side);
     expect(w.teamTotals.lupinus).toBe(5);
   });

@@ -41,10 +41,10 @@ async function appendSideScores(date: string, events: ScoreEvent[]): Promise<voi
   );
 }
 
-/** その人がその日に、ソロでもうチームに入れた点 */
-export async function soloPointsToday(record: MorningRecord, participantId: string, date: string): Promise<number> {
+/** その人がその日に、ソロでもうチームに入れた点（全部と、そのうちオンラインの分） */
+export async function soloPointsToday(record: MorningRecord, participantId: string, date: string): Promise<{ all: number; online: number }> {
   const events = record.morning.rollcall.date === date ? record.morning.scores : await listSoloScores(date, date);
-  return soloPointsOf(events, participantId);
+  return { all: soloPointsOf(events, participantId), online: soloPointsOf(events, participantId, true) };
 }
 
 /** ソロのチーム得点を記録する（雪の朝は今朝の得点に、それ以外は日付の行に） */

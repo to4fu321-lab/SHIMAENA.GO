@@ -70,6 +70,7 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 | 今朝の実況 | 全軒完了したとき（`/admin` のボタンでも） | 本当の集計（軒数・動いた人数・時刻・合流・駆けつけ）→ 3〜4文。数字は Claude に作らせない | [`lib/claude/recap.ts`](lib/claude/recap.ts) |
 | SNS の投稿文 | 家・ソロの完了と今朝の実況のあと（返事を返してから） | 公開用の集計（人数・軒数・雪解け率）→ 115字の下書き。入力にない数字が混ざれば定型に戻す。本人が直して自分で投稿（自動投稿しない） | [`lib/claude/share.ts`](lib/claude/share.ts) |
 | ソロ出動のひとこと | ソロのミッションを終えたとき | ミッション・羽・連続日数 → 30字（SOLO CLEAR と個人の活動カード） | [`lib/claude/solo.ts`](lib/claude/solo.ts) |
+| **AI参加コンシェルジュ**（v1.7） | LINE に「何からすればいいか分からない」などの文が届いたとき（3往復まで） | 文と、その人に開いている参加の方法（プログラムが絞った候補）→ 1つを選ぶ・2文の返事・その人用の画像の場面（空・ひとこと）。体・危ない作業のことばは Claude を使わず決まった返事 | [`lib/claude/concierge.ts`](lib/claude/concierge.ts)・[`lib/concierge/`](lib/concierge/) |
 | 診断のひとこと | シマエナ診断の結果（タイプごとに1日1回） | タイプ → 40字のひとこと | [`lib/claude/quiz.ts`](lib/claude/quiz.ts) |
 
 - 司令官には「エナガ隊長」という声がある（採点表の voice。世話焼きで明るい町内会長風。やさしい日本語のまま。判定には影響しない）。

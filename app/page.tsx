@@ -166,7 +166,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
           </div>
         </section>
 
-        {/* 出動（いちばん大事なボタン）と、5分だけ */}
+        {/* 出動（いちばん大事なボタン）と、10分だけ */}
         <Link href={goHref} className="btn btn-lamp min-h-18 justify-start gap-3 rounded-full px-5 short:min-h-15 short:py-1.5">
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lamp">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">

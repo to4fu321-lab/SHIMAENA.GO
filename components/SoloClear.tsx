@@ -67,6 +67,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
           </p>
         )}
         {s.teamCapped && <p className="text-center text-sm text-ink-soft">今日のソロのチーム得点は上限（15点）に届きました。羽はこのあともたまります。</p>}
+        {!s.onsite && s.teamPoints === 0 && <p className="text-center text-sm text-ink-soft">アプリでの参加のチーム得点は、1日3点までです。</p>}
         {s.bonuses.length > 0 && (
           <ul className="mt-1 text-center text-sm text-ink-soft">
             {s.bonuses.map((b) => (

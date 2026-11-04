@@ -18,6 +18,7 @@ export const REASON_LABEL: Record<ScoreReason, string> = {
   solo_home: "ソロ: 自分の家の雪かき",
   solo_onsite: "ソロ: 現地の活動",
   solo_photo: "ソロ: 写真で確認",
+  solo_online: "ソロ: アプリで参加",
 };
 
 export interface ClearItem {

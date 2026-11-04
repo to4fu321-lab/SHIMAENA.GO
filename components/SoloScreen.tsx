@@ -28,6 +28,7 @@ export default function SoloScreen({
   canHelpHouse,
   shortHouses,
   pickFive,
+  focus,
   q,
   shareOptions = [],
 }: {
@@ -39,8 +40,10 @@ export default function SoloScreen({
   /** 今朝の作戦中で、手伝う側（チームあり）なら家の雪かきに加われる */
   canHelpHouse: boolean;
   shortHouses: number;
-  /** ホームの「5分だけ出動」から来た */
+  /** ホームの「10分だけ出動」から来た */
   pickFive: boolean;
+  /** LINE のコンシェルジュがすすめたミッション（最初に大きく出す） */
+  focus?: string;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
   shareOptions?: ShareOption[];
@@ -86,7 +89,7 @@ export default function SoloScreen({
       }
     });
 
-  const [pickedKind, setPickedKind] = useState<string | null>(null);
+  const [pickedKind, setPickedKind] = useState<string | null>(focus ?? null);
   const [showAll, setShowAll] = useState(false);
   const onsite = missions.filter((m) => m.onsite && m.kind !== "help_house");
   const online = missions.filter((m) => !m.onsite);
@@ -146,6 +149,11 @@ export default function SoloScreen({
       {/* 今日のミッション（1つ大きく） */}
       <section className="space-y-3 rounded-3xl bg-card p-4 shadow-md ring-1 ring-ink/10" aria-label="今日のミッション">
         <span className="inline-block rounded-full bg-ink px-3 py-0.5 text-sm font-bold text-white">ミッション</span>
+        {focus === featured.kind && (
+          <span className="ml-2 inline-block rounded-full bg-camellia-soft px-3 py-0.5 text-sm font-bold text-camellia-deep ring-1 ring-camellia">
+            <span aria-hidden="true">🐦</span> 隊長のおすすめ
+          </span>
+        )}
         <h2 className="text-2xl font-bold leading-tight">{featured.label}</h2>
         <p className="text-base leading-snug">{featured.description}</p>
         <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-2 text-center text-sm font-bold">
