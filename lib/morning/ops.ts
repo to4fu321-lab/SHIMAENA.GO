@@ -32,7 +32,8 @@ import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
 import type { NowMinutes } from "./watch";
 import type { HelperAnswer, HelperWhen, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
-import { SNOW_THRESHOLD_CM, fetchHourlySnow, forecastSnowUntilMorning, sumSnowfall } from "../weather";
+import { loadSettings } from "../ops/settings";
+import { fetchHourlySnow, forecastSnowUntilMorning, sumSnowfall } from "../weather";
 import { activeHelpers, MAX_ROUNDS, reopenDone } from "./rounds";
 import { decompose, importance, requiredPeople } from "../game/mission";
 import { recordProblem } from "../ops/problems";
@@ -90,9 +91,10 @@ export async function checkForecastAndAnnounce(now = new Date()): Promise<{ fore
   // 日曜の夜は、先に「今週の群れ」のまとめ（実況・称号・シャッフル）
   if (new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay() === 0) await weeklyRecap(now);
   const f = await forecastSnowUntilMorning(TOWN.center, now);
-  if (f.snowfallCm < SNOW_THRESHOLD_CM) {
+  const threshold = (await loadSettings()).snowThresholdCm; // 既定 SNOW_THRESHOLD_CM。/admin/settings で変えられる
+  if (f.snowfallCm < threshold) {
     const s = await loadMorning();
-    s.log.push(`予報 ${f.snowfallCm}cm（${f.until} まで）→ 基準 ${SNOW_THRESHOLD_CM}cm 未満なので予告なし`);
+    s.log.push(`予報 ${f.snowfallCm}cm（${f.until} まで）→ 基準 ${threshold}cm 未満なので予告なし`);
     await saveMorning(s);
     return { forecastCm: f.snowfallCm, announced: false, date: f.morningDate };
   }

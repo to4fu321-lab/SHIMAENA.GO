@@ -1,8 +1,9 @@
 // LINE Messaging API を呼ぶ（返信・プッシュ・プロフィール）。サーバー側でだけ使う。
-// LINE_CHANNEL_ACCESS_TOKEN がない間・LINE_DRY_RUN=1 の間は送らずにログに出す（開発・検証用）。
+// LINE_CHANNEL_ACCESS_TOKEN がない間・LINE_DRY_RUN=1 の間・/admin/settings で一時停止の間は送らずにログに出す（開発・検証用）。
 // 送信の失敗は例外にしない: 1人に届かなくても、残りの人への配信を止めない。失敗は /admin の「問題」に残る。
 import { lineDryRun } from "../env";
 import { countLinePush } from "../ops/line-usage";
+import { loadSettings } from "../ops/settings";
 import { recordProblem } from "../ops/problems";
 import { fitFive } from "./messages";
 import type { LineMessage } from "./types";
@@ -20,8 +21,9 @@ function token(): string | undefined {
 /** 送る。成功（または送らない設定）で true、失敗で false。例外は投げない */
 async function post(pathname: string, body: unknown, pushRecipients = 0): Promise<boolean> {
   const t = token();
-  if (!t || lineDryRun()) {
-    console.log(`[line] (送信せず${t ? "・LINE_DRY_RUN" : ""}) POST ${pathname}`, JSON.stringify(body).slice(0, 2000));
+  const paused = Boolean(t) && !lineDryRun() && (await loadSettings()).linePaused; // /admin/settings の一時停止
+  if (!t || lineDryRun() || paused) {
+    console.log(`[line] (送信せず${t ? (paused ? "・管理画面で一時停止" : "・LINE_DRY_RUN") : ""}) POST ${pathname}`, JSON.stringify(body).slice(0, 2000));
     if (t) await countLinePush(pushRecipients, true);
     return true;
   }

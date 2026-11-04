@@ -99,12 +99,12 @@ export function richMenuSvg(items = menuItems()): string {
 }
 
 /** LINE API に渡す形 */
-export function richMenuObject(items = menuItems()) {
+export function richMenuObject(items = menuItems(), chatBarText = "メニュー（町・相談）") {
   return {
     size: { width: W, height: H },
     selected: true,
     name: RICH_MENU_NAME,
-    chatBarText: "メニュー（町・相談）",
+    chatBarText: chatBarText.slice(0, 14),
     areas: items.map((it) => ({
       bounds: it.bounds,
       action: it.action.type === "uri" ? { type: "uri", label: it.label, uri: it.action.uri } : { type: "message", label: it.label, text: it.action.text },
@@ -119,7 +119,7 @@ async function lineApi(method: string, url: string, token: string, body?: BodyIn
 }
 
 /** リッチメニューを作って全員の既定にする。トークンがなければ画像だけ作って何もしない */
-export async function setupRichMenu(): Promise<{ richMenuId: string | null; imageBytes: number }> {
+export async function setupRichMenu(chatBarText?: string): Promise<{ richMenuId: string | null; imageBytes: number }> {
   const items = menuItems();
   const png = await svgToPng(richMenuSvg(items), { width: W });
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
@@ -132,8 +132,47 @@ export async function setupRichMenu(): Promise<{ richMenuId: string | null; imag
   for (const m of list.richmenus ?? []) {
     if (m.name === RICH_MENU_NAME) await lineApi("DELETE", `https://api.line.me/v2/bot/richmenu/${m.richMenuId}`, token);
   }
-  const created = (await (await lineApi("POST", "https://api.line.me/v2/bot/richmenu", token, JSON.stringify(richMenuObject(items)))).json()) as { richMenuId: string };
+  const created = (await (await lineApi("POST", "https://api.line.me/v2/bot/richmenu", token, JSON.stringify(richMenuObject(items, chatBarText)))).json()) as { richMenuId: string };
   await lineApi("POST", `https://api-data.line.me/v2/bot/richmenu/${created.richMenuId}/content`, token, Buffer.from(png), "image/png");
   await lineApi("POST", `https://api.line.me/v2/bot/user/all/richmenu/${created.richMenuId}`, token);
   return { richMenuId: created.richMenuId, imageBytes: png.byteLength };
+}
+
+export interface RichMenuInfo {
+  richMenuId: string;
+  name: string;
+  chatBarText: string;
+  areas: number;
+  /** 全員の既定になっているもの */
+  isDefault: boolean;
+}
+
+/** LINE に登録されているリッチメニューの一覧と、どれが全員の既定か（/admin/settings）。トークンがなければ null */
+export async function richMenuStatus(): Promise<{ menus: RichMenuInfo[]; defaultId: string | null } | null> {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!token) return null;
+  const list = (await (await lineApi("GET", "https://api.line.me/v2/bot/richmenu/list", token)).json()) as {
+    richmenus?: { richMenuId: string; name: string; chatBarText: string; areas?: unknown[] }[];
+  };
+  // 既定がないときは 404 が返る
+  const res = await fetch("https://api.line.me/v2/bot/user/all/richmenu", { headers: { Authorization: `Bearer ${token}` } });
+  const defaultId = res.ok ? ((await res.json()) as { richMenuId?: string }).richMenuId ?? null : null;
+  const menus = (list.richmenus ?? []).map((m) => ({
+    richMenuId: m.richMenuId,
+    name: m.name,
+    chatBarText: m.chatBarText,
+    areas: m.areas?.length ?? 0,
+    isDefault: m.richMenuId === defaultId,
+  }));
+  return { menus, defaultId };
+}
+
+/** リッチメニューを1つ消す（既定のものは消さない） */
+export async function deleteRichMenu(richMenuId: string): Promise<boolean> {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!token || !/^richmenu-[0-9a-f]{32}$/.test(richMenuId)) return false;
+  const st = await richMenuStatus();
+  if (!st || st.defaultId === richMenuId || !st.menus.some((m) => m.richMenuId === richMenuId)) return false;
+  await lineApi("DELETE", `https://api.line.me/v2/bot/richmenu/${richMenuId}`, token);
+  return true;
 }
