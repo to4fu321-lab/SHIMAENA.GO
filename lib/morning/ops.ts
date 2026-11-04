@@ -8,6 +8,7 @@ import { checkPhoto, decidePhoto, SNOW_TYPE_LABEL, type PhotoInput } from "../cl
 import { weeklyText } from "../claude/weekly";
 import { readWords, requestLabel } from "../claude/words";
 import { safetyLine } from "../safety";
+import { captainLines } from "../claude/captain";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstMinutes, jstIso } from "../jst";
@@ -84,6 +85,13 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
   const s = await loadMorning();
   if (s.morning.rollcall.status !== "announced") return { record: s, sent: 0 };
   ringRollcall(s);
+  // 隊長のひとこと（状態ごと）をこの朝に1回だけ書く。失敗しても点呼は止めない（定型が出る）
+  try {
+    const rc = s.morning.rollcall;
+    s.captainLines = await captainLines({ snowCm: rc.forecastCm, snowName: rc.snowName, safety: Boolean(rcArgs(s)[2]) });
+  } catch (e) {
+    console.error("[captain] 隊長のひとことを書けませんでした（定型を使います）:", e instanceof Error ? e.message : e);
+  }
   const roster = await loadRoster();
   const of = (role: Role) => lineIds(roster.participants.filter((p) => p.role === role));
   const requesters = of("requester");

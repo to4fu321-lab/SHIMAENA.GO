@@ -6,6 +6,7 @@ import { scoreMission } from "../game/score";
 import { clockText, jstIso } from "../jst";
 import type { HelperAnswer, Mission, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
 import type { CheerRecord } from "./cheer";
+import type { CaptainState } from "../captain";
 import type { Roster } from "./roster";
 import { progress, type MorningState } from "./view";
 
@@ -42,6 +43,8 @@ export interface MorningRecord {
   firstFlights?: string[];
   /** 家族の応援スタンプ（v1.2）: ミッション ID ごと（家族が複数いれば複数） */
   cheers?: Record<string, CheerRecord[]>;
+  /** 隊長のひとこと（状態ごと、spec v1.6）。点呼の時に1回だけ書いて、みんなで使い回す */
+  captainLines?: Partial<Record<CaptainState, string>>;
 }
 
 export interface ThanksRecord {

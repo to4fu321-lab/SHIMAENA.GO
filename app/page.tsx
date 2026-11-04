@@ -14,6 +14,9 @@ import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { captainLine, captainState } from "@/lib/captain";
+import { safetyLine } from "@/lib/safety";
+import { soloStatus } from "@/lib/solo/ops";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 5分の雪かきで、町が変わる" };
 
@@ -67,6 +70,23 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = me?.role === "helper" && me.teamId ? teamTheme(me.teamId) : undefined;
+  // 隊長のひとこと（spec v1.6）: 状態は計算、文は朝に1回だけ書いたもの（なければ定型）
+  const st = me ? await soloStatus(me.id, new Date()).catch(() => undefined) : undefined;
+  const last = st?.recent[0]?.date;
+  const daysSinceLast = st && last ? Math.round((Date.parse(st.today) - Date.parse(last)) / 86400000) : st && st.cards > 0 ? 7 : undefined;
+  const rc = m.rollcall;
+  const captain = captainLine(
+    captainState({
+      safety: rc.status !== "closed" && Boolean(safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs })),
+      role: me?.role,
+      almostGoal: planned && prog.total > 0 && prog.left === 1,
+      cards: st?.cards ?? 0,
+      todayActs: st?.doneToday.length ?? 0,
+      streak: st?.streak ?? 0,
+      daysSinceLast,
+    }),
+    record.captainLines,
+  );
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
@@ -106,10 +126,15 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
       </header>
 
       {/* 真ん中: キャラクターと雪の町（画面の高さに合わせて縮む） */}
-      <div className="snowfield relative min-h-10 flex-1 overflow-hidden" aria-hidden="true">
+      <div className="snowfield relative min-h-10 flex-1 overflow-hidden">
         <SnowTown tower className="absolute inset-x-0 bottom-0 h-[70%] w-full" />
+        {/* 隊長のひとこと（吹き出し。しっぽはシマエナガのほう） */}
+        <p className="absolute left-3 top-2 z-10 max-w-[80%] rounded-2xl bg-card px-3 py-1.5 text-lg font-bold leading-snug shadow-md ring-1 ring-ink/10 short:top-1 short:py-1">
+          <span className="block text-xs font-bold text-lamp-deep">エナガ隊長</span>
+          {captain}
+        </p>
         {/* 枝にとまるシマエナガ */}
-        <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="absolute bottom-[14%] right-0 h-6 w-3/5">
+        <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="absolute bottom-[14%] right-0 h-6 w-3/5" aria-hidden="true">
           <path d="M0 30 C60 22 120 18 200 8" stroke="#7a5a44" strokeWidth="9" strokeLinecap="round" fill="none" />
           <path d="M120 19 L150 2" stroke="#7a5a44" strokeWidth="5" strokeLinecap="round" />
           <path d="M10 26 C60 18 120 14 196 4" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" fill="none" />
