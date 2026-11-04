@@ -8,6 +8,16 @@ export const SNOW_THRESHOLD_CM = 5;
 export interface HourlySnow {
   time: string[]; // "2026-12-13T21:00" のような JST の時刻
   snowfall: number[]; // cm
+  /** 気温（℃）と風（m/s）。安全のひとこと用（spec v1.6）。古い答えにはない */
+  temperature_2m?: number[];
+  wind_speed_10m?: number[];
+}
+
+/** from 以上 until 未満の時間帯の最小値・最大値（値がなければ undefined） */
+function pick(hourly: HourlySnow, values: number[] | undefined, from: string, until: string, f: (...x: number[]) => number): number | undefined {
+  if (!values) return undefined;
+  const xs = hourly.time.flatMap((t, i) => (t >= from && t < until && typeof values[i] === "number" ? [values[i]] : []));
+  return xs.length > 0 ? Math.round(f(...xs) * 10) / 10 : undefined;
 }
 
 /** from 以上 until 未満の時間帯の降雪量を足す */
@@ -23,7 +33,8 @@ export async function fetchHourlySnow(center: LatLng, fetchFn: typeof fetch = fe
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(center[0]));
   url.searchParams.set("longitude", String(center[1]));
-  url.searchParams.set("hourly", "snowfall");
+  url.searchParams.set("hourly", "snowfall,temperature_2m,wind_speed_10m");
+  url.searchParams.set("wind_speed_unit", "ms");
   url.searchParams.set("timezone", "Asia/Tokyo");
   url.searchParams.set("forecast_days", "2");
   const res = await fetchFn(url, { cache: "no-store" });
@@ -39,6 +50,9 @@ export interface SnowForecast {
   until: string;
   /** 点呼の対象になる朝の日付（YYYY-MM-DD） */
   morningDate: string;
+  /** 朝 9:00 までの最低気温（℃）と最大の風（m/s）。安全のひとこと用 */
+  tempMinC?: number;
+  windMaxMs?: number;
 }
 
 /** いまから「次の朝 6:00」までの降雪量。夜に呼ぶ想定（朝 6 時前に呼ばれたら今朝が対象） */
@@ -52,5 +66,13 @@ export async function forecastSnowUntilMorning(
   const morningDate = from < `${today}T06:00` ? today : addDays(today, 1);
   const until = `${morningDate}T06:00`;
   const hourly = await fetchHourlySnow(center, fetchFn);
-  return { snowfallCm: sumSnowfall(hourly, from, until), from, until, morningDate };
+  const workUntil = `${morningDate}T09:00`; // 雪かきをする朝の時間まで
+  return {
+    snowfallCm: sumSnowfall(hourly, from, until),
+    from,
+    until,
+    morningDate,
+    tempMinC: pick(hourly, hourly.temperature_2m, from, workUntil, Math.min),
+    windMaxMs: pick(hourly, hourly.wind_speed_10m, from, workUntil, Math.max),
+  };
 }

@@ -36,6 +36,13 @@ describe("降雪の予報", () => {
     expect(f.morningDate).toBe("2026-12-14");
     expect(f.snowfallCm).toBe(4.5);
   });
+  it("気温と風があれば、朝 9:00 までの最低気温と最大の風も出す（安全のひとこと用）", async () => {
+    const withWx = { ...hourly, temperature_2m: [-1, -3, -6.4, -8.2, -9, -2], wind_speed_10m: [3, 4, 9.1, 5, 6, 12] };
+    const fetchFn = (async () => new Response(JSON.stringify({ hourly: withWx }))) as unknown as typeof fetch;
+    const f = await forecastSnowUntilMorning([43.04, 141.37], new Date("2026-12-13T12:00:00Z"), fetchFn);
+    expect(f.tempMinC).toBe(-9); // 20:00 は対象外、21:00〜09:00 の最低
+    expect(f.windMaxMs).toBe(12);
+  });
   it("Open-Meteo が失敗したら例外", async () => {
     const fetchFn = (async () => new Response("", { status: 500 })) as unknown as typeof fetch;
     await expect(forecastSnowUntilMorning([43.04, 141.37], new Date(), fetchFn)).rejects.toThrow("500");

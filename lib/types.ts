@@ -75,6 +75,9 @@ export interface Rollcall {
   status: RollcallStatus;
   /** 今朝の雪の名前（前夜の予告で Claude がつける。雪HPバーに出す） */
   snowName?: string;
+  /** 朝までの最低気温（℃）と最大の風（m/s）。安全のひとこと用（spec v1.6） */
+  tempMinC?: number;
+  windMaxMs?: number;
 }
 
 /** 依頼者の答え: はい（出られる）／いいえ／一緒なら */

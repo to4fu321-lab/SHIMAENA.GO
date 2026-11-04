@@ -72,13 +72,13 @@ const iso = (s: MorningRecord, min: number) => jstIso(s.morning.rollcall.date, m
 
 /** 前夜の予告だけが出ている、まっさらな朝 */
 export function emptyMorning(
-  opts: { date?: string; forecastCm?: number; viewerId?: string; announcement?: string; snowName?: string } = {},
+  opts: { date?: string; forecastCm?: number; viewerId?: string; announcement?: string; snowName?: string; tempMinC?: number; windMaxMs?: number } = {},
 ): MorningRecord {
   const date = opts.date ?? DEMO_DATE;
   const forecastCm = opts.forecastCm ?? 12;
   return {
     morning: {
-      rollcall: { id: `rc-${date}`, date, forecastCm, status: "announced", snowName: opts.snowName },
+      rollcall: { id: `rc-${date}`, date, forecastCm, status: "announced", snowName: opts.snowName, ...(opts.tempMinC !== undefined ? { tempMinC: opts.tempMinC } : {}), ...(opts.windMaxMs !== undefined ? { windMaxMs: opts.windMaxMs } : {}) },
       missions: [],
       sorties: [],
       scores: [],

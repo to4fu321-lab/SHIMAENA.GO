@@ -7,6 +7,7 @@ import { planMorning } from "../claude/commander";
 import { checkPhoto, decidePhoto, SNOW_TYPE_LABEL, type PhotoInput } from "../claude/photo";
 import { weeklyText } from "../claude/weekly";
 import { readWords, requestLabel } from "../claude/words";
+import { safetyLine } from "../safety";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstMinutes, jstIso } from "../jst";
@@ -47,7 +48,7 @@ import {
 } from "./watch";
 
 /** 前夜の予告: 今朝の状態を作り直し、LINE のある全員に送る */
-export async function announce(opts: { date: string; forecastCm: number }): Promise<MorningRecord> {
+export async function announce(opts: { date: string; forecastCm: number; tempMinC?: number; windMaxMs?: number }): Promise<MorningRecord> {
   const current = await loadMorning();
   // 前の朝の記録は日付で残す（週のまとめに使う）。見本やまっさらな朝は残さない
   if (current.morning.missions.length > 0 && current.morning.rollcall.date !== opts.date && current.answers.length > 0) {
@@ -57,7 +58,7 @@ export async function announce(opts: { date: string; forecastCm: number }): Prom
   const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
   const ids = lineIds(roster.participants);
-  await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName)); // 予告はエナガ隊長のカード1枚に
+  await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName, safetyLine({ cm: opts.forecastCm, tempMinC: opts.tempMinC, windMaxMs: opts.windMaxMs }))); // 予告はエナガ隊長のカード1枚に
   s.log.push(`予告を LINE で ${ids.length} 人に送信`);
   await saveMorning(s);
   return s;
@@ -74,7 +75,7 @@ export async function checkForecastAndAnnounce(now = new Date()): Promise<{ fore
     await saveMorning(s);
     return { forecastCm: f.snowfallCm, announced: false, date: f.morningDate };
   }
-  await announce({ date: f.morningDate, forecastCm: Math.round(f.snowfallCm) });
+  await announce({ date: f.morningDate, forecastCm: Math.round(f.snowfallCm), tempMinC: f.tempMinC, windMaxMs: f.windMaxMs });
   return { forecastCm: f.snowfallCm, announced: true, date: f.morningDate };
 }
 
@@ -87,8 +88,8 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
   const of = (role: Role) => lineIds(roster.participants.filter((p) => p.role === role));
   const requesters = of("requester");
   const helpers = of("helper");
-  await multicast(requesters, MSG.rollcallRequester(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName));
-  await multicast(helpers, MSG.rollcallHelper(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName));
+  await multicast(requesters, MSG.rollcallRequester(...rcArgs(s)));
+  await multicast(helpers, MSG.rollcallHelper(...rcArgs(s)));
   const sent = requesters.length + helpers.length;
   s.log.push(`点呼を LINE で ${sent} 人に送信`);
   await saveMorning(s);
@@ -107,7 +108,7 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
   if (status !== "open" && status !== "planned") return MSG.rollcallClosed();
   const value = /^rc:ans=([a-z0-9]+)$/.exec(data)?.[1] ?? "";
   const answer = p.role === "requester" ? REQUESTER_ANSWERS[value] : HELPER_ANSWERS[value];
-  if (answer === undefined) return p.role === "requester" ? MSG.rollcallRequester(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName) : MSG.rollcallHelper(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName);
+  if (answer === undefined) return p.role === "requester" ? MSG.rollcallRequester(...rcArgs(s)) : MSG.rollcallHelper(...rcArgs(s));
   if (status === "planned") {
     // 作戦配信のあとの答え（spec 4-c）: 「いいえ」なら人を集め、「はい」なら取り下げる
     const roster = await loadRoster();
@@ -125,6 +126,12 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
   return MSG.rollcallThanks(value);
 }
 
+/** 隊長カードに渡す今朝の雪（量・名前・安全の一文） */
+function rcArgs(s: MorningRecord): [number, string | undefined, string | undefined] {
+  const rc = s.morning.rollcall;
+  return [rc.forecastCm, rc.snowName, safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs })];
+}
+
 /**
  * ことばで答える・頼む（spec v1.6）: 点呼の時間に送られたふつうの文を、点呼の答えと段取りにする。
  * 点呼の時間でなければ null（ふだんの案内に回す）。
@@ -137,7 +144,7 @@ export async function answerByWords(lineUserId: string, text: string, now = new 
   if (status !== "open" && status !== "planned") return null;
   const w = await readWords({ text, role: p.role });
   if (w.answer === "unknown") {
-    const question = p.role === "requester" ? MSG.rollcallRequester(s0.morning.rollcall.forecastCm, s0.morning.rollcall.snowName) : MSG.rollcallHelper(s0.morning.rollcall.forecastCm, s0.morning.rollcall.snowName);
+    const question = p.role === "requester" ? MSG.rollcallRequester(...rcArgs(s0)) : MSG.rollcallHelper(...rcArgs(s0));
     return [...MSG.wordsAskBack(w.askBack ?? "もう一度、下のボタンで教えてください。"), question.at(-1)!];
   }
   const replyMsgs = await answerRollcall(lineUserId, `rc:ans=${w.answer}`, now);
@@ -195,7 +202,7 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   for (const p of roster.participants) {
     if (!p.lineUserId) continue;
     const mine = personal.get(p.lineUserId) ?? [];
-    const head = MSG.morningHello(s.morning.rollcall.forecastCm, s.morning.rollcall.snowName);
+    const head = MSG.morningHello(...rcArgs(s));
     const body = p.role === "helper" ? [...MSG.housesToday(houses, mine.length === 0), ...mine] : mine;
     await push(p.lineUserId, [...head, ...body]);
     sent++;

@@ -106,15 +106,15 @@ export function fitFive(messages: LineMessage[]): LineMessage[] {
 }
 
 /** 朝のあいさつ: エナガ隊長のカード（積雪ゲージの画像）。雪の量がわからないときは文だけ */
-const hello = (forecastCm?: number, snowName?: string): LineMessage[] =>
+const hello = (forecastCm?: number, snowName?: string, safety?: string): LineMessage[] =>
   forecastCm === undefined
-    ? [text("おはようだしま〜！☃️")]
+    ? [text(["おはようだしま〜！☃️", safety].filter(Boolean).join("\n"))]
     : [
         captainCard({
           cm: forecastCm,
           snowName,
           when: "morning",
-          lines: ["おはようだしま〜！☃️", snowName ? `今朝は雪${forecastCm}cm、相手は『${snowName}』です。` : `今朝は雪${forecastCm}cmです。`],
+          lines: ["おはようだしま〜！☃️", snowName ? `今朝は雪${forecastCm}cm、相手は『${snowName}』です。` : `今朝は雪${forecastCm}cmです。`, ...(safety ? [safety] : [])],
         }),
       ];
 
@@ -204,8 +204,11 @@ export const MSG = {
 
   // ---- 前夜の予告・朝のあいさつ ----
   /** 前夜の予告（Claude の文）を、隊長カード1枚に */
-  announce: (body: string, forecastCm: number, snowName?: string) => [captainCard({ cm: forecastCm, snowName, when: "eve", lines: sentences(body, 5) })],
-  morningHello: (forecastCm?: number, snowName?: string) => hello(forecastCm, snowName),
+  /** 前夜の予告（Claude の文）を、隊長カード1枚に。安全の一文が要る朝は最後に必ず足す（spec v1.6） */
+  announce: (body: string, forecastCm: number, snowName?: string, safety?: string) => [
+    captainCard({ cm: forecastCm, snowName, when: "eve", lines: [...sentences(body, 5), ...(safety ? [safety] : [])] }),
+  ],
+  morningHello: (forecastCm?: number, snowName?: string, safety?: string) => hello(forecastCm, snowName, safety),
   /** 作戦のあと、手伝う側へ: 家の数と「5分だけでも」。割り当てがない人には「出動する」ボタン */
   housesToday: (houses: number, withGoButton: boolean) =>
     houses > 0
@@ -213,16 +216,16 @@ export const MSG = {
       : bubbles(["今朝は、助けてほしい家はありません。ありがとうえな〜！"]),
 
   // ---- 点呼（spec 2） ----
-  rollcallRequester: (forecastCm?: number, snowName?: string) => [
-    ...hello(forecastCm, snowName),
+  rollcallRequester: (forecastCm?: number, snowName?: string, safety?: string) => [
+    ...hello(forecastCm, snowName, safety),
     ask("今朝、玄関から外に出られそうですか？", [
       { label: "はい", data: "rc:ans=yes" },
       { label: "いいえ", data: "rc:ans=no", tone: "soft" },
       { label: "誰かと一緒なら", data: "rc:ans=together" },
     ]),
   ],
-  rollcallHelper: (forecastCm?: number, snowName?: string) => [
-    ...hello(forecastCm, snowName),
+  rollcallHelper: (forecastCm?: number, snowName?: string, safety?: string) => [
+    ...hello(forecastCm, snowName, safety),
     ask("今朝、何分動けますか？", [
       { label: "5分", data: "rc:ans=5" },
       { label: "15分", data: "rc:ans=15" },
