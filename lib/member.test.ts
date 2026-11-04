@@ -37,7 +37,7 @@ describe("チームに入る人", () => {
   });
 
   it("前に登録したお願いする側の人は、あとからチームに入る", async () => {
-    const old: Participant = { id: "p-old", nickname: "前の人", role: "requester", location: [43.04, 141.37], lineUserId: "U-old", soloMinutes: 10, clearArea: "entrance", level: 2 };
+    const old: Participant = { id: "p-old", nickname: "前の人", role: "requester", location: [43.04, 141.37], lineUserId: "U-old", soloMinutes: 15, clearArea: "entrance", level: 2 };
     await memoryRepo.upsertParticipant(old);
     const next = await ensureTeam(old);
     expect(next.teamId).toBeTruthy();
