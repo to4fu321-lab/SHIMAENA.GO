@@ -338,6 +338,8 @@ export const MSG = {
   thanksSent: (label: string, count: number) =>
     bubbles([count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。カードの裏に入ります。`]),
   thanksNotFound: () => bubbles(["今朝の雪かきの記録が見つかりませんでした。", "少し時間をおいて、もう一度押してみてください。"]),
+  /** 仲間が増えた（誘った人へ。名前は出さない。仲間カードと同じプッシュで。v1.8） */
+  pairJoined: () => bubbles(["あなたの招待で、新しい仲間が初出動しました！🎉", "ふたりに「ふたりの群れ」カードが届きました。羽も +20。"]),
   /** 初出撃の歓迎（最初のカードと同じプッシュで） */
   firstFlight: (townName: string) => bubbles(["初出撃おめでとう！🎉", `今日からあなたも、${townName}の群れの一員です。最初のありがとうカードをどうぞ。`]),
   shortReported: (baseNumber: number | string) => bubbles([`拠点${baseNumber}の人手不足を、近くの人に知らせました。`, "10分だけ来てくれる人を探しています。"]),

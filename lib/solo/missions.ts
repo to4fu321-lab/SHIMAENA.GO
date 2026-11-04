@@ -3,7 +3,7 @@
 import type { SoloKind } from "../types";
 
 export type SoloMissionKind = Exclude<SoloKind, "bonus_first" | "bonus_streak3" | "bonus_streak5">;
-export type SoloBonusKind = Extract<SoloKind, "bonus_first" | "bonus_streak3" | "bonus_streak5">;
+export type SoloBonusKind = Extract<SoloKind, "bonus_first" | "bonus_streak3" | "bonus_streak5" | "bonus_invite_open" | "bonus_invite_cheer" | "bonus_invite_join">;
 
 export interface SoloMission {
   kind: SoloMissionKind;
@@ -47,6 +47,10 @@ export const SOLO_BONUS: Record<SoloBonusKind, { label: string; feathers: number
   bonus_first: { label: "初回出動", feathers: 3 },
   bonus_streak3: { label: "3日連続出動", feathers: 5 },
   bonus_streak5: { label: "5日連続出動", feathers: 10 },
+  // v1.8 仲間を増やす（上限なし。参加者を増やすのが最優先）
+  bonus_invite_open: { label: "誘ったリンクを見てくれた", feathers: 2 },
+  bonus_invite_cheer: { label: "誘った人が町を応援してくれた", feathers: 3 },
+  bonus_invite_join: { label: "誘った人が仲間になって初出動", feathers: 20 },
 };
 
 export function soloMission(kind: string): SoloMission | undefined {

@@ -8,6 +8,7 @@ import type { ClearSummary } from "@/lib/morning/clear";
 import { completeManually, completeWithPhoto, joinMission, joinNearby, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
 import { signViewer, trustedViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
+import { INVITE_COOKIE, isInviteCode, linkInvitee } from "@/lib/invite";
 
 export interface ActionResult {
   ok: boolean;
@@ -99,6 +100,9 @@ export async function manualFinishAction(viewerId: string): Promise<ActionResult
 export async function signInWithLiff(accessToken: string): Promise<{ ok: boolean; nickname?: string }> {
   const p = await resolveViewerByLiff(accessToken);
   if (!p) return { ok: false };
+  // LINE の中で招待リンクを開いてから登録した人を、誘った人と結びつける（v1.8 仲間を増やす。最初の1回だけ）
+  const inv = (await cookies()).get(INVITE_COOKIE)?.value;
+  if (isInviteCode(inv)) await linkInvitee(p.id, inv);
   (await cookies()).set(VIEWER_COOKIE, signViewer(p.id), {
     httpOnly: true,
     sameSite: "none", // LINE の中のブラウザから開くため

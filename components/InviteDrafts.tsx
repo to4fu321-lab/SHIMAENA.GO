@@ -26,7 +26,10 @@ export default function InviteDrafts({ drafts, url, result }: { drafts: string[]
           <span className="self-end rounded-full bg-[#06C755] px-4 py-2 text-base font-bold text-white">LINE で送る</span>
         </button>
       ))}
-      <p className="text-xs text-ink-soft">送ったリンクを見てくれた人・町を応援してくれた人の数が、あとであなたに届きます（名前は分かりません）。</p>
+      <p className="rounded-2xl bg-warm px-3 py-2 text-sm font-bold">
+        🎁 見てくれたら +2羽、町を応援してくれたら +3羽。友だちが仲間になって初出動したら +20羽と、二人に限定カード「ふたりの群れ」。
+      </p>
+      <p className="text-xs text-ink-soft">誘った結果（人数）はあとであなたに届きます（名前は分かりません）。</p>
     </section>
   );
 }

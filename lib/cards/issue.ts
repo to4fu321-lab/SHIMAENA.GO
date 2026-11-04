@@ -191,13 +191,15 @@ export function artFromCard(card: Card, date: string): CardArt {
 }
 
 /** ソロ出動のカードの種類: 初回＝かわいい、5日連続＝ドット絵（図鑑の「五日連続の群れ」が埋まる）。カードの種類は増やさない */
-export type SoloCardVariant = "first" | "streak5" | "daily";
+export type SoloCardVariant = "first" | "streak5" | "daily" | "pair";
 
 const SOLO_CARD: Record<SoloCardVariant, { style: Card["style"]; designName: string; designNameEn: string; rarityLabel: string; stars: 1 | 2 | 3; flavor: string }> = {
   first: { style: "kawaii", designName: "はじめてのソロ出動", designNameEn: "First Solo Flight", rarityLabel: "ひとりの群れ", stars: 1, flavor: "Five minutes, one bird" },
   streak5: { style: "pixel", designName: "五日目のドット", designNameEn: "Day Five, Pixel Perfect", rarityLabel: "五日連続の群れ", stars: 3, flavor: "5 DAYS STREAK" },
   // v1.8: ふだんのソロ出動も毎回1枚（名前・副題・場面はその時の事実から Claude が。1枚限定）
   daily: { style: "kawaii", designName: "ひとりの十分間", designNameEn: "Ten Minutes, One Bird", rarityLabel: "ひとりの群れ", stars: 1, flavor: "One bird, one path" },
+  // v1.8 仲間を増やす: 誘われた人が初出動したとき、誘った人と誘われた人の二人に
+  pair: { style: "kawaii", designName: "ふたりの群れ", designNameEn: "Two Birds, One Snow", rarityLabel: "仲間の群れ", stars: 2, flavor: "Bring a friend!" },
 };
 
 /**
@@ -282,8 +284,10 @@ export async function issueSoloCard(
   const svg = renderCardSvg(art);
   const back = renderCardBackSvg(art, { thanks: opts.hitokoto, subtasks: [`${opts.missionLabel}（ソロ出動）`], firstFlight: opts.firstFlight });
   await repo().insertCard(card, svg, back);
-  if (p.lineUserId) {
-    await push(p.lineUserId, [...(opts.firstFlight ? MSG.firstFlight(art.townName) : []), ...cardImageMessages(card.id)]);
+  // LINE に送るのは特別な1枚だけ（はじめて・5日連続・仲間）。ふだんの1枚は画面で見せる（月の通数を使わないため。v1.8）
+  if (p.lineUserId && opts.variant !== "daily") {
+    const head = opts.variant === "pair" && !opts.firstFlight ? MSG.pairJoined() : opts.firstFlight ? MSG.firstFlight(art.townName) : [];
+    await push(p.lineUserId, [...head, ...cardImageMessages(card.id)]);
   }
   return card;
 }

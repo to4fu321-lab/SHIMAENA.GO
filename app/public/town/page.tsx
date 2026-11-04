@@ -74,6 +74,9 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
             </a>
             だけでも、誘ってくれた友だちに届きます。
           </p>
+          <p className="mt-2 rounded-2xl bg-white/70 px-3 py-2 text-base font-bold">
+            🎴 このページから LINE で参加して最初の出動をすると、あなたと誘ってくれた友だちの<b>二人に限定カード「ふたりの群れ」</b>が届きます。
+          </p>
         </section>
       )}
       {via === "cheer" && (

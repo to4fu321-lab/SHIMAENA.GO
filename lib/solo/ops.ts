@@ -2,7 +2,7 @@
 // v1.7: チームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2・オンライン +1〔1日3点まで〕、1人1日 15点まで。lib/solo/team-points.ts）。
 //家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
 import { inviteDrafts } from "../claude/invite";
-import { inviteResultLine, inviteUrl, readInviteStats } from "../invite";
+import { claimPairing, inviteResultLine, inviteUrl, readInviteStats } from "../invite";
 import { allowedAtNight, isNight, nightRefusal } from "../night";
 import { randomBytes } from "node:crypto";
 import { issueSoloCard, revealOf } from "../cards/issue";
@@ -198,8 +198,16 @@ export async function completeSolo(
       snowType: check?.snowType,
       photoDepth: check && !check.unrelated ? check.depth : undefined,
     };
-    const variant = firstEver ? "first" : due.includes("bonus_streak5") ? "streak5" : "daily";
+    // 誘われて仲間になった人の初出動: 本人は「ふたりの群れ」、誘った人にも同じカード（v1.8）
+    const inviter = firstEver ? await claimPairing(p.id) : undefined;
+    const variant = inviter ? "pair" : firstEver ? "first" : due.includes("bonus_streak5") ? "streak5" : "daily";
     card = await issueSoloCard(p, { variant, date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: firstEver, at, snow, weather });
+    if (inviter) {
+      const friend = await r.findParticipant(inviter);
+      if (friend) {
+        await issueSoloCard(friend, { variant: "pair", date: today, logId: `${log.id}-pair`, hitokoto: "あなたの誘いで、仲間がひとり増えました。", missionLabel: "仲間を誘う", firstFlight: false, at });
+      }
+    }
   } catch (e) {
     console.error("[solo] カードを発行できませんでした:", e instanceof Error ? e.message : e);
   }
