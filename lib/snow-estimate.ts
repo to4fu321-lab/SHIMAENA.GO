@@ -5,6 +5,7 @@
 //   model    … Open-Meteo の積雪深（モデルの解析値。地面にある雪ぜんぶ）
 // 写真の推定は「自信が低い」「予報・積雪深と大きく食い違う」ときは使わない。どれを使ったかを必ず表示する。
 // 「計測」ではなく「推定」と書く（AI の読み取りと予報の組み合わせのため）。
+import { snowComparison } from "./snowkg";
 import type { ClearArea, SnowType } from "./types";
 
 export type DepthSource = "photo" | "forecast" | "model";
@@ -84,6 +85,29 @@ export function consistentSnowType(type: SnowType | undefined, tempMinC?: number
 /** どけた雪（kg）= 面積 × 深さ × 雪質の密度。10kg 単位、最低 10kg */
 export function snowKgOf(cm: number, area: ClearArea, type: SnowType = "unknown"): number {
   return Math.max(10, Math.round((AREA_M2[area] * (cm / 100) * SNOW_DENSITY[type]) / 10) * 10);
+}
+
+/**
+ * 自宅の雪かき（ソロ）のどけた雪（spec v1.8）。手がかり（写真の深さ・その日の予報・積雪深）がない日は出さない（数字を作らない）。
+ * 雪の朝の記録が今日のものでなければ、予報と積雪深は使わない（写真だけ）。
+ */
+export function soloSnow(i: {
+  today: string;
+  rollcall: { date: string; forecastCm: number; depthCm?: number; tempMinC?: number };
+  photo?: PhotoDepth;
+  snowType?: SnowType;
+  area?: ClearArea;
+}): { snowKg: number; snowKgComparison: string; snowKgBasis: string; snowType: SnowType } | undefined {
+  const same = i.rollcall.date === i.today;
+  const forecastCm = same ? i.rollcall.forecastCm : 0;
+  const modelDepthCm = same ? i.rollcall.depthCm : undefined;
+  const d = estimateDepth({ forecastCm, modelDepthCm, photo: i.photo });
+  const known = d.source === "photo" || (d.source === "forecast" && forecastCm > 0) || d.source === "model";
+  if (!known) return undefined;
+  const snowType = consistentSnowType(i.snowType, same ? i.rollcall.tempMinC : undefined);
+  const area = i.area ?? "entrance";
+  const snowKg = snowKgOf(d.cm, area, snowType);
+  return { snowKg, snowKgComparison: snowComparison(snowKg), snowKgBasis: kgBasis(d, area, snowType), snowType };
 }
 
 /** 計算の元（カードの裏・完了画面に1行で） */

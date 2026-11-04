@@ -75,7 +75,7 @@ export default function SoloScreen({
     } catch {}
   };
   // クリア後の自慢画像（自分の家の雪かき: Before / After と、かかった分）
-  const [brag, setBrag] = useState<{ before: string; after: string; minutes: number } | null>(null);
+  const [brag, setBrag] = useState<{ before: string; after: string; minutes: number; snow?: { kg: number; comparison: string }; cardId?: string } | null>(null);
   const setRunning = (r: { kind: string; startedAt: number } | null) => {
     setRunningState(r);
     if (!r) setBefore(undefined);
@@ -130,7 +130,17 @@ export default function SoloScreen({
         setResult(r);
         if (r.ok && r.summary) {
           const summary = r.summary;
-          setBrag(shot && file && minutes ? { before: shot, after: URL.createObjectURL(file), minutes } : null);
+          setBrag(
+            shot && file && minutes
+              ? {
+                  before: shot,
+                  after: URL.createObjectURL(file),
+                  minutes,
+                  snow: summary.snowKg && summary.snowKgComparison ? { kg: summary.snowKg, comparison: summary.snowKgComparison } : undefined,
+                  cardId: summary.card?.id,
+                }
+              : null,
+          );
           setRunning(null);
           setFlash({ kind: "clear", label: summary.label });
           setTimeout(() => {
@@ -208,7 +218,7 @@ export default function SoloScreen({
       {flash && <MissionFlash kind={flash.kind} label={flash.label} />}
       {clear && (
         <SoloClear summary={clear} onClose={() => setClear(null)} q={q} minutesLabel={brag ? `${brag.minutes}分` : undefined}>
-          {brag && <BragShare before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} />}
+          {brag && <BragShare before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />}
           <QuickShare text={clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
           {shareOptions.length > 0 && (
             <details className="mt-3 rounded-2xl bg-card ring-1 ring-ink/10">

@@ -17,7 +17,8 @@ import { endHome, startHome } from "./home-now";
 import { appToday } from "../morning/today";
 import { repo } from "../repo";
 import { refreshShareTextsLater } from "../sns/refresh";
-import type { Card, Participant, SoloLog } from "../types";
+import type { Card, Participant, PhotoCheck, SoloLog } from "../types";
+import { soloSnow } from "../snow-estimate";
 import { activeDates, bonusLog, bonusesDue, feathersOn, nextCard, streakDays, totalFeathers, type NextCard } from "./feathers";
 import { addSoloScores, soloPointsToday } from "./team-points";
 import { HELP_HOUSE_FEATHERS, SOLO_BONUS, SOLO_MISSIONS, soloLabel, soloMission, type SoloMission } from "./missions";
@@ -39,6 +40,10 @@ export interface SoloClearSummary {
   card?: Card;
   /** v1.8: カード発行の演出に渡す形 */
   reveal?: RevealCard;
+  /** v1.8: 自宅の雪かきでどけた雪（手がかりがない日はなし） */
+  snowKg?: number;
+  snowKgComparison?: string;
+  snowKgBasis?: string;
   hitokoto: string;
   nextCard: NextCard;
   /** 写真を付けたとき: 確認できたか／報告として受け付けたか */
@@ -87,6 +92,7 @@ export async function completeSolo(
   // 写真（任意）: Claude が確認。判断できなくても報告として受け付ける（AI を最終判定者にしない）
   let photoChecked: boolean | undefined;
   let photoNote: string | undefined;
+  let check: PhotoCheck | undefined;
   if (opts.photo && mission.photo === "optional") {
     // 同じ日に同じ写真なら、Claude を呼ばずに「確認済み」にしない（使い回しを防ぐ。活動の記録はそのまま受け付ける）
     const fp = photoFingerprint(opts.photo.bytes);
@@ -94,7 +100,7 @@ export async function completeSolo(
       photoChecked = false;
       photoNote = "前に送られた写真と同じだったので、写真の確認はしませんでした。活動の記録は受け付けました。";
     } else {
-      const check = await checkPhoto(opts.photo);
+      check = await checkPhoto(opts.photo);
       const outcome = decidePhoto(check);
       photoChecked = outcome === "done";
       const seen = check.evidence ? `（Claude の確認: ${check.evidence}）` : "";
@@ -109,6 +115,18 @@ export async function completeSolo(
       if (outcome === "done") await rememberPhoto(today, fp);
     }
   }
+
+  // 自宅の雪かき: どけた雪の kg（写真の深さ・その日の予報・積雪深から。手がかりがない日は出さない。spec v1.8）
+  const snow =
+    mission.kind === "own_house"
+      ? soloSnow({
+          today,
+          rollcall: record.morning.rollcall,
+          photo: check && !check.unrelated ? check.depth : undefined,
+          snowType: check?.snowType,
+          area: p.clearArea,
+        })
+      : undefined;
 
   const log: SoloLog = {
     id: newId(),
@@ -167,9 +185,9 @@ export async function completeSolo(
   let card: Card | undefined;
   try {
     if (firstEver) {
-      card = await issueSoloCard(p, { variant: "first", date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: true, at });
+      card = await issueSoloCard(p, { variant: "first", date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: true, at, snow });
     } else if (due.includes("bonus_streak5")) {
-      card = await issueSoloCard(p, { variant: "streak5", date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: false, at });
+      card = await issueSoloCard(p, { variant: "streak5", date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: false, at, snow });
     }
   } catch (e) {
     console.error("[solo] カードを発行できませんでした:", e instanceof Error ? e.message : e);
@@ -188,6 +206,7 @@ export async function completeSolo(
     firstEver,
     card,
     reveal: card ? revealOf(card, today) : undefined,
+    ...(snow ? { snowKg: snow.snowKg, snowKgComparison: snow.snowKgComparison, snowKgBasis: snow.snowKgBasis } : {}),
     hitokoto,
     nextCard: nextCard(card ? [...cards, card] : cards, streak),
     photoNote,

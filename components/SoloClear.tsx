@@ -90,6 +90,17 @@ export default function SoloClear({ summary, onClose, q, minutesLabel, children 
             {s.teamName ?? "チーム"} に <span className="text-2xl text-lamp-deep">+{s.teamPoints}点</span>
           </p>
         )}
+        {s.snowKg !== undefined && s.snowKg > 0 && (
+          <div className="pop-late mt-2 rounded-2xl bg-ice-soft px-3 py-2 text-center ring-1 ring-ice">
+            <p className="text-sm font-bold">どけた雪 およそ</p>
+            <p className="text-4xl font-bold tabular-nums text-ink">
+              {s.snowKg}
+              <span className="text-xl">kg</span>
+            </p>
+            <p className="text-base font-bold">{s.snowKgComparison}</p>
+            {s.snowKgBasis && <p className="mt-1 text-xs text-ink-soft">推定: {s.snowKgBasis}</p>}
+          </div>
+        )}
         {s.teamCapped && <p className="text-center text-sm text-ink-soft">今日のソロのチーム得点は上限（15点）に届きました。羽はこのあともたまります。</p>}
         {!s.onsite && s.teamPoints === 0 && <p className="text-center text-sm text-ink-soft">アプリでの参加のチーム得点は、1日3点までです。</p>}
         {s.bonuses.length > 0 && (

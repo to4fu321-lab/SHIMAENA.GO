@@ -164,7 +164,7 @@ export function revealOf(card: Card, date: string, code?: string): RevealCard {
     issuedCount: card.issuedCount,
     townName: TOWN.name.replace(/（.*）$/, ""),
     date,
-    stampText: card.rollcallId.startsWith("solo-") ? "ソロ" : `${card.snowKg}kg`,
+    stampText: card.snowKg > 0 ? `${card.snowKg}kg` : "ソロ",
     ...(code ? { code } : {}),
   };
 }
@@ -184,7 +184,7 @@ export function artFromCard(card: Card, date: string): CardArt {
     snowKgComparison: card.snowKgComparison,
     serial: card.serial,
     issuedCount: card.issuedCount,
-    stampText: card.rollcallId.startsWith("solo-") ? "ソロ" : undefined,
+    stampText: card.snowKg > 0 ? undefined : "ソロ",
   };
 }
 
@@ -202,7 +202,17 @@ const SOLO_CARD: Record<SoloCardVariant, { style: Card["style"]; designName: str
  */
 export async function issueSoloCard(
   p: Participant,
-  opts: { variant: SoloCardVariant; date: string; logId: string; hitokoto: string; missionLabel: string; firstFlight: boolean; at: string },
+  opts: {
+    variant: SoloCardVariant;
+    date: string;
+    logId: string;
+    hitokoto: string;
+    missionLabel: string;
+    firstFlight: boolean;
+    at: string;
+    /** v1.8: 自宅の雪かきでどけた雪（手がかりがあるときだけ） */
+    snow?: { snowKg: number; snowKgComparison: string; snowKgBasis: string };
+  },
 ): Promise<Card> {
   const v = SOLO_CARD[opts.variant];
   const art: CardArt = {
@@ -214,12 +224,13 @@ export async function issueSoloCard(
     members: [{ name: p.nickname, teamId: p.teamId }],
     date: opts.date,
     townName: TOWN.name.replace(/（.*）$/, ""),
-    snowKg: 0,
-    snowKgComparison: "ソロ出動",
+    snowKg: opts.snow?.snowKg ?? 0,
+    snowKgComparison: opts.snow?.snowKgComparison ?? "ソロ出動",
+    ...(opts.snow ? { snowKgBasis: opts.snow.snowKgBasis } : {}),
     serial: 1,
     issuedCount: 1,
     flavor: v.flavor,
-    stampText: "ソロ",
+    stampText: opts.snow ? `${opts.snow.snowKg}kg` : "ソロ",
   };
   const card: Card = {
     id: `c-${randomBytes(6).toString("base64url")}`,
@@ -233,7 +244,7 @@ export async function issueSoloCard(
     rarityLabel: art.rarityLabel,
     stars: art.stars,
     style: art.style,
-    snowKg: 0,
+    snowKg: art.snowKg,
     snowKgComparison: art.snowKgComparison,
     memberNames: [p.nickname],
     teamIds: p.teamId ? [p.teamId] : [],
