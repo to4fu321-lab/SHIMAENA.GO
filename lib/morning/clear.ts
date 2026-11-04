@@ -1,5 +1,6 @@
 // ミッション完了の「まとめ」（spec v1.1: MISSION CLEAR）。点の内訳・チーム得点・雪HPの減りを1つの形にする。
 // 得点そのものは lib/game/score.ts が決める。ここは見せるために集計するだけ（純粋な関数）。
+import type { RevealCard } from "../cards/reveal";
 import { estimateDepth } from "../snow-estimate";
 import { SNOW_TYPE_LABEL, hazardLines, WIDTH_LABEL } from "../claude/photo";
 import type { ScoreEvent, ScoreReason, TeamId } from "../types";
@@ -63,6 +64,8 @@ export interface ClearSummary {
   /** v1.8: 雪質の見た目の理由と、雪の深さ（どの出どころか付き。例: 写真から約20〜30cm） */
   snowTypeReason?: string;
   depthLabel?: string;
+  /** v1.8: 画面を見ている人に発行したカード（演出用） */
+  card?: RevealCard;
   hpBefore: number;
   hpAfter: number;
   hpMax: number;

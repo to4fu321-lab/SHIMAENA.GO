@@ -2,7 +2,8 @@
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
 import { isNight } from "../night";
 import { consistentSnowType } from "../snow-estimate";
-import { issueCardsForMission, rerenderBacks } from "../cards/issue";
+import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
+import type { RevealCard } from "../cards/reveal";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
 import { planMorning } from "../claude/commander";
@@ -460,9 +461,12 @@ async function finishMission(
   const pointsOf = (teamId: string) => events.filter((e) => e.teamId === teamId).reduce((a, e) => a + e.points, 0);
   s.log.push(`${clockTextJst(now)} 拠点${number} 完了（${names.join("・")}）写真: ${check.comment}`);
   // その時だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る（初出撃の人には歓迎も）
+  let myCard: RevealCard | undefined;
   try {
     const issued = await issueCardsForMission(s, roster, mission, sorties);
     s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
+    const mine = issued.cards.find((c) => c.recipientId === participantId);
+    if (mine) myCard = revealOf(mine, s.morning.rollcall.date, issued.sceneCode);
   } catch (e) {
     s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -524,6 +528,7 @@ async function finishMission(
   });
   const clear =
     withInvites(summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId, firstFlightIds: s.firstFlights }), invites) ?? undefined;
+  if (clear && myCard) clear.card = myCard;
   if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
   return { done: true, messages: reply, clear };

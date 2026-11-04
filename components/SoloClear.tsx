@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { SoloClearSummary } from "@/lib/solo/ops";
 import Mascot, { SnowTown } from "./Mascot";
+import CardReveal from "./CardReveal";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -121,7 +122,11 @@ export default function SoloClear({ summary, onClose, q, minutesLabel, children 
           <span className="eyebrow block">シマエナ隊長から</span>
           {s.hitokoto}
         </p>
-        {s.card ? (
+        {s.reveal ? (
+          <div className="mt-3">
+            <CardReveal card={s.reveal} label={s.firstEver ? "はじめてのカードを獲得！" : "カードを獲得！"} />
+          </div>
+        ) : s.card ? (
           <div className="mt-3 overflow-hidden rounded-2xl bg-card ring-1 ring-ink/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/api/cards/${s.card.id}/front.svg`} alt={`${s.card.designName} のカード`} className="aspect-[600/840] w-full" />

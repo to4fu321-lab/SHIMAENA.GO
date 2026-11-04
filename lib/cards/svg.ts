@@ -1,6 +1,7 @@
 // ありがとうカードを SVG で描く（spec 7）。絵は画像生成AIを使わず、ここで図形から組み立てる。
 // 基本は「パステル×ネオン×メンフィス柄のかわいいシティポップ」。レアでタッチが変わる。
 // 並ぶシマエナガの数＝来た人数、耳あての色＝その人のチーム色。右上に消印。お宅の名前は載せない。
+import { sceneLayer, type CardScene } from "./scene";
 import { TEAMS } from "../teams";
 import type { CardStyle, TeamId } from "../types";
 
@@ -24,6 +25,8 @@ export interface CardArt {
   flavor?: string;
   /** 消印の真ん中の文字（既定は排雪 kg。ソロ出動のカードは「ソロ」など） */
   stampText?: string;
+  /** v1.8: その時だけの場面（空・降る雪・積もった雪・持ち物・雰囲気・なぜこの絵か・設計図の番号） */
+  scene?: CardScene;
 }
 
 export const CARD_W = 600;
@@ -65,8 +68,17 @@ function spread(n: number, left: number, right: number): number[] {
 const birdScale = (n: number) => (n <= 3 ? 1 : n === 4 ? 0.88 : 0.74);
 
 // ---- 消印（右上） ----
+export const STAMP_START = "<!--stamp-->";
+export const STAMP_END = "<!--/stamp-->";
+/** 消印を外した絵（演出で、あとから動くスタンプを押すため） */
+export function withoutStamp(svg: string): string {
+  const a = svg.indexOf(STAMP_START);
+  const b = svg.indexOf(STAMP_END);
+  return a >= 0 && b > a ? svg.slice(0, a) + svg.slice(b + STAMP_END.length) : svg;
+}
 function stamp(art: CardArt, color: string, paper: string): string {
-  return `
+  // 印（STAMP_START〜STAMP_END）: 完了画面の演出では、この部分を外した絵に、動くスタンプを押す（/api/cards/<id>/front.png?stamp=0）
+  return `${STAMP_START}
   <g transform="translate(494 96) rotate(-12)">
     <circle cx="0" cy="0" r="60" fill="${paper}" opacity="0.8"/>
     <circle cx="0" cy="0" r="60" fill="none" stroke="${color}" stroke-width="4"/>
@@ -79,7 +91,7 @@ function stamp(art: CardArt, color: string, paper: string): string {
     <g stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round">
       <path d="M-136 -22 q12 -6 24 0 t24 0 t24 0"/><path d="M-136 -7 q12 -6 24 0 t24 0 t24 0"/><path d="M-136 8 q12 -6 24 0 t24 0 t24 0"/><path d="M-136 23 q12 -6 24 0 t24 0 t24 0"/>
     </g>
-  </g>`;
+  </g>${STAMP_END}`;
 }
 
 // ---- ホログラム風（レアだけ。SVG で見るときだけ動く） ----
@@ -197,6 +209,7 @@ function kawaii(art: CardArt): string {
     <g transform="translate(530 478) rotate(18)"><rect x="-4" y="-56" width="8" height="78" rx="3" fill="#8a7bb5"/><path d="M-18 18 h36 l-5 30 h-26 z" fill="#ff7ab8" stroke="#8a7bb5" stroke-width="2"/></g>
     <text x="300" y="582" font-family="${EN}" font-style="italic" font-size="14" fill="#6b4fcf" text-anchor="middle">City pop na Shimaenaga.</text>
   </g>
+  ${art.scene ? sceneLayer(art.scene) : ""}
   ${art.stars >= 2 ? holo() : ""}
   <rect x="30" y="30" width="540" height="560" rx="26" fill="none" stroke="#fff" stroke-width="6"/>
   <rect x="30" y="30" width="540" height="560" rx="26" fill="none" stroke="#cdbaff" stroke-width="2"/>
@@ -261,6 +274,7 @@ function retrowave(art: CardArt): string {
     ${birds}
     <rect x="30" y="30" width="540" height="560" fill="url(#scan)"/>
   </g>
+  ${art.scene ? sceneLayer(art.scene) : ""}
   ${holo()}
   ${stamp(art, "#2ee6ff", "#140a2e")}
   ${info(art, { pill: "#140a2e", pillText: "#2ee6ff", title: "#ff4f8b", subtitle: "#9be7ff", names: "#ffd1dc", meta: "#bfa9d9" })}`;
@@ -307,6 +321,7 @@ function kirie(art: CardArt): string {
     ${birds}
     <g fill="#f4efe6" opacity="0.9"><circle cx="90" cy="230" r="4"/><circle cx="520" cy="80" r="3"/><circle cx="360" cy="230" r="3.5"/><circle cx="500" cy="300" r="3"/><circle cx="140" cy="330" r="3"/><circle cx="250" cy="200" r="3"/><circle cx="60" cy="420" r="3"/></g>
   </g>
+  ${art.scene ? sceneLayer(art.scene) : ""}
   ${holo()}
   <rect x="30" y="30" width="540" height="560" rx="6" fill="none" stroke="#1d2b53" stroke-width="3"/>
   ${stamp(art, "#b3261e", "#f4efe6")}
@@ -376,6 +391,7 @@ function pixel(art: CardArt): string {
     ${birds}
     <g fill="#ffffff"><rect x="60" y="440" width="10" height="10"/><rect x="520" y="470" width="10" height="10"/><rect x="200" y="520" width="10" height="10"/><rect x="480" y="540" width="10" height="10"/></g>
   </g>
+  ${art.scene ? sceneLayer(art.scene) : ""}
   ${holo()}
   <rect x="30" y="30" width="540" height="560" fill="none" stroke="#9fd0ff" stroke-width="4"/>
   ${stamp(art, "#ff6b9d", "#0e1430")}
@@ -445,6 +461,7 @@ function eijin(art: CardArt): string {
     </g>
     <g><rect x="90" y="90" width="14" height="14" fill="#ffd400" transform="rotate(20 97 97)"/><circle cx="360" cy="180" r="7" fill="#ff2e63"/><rect x="470" y="200" width="12" height="12" fill="#2ad4ff" transform="rotate(-15 476 206)"/><circle cx="150" cy="300" r="6" fill="#17c964"/><rect x="300" y="60" width="10" height="24" fill="#fff" transform="rotate(30 305 72)"/><circle cx="540" cy="60" r="6" fill="#ffd400"/><rect x="60" y="400" width="12" height="12" fill="#ff2e63" transform="rotate(10 66 406)"/><circle cx="420" cy="470" r="5" fill="#2ad4ff"/></g>
   </g>
+  ${art.scene ? sceneLayer(art.scene) : ""}
   ${holo()}
   <rect x="30" y="30" width="540" height="560" fill="none" stroke="#1a1a1a" stroke-width="3"/>
   ${stamp(art, "#e81e3c", "#fffdf6")}
@@ -487,12 +504,27 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
   ${thanks}
   <text x="80" y="395" font-family="${JP}" font-size="14" fill="#8a7bb5" letter-spacing="2">このときにやったこと</text>
   ${lines}
+  ${art.scene ? `<text x="300" y="634" font-family="${JP}" font-size="13" fill="#8a7bb5" text-anchor="middle">この時だけの設計図 #${escapeXml(art.scene.code)} ・ ${escapeXml(art.scene.why)}</text>` : ""}
   <rect x="60" y="650" width="480" height="110" rx="20" fill="#f1ecff"/>
   <text x="300" y="692" font-family="${JP}" font-size="16" fill="#6b4fcf" text-anchor="middle">どけた雪 およそ</text>
   <text x="300" y="${art.snowKgBasis ? 728 : 736}" font-family="${JP}" font-size="34" font-weight="700" fill="#6b4fcf" text-anchor="middle">${art.snowKg}kg ・ ${escapeXml(art.snowKgComparison)}</text>
   ${art.snowKgBasis ? `<text x="300" y="752" font-family="${JP}" font-size="12" fill="#8a7bb5" text-anchor="middle">推定: ${escapeXml(art.snowKgBasis)}</text>` : ""}
   <text x="300" y="800" font-family="${JP}" font-size="12" fill="#8a7bb5" text-anchor="middle" letter-spacing="2">${escapeXml(dateLabel(art.date))} ・ ${escapeXml(art.townName)} ・ #シマエナGO</text>
 </svg>`;
+}
+
+/**
+ * 前の裏面から「設計図」と「推定の元」の行を読み戻す（ありがとう点呼で裏面を描き直しても消さないため。表は表に描いてある）。
+ * 表に XML の記号は出ないので、エスケープを戻すだけでよい。
+ */
+export function backExtras(backSvg: string): { scene?: Pick<CardScene, "code" | "why">; basis?: string } {
+  const un = (t: string) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+  const sc = /この時だけの設計図 #([0-9a-f]{4}) ・ ([^<]*)</.exec(backSvg);
+  const basis = /推定: ([^<]*)</.exec(backSvg);
+  return {
+    ...(sc ? { scene: { code: sc[1], why: un(sc[2]) } } : {}),
+    ...(basis ? { basis: un(basis[1]) } : {}),
+  };
 }
 
 /** 日本語を n 文字ごとに折り返す（句読点で切れるなら優先） */

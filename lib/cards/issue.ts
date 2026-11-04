@@ -1,4 +1,5 @@
 // 完了した家の人にカードを発行する: レア判定 → Claude が文字 → SVG → 保存 → LINE で2枚（表・裏）。
+import type { RevealCard } from "./reveal";
 import { randomBytes } from "node:crypto";
 import { cardText } from "../claude/card";
 import { jstMinutes } from "../jst";
@@ -13,7 +14,7 @@ import { TOWN } from "../town";
 import { baseUrl } from "../url";
 import type { Card, Mission, Participant, Sortie } from "../types";
 import { decideRarity } from "./rarity";
-import { renderCardBackSvg, renderCardSvg, type CardArt } from "./svg";
+import { backExtras, renderCardBackSvg, renderCardSvg, type CardArt } from "./svg";
 
 export { baseUrl };
 
@@ -38,6 +39,8 @@ export interface IssuedCards {
   sent: number;
   /** このカードが最初の1枚だった人（初出撃） */
   firstFlightIds: string[];
+  /** この時だけの設計図の番号（v1.8） */
+  sceneCode?: string;
 }
 
 /**
@@ -83,6 +86,9 @@ export async function issueCardsForMission(
     snowType: sorties.find((x) => x.photoCheck?.snowType)?.photoCheck?.snowType,
     photoDepth: sorties.find((x) => x.photoCheck?.depth)?.photoCheck?.depth,
     modelDepthCm: s.morning.rollcall.depthCm,
+    thanks: Boolean(s.thanks?.[mission.id]),
+    mixed: new Set(members.map((m) => m.teamId)).size >= 2,
+    seed: `${s.morning.rollcall.id}|${mission.id}`,
   });
   mission.snowKg = text.snowKg; // 町内の「どけた雪の合計」に使う
   const issuedCount = s.morning.sorties.length;
@@ -102,6 +108,7 @@ export async function issueCardsForMission(
       snowKg: text.snowKg,
       snowKgComparison: text.snowKgComparison,
       snowKgBasis: text.snowKgBasis,
+      scene: text.scene,
       serial: already + i + 1,
       issuedCount: Math.max(issuedCount, already + members.length),
       flavor: text.flavor,
@@ -143,10 +150,25 @@ export async function issueCardsForMission(
     `拠点${base?.number ?? "?"}のカード「${text.designName}」（${rarity.label} ${"★".repeat(rarity.stars)}）を ${cards.length} 枚発行` +
       (firstFlightIds.length > 0 ? `（初出撃 ${firstFlightIds.length} 人）` : ""),
   );
-  return { cards, sent, firstFlightIds };
+  return { cards, sent, firstFlightIds, sceneCode: text.scene.code };
 }
 
 /** 保存してあるカードから、裏面を描くのに要る分だけ CardArt を組み立てる（裏面は人の並びを使わない） */
+/** 完了画面の「カード発行」の演出に渡す形（spec v1.8） */
+export function revealOf(card: Card, date: string, code?: string): RevealCard {
+  return {
+    id: card.id,
+    designName: card.designName,
+    style: card.style,
+    serial: card.serial,
+    issuedCount: card.issuedCount,
+    townName: TOWN.name.replace(/（.*）$/, ""),
+    date,
+    stampText: card.rollcallId.startsWith("solo-") ? "ソロ" : `${card.snowKg}kg`,
+    ...(code ? { code } : {}),
+  };
+}
+
 export function artFromCard(card: Card, date: string): CardArt {
   const teamIds = card.teamIds;
   return {
@@ -237,7 +259,11 @@ export async function rerenderBacks(missionId: string, back: { date: string; tha
     // その人のいちばん古いカードなら初出撃のリボンを残す
     const mine = await r.listCardsByRecipient(card.recipientId);
     const firstFlight = mine.length > 0 && mine[mine.length - 1].id === card.id;
-    const svg = renderCardBackSvg(artFromCard(card, back.date), { thanks: back.thanks, subtasks: back.subtasks, firstFlight });
+    // 前の裏面にあった「設計図」と「推定の元」は残す（v1.8）
+    const old = await r.getCard(card.id);
+    const extras = old ? backExtras(old.backSvg) : {};
+    const art: CardArt = { ...artFromCard(card, back.date), snowKgBasis: extras.basis, scene: extras.scene as CardArt["scene"] };
+    const svg = renderCardBackSvg(art, { thanks: back.thanks, subtasks: back.subtasks, firstFlight });
     await r.updateCardBack(card.id, svg);
   }
   return cards.length;

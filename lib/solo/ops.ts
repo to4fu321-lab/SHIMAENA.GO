@@ -3,7 +3,8 @@
 //家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
 import { allowedAtNight, isNight, nightRefusal } from "../night";
 import { randomBytes } from "node:crypto";
-import { issueSoloCard } from "../cards/issue";
+import { issueSoloCard, revealOf } from "../cards/issue";
+import type { RevealCard } from "../cards/reveal";
 import { cellKey } from "../cells";
 import { checkPhoto, decidePhoto, hazardLines, type PhotoInput } from "../claude/photo";
 import { photoFingerprint, photoSeen, rememberPhoto } from "../ops/photo-seen";
@@ -36,6 +37,8 @@ export interface SoloClearSummary {
   /** 最初のカード（初出撃） */
   firstEver: boolean;
   card?: Card;
+  /** v1.8: カード発行の演出に渡す形 */
+  reveal?: RevealCard;
   hitokoto: string;
   nextCard: NextCard;
   /** 写真を付けたとき: 確認できたか／報告として受け付けたか */
@@ -184,6 +187,7 @@ export async function completeSolo(
     streak,
     firstEver,
     card,
+    reveal: card ? revealOf(card, today) : undefined,
     hitokoto,
     nextCard: nextCard(card ? [...cards, card] : cards, streak),
     photoNote,

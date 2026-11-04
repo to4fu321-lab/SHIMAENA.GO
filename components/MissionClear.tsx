@@ -9,6 +9,7 @@ import { TEAMS } from "@/lib/teams";
 import Mascot, { SnowTown } from "./Mascot";
 import QuickShare from "./QuickShare";
 import InviteDrafts from "./InviteDrafts";
+import CardReveal from "./CardReveal";
 import { clearMessage } from "@/lib/share-links";
 
 const FEATHERS = [
@@ -78,6 +79,11 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
           )}
         </p>
 
+        {clear.card && (
+          <div className="mt-3">
+            <CardReveal card={clear.card} label={clear.firstFlight ? "はじめてのカードを発行しました" : "この時だけのカードを発行しました"} />
+          </div>
+        )}
         {clear.firstFlight && (
           <p className="mt-3 rounded-2xl bg-camellia-soft px-3 py-2 text-base font-bold ring-1 ring-camellia">
             初出撃おめでとう！ 今日からあなたも、町内の群れの一員です。最初のカードが届きます。
