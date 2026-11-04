@@ -68,7 +68,7 @@ export default function MissionRun({
   const ready = ba ? Boolean(before && file) : Boolean(file) || note.trim().length > 0;
 
   return (
-    <section className="run-in space-y-2 rounded-3xl bg-card p-4 shadow-md ring-2 ring-lamp" aria-label="ミッション中">
+    <section className="run-in min-h-full space-y-2 rounded-3xl bg-card p-4 shadow-md ring-2 ring-lamp" aria-label="ミッション中">
       <div className="flex items-center gap-2">
         <span className="flex items-center gap-1.5 rounded-full bg-lamp px-3 py-0.5 text-sm font-bold text-white">
           <span className="blink size-2 rounded-full bg-white" aria-hidden="true" />
@@ -120,9 +120,9 @@ export default function MissionRun({
       <button
         disabled={pending || !ready}
         onClick={() => onReport(file, note.trim())}
-        className={`btn btn-lamp w-full rounded-full text-xl ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
+        className={`btn btn-lamp w-full whitespace-nowrap rounded-full text-lg ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
       >
-        {pending ? "報告中…" : ready ? "報告してクリア！" : !before ? "Before を撮ってスタート" : "終わったら After を撮ってね"}
+        {pending ? "報告中…" : ready ? "報告してクリア！" : !before ? "Before を撮ろう" : "終わったら After を撮ろう"}
       </button>
 
         </>
@@ -181,7 +181,7 @@ export default function MissionRun({
       <button
         disabled={pending || !ready}
         onClick={() => onReport(file, note.trim())}
-        className={`btn btn-lamp w-full rounded-full text-xl ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
+        className={`btn btn-lamp w-full whitespace-nowrap rounded-full text-lg ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
       >
         {pending ? "報告中…" : ready ? "報告してクリア！" : canPhoto ? "写真かひとことを入れてね" : "ひとことを入れてね"}
       </button>

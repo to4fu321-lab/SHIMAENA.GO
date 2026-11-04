@@ -69,32 +69,34 @@ export default function RoadReportRun({
   };
 
   return (
-    <section className="run-in space-y-2 rounded-3xl bg-card p-4 shadow-md ring-2 ring-lamp" aria-label="道の危険を知らせる">
+    <section className="run-in min-h-full space-y-2 rounded-3xl bg-card p-3.5 shadow-md ring-2 ring-lamp" aria-label="道の危険を知らせる">
       <div className="flex items-center gap-2">
         <span className="blink size-3 shrink-0 rounded-full bg-lamp" aria-label="ミッション中" />
-        <h2 className="text-xl font-bold leading-tight">道の危険を知らせる</h2>
+        <h2 className="whitespace-nowrap text-lg font-bold leading-tight">道の危険を知らせる</h2>
         <button onClick={onQuit} disabled={pending} className="ml-auto min-h-10 shrink-0 whitespace-nowrap px-2 text-sm text-ink-soft underline">
           やめる
         </button>
       </div>
 
       <p className="text-sm font-bold">① どんな危険？</p>
-      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="危険の種類">
-        {HAZARDS.map((h, i) => (
+      <div className="grid grid-cols-5 gap-1" role="radiogroup" aria-label="危険の種類">
+        {HAZARDS.map((h) => (
           <button
             key={h.id}
             role="radio"
             aria-checked={hz === h.id}
+            aria-label={h.label}
             onClick={() => setHz(h.id)}
-            className={`flex min-h-11 items-center gap-1.5 rounded-2xl px-2 text-left text-sm font-bold leading-tight ring-2 ${
+            className={`flex min-h-14 min-w-0 flex-col items-center justify-center rounded-xl text-[11px] font-bold leading-tight tracking-tighter ring-2 ${
               hz === h.id ? "bg-ink text-white ring-ink" : "bg-paper ring-ink/10"
-            } ${i === HAZARDS.length - 1 ? "col-span-2 justify-center" : ""}`}
+            }`}
           >
-            <span className="text-xl" aria-hidden="true">{h.emoji}</span>
-            {h.label}
+            <span className="text-2xl leading-none" aria-hidden="true">{h.emoji}</span>
+            <span className="mt-0.5 whitespace-nowrap">{h.short}</span>
           </button>
         ))}
       </div>
+      {hz && <p className="text-center text-sm font-bold text-ink-soft">{HAZARDS.find((h) => h.id === hz)?.label}</p>}
 
       <p className="text-sm font-bold">② その場で写真と場所</p>
       <div className="flex items-center gap-2">
@@ -116,7 +118,7 @@ export default function RoadReportRun({
           {loc.state === "wait" && <span>📍 場所を調べています…</span>}
           {loc.state === "ok" && (
             <span className="flex flex-wrap items-center gap-x-2">
-              <b>📍 {loc.adjusted ? "場所OK（地図で合わせた）" : `場所OK（誤差 約${loc.acc}m）`}</b>
+              <b>📍 {loc.adjusted ? "場所OK（地図で合わせた）" : `場所OK（±${loc.acc}m）`}</b>
               <button onClick={() => setAdjusting(true)} disabled={pending} className="min-h-8 font-bold text-lamp-deep underline">
                 地図で直す
               </button>
@@ -130,7 +132,7 @@ export default function RoadReportRun({
               </button>
             </span>
           )}
-          <span className="block text-xs text-ink-soft">人の顔や車のナンバーが写らないように</span>
+          <span className="block text-xs text-ink-soft">顔や車のナンバーは写さない</span>
         </div>
       </div>
       <input
@@ -143,7 +145,7 @@ export default function RoadReportRun({
       <button
         disabled={pending || busy || !ready}
         onClick={send}
-        className={`btn btn-lamp w-full rounded-full text-xl ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
+        className={`btn btn-lamp w-full whitespace-nowrap rounded-full text-lg ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
       >
         {pending || busy ? "報告中…" : ready ? "地図に報告してクリア！" : !hz ? "危険の種類をえらんでね" : !file ? "写真を撮ってね" : "場所を調べています…"}
       </button>

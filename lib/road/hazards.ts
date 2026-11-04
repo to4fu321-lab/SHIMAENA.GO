@@ -7,18 +7,20 @@ export type HazardId = "no_plow" | "narrow" | "no_sidewalk" | "slush" | "ice";
 export interface Hazard {
   id: HazardId;
   emoji: string;
-  /** ボタン・地図の短い名前 */
+  /** 地図・通知の名前 */
   label: string;
+  /** 報告画面の小さなボタンの名前（4文字まで） */
+  short: string;
   /** 通知の1文 */
   sentence: string;
 }
 
 export const HAZARDS: Hazard[] = [
-  { id: "no_plow", emoji: "🚧", label: "除雪が来ていない", sentence: "除雪がまだ来ていない道があります。" },
-  { id: "narrow", emoji: "🚗", label: "道が細い・車が通りにくい", sentence: "除雪のあとも道が細く、車が通りにくくなっています。" },
-  { id: "no_sidewalk", emoji: "🚶", label: "歩道がない", sentence: "雪で歩道がなくなっている所があります。車に気をつけて。" },
-  { id: "slush", emoji: "🌀", label: "ぐさぐさ雪・スタック注意", sentence: "ぐさぐさの雪で、車がスタックしそうな道があります。" },
-  { id: "ice", emoji: "🧊", label: "凍って転びやすい", sentence: "凍って転びやすい所があります。足元に気をつけて。" },
+  { id: "no_plow", short: "除雪まだ", emoji: "🚧", label: "除雪が来ていない", sentence: "除雪がまだ来ていない道があります。" },
+  { id: "narrow", short: "道が細い", emoji: "🚗", label: "道が細い・車が通りにくい", sentence: "除雪のあとも道が細く、車が通りにくくなっています。" },
+  { id: "no_sidewalk", short: "歩道なし", emoji: "🚶", label: "歩道がない", sentence: "雪で歩道がなくなっている所があります。車に気をつけて。" },
+  { id: "slush", short: "ぐさぐさ", emoji: "🌀", label: "ぐさぐさ雪・スタック注意", sentence: "ぐさぐさの雪で、車がスタックしそうな道があります。" },
+  { id: "ice", short: "つるつる", emoji: "🧊", label: "凍って転びやすい", sentence: "凍って転びやすい所があります。足元に気をつけて。" },
 ];
 
 export function hazard(id: string): Hazard | undefined {
