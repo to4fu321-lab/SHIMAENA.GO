@@ -56,6 +56,7 @@ describe("吹き出しで順番に話す（11/4）", () => {
     const ls = captainRotation({ ...base, night: true });
     expect(ls.join("")).not.toContain("雪かき中");
     expect(ls).toContain("夜は自分の家の雪かきだけにしようね。");
+    expect(captainRotation({ ...base, night: true, homeToday: 4 })).toContain("今日は4人が、自分の家の雪かきをしたしま〜！");
   });
   it("安全の一文は何度も挟む", () => {
     const ls = captainRotation({ ...base, safety: "ひとりでやらず、15分ごとに休みましょう。" });

@@ -21,6 +21,8 @@ import { soloStatus } from "@/lib/solo/ops";
 import { jstMinutes } from "@/lib/jst";
 import { currentWeatherCode, parseSkyParam, timeOfDay, weatherOf } from "@/lib/sky";
 import { TOWN } from "@/lib/town";
+import { repo } from "@/lib/repo";
+import { appToday } from "@/lib/morning/today";
 import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 
@@ -87,6 +89,13 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   );
   const safety = rc.status !== "closed" ? safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs }) : undefined;
   const night = !open;
+  // 夜（19時〜6時）は、よその家の数字（あと何軒・雪かき中）の代わりに、今日 自分の家の雪かきをした人の数
+  const homeToday = night
+    ? await repo()
+        .listSoloLogsBetween(appToday(record), appToday(record))
+        .then((ls) => new Set(ls.filter((l) => l.kind === "own_house").map((l) => l.participantId)).size)
+        .catch(() => 0)
+    : 0;
   const captainLines = captainRotation({
     main: captain,
     safety: safety && safety !== captain ? safety : undefined,
@@ -95,6 +104,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     active: activeNow,
     left: planned ? prog.left : 0,
     night,
+    homeToday,
     morningBonus: bonuses.includes("朝ボーナス+5"),
     dokayuki: bonuses.includes("ドカ雪+5"),
     teamName: myTeam?.team.name,
@@ -158,7 +168,12 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               <Icon name="map" size={26} accent="var(--lamp)" />
             </span>
             <div className="min-w-0 flex-1 leading-tight">
-              {prog.total > 0 && !prog.allDone ? (
+              {night ? (
+                <p className="text-xl font-bold">
+                  今夜は自分の家の雪かき
+                  <span className="block text-sm">よその家の手伝いは、朝6時から</span>
+                </p>
+              ) : prog.total > 0 && !prog.allDone ? (
                 <>
                   <p className="text-xl font-bold">
                     あと<span className="mx-1 text-4xl tabular-nums text-lamp">{prog.left}</span>軒で完了！
@@ -178,7 +193,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 </p>
               )}
             </div>
-            {prog.total > 0 && (
+            {!night && prog.total > 0 && (
               <span className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-sm font-bold tabular-nums" aria-label={`進み具合 ${pct}%`}>
                 {pct}%
               </span>
@@ -186,19 +201,25 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           </div>
           <div className="mt-2 grid grid-cols-2 divide-x divide-ink/15 border-t border-ink/10 pt-2 short:mt-1 short:pt-1">
             <p className="flex items-center justify-center gap-2 text-base font-bold">
-              <svg viewBox="0 0 40 40" width="28" height="28" aria-hidden="true">
+              <svg viewBox="0 0 40 40" width="28" height="28" aria-hidden="true" className="shrink-0">
                 <circle cx="14" cy="13" r="6" fill="#29445c" />
                 <circle cx="27" cy="14" r="5" fill="#3b6584" />
                 <path d="M3 33 C3 24 25 24 25 33 Z" fill="#29445c" />
                 <path d="M20 32 C21 25 37 24 37 32 Z" fill="#3b6584" />
               </svg>
-              <span className="whitespace-nowrap">
-                雪かき中 <b className="text-2xl tabular-nums">{activeNow}</b>人
-              </span>
+              {night ? (
+                <span className="whitespace-nowrap">
+                  自宅で <b className="text-2xl tabular-nums">{homeToday}</b>人
+                </span>
+              ) : (
+                <span className="whitespace-nowrap">
+                  雪かき中 <b className="text-2xl tabular-nums">{activeNow}</b>人
+                </span>
+              )}
             </p>
             <p className="flex items-center justify-center gap-2 text-base font-bold">
               <Icon name="house" size={28} accent="var(--lamp)" className="text-ink" />
-              達成 <b className="text-2xl tabular-nums">{prog.done}</b>軒
+              {night ? "今日" : "達成"} <b className="text-2xl tabular-nums">{prog.done}</b>軒
             </p>
           </div>
         </section>
