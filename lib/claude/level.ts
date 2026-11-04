@@ -11,7 +11,7 @@ export const LevelResultSchema = z.object({
     z.object({
       kind: z.enum(["path", "sand", "dump", "garage", "road"]),
       label: z.string(),
-      minutes: z.union([z.literal(5), z.literal(15), z.literal(30)]),
+      minutes: z.union([z.literal(10), z.literal(20), z.literal(30)]),
     }),
   ),
   /** 登録した人に返す一言（やさしい日本語） */

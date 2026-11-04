@@ -20,7 +20,7 @@ describe("隊長のひとこと", () => {
   });
 
   it("定型は吹き出しに収まり、お願いする側と安全は丁寧語。安全は「ひとり」か「休む」を言う", () => {
-    for (const s of CAPTAIN_STATES) expect(captainLineOk(s, CAPTAIN_TEMPLATES[s], [5, 15, 1])).toBe(true);
+    for (const s of CAPTAIN_STATES) expect(captainLineOk(s, CAPTAIN_TEMPLATES[s], [10, 15, 1])).toBe(true);
     expect([...CAPTAIN_TEMPLATES.normal].length).toBeLessThanOrEqual(CAPTAIN_MAX);
   });
 

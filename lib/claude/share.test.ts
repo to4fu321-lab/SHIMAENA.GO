@@ -14,7 +14,7 @@ describe("SNS の投稿文（Claude）", () => {
   it("数字は渡したものだけ（作った数字なら定型に戻す）", () => {
     const st = stats();
     const input = shareInput("today", st);
-    expect(usesOnlyGivenNumbers(`今日は${st.todayPeople}人が出動。あと${st.left}軒、5分だけ。`, input)).toBe(true);
+    expect(usesOnlyGivenNumbers(`今日は${st.todayPeople}人が出動。あと${st.left}軒、10分だけ。`, input)).toBe(true);
     expect(usesOnlyGivenNumbers("今日は999人が出動！", input)).toBe(false);
     expect(usesOnlyGivenNumbers("今日は９９９人", input)).toBe(false); // 全角でも
   });

@@ -1,4 +1,4 @@
-// ソロミッションの一覧（spec v1.3）。1人でもできる 3〜5分の仕事。純粋なデータ。
+// ソロミッションの一覧（spec v1.3）。1人でもできる 3〜10分の仕事。純粋なデータ。
 // 現地（onsite）とオンラインをはっきり分け、オンラインの確認・応援は「雪かき完了」にはしない。
 import type { SoloKind } from "../types";
 
@@ -10,7 +10,7 @@ export interface SoloMission {
   label: string;
   /** 何をするか（1文） */
   description: string;
-  minutes: 3 | 5;
+  minutes: 3 | 10;
   onsite: boolean;
   difficulty: 1 | 2 | 3;
   /** 完了で入る羽 */
@@ -23,13 +23,13 @@ export interface SoloMission {
 export const HELP_HOUSE_FEATHERS = 10;
 
 export const SOLO_MISSIONS: SoloMission[] = [
-  // 5分・現地
-  { kind: "patrol", label: "雪の状況を見回る", description: "家のまわりを5分歩いて、雪の様子を見る", minutes: 5, onsite: true, difficulty: 1, feathers: 5, photo: "optional" },
-  { kind: "report_snow", label: "雪の多い場所を報告する", description: "通りにくい所を1か所、写真で知らせる", minutes: 5, onsite: true, difficulty: 1, feathers: 5, photo: "optional" },
-  { kind: "check_spot", label: "雪かき可能な場所を確認する", description: "雪捨て場や通路の空きを見ておく", minutes: 5, onsite: true, difficulty: 1, feathers: 5, photo: "none" },
-  { kind: "own_house", label: "自分の家の雪かき", description: "玄関前を5分だけ。写真を付けると確認済みに", minutes: 5, onsite: true, difficulty: 2, feathers: 8, photo: "optional" },
-  { kind: "find_help", label: "仲間が必要な家を確認する", description: "人手が足りない家が近くにないか見に行く", minutes: 5, onsite: true, difficulty: 1, feathers: 5, photo: "none" },
-  { kind: "help_house", label: "1軒の雪かきを手伝う", description: "今朝の作戦の家に5分だけ加わる（完了は写真で）", minutes: 5, onsite: true, difficulty: 2, feathers: HELP_HOUSE_FEATHERS, photo: "none" },
+  // 10分・現地
+  { kind: "patrol", label: "雪の状況を見回る", description: "家のまわりを10分歩いて、雪の様子を見る", minutes: 10, onsite: true, difficulty: 1, feathers: 5, photo: "optional" },
+  { kind: "report_snow", label: "雪の多い場所を報告する", description: "通りにくい所を1か所、写真で知らせる", minutes: 10, onsite: true, difficulty: 1, feathers: 5, photo: "optional" },
+  { kind: "check_spot", label: "雪かき可能な場所を確認する", description: "雪捨て場や通路の空きを見ておく", minutes: 10, onsite: true, difficulty: 1, feathers: 5, photo: "none" },
+  { kind: "own_house", label: "自分の家の雪かき", description: "玄関前を10分だけ。写真を付けると確認済みに", minutes: 10, onsite: true, difficulty: 2, feathers: 8, photo: "optional" },
+  { kind: "find_help", label: "仲間が必要な家を確認する", description: "人手が足りない家が近くにないか見に行く", minutes: 10, onsite: true, difficulty: 1, feathers: 5, photo: "none" },
+  { kind: "help_house", label: "1軒の雪かきを手伝う", description: "今朝の作戦の家に10分だけ加わる（完了は写真で）", minutes: 10, onsite: true, difficulty: 2, feathers: HELP_HOUSE_FEATHERS, photo: "none" },
   // 3分・オンライン（雪かき完了にはしない）
   { kind: "check_area", label: "地域の状況を確認する", description: "今朝の地図と雪解けの進みを見る", minutes: 3, onsite: false, difficulty: 1, feathers: 2, photo: "none" },
   { kind: "report_online", label: "雪の状況を報告する", description: "家の前の雪を一言で知らせる", minutes: 3, onsite: false, difficulty: 1, feathers: 2, photo: "none" },
@@ -53,4 +53,10 @@ export function isSoloMissionKind(kind: string): kind is SoloMissionKind {
 /** 台帳の種類の表示名（ボーナスも含む） */
 export function soloLabel(kind: SoloKind): string {
   return soloMission(kind)?.label ?? SOLO_BONUS[kind as SoloBonusKind]?.label ?? kind;
+}
+
+/** チームに入る点の目安（spec v1.7）。現地だけ。オンラインは null（羽だけ） */
+export function soloTeamPoints(m: Pick<SoloMission, "kind" | "onsite">): number | null {
+  if (!m.onsite || m.kind === "help_house") return null;
+  return m.kind === "own_house" ? 5 : 3;
 }

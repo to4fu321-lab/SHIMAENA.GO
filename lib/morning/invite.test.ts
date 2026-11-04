@@ -12,7 +12,7 @@ describe("招待文", () => {
   it("定型は3案で、名前・拠点・作った数字がない", () => {
     const d = mockInvites({ minutes: 15, firstTime: true, snowCm: 12, snowName: "ぼた雪のドンブリ" });
     expect(d).toHaveLength(3);
-    for (const x of d) expect(inviteOk(x, [15, 12, 1, 5])).toBe(true);
+    for (const x of d) expect(inviteOk(x, [15, 12, 1, 10])).toBe(true);
     expect(inviteOk("佐藤さんの家に行ったよ", [])).toBe(false);
     expect(inviteOk("拠点3の雪かき、一緒にどう？", [3])).toBe(false);
     expect(inviteOk("今朝は100人で雪かきした！一緒にどう？", [15])).toBe(false);

@@ -15,6 +15,9 @@ export const REASON_LABEL: Record<ScoreReason, string> = {
   supply: "補給",
   requester_joined: "本人も参加",
   weekly_goal: "週の目標",
+  solo_home: "ソロ: 自分の家の雪かき",
+  solo_onsite: "ソロ: 現地の活動",
+  solo_photo: "ソロ: 写真で確認",
 };
 
 export interface ClearItem {

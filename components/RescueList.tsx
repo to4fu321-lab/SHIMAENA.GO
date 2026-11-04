@@ -1,6 +1,6 @@
 "use client";
 
-// 「あと1人で救える家」と「5分だけ参加」（spec v1.1）。地図の下に出す。
+// 「あと1人で救える家」と「10分だけ参加」（spec v1.1）。地図の下に出す。
 import { useState, useTransition } from "react";
 import { fiveMinutesAction, joinAction, type ActionResult } from "@/app/map/actions";
 import type { ShortHouse } from "@/lib/morning/watch";
@@ -48,13 +48,13 @@ export default function RescueList({
                   <p className="text-lg font-bold leading-tight">
                     拠点{h.baseNumber}　<span className="text-base font-normal">あと{h.missing}人（いま {h.going}人 / 必要 {h.required}人）</span>
                   </p>
-                  <p className="text-sm text-ink-soft">5分でできる仕事: {h.tasks.join("／")}</p>
+                  <p className="text-sm text-ink-soft">10分でできる仕事: {h.tasks.join("／")}</p>
                 </div>
                 {goingTo.includes(h.missionId) ? (
                   <p className="rounded-2xl bg-card px-3 py-2 text-center text-base font-bold ring-1 ring-ink/15">✓ 向かっています</p>
                 ) : (
                   <button disabled={pending} onClick={() => run(() => joinAction(viewerId, h.missionId))} className="btn btn-lamp w-full text-lg">
-                    拠点{h.baseNumber}に 5分だけ助けに行く
+                    拠点{h.baseNumber}に 10分だけ助けに行く
                   </button>
                 )}
               </li>
@@ -65,7 +65,7 @@ export default function RescueList({
       )}
       {items.length === 0 && !hasAssignment && (
         <button disabled={pending} onClick={() => run(() => fiveMinutesAction(viewerId))} className="btn btn-lamp w-full text-lg">
-          {pending ? "さがしています…" : "5分だけ参加する（見回り・補給）"}
+          {pending ? "さがしています…" : "10分だけ参加する（見回り・補給）"}
         </button>
       )}
       {result && (

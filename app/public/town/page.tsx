@@ -57,7 +57,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         <h1 className="text-3xl font-bold">
           シマエナ<span className="text-camellia-deep">GO</span>
         </h1>
-        <p className="text-xl font-bold">5分の雪かきで、町が変わる。</p>
+        <p className="text-xl font-bold">10分の雪かきで、町が変わる。</p>
         <p className="text-base text-ink-soft">寒い冬は、くっついて乗り切る。</p>
       </header>
 
@@ -76,7 +76,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         <section className="rounded-3xl bg-warm p-4 ring-1 ring-lamp/50" aria-label="ようこそ">
           <p className="text-lg font-bold">SNS から来てくれて、ありがとう！</p>
           <p className="text-base">
-            ここは札幌のある町内（デモは架空）の雪かきの様子です。見るだけ・応援だけでも大歓迎。LINE で登録すると、1人の5分（ソロ出動）から参加できます。
+            ここは札幌のある町内（デモは架空）の雪かきの様子です。見るだけ・応援だけでも大歓迎。LINE で登録すると、1人の10分（ソロ出動）から参加できます。
           </p>
         </section>
       )}
@@ -109,7 +109,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         </p>
         {st.shortHouses > 0 && (
           <p className="rounded-2xl bg-alert-soft px-3 py-2 text-base ring-1 ring-alert/40">
-            <b className="text-alert">{st.shortMissingMin === 1 ? "あと1人で救える家" : "人手が足りない家"}</b> が {st.shortHouses} 軒。5分だけ助けてくれる人を募集中です。
+            <b className="text-alert">{st.shortMissingMin === 1 ? "あと1人で救える家" : "人手が足りない家"}</b> が {st.shortHouses} 軒。10分だけ助けてくれる人を募集中です。
           </p>
         )}
       </section>
@@ -161,11 +161,11 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         <h2 className="text-xl font-bold">シマエナGO とは</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>雪の朝、LINE に1問だけの点呼が届きます。</li>
-          <li>町内の3チームが、ひとり暮らしの家の雪を5分単位でどけます。</li>
+          <li>町内の3チームが、ひとり暮らしの家の雪を10分単位でどけます。</li>
           <li>動いた朝だけのカードが届きます。お金には換えません。</li>
         </ul>
         <h3 className="text-lg font-bold">1人でも「ソロ出動」</h3>
-        <p>仲間がいない日も、見回り・雪の報告・自分の家の雪かきなど 3〜5分のミッションで参加できます。羽ポイントとカードがたまり、地図に足あとが残ります。</p>
+        <p>仲間がいない日も、見回り・雪の報告・自分の家の雪かきなど 3〜10分のミッションで参加できます。羽ポイントとカードがたまり、地図に足あとが残ります。</p>
         {join ? (
           <a href={join} className="btn btn-big bg-[#06C755] text-white">
             LINE で参加する

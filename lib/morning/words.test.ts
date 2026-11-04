@@ -29,8 +29,8 @@ describe("ことばを読む（キーなしの言葉の一覧）", () => {
   });
 
   it("手伝う側は分に直す（言った分以下で近いもの）・休む", () => {
-    expect(mockWords({ text: "20分なら行けます", role: "helper" }).answer).toBe("30");
-    expect(mockWords({ text: "10分だけ", role: "helper" }).answer).toBe("15");
+    expect(mockWords({ text: "20分なら行けます", role: "helper" }).answer).toBe("20");
+    expect(mockWords({ text: "10分だけ", role: "helper" }).answer).toBe("10");
     expect(mockWords({ text: "今朝は無理です", role: "helper" }).answer).toBe("0");
   });
 

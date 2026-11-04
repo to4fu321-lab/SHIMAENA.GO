@@ -17,8 +17,8 @@ export interface InviteInput {
 export function mockInvites(i: InviteInput): string[] {
   return [
     `今朝、${i.minutes}分だけ近所の雪かきをしてきた。1軒の玄関が開いたよ。次の雪の朝、一緒にどう？⛄`,
-    i.firstTime ? "はじめて町内の雪かきに出てみた。思ったより楽しかった！5分からでいいので、一緒にやらない？" : `雪${i.snowCm}cmの朝、町内のみんなで雪かき。5分からでいいから、次は一緒に！`,
-    i.snowName ? `今朝の相手は『${i.snowName}』。チームで倒してきた！シマエナGO、5分から参加できるよ。` : "LINE で1分で参加できる雪かきの助け合い。5分だけでも町が変わるよ。一緒にどう？",
+    i.firstTime ? "はじめて町内の雪かきに出てみた。思ったより楽しかった！10分からでいいので、一緒にやらない？" : `雪${i.snowCm}cmの朝、町内のみんなで雪かき。10分からでいいから、次は一緒に！`,
+    i.snowName ? `今朝の相手は『${i.snowName}』。チームで倒してきた！シマエナGO、10分から参加できるよ。` : "LINE で1分で参加できる雪かきの助け合い。10分だけでも町が変わるよ。一緒にどう？",
   ];
 }
 
@@ -42,6 +42,6 @@ export async function inviteDrafts(i: InviteInput): Promise<string[]> {
     effort: "low",
     model: "light",
   });
-  const allowed = [i.minutes, i.snowCm, 1, 5];
+  const allowed = [i.minutes, i.snowCm, 1, 10];
   return [0, 1, 2].map((k) => (res.drafts[k] && inviteOk(res.drafts[k], allowed) ? res.drafts[k].trim() : fallback[k]));
 }

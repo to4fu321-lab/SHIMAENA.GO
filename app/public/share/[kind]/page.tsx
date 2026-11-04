@@ -9,7 +9,7 @@ import { QUIZ_TYPES } from "@/lib/public/quiz";
 const PAGES = {
   today: { title: "今日のシマエナGO 出動", description: "雪の朝、町内のシマエナが家の雪をどけています。今日の出動人数と雪解けの進み。" },
   town: { title: "しらかば町内の雪解け", description: "町の雪解け率・助けた家・今週の活動人数。あなたの町にもシマエナを。" },
-  recruit: { title: "5分だけ参加しませんか？", description: "人手が足りない家があります。あなたの5分で町が変わる。" },
+  recruit: { title: "10分だけ参加しませんか？", description: "人手が足りない家があります。あなたの10分で町が変わる。" },
   // シマエナ診断の結果（quiz-asa など）
   ...Object.fromEntries(
     Object.values(QUIZ_TYPES).map((t) => [`quiz-${t.type}`, { title: `シマエナ診断: ${t.name}`, description: `${t.catchphrase} あなたは何シマエナ？ 5つの質問で分かります。` }]),
@@ -54,7 +54,7 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
         <p>{p.description}</p>
         <p>
           雪の朝に LINE で点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲームです。仲間がいない日も、
-          <b>ソロ出動</b>（見回り・雪の報告・自分の家の雪かき）で、1人の5分から参加できます。
+          <b>ソロ出動</b>（見回り・雪の報告・自分の家の雪かき）で、1人の10分から参加できます。
         </p>
         {join ? (
           <a href={`${join}`} className="btn btn-big bg-[#06C755] text-white">

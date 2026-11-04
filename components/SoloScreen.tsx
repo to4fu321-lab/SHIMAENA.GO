@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { fiveMinutesAction } from "@/app/map/actions";
 import { completeSoloAction, type SoloActionResult } from "@/app/solo/actions";
-import type { SoloMission } from "@/lib/solo/missions";
+import { soloTeamPoints, type SoloMission } from "@/lib/solo/missions";
 import type { SoloClearSummary, SoloStatus } from "@/lib/solo/ops";
 import type { Role } from "@/lib/types";
 import { shrink } from "./shrink";
@@ -37,7 +37,7 @@ export default function SoloScreen({
   /** 今朝の作戦中で、手伝う側（チームあり）なら家の雪かきに加われる */
   canHelpHouse: boolean;
   shortHouses: number;
-  /** ホームの「5分だけ出動」から来た */
+  /** ホームの「10分だけ出動」から来た */
   pickFive: boolean;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
@@ -99,7 +99,12 @@ export default function SoloScreen({
             <p className="text-sm text-ink-soft">{m.description}</p>
             <p className="mt-1 text-sm text-ink-soft">
               {m.minutes}分 ・ むずかしさ {DIFF[m.difficulty]} ・ <b className="text-camellia-deep">+{m.feathers}羽</b>
-              {m.photo === "optional" && " ・ 写真OK"}
+              {soloTeamPoints(m) !== null && (
+                <>
+                  {" "}・ <b className="text-ink">チーム +{soloTeamPoints(m)}点</b>
+                </>
+              )}
+              {m.photo === "optional" && (soloTeamPoints(m) !== null ? "（写真で +2点）" : " ・ 写真OK")}
             </p>
           </div>
           {done ? (
@@ -150,28 +155,28 @@ export default function SoloScreen({
       )}
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">
-          出動する <span className="text-base font-normal text-ink-soft">ひとりで5分（ソロ出動）</span>
+          出動する <span className="text-base font-normal text-ink-soft">ひとりで10分（ソロ出動）</span>
         </h1>
         <Link href={`/${q}`} className="btn btn-white min-h-11 px-3 text-sm">
           ホーム
         </Link>
       </header>
       <p className="text-base">
-        <b>{nickname}</b>さん。仲間がいなくても、自分の5分で町を変えられる。
+        <b>{nickname}</b>さん。仲間がいなくても、自分の10分で町を変えられる。
       </p>
       {status.totalFeathers === 0 && (
         <section className="rounded-3xl bg-warm p-4 ring-1 ring-lamp/50" aria-label="はじめての方へ">
           <p className="text-lg font-bold">はじめての方へ（3ステップ）</p>
           <ol className="mt-1 list-decimal space-y-1 pl-6 text-base">
             <li>下の「雪の状況を見回る」をえらぶ</li>
-            <li>家のまわりを5分だけ歩く（無理はしない）</li>
+            <li>家のまわりを10分だけ歩く（無理はしない）</li>
             <li>「完了」を押す → 羽と最初のカード</li>
           </ol>
         </section>
       )}
       {pickFive && (
         <p className="rounded-2xl bg-camellia-soft px-3 py-2 text-base ring-1 ring-camellia">
-          <b className="text-camellia-deep">5分だけ出動</b>: 今朝は作戦がない（か、まだ割り当てがない）ので、下の 5分ミッションから1つどうぞ。
+          <b className="text-camellia-deep">10分だけ出動</b>: 今朝は作戦がない（か、まだ割り当てがない）ので、下の 10分ミッションから1つどうぞ。
         </p>
       )}
 
@@ -202,10 +207,10 @@ export default function SoloScreen({
         </p>
       )}
 
-      {/* 5分・現地 */}
-      <section className="space-y-2" aria-label="5分ミッション（現地）">
+      {/* 10分・現地 */}
+      <section className="space-y-2" aria-label="10分ミッション（現地）">
         <h2 className="text-lg font-bold">
-          5分ミッション <span className="text-sm font-normal text-ink-soft">外に出てやること</span>
+          10分ミッション <span className="text-sm font-normal text-ink-soft">外に出てやること</span>
         </h2>
         <ul className="space-y-2">{onsite.map(row)}</ul>
         {house && (
@@ -213,12 +218,12 @@ export default function SoloScreen({
             <p className="text-base font-bold leading-snug">{house.label}</p>
             <p className="text-sm text-ink-soft">{house.description}</p>
             <p className="mt-1 text-sm text-ink-soft">
-              5分〜 ・ むずかしさ {DIFF[house.difficulty]} ・ <b className="text-camellia-deep">+{house.feathers}羽</b>（完了は写真で）
+              10分〜 ・ むずかしさ {DIFF[house.difficulty]} ・ <b className="text-camellia-deep">+{house.feathers}羽</b>（完了は写真で）
             </p>
             {canHelpHouse ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button disabled={pending} onClick={helpHouse} className="btn btn-lamp text-base">
-                  {shortHouses > 0 ? `5分だけ助けに行く（あと1人の家 ${shortHouses} 軒）` : "5分だけ参加（偵察・補給）"}
+                  {shortHouses > 0 ? `10分だけ助けに行く（あと1人の家 ${shortHouses} 軒）` : "10分だけ参加（偵察・補給）"}
                 </button>
                 <Link href={`/map${q}`} className="btn btn-white text-base">
                   町の地図で見る
@@ -250,7 +255,7 @@ export default function SoloScreen({
       <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日の活動記録">
         <h2 className="text-lg font-bold">活動記録（7日）</h2>
         {status.recent.length === 0 ? (
-          <p className="text-sm text-ink-soft">まだありません。最初の5分をどうぞ。</p>
+          <p className="text-sm text-ink-soft">まだありません。最初の10分をどうぞ。</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {status.recent.map((l) => (

@@ -17,7 +17,7 @@ export function xShareUrl(text: string, url?: string): string {
 /** 友だちを誘う文。参加先は LINE の友だち追加（なければ公開ページ） */
 export function inviteMessage(origin: string, joinUrl?: string): { text: string; url: string } {
   return {
-    text: "雪の朝、5分だけ町内の雪かきを一緒にしませんか？⛄\nシマエナGO は LINE で1分で参加できます。ひとりの5分で、町が変わる。",
+    text: "雪の朝、10分だけ町内の雪かきを一緒にしませんか？⛄\nシマエナGO は LINE で1分で参加できます。ひとりの10分で、町が変わる。",
     url: joinUrl ?? `${origin}/public/town?via=sns`,
   };
 }
@@ -34,5 +34,5 @@ export function cheerRequestMessage(origin: string): { text: string; url: string
 export function clearMessage(kind: "house" | "solo", minutes = 5): string {
   return kind === "house"
     ? `今朝の雪かきで、1軒の家に灯りがともりました。⛄\n${minutes}分の雪かきで、町が変わる。\n#シマエナGO #雪かき`
-    : `今朝、ひとりで${minutes}分の雪かき出動をしました。⛄\n5分の雪かきで、町が変わる。\n#シマエナGO #雪かき`;
+    : `今朝、ひとりで${minutes}分の雪かき出動をしました。⛄\n10分の雪かきで、町が変わる。\n#シマエナGO #雪かき`;
 }

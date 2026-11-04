@@ -129,7 +129,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
             </ul>
           ) : (
             <div className="mt-1 space-y-2 rounded-2xl bg-card px-3 py-3 ring-1 ring-ink/10">
-              <p className="text-base">まだ活動がありません。5分だけでも、町の力になります。</p>
+              <p className="text-base">まだ活動がありません。10分だけでも、町の力になります。</p>
               <Link href={`/solo${q}`} className="btn btn-lamp text-lg">
                 出動する
               </Link>

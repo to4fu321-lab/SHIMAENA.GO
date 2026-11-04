@@ -9,7 +9,7 @@ export { AREA_LABEL, requestLabel };
 
 export const WordsSchema = z.object({
   /** 点呼の答え。お願いする側: yes（出られる）／no（来てほしい）／together（一緒なら）。手伝う側: 0・5・15・30・60（分）。分からない: unknown */
-  answer: z.enum(["yes", "no", "together", "0", "5", "15", "30", "60", "unknown"]),
+  answer: z.enum(["yes", "no", "together", "0", "10", "20", "30", "60", "unknown"]),
   /** 締め切り "09:00"。言っていなければ null */
   deadline: z.string().nullable(),
   /** どこまで。言っていなければ null */
@@ -58,9 +58,9 @@ export function mockWords(input: WordsInput): Words {
     if (/休|無理|行けない|いけない|ダメ|だめ/.test(t)) return { ...base, answer: "0", deadline: null, area: null };
     const n = /([0-9０-９]{1,2})\s*分/.exec(t)?.[1];
     const min = n ? Number(n.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))) : NaN;
-    const pick = [5, 15, 30, 60].find((x) => min <= x);
+    const pick = [10, 20, 30, 60].find((x) => min <= x);
     if (pick) return { ...base, answer: String(pick) as Words["answer"], deadline: null, area: null };
-    if (/行ける|いける|行きます|大丈夫|OK|ok/.test(t)) return { ...base, answer: "15", deadline: null, area: null };
+    if (/行ける|いける|行きます|大丈夫|OK|ok/.test(t)) return { ...base, answer: "20", deadline: null, area: null };
     return { ...base, answer: "unknown", deadline: null, area: null, askBack: "何分くらい動けそうですか？下のボタンから選んでください。" };
   }
   if (/一緒|いっしょ|手伝って|手伝います/.test(t)) return { ...base, answer: "together" };

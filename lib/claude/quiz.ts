@@ -9,7 +9,7 @@ export const QuizCommentSchema = z.object({ text: z.string() });
 
 export function mockQuizComment(type: QuizType): string {
   const t = QUIZ_TYPES[type];
-  return `${t.name}のあなたへ。まずは「${t.mission}」から、5分だけどうぞ。`.slice(0, QUIZ_COMMENT_MAX + 10);
+  return `${t.name}のあなたへ。まずは「${t.mission}」から、10分だけどうぞ。`.slice(0, QUIZ_COMMENT_MAX + 10);
 }
 
 export async function quizComment(type: QuizType, today: string): Promise<{ text: string; byClaude: boolean }> {
@@ -22,7 +22,7 @@ export async function quizComment(type: QuizType, today: string): Promise<{ text
     const res = await askJson({
       task:
         "雪かきゲーム「シマエナGO」のシマエナ診断の結果に添えるひとことを書いてください。採点表 quiz の規則に従います: 40字まで、やさしい日本語、" +
-        "タイプの良いところをほめて、おすすめの5分の出動に誘う。性格を決めつけない。名乗らない。",
+        "タイプの良いところをほめて、おすすめの10分の出動に誘う。性格を決めつけない。名乗らない。",
       input: { typeName: t.name, catchphrase: t.catchphrase, mission: t.mission },
       schema: QuizCommentSchema,
       effort: "low",

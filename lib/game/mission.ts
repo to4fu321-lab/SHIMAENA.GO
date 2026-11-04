@@ -23,14 +23,14 @@ export function requiredPeople(level: 1 | 2 | 3, answer: RequesterAnswer | "none
 }
 
 const TASK = {
-  path: { kind: "path", label: "玄関前の通路", minutes: 5 },
-  sand: { kind: "sand", label: "階段の砂まき", minutes: 5 },
-  dump: { kind: "dump", label: "雪捨て場まで1往復", minutes: 5 },
-  garage: { kind: "garage", label: "車庫前", minutes: 15 },
+  path: { kind: "path", label: "玄関前の通路", minutes: 10 },
+  sand: { kind: "sand", label: "階段の砂まき", minutes: 10 },
+  dump: { kind: "dump", label: "雪捨て場まで1往復", minutes: 10 },
+  garage: { kind: "garage", label: "車庫前", minutes: 20 },
   road: { kind: "road", label: "道路まで", minutes: 30 },
 } as const satisfies Record<string, Omit<SubTask, "id">>;
 
-/** どこまで雪かきが必要かとレベルから、5分単位の小タスクに分ける */
+/** どこまで雪かきが必要かとレベルから、10分単位の小タスクに分ける */
 export function decompose(clearArea: ClearArea, level: 1 | 2 | 3): SubTask[] {
   const list: Omit<SubTask, "id">[] = [TASK.path, TASK.sand];
   if (clearArea === "garage" || clearArea === "road") list.push(TASK.garage);
@@ -40,8 +40,8 @@ export function decompose(clearArea: ClearArea, level: 1 | 2 | 3): SubTask[] {
   return list.map((t, i) => ({ ...t, id: `t${i + 1}` }));
 }
 
-/** 体力に関係なくいつでもある5分タスク */
+/** 体力に関係なくいつでもある10分タスク */
 export const SUPPORT_TASKS: SubTask[] = [
-  { id: "scout", kind: "scout", label: "偵察（写真1枚で「ここまだ」）", minutes: 5 },
-  { id: "supply", kind: "supply", label: "補給（お茶・カイロ）", minutes: 5 },
+  { id: "scout", kind: "scout", label: "偵察（写真1枚で「ここまだ」）", minutes: 10 },
+  { id: "supply", kind: "supply", label: "補給（お茶・カイロ）", minutes: 10 },
 ];

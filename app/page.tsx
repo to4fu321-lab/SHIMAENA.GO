@@ -18,7 +18,7 @@ import { captainLine, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
 import { soloStatus } from "@/lib/solo/ops";
 
-export const metadata: Metadata = { title: "シマエナGO ・ 5分の雪かきで、町が変わる" };
+export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
 /** 今日の数字の小さなカード */
 function Stat({ label, value, unit, icon }: { label: string; value: number; unit: string; icon: "house" | "people" }) {
@@ -45,7 +45,7 @@ function Stat({ label, value, unit, icon }: { label: string; value: number; unit
 
 /**
  * ホーム = 今朝の出撃画面（spec v1.1 10.6）。スクロールしない1画面:
- * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 出動する／5分だけ手伝う → 下のタブ。
+ * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 出動する／10分だけ手伝う → 下のタブ。
  * チームの得点・実況・応援・カード・SNS は「くわしく」（/today）へ。
  */
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
@@ -65,8 +65,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
   // 出動する: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && me?.role === "helper" && Boolean(me.teamId);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
-  // 5分だけ手伝う: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
-  const fiveHref = `/solo?pick=5${demoAs ? `&as=${demoAs}` : ""}`;
+  // 10分だけ手伝う: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
+  const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = me?.role === "helper" && me.teamId ? teamTheme(me.teamId) : undefined;
@@ -110,7 +110,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
               <span aria-hidden="true">›</span>
             </Link>
           ) : (
-            <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">5分の雪かきで、町が変わる。</p>
+            <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">10分の雪かきで、町が変わる。</p>
           )}
         </div>
         <Link href={`/today${q}`} className="relative flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="くわしく（今朝のようす）">
@@ -177,7 +177,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
           ) : (
             <p className="py-1 text-xl font-bold leading-snug">
               {m.rollcall.status === "open" ? "点呼中です（6:40 に作戦）" : "今朝は雪かきの作戦がありません"}
-              <span className="block text-base">1人の5分でも、町を変えられます。</span>
+              <span className="block text-base">1人の10分でも、町を変えられます。</span>
             </p>
           )}
         </section>
@@ -188,7 +188,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
           <Stat label="今日の達成" value={prog.done} unit="軒" icon="house" />
         </div>
 
-        {/* 出動（いちばん大事なボタン）と、5分だけ */}
+        {/* 出動（いちばん大事なボタン）と、10分だけ */}
         <Link href={goHref} className="btn btn-lamp min-h-18 justify-start gap-3 rounded-full px-5 short:min-h-15 short:py-1.5">
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lamp">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -206,7 +206,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string }> 
             <path d="M12 7 V12 L15.5 14" />
           </svg>
           <span className="text-left leading-tight">
-            <span className="block text-lg">5分だけ手伝う（ソロ出動）</span>
+            <span className="block text-lg">10分だけ手伝う（ソロ出動）</span>
             <span className="block text-sm font-normal">ひとりでOK・自分の家の雪かきも</span>
           </span>
         </Link>

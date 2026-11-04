@@ -25,7 +25,7 @@ export interface RecapInput {
   mixedHouses: number;
   /** 自分の家を終えてから駆けつけた回数 */
   rescues: number;
-  /** 偵察・補給（5分）で加わった回数 */
+  /** 偵察・補給（10分）で加わった回数 */
   fiveMinuteJoins: number;
   /** いまも人手が足りない家の数 */
   shortRemaining: number;

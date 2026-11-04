@@ -108,8 +108,8 @@ describe("重要度と必要人数", () => {
 });
 
 describe("小タスク分解", () => {
-  it("どれも5・15・30分のどれか", () => {
-    for (const t of [...decompose("road", 3), ...SUPPORT_TASKS]) expect([5, 15, 30]).toContain(t.minutes);
+  it("どれも10・20・30分のどれか", () => {
+    for (const t of [...decompose("road", 3), ...SUPPORT_TASKS]) expect([10, 20, 30]).toContain(t.minutes);
   });
 
   it("玄関前だけなら車庫前・道路までは入らない", () => {

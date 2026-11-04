@@ -9,32 +9,32 @@ const texts = (ms: LineMessage[]) => ms.map(textOf);
 const labels = (m: LineMessage) => actionsOf(m).map((a) => a.label);
 
 describe("Bot の吹き出し", () => {
-  it("点呼は 隊長カード（おはよう・今朝の雪）→ 質問 の2つ。時間は 5・15・30・60分と「今朝は休む」", () => {
+  it("点呼は 隊長カード（おはよう・今朝の雪）→ 質問 の2つ。時間は 10・20・30・60分と「今朝は休む」", () => {
     const ms = MSG.rollcallHelper(12, "ぼた雪のドンブリ");
     expect(texts(ms)).toEqual(["おはようだしま〜！☃️今朝は雪12cm、相手は『ぼた雪のドンブリ』です。", "今朝、何分動けますか？"]);
     const hero = (ms[0] as FlexMessage).contents.hero?.url as string;
     expect(hero).toContain("/api/line/hero/snow.png?cm=12&w=morning&s=");
     expect(ms.at(-1)?.type).toBe("flex"); // 答えは吹き出しの中の大きなボタン
-    expect(labels(ms.at(-1)!)).toEqual(["5分", "15分", "30分", "60分", "今朝は休む"]);
+    expect(labels(ms.at(-1)!)).toEqual(["10分", "20分", "30分", "60分", "今朝は休む"]);
     expect(ms.slice(0, -1).every((m) => actionsOf(m).length === 0)).toBe(true);
   });
 
-  it("出動する: 何分？は 5・15・30・60分", () => {
-    expect(actionsOf(MSG.nowAsk().at(-1)!).map((a) => (a as { data?: string }).data)).toEqual(["now:5", "now:15", "now:30", "now:60"]);
+  it("出動する: 何分？は 10・20・30・60分", () => {
+    expect(actionsOf(MSG.nowAsk().at(-1)!).map((a) => (a as { data?: string }).data)).toEqual(["now:10", "now:20", "now:30", "now:60"]);
   });
 
-  it("仕事がないときは、お礼と次の案内（ひとりで5分・町の地図）", () => {
+  it("仕事がないときは、お礼と次の案内（ひとりで10分・町の地図）", () => {
     const ms = MSG.nowNothing();
     expect(texts(ms)[0]).toBe("今近くに仕事はありません。");
     expect(texts(ms).join("")).toContain("ありがとう");
-    expect(labels(ms.at(-1)!)).toContain("ひとりで5分を見る");
+    expect(labels(ms.at(-1)!)).toContain("ひとりで10分を見る");
     expect(labels(ms.at(-1)!)).toContain("町の地図を開く");
   });
 
   it("完了の返事は5つまでで、写真を撮るボタンや活動カードへのボタンが最後に付く", () => {
     const ms = MSG.doneReport({ baseNumber: 3, comment: "きれいです", notes: ["雪質: 湿り雪。"], team: { name: "サルビア", points: 20 }, grid: "🟦⬜" });
     expect(ms.length).toBeLessThanOrEqual(5);
-    expect(texts(ms)[0]).toContain("あなたの5分で、1軒が助かりました");
+    expect(texts(ms)[0]).toContain("あなたの10分で、1軒が助かりました");
     expect(labels(ms.at(-1)!)).toContain("活動カードを見る");
     const go = MSG.goConfirmed(3, "https://maps.example/route");
     expect(actionsOf(go.at(-1)!).map((a) => a.type)).toEqual(["camera", "cameraRoll"]);

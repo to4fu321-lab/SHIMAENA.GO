@@ -46,7 +46,7 @@ export async function shortAction(viewerId: string): Promise<ActionResult> {
   });
 }
 
-/** 「5分だけ助けに行く」: 人手が足りない家に加わる */
+/** 「10分だけ助けに行く」: 人手が足りない家に加わる */
 export async function joinAction(viewerId: string, missionId: string): Promise<ActionResult> {
   return withStateLock("map:joinAction", async () => {
     const id = await trustedViewer(viewerId);
@@ -57,12 +57,12 @@ export async function joinAction(viewerId: string, missionId: string): Promise<A
   });
 }
 
-/** 「5分だけ参加」: 近くの足りない家か、作業中の家の偵察・補給に加わる */
+/** 「10分だけ参加」: 近くの足りない家か、作業中の家の偵察・補給に加わる */
 export async function fiveMinutesAction(viewerId: string): Promise<ActionResult> {
   return withStateLock("map:fiveMinutesAction", async () => {
     const id = await trustedViewer(viewerId);
     if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
-    const r = await joinNearby(id, 5);
+    const r = await joinNearby(id, 10);
     revalidatePath("/map");
     return { ok: r.joined, text: firstText(r.messages) };
   });

@@ -20,7 +20,7 @@ export function mockRecap(i: RecapInput): Recap {
   const extras: string[] = [];
   if (i.mixedHouses > 0) extras.push(`2チームの合流が${i.mixedHouses}軒`);
   if (i.rescues > 0) extras.push(`駆けつけが${i.rescues}回`);
-  if (i.fiveMinuteJoins > 0) extras.push(`5分の偵察・補給が${i.fiveMinuteJoins}回`);
+  if (i.fiveMinuteJoins > 0) extras.push(`10分の偵察・補給が${i.fiveMinuteJoins}回`);
   const note = extras.length > 0 ? `（${extras.join("、")}）` : "";
   const parts: string[] = [];
   parts.push(`エナガ隊長だしま〜！${md(i.date)}、${i.townName}に${i.forecastCm}cmの雪${i.snowName ? `、相手は「${i.snowName}」` : ""}。`);

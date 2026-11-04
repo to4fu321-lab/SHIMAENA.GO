@@ -1,10 +1,13 @@
 // ソロ出動の「本番の操作」（spec v1.3）。台帳を読み、ミッションを完了にして、羽・ボーナス・ひとこと・カードを付ける。
-// チーム得点（morning_state の scores）には一切触らない。家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
+// v1.7: 現地の活動はチームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2、1人1日 15点まで。lib/solo/team-points.ts）。
+// オンラインの活動は羽だけ。家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
 import { randomBytes } from "node:crypto";
 import { issueSoloCard } from "../cards/issue";
 import { cellKey } from "../cells";
 import { checkPhoto, decidePhoto, type PhotoInput } from "../claude/photo";
 import { soloHitokoto } from "../claude/solo";
+import { scoreSolo, SOLO_TEAM_DAILY_CAP } from "../game/score";
+import { getTeam } from "../teams";
 import { addDays } from "../jst";
 import { loadMorning } from "../morning/store";
 import { appToday } from "../morning/today";
@@ -12,6 +15,7 @@ import { repo } from "../repo";
 import { refreshShareTextsLater } from "../sns/refresh";
 import type { Card, Participant, SoloLog } from "../types";
 import { activeDates, bonusLog, bonusesDue, feathersOn, nextCard, streakDays, totalFeathers, type NextCard } from "./feathers";
+import { addSoloScores, soloPointsToday } from "./team-points";
 import { HELP_HOUSE_FEATHERS, SOLO_BONUS, SOLO_MISSIONS, soloLabel, soloMission, type SoloMission } from "./missions";
 
 const newId = () => `sl-${randomBytes(6).toString("base64url")}`;
@@ -33,7 +37,12 @@ export interface SoloClearSummary {
   nextCard: NextCard;
   /** 写真を付けたとき: 確認できたか／報告として受け付けたか */
   photoNote?: string;
-  /** 次のおすすめ（今日まだの、外でやる5分ミッション） */
+  /** v1.7: チームに入った点（現地の活動だけ。オンラインとチームのない人は 0） */
+  teamPoints: number;
+  teamName?: string;
+  /** 今日のソロのチーム得点が上限（15点）に届いたか */
+  teamCapped: boolean;
+  /** 次のおすすめ（今日まだの、外でやる10分ミッション） */
   nextMission?: string;
 }
 
@@ -55,7 +64,7 @@ export async function completeSolo(
   const mission = soloMission(kind);
   if (!mission) return { ok: false, reason: "unknown", text: "そのミッションはありません。" };
   if (mission.kind === "help_house") {
-    return { ok: false, reason: "help_house", text: "家の雪かきは、地図の「5分だけ参加」から加わって、写真で完了にしてください。" };
+    return { ok: false, reason: "help_house", text: "家の雪かきは、地図の「10分だけ参加」から加わって、写真で完了にしてください。" };
   }
   const record = await loadMorning();
   const today = appToday(record, opts.now);
@@ -113,6 +122,21 @@ export async function completeSolo(
   }
   for (const b of bonuses) await r.insertSoloLog(b);
 
+  // チームの得点（現地だけ・1人1日 15点まで）。失敗しても羽と記録は残す
+  let teamPoints = 0;
+  let teamCapped = false;
+  if (p.role === "helper" && p.teamId && mission.onsite) {
+    try {
+      const already = await soloPointsToday(record, p.id, today);
+      const events = scoreSolo({ kind: mission.kind, onsite: mission.onsite, photoChecked, teamId: p.teamId, participantId: p.id, at }, already);
+      await addSoloScores(record, today, events);
+      teamPoints = events.reduce((a, e) => a + e.points, 0);
+      teamCapped = already + teamPoints >= SOLO_TEAM_DAILY_CAP;
+    } catch (e) {
+      console.error("[solo] チームの得点を記録できませんでした:", e instanceof Error ? e.message : e);
+    }
+  }
+
   // カード: 最初の1枚（初出撃）、5日連続のボーナスが付いた朝はドット絵
   let card: Card | undefined;
   try {
@@ -140,6 +164,9 @@ export async function completeSolo(
     hitokoto,
     nextCard: nextCard(card ? [...cards, card] : cards, streak),
     photoNote,
+    teamPoints,
+    teamName: p.teamId ? getTeam(p.teamId).name : undefined,
+    teamCapped,
     nextMission: SOLO_MISSIONS.find(
       (m) => m.onsite && m.kind !== "help_house" && m.kind !== mission.kind && !after.some((l) => l.date === today && l.kind === m.kind),
     )?.label,

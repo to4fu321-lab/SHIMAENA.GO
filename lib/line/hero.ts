@@ -100,7 +100,7 @@ export interface SnowLevel {
 /** 積雪で難しさとひとことを決める。雪が多いほど盛り上げる（怖がらせない） */
 export function snowLevel(cm: number): SnowLevel {
   if (cm < 8) return { stars: 1, label: "こな雪", cheer: "サクッといくしま〜！" };
-  if (cm < 15) return { stars: 2, label: "ふつうの雪", cheer: "みんなで5分えな〜！" };
+  if (cm < 15) return { stars: 2, label: "ふつうの雪", cheer: "みんなで10分えな〜！" };
   if (cm < 25) return { stars: 3, label: "大雪", cheer: "出番だしま〜！！" };
   return { stars: 4, label: "ボス級の大雪", cheer: "群れの力だしま〜！" };
 }

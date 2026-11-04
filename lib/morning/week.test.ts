@@ -123,15 +123,15 @@ describe("いまからやる", () => {
     const s = await loadMorning();
     fillAnswers(s, await loadRoster(), 5);
     await saveMorning(s);
-    expect(t((await offerTaskNow("p-now", 5)))).toContain("仕事はありません"); // 作戦前
+    expect(t((await offerTaskNow("p-now", 10)))).toContain("仕事はありません"); // 作戦前
     await plan();
     const planned = await loadMorning();
     const roster = await loadRoster();
     const me = roster.participants.find((p) => p.id === "p-now")!;
-    const offer = pickTaskNow(planned, roster, me, 5);
+    const offer = pickTaskNow(planned, roster, me, 10);
     if (offer) {
-      expect(offer.minutes).toBeLessThanOrEqual(5);
-      const msgs = await offerTaskNow("p-now", 5);
+      expect(offer.minutes).toBeLessThanOrEqual(10);
+      const msgs = await offerTaskNow("p-now", 10);
       expect(t(msgs)).toContain("お願いできますか");
       expect(actionsOf(msgs.at(-1)!)[0]).toMatchObject({ type: "postback", data: `help:go=${offer.mission.id}` });
     }

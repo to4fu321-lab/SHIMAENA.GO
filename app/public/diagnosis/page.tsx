@@ -14,7 +14,7 @@ import { baseUrl } from "@/lib/url";
 
 export const metadata: Metadata = {
   title: "シマエナ診断 ・ シマエナGO",
-  description: "あなたは何シマエナ？ 5つの質問で、あなたに向いている5分の出動が分かります。登録なしで遊べます。",
+  description: "あなたは何シマエナ？ 5つの質問で、あなたに向いている10分の出動が分かります。登録なしで遊べます。",
 };
 
 async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string }> }) {
@@ -37,12 +37,12 @@ async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string 
           {comment.text}
         </p>
         <p className="rounded-2xl bg-ice-soft px-3 py-2 text-left text-base">
-          おすすめの5分: <b>{t.mission}</b>
+          おすすめの10分: <b>{t.mission}</b>
         </p>
       </section>
       <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
-        <h2 className="text-xl font-bold">ソロ出動で、さっそく5分</h2>
-        <p>シマエナGO は、雪の朝に町内でくっついて雪をどける雪かきゲームです。仲間がいない日も、1人の5分（ソロ出動）から参加できます。</p>
+        <h2 className="text-xl font-bold">ソロ出動で、さっそく10分</h2>
+        <p>シマエナGO は、雪の朝に町内でくっついて雪をどける雪かきゲームです。仲間がいない日も、1人の10分（ソロ出動）から参加できます。</p>
         {join ? (
           <a href={join} className="btn btn-big bg-[#06C755] text-white">
             LINE で参加する
@@ -81,7 +81,7 @@ export default function DiagnosisPage({ searchParams }: { searchParams: Promise<
         <h1 className="text-3xl font-bold">
           シマエナ<span className="text-camellia-deep">診断</span>
         </h1>
-        <p className="text-base text-ink-soft">あなたは何シマエナ？ 5つの質問で、向いている5分が分かります。</p>
+        <p className="text-base text-ink-soft">あなたは何シマエナ？ 5つの質問で、向いている10分が分かります。</p>
       </header>
       <Suspense fallback={<p className="text-center">読み込み中…</p>}>
         <Diagnosis searchParams={searchParams} />

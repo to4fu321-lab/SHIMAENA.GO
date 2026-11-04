@@ -36,9 +36,13 @@ export interface WeeklySummary {
   helpedCount: Record<string, number>;
 }
 
-/** 今週の朝の記録をまとめる（spec 2 日曜・5 週の目標と称号・8 家族） */
-export function weeklySummary(records: MorningRecord[], roster: Roster, weekStartYmd: string, at: string): WeeklySummary {
+/**
+ * 今週の朝の記録をまとめる（spec 2 日曜・5 週の目標と称号・8 家族）。
+ * soloScores: 雪のない日のソロ出動のチーム得点（spec v1.7。雪の朝の分は records の scores に入っている）
+ */
+export function weeklySummary(records: MorningRecord[], roster: Roster, weekStartYmd: string, at: string, soloScores: ScoreEvent[] = []): WeeklySummary {
   const teamTotals: Record<TeamId, number> = { salvia: 0, marigold: 0, lupinus: 0 };
+  for (const e of soloScores) teamTotals[e.teamId] += e.points;
   const sortieDaySets = new Map<string, Set<string>>();
   const helpedCount: Record<string, number> = {};
   const completedByTeam = new Map<TeamId, (string | null)[]>();

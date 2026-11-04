@@ -32,7 +32,7 @@ async function freeSomeHelpers() {
   return roster.participants.filter((p) => p.role === "helper" && p.teamId && !busy.has(p.id) && !zero.has(p.id));
 }
 
-describe("あと1人で救える家と「5分だけ参加」（spec v1.1）", () => {
+describe("あと1人で救える家と「10分だけ参加」（spec v1.1）", () => {
   it("人手が足りない家を、足りない人数が少ない順に、5分の仕事つきで出す", async () => {
     const s = await setup(5);
     const roster = await loadRoster();
@@ -47,12 +47,12 @@ describe("あと1人で救える家と「5分だけ参加」（spec v1.1）", ()
     }
   });
 
-  it("「5分だけ参加」: 手の空いた人は足りない家に加わり、なければ作業中の家に偵察・補給で加わる", async () => {
+  it("「10分だけ参加」: 手の空いた人は足りない家に加わり、なければ作業中の家に偵察・補給で加わる", async () => {
     await setup(5);
     const free = await freeSomeHelpers();
     expect(free.length).toBeGreaterThan(0);
 
-    const r1 = await joinNearby(free[0].id, 5);
+    const r1 = await joinNearby(free[0].id, 10);
     expect(r1.joined).toBe(true);
     expect(t(r1.messages)).toContain(`拠点${r1.baseNumber}`);
     let after = await loadMorning();
@@ -60,15 +60,15 @@ describe("あと1人で救える家と「5分だけ参加」（spec v1.1）", ()
     expect(mine.status).toBe("going");
     expect(mine.rescue).toBe(true); // 自分の家を終えてから駆けつけた
     // 向かっている最中の人には、もう何も出さない
-    expect((await joinNearby(free[0].id, 5)).joined).toBe(false);
+    expect((await joinNearby(free[0].id, 10)).joined).toBe(false);
 
-    // 全部の家に人をそろえてから、別の人が「5分だけ参加」→ 偵察・補給として加わる
+    // 全部の家に人をそろえてから、別の人が「10分だけ参加」→ 偵察・補給として加わる
     after = await loadMorning();
     for (const m of after.morning.missions) if (m.status === "short") m.status = "in_progress";
     await saveMorning(after);
     const second = free.find((p) => p.id !== free[0].id);
     if (!second) return; // この乱数では手の空いた人が1人だけ
-    const r2 = await joinNearby(second.id, 5);
+    const r2 = await joinNearby(second.id, 10);
     expect(r2.joined).toBe(true);
     const scout = (await loadMorning()).morning.sorties.find((x) => x.participantId === second.id && x.status === "going")!;
     expect(scout.subtaskIds).toEqual(["scout"]);

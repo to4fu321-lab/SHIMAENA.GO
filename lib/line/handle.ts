@@ -19,6 +19,7 @@ import {
   tipReceive,
   tipStart,
 } from "../morning/ops";
+import { NOW_MINUTES, type NowMinutes } from "../morning/watch";
 import { repo } from "../repo";
 import { jstDate } from "../jst";
 import { teamTerm } from "../team-theme";
@@ -146,14 +147,14 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     const minutes = Number(ev.postback.data.slice(4));
     const messages = !p
       ? MSG.notRegistered()
-      : minutes === 5 || minutes === 15 || minutes === 30 || minutes === 60
-        ? await offerTaskNow(p.id, minutes)
+      : (NOW_MINUTES as readonly number[]).includes(minutes)
+        ? await offerTaskNow(p.id, minutes as NowMinutes)
         : MSG.nowAsk();
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
 
-  // ヘルプ通知の「行く（5分でも）」「今は無理」、返事なしの「声をかけに行く」
+  // ヘルプ通知の「行く（10分でも）」「今は無理」、返事なしの「声をかけに行く」
   if (ev.type === "postback" && "postback" in ev && (ev.postback.data.startsWith("help:") || ev.postback.data.startsWith("knock:"))) {
     const data = ev.postback.data;
     const p = await r.findParticipantByLineUserId(lineUserId);

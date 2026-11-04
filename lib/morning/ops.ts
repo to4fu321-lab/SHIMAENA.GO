@@ -25,6 +25,7 @@ import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
+import type { NowMinutes } from "./watch";
 import type { HelperAnswer, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
 import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, autoAnswerProxyHomes, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
@@ -37,6 +38,7 @@ import { buildRecapInput } from "./recap";
 import { progress, snowHp, viewBases } from "./view";
 import { viewCells } from "../cells";
 import { emojiGrid } from "../share";
+import { listSoloScores } from "../solo/team-points";
 import { recordHouseFeathers } from "../solo/ops";
 import { refreshShareTextsLater } from "../sns/refresh";
 import { appToday } from "./today";
@@ -112,7 +114,8 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
 }
 
 const REQUESTER_ANSWERS: Record<string, RequesterAnswer> = { yes: "yes", no: "no", together: "together" };
-const HELPER_ANSWERS: Record<string, HelperAnswer> = { "0": 0, "5": 5, "15": 15, "30": 30, "60": 60 };
+// v1.7: 10・20・30・60分。前の版のボタン（5・15）が押されても受け付ける
+const HELPER_ANSWERS: Record<string, HelperAnswer> = { "0": 0, "5": 5, "10": 10, "15": 15, "20": 20, "30": 30, "60": 60 };
 
 /** LINE のボタン（rc:ans=...）で届いた点呼の答えを記録する */
 export async function answerRollcall(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
@@ -244,7 +247,7 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
     add(requester, MSG.planForRequester("7:00", names.filter(Boolean)));
   }
   // 1人1回のプッシュにまとめる。1つの吹き出しに1つの話題（v1.4）:
-  // 隊長カード（おはよう・今朝の雪）→（手伝う側）「助けてほしい家が○軒」「5分だけでも大歓迎！」→ 個別の文面（ボタンは最後）
+  // 隊長カード（おはよう・今朝の雪）→（手伝う側）「助けてほしい家が○軒」「10分だけでも大歓迎！」→ 個別の文面（ボタンは最後）
   // 町内へのまとめ（s.briefing、エナガ隊長の文）は /admin と記録に残す。LINE は短くする
   const houses = s.morning.missions.filter((m) => m.status !== "no_answer").length;
   let sent = 0;
@@ -618,7 +621,7 @@ function supporterIds(): string[] {
 
 /**
  * 人手が足りない家のヘルプ通知を1段階すすめる: 300m → 600m → 1km → サポーター。
- * 文面には「5分でもOK」の小タスクを添える。同じ人には2回送らない。
+ * 文面には「10分でもOK」の小タスクを添える。同じ人には2回送らない。
  */
 export async function notifyHelp(missionId: string, now = new Date()): Promise<{ ring: string; notified: number } | null> {
   const s = await loadMorning();
@@ -640,11 +643,11 @@ export async function notifyHelp(missionId: string, now = new Date()): Promise<{
     return { ring: radiusLabel(3), notified: ids.length };
   }
   const targets = pickHelpTargets(s, roster, m, ring as 0 | 1 | 2);
-  const tasks = m.subtasks.filter((t) => t.minutes === 5).map((t) => `${t.label}（5分）`);
+  const tasks = m.subtasks.filter((t) => t.minutes === 10).map((t) => `${t.label}（10分）`);
   let sent = 0;
   for (const t of targets) {
     if (!t.lineUserId) continue;
-    if (await push(t.lineUserId, MSG.helpRequest(m.id, number, missing, tasks.length ? tasks : ["偵察（5分）"]))) sent++;
+    if (await push(t.lineUserId, MSG.helpRequest(m.id, number, missing, tasks.length ? tasks : ["偵察（10分）"]))) sent++;
   }
   setHelpState(s, m.id, {
     ...state,
@@ -696,8 +699,8 @@ export async function notifyNoAnswer(missionId: string): Promise<void> {
 }
 
 /**
- * ヘルプ通知の「行く（5分でも）」と地図の「5分だけ助けに行く」: 出撃に加わる。自分の家を終えた人なら駆けつけボーナス。
- * extra: 人がそろっている家にも偵察・補給（5分）として加わる（「5分だけ参加」用）
+ * ヘルプ通知の「行く（10分でも）」と地図の「10分だけ助けに行く」: 出撃に加わる。自分の家を終えた人なら駆けつけボーナス。
+ * extra: 人がそろっている家にも偵察・補給（10分）として加わる（「10分だけ参加」用）
  */
 export async function joinMission(
   participantId: string,
@@ -722,7 +725,7 @@ export async function joinMission(
     missionId: m.id,
     participantId: p.id,
     teamId: p.teamId,
-    subtaskIds: enough ? ["scout"] : [], // そろっている家に加わるときは偵察・補給の5分タスク
+    subtaskIds: enough ? ["scout"] : [], // そろっている家に加わるときは偵察・補給の10分タスク
     status: "going",
     rescue: finishedOwn,
     confirmedAt: now.toISOString(),
@@ -742,10 +745,10 @@ export interface JoinNearbyResult {
 }
 
 /**
- * 地図の「5分だけ参加」: 近く（1km）で人手が足りない家があれば加わり、なければ作業中の家に偵察・補給（5分）で加わる。
+ * 地図の「10分だけ参加」: 近く（1km）で人手が足りない家があれば加わり、なければ作業中の家に偵察・補給（10分）で加わる。
  * どこかに向かっている最中の人には何も出さない（まず自分の家を）。
  */
-export async function joinNearby(participantId: string, minutes: 5 | 15 | 30 | 60 = 5, now = new Date()): Promise<JoinNearbyResult> {
+export async function joinNearby(participantId: string, minutes: NowMinutes = 10, now = new Date()): Promise<JoinNearbyResult> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);
@@ -779,7 +782,7 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
   const from = weekStart(today);
   const roster = await loadRoster();
   const records = await listMornings(from, today);
-  const summary = weeklySummary(records, roster, from, now.toISOString());
+  const summary = weeklySummary(records, roster, from, now.toISOString(), await listSoloScores(from, today));
   const text = await weeklyText(summary);
 
   // 週の目標ボーナスは今朝の得点に足す（二重に足さないよう、同じ週のぶんがあれば入れ替える）
@@ -820,8 +823,8 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
   return { summary, commentary: text.commentary, nextWeek: text.nextWeek, nextTeams, sent };
 }
 
-/** 「いまからやる（5／15／30分）」: 近くの小タスクを1件さがして提案する */
-export async function offerTaskNow(participantId: string, minutes: 5 | 15 | 30 | 60): Promise<LineMessage[]> {
+/** 「出動する（10／20／30／60分）」: 近くの小タスクを1件さがして提案する */
+export async function offerTaskNow(participantId: string, minutes: NowMinutes): Promise<LineMessage[]> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);

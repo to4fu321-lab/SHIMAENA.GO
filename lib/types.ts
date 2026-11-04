@@ -83,7 +83,8 @@ export interface Rollcall {
 /** 依頼者の答え: はい（出られる）／いいえ／一緒なら */
 export type RequesterAnswer = "yes" | "no" | "together";
 /** 手伝う側の答え: 動ける分数 */
-export type HelperAnswer = 0 | 5 | 15 | 30 | 60;
+/** 手伝う側の点呼の答え（分）。v1.7 から 10・20・30・60。5・15 は前の版の答え（読み込みだけ） */
+export type HelperAnswer = 0 | 5 | 10 | 15 | 20 | 30 | 60;
 
 export interface RollcallAnswer {
   rollcallId: string;
@@ -108,7 +109,7 @@ export interface SubTask {
   id: string;
   kind: SubTaskKind;
   label: string; // 例: 玄関前の通路
-  minutes: 5 | 15 | 30;
+  minutes: 10 | 20 | 30;
 }
 
 export type MissionStatus =
@@ -181,7 +182,11 @@ export type ScoreReason =
   | "scout" // 3
   | "supply" // 3
   | "requester_joined" // 3
-  | "weekly_goal"; // チーム全員+20
+  | "weekly_goal" // チーム全員+20
+  // v1.7: ソロ出動の現地の活動もチームの得点に（1人1日 15点まで）
+  | "solo_home" // 自分の家の雪かき 10分 +5
+  | "solo_onsite" // 見回り・報告など現地 10分 +3
+  | "solo_photo"; // 写真を Claude が確認できた +2
 
 export interface ScoreEvent {
   id: string;
@@ -214,15 +219,15 @@ export interface Card {
   createdAt: string; // ISO
 }
 
-// ---- ソロ出動（v1.3）: 1人でもできる 3〜5分のミッション。羽ポイントはチーム得点と別の「個人の記録」 ----
+// ---- ソロ出動（v1.3）: 1人でもできる 3〜10分のミッション。羽ポイントは「個人の記録」。v1.7 から現地の活動はチーム得点にも入る（lib/solo/team-points.ts） ----
 /** ソロミッションの種類（bonus_* は連続出動などのごほうび） */
 export type SoloKind =
-  | "patrol" // 雪の状況を見回る（5分・現地）
-  | "report_snow" // 雪の多い場所を報告（5分・現地・写真任意）
-  | "check_spot" // 雪かき可能な場所を確認（5分・現地）
+  | "patrol" // 雪の状況を見回る（10分・現地）
+  | "report_snow" // 雪の多い場所を報告（10分・現地・写真任意）
+  | "check_spot" // 雪かき可能な場所を確認（10分・現地）
   | "help_house" // 1軒の雪かきを手伝う（既存のミッション完了で 10羽）
-  | "find_help" // 仲間が必要な家を確認（5分・現地）
-  | "own_house" // 自分の家の雪かき（5分・現地・写真任意）
+  | "find_help" // 仲間が必要な家を確認（10分・現地）
+  | "own_house" // 自分の家の雪かき（10分・現地・写真任意）
   | "check_area" // 地域の状況を確認（3分・オンライン）
   | "report_online" // 雪の状況を一言で報告（3分・オンライン）
   | "find_online" // 助けが必要な場所を発見（3分・オンライン）

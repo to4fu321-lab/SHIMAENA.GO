@@ -63,7 +63,7 @@ export interface ShortHouse {
   missing: number;
   required: number;
   going: number;
-  /** 5分でできる仕事（最大2つ） */
+  /** 10分でできる仕事（最大2つ） */
   tasks: string[];
   importance: number;
 }
@@ -73,7 +73,7 @@ export function listShort(s: MorningRecord, roster: Roster): ShortHouse[] {
   return s.morning.missions
     .filter((m) => m.status === "short")
     .map((m) => {
-      const five = m.subtasks.filter((t) => t.minutes === 5).map((t) => t.label);
+      const five = m.subtasks.filter((t) => t.minutes === 10).map((t) => t.label);
       return {
         missionId: m.id,
         baseNumber: roster.bases.find((b) => b.id === m.baseId)?.number ?? "?",
@@ -95,10 +95,14 @@ export interface TaskOffer {
 }
 
 /**
- * 「出動する（5／15／30／60分）」: 近くの小タスクを1件選ぶ（spec 2 日中）。
- * 人手不足の家を優先し、なければ作業中の家の偵察・補給（5分）。動ける分数に収まるものだけ。
+ * 「出動する（10／20／30／60分）」: 近くの小タスクを1件選ぶ（spec 2 日中）。
+ * 人手不足の家を優先し、なければ作業中の家の偵察・補給（10分）。動ける分数に収まるものだけ。
  */
-export function pickTaskNow(s: MorningRecord, roster: Roster, p: Participant, minutes: 5 | 15 | 30 | 60): TaskOffer | null {
+/** 「出動する」で選べる分数（v1.7 から 10・20・30・60） */
+export type NowMinutes = 10 | 20 | 30 | 60;
+export const NOW_MINUTES: readonly NowMinutes[] = [10, 20, 30, 60];
+
+export function pickTaskNow(s: MorningRecord, roster: Roster, p: Participant, minutes: NowMinutes): TaskOffer | null {
   if (busyIds(s).has(p.id)) return null; // もうどこかに向かっている
   const candidates: TaskOffer[] = [];
   for (const m of s.morning.missions) {

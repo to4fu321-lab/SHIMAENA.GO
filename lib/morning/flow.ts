@@ -152,7 +152,7 @@ export function fillAnswers(s: MorningRecord, roster: Roster, seed = 7): void {
       const answer: RequesterAnswer = r < 0.62 ? "no" : r < 0.85 ? "together" : "yes";
       putAnswer(s, p.id, answer, iso(s, 6 * 60 + 32));
     } else {
-      const answer: HelperAnswer = r < 0.15 ? 0 : r < 0.55 ? 15 : r < 0.85 ? 30 : 60;
+      const answer: HelperAnswer = r < 0.15 ? 0 : r < 0.55 ? 20 : r < 0.85 ? 30 : 60;
       putAnswer(s, p.id, answer, iso(s, 6 * 60 + 33));
     }
   }
@@ -210,7 +210,7 @@ export function applyPlan(s: MorningRecord, roster: Roster, plan: Plan): void {
       importance: m.importance,
       requiredPeople: m.requiredPeople,
       subtasks: [
-        ...(isProxyHome(r) ? [{ id: "check", kind: "scout" as const, label: "声かけ（ごあいさつ・見守り）", minutes: 5 as const }] : []),
+        ...(isProxyHome(r) ? [{ id: "check", kind: "scout" as const, label: "声かけ（ごあいさつ・見守り）", minutes: 10 as const }] : []),
         ...decompose(r.clearArea ?? "entrance", r.level ?? 2),
       ],
       status: m.status,

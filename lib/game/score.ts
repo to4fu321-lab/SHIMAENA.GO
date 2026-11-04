@@ -11,7 +11,13 @@ export const POINTS = {
   supply: 3,
   requester_joined: 3, // 依頼者本人も一緒に作業
   weekly_goal: 20, // チーム全員に
+  solo_home: 5, // v1.7: ソロの自分の家の雪かき（10分・現地）
+  solo_onsite: 3, // v1.7: ソロの見回り・報告など（10分・現地）
+  solo_photo: 2, // v1.7: ソロの写真を Claude が確認できた
 } as const satisfies Record<ScoreReason, number>;
+
+/** ソロ出動からチームに入る点の、1人1日の上限（spec v1.7） */
+export const SOLO_TEAM_DAILY_CAP = 15;
 
 /** 早朝ボーナスの締め切り（日本時間 7:30） */
 export function isEarly(completedAtIso: string): boolean {
@@ -55,6 +61,36 @@ export function scoreMission(sorties: Sortie[], at: string, requesterJoined = fa
     events.push(ev(teamId, POINTS.requester_joined, "requester_joined", at));
   }
   return events;
+}
+
+/**
+ * ソロ出動（現地）のチーム得点（spec v1.7）。オンライン（地図を見る・一言の報告）は外に出ていないので 0。
+ * 自分の家の雪かき +5、それ以外の現地 +3、写真を Claude が確認できたら +2。1人1日 15点まで（alreadyToday はその日にもう入った点）。
+ * チームのない人（お願いする側）には付けない。
+ */
+export function scoreSolo(
+  opts: { kind: string; onsite: boolean; photoChecked?: boolean; teamId?: TeamId; participantId: string; at: string },
+  alreadyToday: number,
+): ScoreEvent[] {
+  if (!opts.onsite || !opts.teamId || opts.kind === "help_house") return [];
+  const wanted: [ScoreReason, number][] = [[opts.kind === "own_house" ? "solo_home" : "solo_onsite", opts.kind === "own_house" ? POINTS.solo_home : POINTS.solo_onsite]];
+  if (opts.photoChecked) wanted.push(["solo_photo", POINTS.solo_photo]);
+  let room = Math.max(0, SOLO_TEAM_DAILY_CAP - alreadyToday);
+  const events: ScoreEvent[] = [];
+  for (const [reason, points] of wanted) {
+    const p = Math.min(points, room);
+    if (p <= 0) break;
+    events.push(ev(opts.teamId, p, reason, opts.at, opts.participantId));
+    room -= p;
+  }
+  return events;
+}
+
+/** その人のソロのチーム得点（その日の分）。上限の計算に使う */
+export function soloPointsOf(events: ScoreEvent[], participantId: string): number {
+  return events
+    .filter((e) => e.participantId === participantId && (e.reason === "solo_home" || e.reason === "solo_onsite" || e.reason === "solo_photo"))
+    .reduce((a, e) => a + e.points, 0);
 }
 
 /** 偵察・補給の得点 */

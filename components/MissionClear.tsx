@@ -1,7 +1,7 @@
 "use client";
 
 // 雪かき完了の画面（spec v1.1 の MISSION CLEAR）。
-// 「あなたの5分で、1軒が助かりました」を真ん中に。家の窓に灯りがともり、羽が舞う。点の内訳・チーム得点・雪の減りはその下に。
+// 「あなたの10分で、1軒が助かりました」を真ん中に。家の窓に灯りがともり、羽が舞う。点の内訳・チーム得点・雪の減りはその下に。
 // 自分の「終わりました」のあとに出る。他の人の完了に気づいたとき（ClearWatcher）は数秒で自動で閉じる。
 import { useEffect } from "react";
 import type { ClearSummary } from "@/lib/morning/clear";
@@ -55,13 +55,13 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
           ))}
         </div>
 
-        {/* 喜ぶシマエナガと「あなたの5分で、1軒が助かりました！」（イメージの完了カード） */}
+        {/* 喜ぶシマエナガと「あなたの10分で、1軒が助かりました！」（イメージの完了カード） */}
         <div className="relative -mx-5 -mt-5 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-10 pt-5">
           <p className="eyebrow">雪かき 完了</p>
           <div className="flex items-center gap-2">
             <Mascot size={88} mood="happy" className="lamp-glow shrink-0" />
             <h2 className="whitespace-nowrap text-lg font-bold leading-snug">
-              {who}の<span className="text-2xl">5分</span>で
+              {who}の<span className="text-2xl">10分</span>で
               <br />
               <span className="text-3xl text-lamp-deep">1軒</span>が助かりました！
             </h2>

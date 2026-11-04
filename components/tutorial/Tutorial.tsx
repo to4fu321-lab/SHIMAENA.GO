@@ -11,7 +11,7 @@ import LineChat, { type ChatMsg } from "./LineChat";
 
 const STEPS = ["はじめに", "参加する", "雪かきに行く", "雪かきをする", "完了する", "仲間になる"] as const;
 const LAST = STEPS.length - 1;
-const MINUTES = [5, 15, 30, 60] as const;
+const MINUTES = [10, 20, 30, 60] as const;
 const SNOW = 5; // 雪の山（ひとすくい × 5）
 
 /* ---------- 小さな絵 ---------- */
@@ -204,7 +204,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
   ];
   if (photo) {
     report.push({ id: "ph", from: "me", photo: true });
-    report.push({ id: "d1", from: "bot", text: "拠点3 完了だしま〜！🎉\nあなたの5分で、1軒が助かりました。" });
+    report.push({ id: "d1", from: "bot", text: "拠点3 完了だしま〜！🎉\nあなたの10分で、1軒が助かりました。" });
     report.push({ id: "d2", from: "bot", text: `${team.name}に +15 点。\nありがとうカードは後で届きます。` });
   }
   const takePhoto = () => {
@@ -221,7 +221,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
             シマエナ<span className="text-lamp-deep">GO</span>
           </h1>
           <p className="mt-2 text-lg font-bold leading-snug short:mt-1 short:text-base">
-            5分の雪かきで、
+            10分の雪かきで、
             <br />
             町が変わる。
           </p>
@@ -261,7 +261,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
         />
       </div>
       <Hint>
-        <b>5分だけでも大歓迎！</b> できる範囲でOK。体調がすぐれない朝は「今朝は休む」で大丈夫です。
+        <b>10分だけでも大歓迎！</b> できる範囲でOK。体調がすぐれない朝は「今朝は休む」で大丈夫です。
       </Hint>
     </>,
 

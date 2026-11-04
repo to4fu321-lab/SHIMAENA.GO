@@ -1,5 +1,5 @@
 // 隊長のひとこと（状態別、spec v1.6）を、朝に1回だけまとめて書く。短い文なので安いモデル。
-// 数字は渡したもの（積雪・5分・15分・1軒）だけ。おかしい文は定型に戻す。
+// 数字は渡したもの（積雪・10分・15分・1軒）だけ。おかしい文は定型に戻す。
 import { z } from "zod";
 import { CAPTAIN_STATES, CAPTAIN_TEMPLATES, captainLineOk, type CaptainState } from "../captain";
 import { askJson, hasClaudeKey } from "./client";
@@ -15,12 +15,12 @@ export interface CaptainInput {
 const STATE_GUIDE: Record<CaptainState, string> = {
   safety: "大雪・低温・強風の朝。誰にでも。『ひとりでやらない』か『休む』を必ず入れる。丁寧語、語尾なし",
   requester: "雪かきをお願いする側（高齢の方も）。安心させる。丁寧語、語尾なし",
-  almost_goal: "今朝の目標まであと1軒。5分だけでも、と誘う",
+  almost_goal: "今朝の目標まであと1軒。10分だけでも、と誘う",
   first_done: "はじめての出撃を終えた人。ほめる",
-  first: "はじめてアプリを開いた人。5分の見回りなど、小さな一歩を1つだけ",
+  first: "はじめてアプリを開いた人。10分の見回りなど、小さな一歩を1つだけ",
   away: "3日以上来ていない人。責めない。休むのも大事、と言ってから小さな一歩",
   streak: "3日以上続けて来ている人。ありがとう。無理はさせない",
-  normal: "ふだんの朝。今朝の雪に触れて、5分の出番に誘う",
+  normal: "ふだんの朝。今朝の雪に触れて、10分の出番に誘う",
 };
 
 /** 定型と同じ形で返す（キーがないときは定型そのまま） */

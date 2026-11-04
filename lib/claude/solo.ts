@@ -21,11 +21,11 @@ export function trimHitokoto(s: string | undefined): string {
 }
 
 export function mockSoloHitokoto(i: SoloHitokotoInput): { text: string } {
-  if (i.firstEver) return { text: "はじめの5分、おめでとう。群れの一員です。" };
+  if (i.firstEver) return { text: "はじめの10分、おめでとう。群れの一員です。" };
   if (i.streak >= 5) return { text: `${i.streak}日連続。朝の群れの主ですね。` };
   if (i.streak >= 3) return { text: `${i.streak}日続きました。無理せずこの調子で。` };
-  if (!i.onsite) return { text: "見守りも立派な出動。次は5分、外へ。" };
-  return { text: "ひとりの5分が、町の冬を少し軽くしました。" };
+  if (!i.onsite) return { text: "見守りも立派な出動。次は10分、外へ。" };
+  return { text: "ひとりの10分が、町の冬を少し軽くしました。" };
 }
 
 export async function soloHitokoto(input: SoloHitokotoInput): Promise<{ text: string }> {

@@ -43,7 +43,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
           <div className="flex items-center gap-2">
             <Mascot size={88} mood="happy" className="lamp-glow shrink-0" />
             <h2 className="whitespace-nowrap text-lg font-bold leading-snug">
-              あなたの<span className="text-2xl text-lamp-deep">{s.onsite ? "5分" : "3分"}</span>が、
+              あなたの<span className="text-2xl text-lamp-deep">{s.onsite ? "10分" : "3分"}</span>が、
               <br />
               町の力になりました！
             </h2>
@@ -61,6 +61,12 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
           <span className="text-xl font-bold"> 羽</span>
           {bonus > 0 && <span className="ml-2 rounded-full bg-camellia-soft px-2 py-0.5 text-sm font-bold text-camellia-deep ring-1 ring-camellia">ごほうび +{bonus}</span>}
         </p>
+        {s.teamPoints > 0 && (
+          <p className="mt-1 text-center text-lg font-bold">
+            {s.teamName ?? "チーム"} に <span className="text-2xl text-lamp-deep">+{s.teamPoints}点</span>
+          </p>
+        )}
+        {s.teamCapped && <p className="text-center text-sm text-ink-soft">今日のソロのチーム得点は上限（15点）に届きました。羽はこのあともたまります。</p>}
         {s.bonuses.length > 0 && (
           <ul className="mt-1 text-center text-sm text-ink-soft">
             {s.bonuses.map((b) => (
@@ -84,7 +90,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
             <p className="text-xl font-bold tabular-nums">{s.totalFeathers}羽</p>
           </div>
         </div>
-        {!s.onsite && <p className="mt-2 text-center text-xs text-ink-soft">オンラインの確認は雪かき完了にはなりません。次は5分、外へ。</p>}
+        {!s.onsite && <p className="mt-2 text-center text-xs text-ink-soft">オンラインの確認は雪かき完了にはなりません。次は10分、外へ。</p>}
         {s.photoNote && <p className="mt-2 rounded-2xl bg-card px-3 py-2 text-sm ring-1 ring-ink/10">{s.photoNote}</p>}
         <p className="mt-3 rounded-2xl bg-warm px-3 py-2 text-center text-base">
           <span className="eyebrow block">エナガ隊長から</span>
@@ -106,7 +112,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
         )}
         {s.nextMission && (
           <p className="mt-3 rounded-2xl bg-card px-3 py-2 text-center text-base ring-1 ring-ink/10">
-            次のおすすめ: <b>{s.nextMission}</b>（5分）
+            次のおすすめ: <b>{s.nextMission}</b>（10分）
           </p>
         )}
         {children}

@@ -5,7 +5,7 @@ import type { PublicStats } from "../public/stats";
 export type ShareKind = "today" | "town" | "recruit" | "me";
 
 export const SHARE_TEXT_MAX = 115;
-export const HASHTAGS = ["#シマエナGO", "#5分だけ出動"] as const;
+export const HASHTAGS = ["#シマエナGO", "#10分だけ出動"] as const;
 
 /** 個人の活動カード用（本人の数字だけ。呼び名は本人が自分で共有するときだけ） */
 export interface MeStats {
@@ -37,15 +37,15 @@ export function mockShareText(kind: ShareKind, st: PublicStats, me?: MeStats): s
     case "recruit":
       return clampShareText(
         st.shortHouses > 0 && st.shortMissingMin === 1
-          ? `あと1人で雪解け！\n5分だけ参加しませんか？\nあなたの5分で町が変わる。\n${HASHTAGS.join(" ")}`
+          ? `あと1人で雪解け！\n10分だけ参加しませんか？\nあなたの10分で町が変わる。\n${HASHTAGS.join(" ")}`
           : st.shortHouses > 0
-            ? `人手が足りない家が${st.shortHouses}軒。\n5分だけ参加しませんか？\n${HASHTAGS.join(" ")}`
-            : `今日の町を一緒に救おう。\n5分だけ、誰かのために。\n#シマエナGO #雪解け`,
+            ? `人手が足りない家が${st.shortHouses}軒。\n10分だけ参加しませんか？\n${HASHTAGS.join(" ")}`
+            : `今日の町を一緒に救おう。\n10分だけ、誰かのために。\n#シマエナGO #雪解け`,
       );
     case "me": {
       const m = me ?? { todayFeathers: 0, streak: 0, todayActs: 0 };
       return clampShareText(
-        `今日は5分だけ出動。\n羽${m.todayFeathers}枚、連続${m.streak}日。\n小さな一歩で町が変わる。\n${HASHTAGS.join(" ")}`,
+        `今日は10分だけ出動。\n羽${m.todayFeathers}枚、連続${m.streak}日。\n小さな一歩で町が変わる。\n${HASHTAGS.join(" ")}`,
       );
     }
   }

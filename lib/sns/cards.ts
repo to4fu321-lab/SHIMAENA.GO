@@ -49,7 +49,7 @@ function birdsFor(n: number): TeamId[] {
 
 export function shareCardData(kind: ShareKind, st: PublicStats, url: string, me?: MeStats & { nickname: string }): ShareCard {
   const eyebrow = `${st.townName} ・ ${md(kind === "me" || kind === "town" ? st.today : st.morningDate)}`;
-  const base = { eyebrow, url, tagline: "あなたの5分で町が変わる" };
+  const base = { eyebrow, url, tagline: "あなたの10分で町が変わる" };
   switch (kind) {
     case "today":
       return {
@@ -85,13 +85,13 @@ export function shareCardData(kind: ShareKind, st: PublicStats, url: string, me?
       const one = st.shortHouses > 0 && st.shortMissingMin === 1;
       return {
         ...base,
-        headline: one ? "あと1人で雪解け！" : st.shortHouses > 0 ? "5分だけ参加しませんか？" : "今日の町を一緒に救おう",
+        headline: one ? "あと1人で雪解け！" : st.shortHouses > 0 ? "10分だけ参加しませんか？" : "今日の町を一緒に救おう",
         bigValue: String(st.shortHouses > 0 ? st.shortHouses : st.left),
         bigUnit: "軒",
         bigLabel: st.shortHouses > 0 ? "人手が足りない家" : "のこりの家",
         gauge: st.thawPct,
         rows: [
-          { label: "5分の仕事", value: "見回り・砂まき・雪捨て" },
+          { label: "10分の仕事", value: "見回り・砂まき・雪捨て" },
           { label: "今日の出動", value: `${st.todayPeople}人` },
           { label: "参加", value: "LINE で1分" },
         ],
@@ -129,7 +129,7 @@ export function quizCardData(type: QuizType, url: string, townName: string): Sha
     bigUnit: "",
     bigLabel: q.catchphrase,
     rows: [
-      { label: "おすすめの5分", value: q.mission.replace(/（.*）$/, "") },
+      { label: "おすすめの10分", value: q.mission.replace(/（.*）$/, "") },
       { label: "参加", value: "LINE で1分" },
     ],
     birds: [q.ear, q.ear === "lupinus" ? "salvia" : "lupinus", "marigold"],

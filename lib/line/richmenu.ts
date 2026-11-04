@@ -67,7 +67,7 @@ function bigTile(it: MenuItem): string {
   <rect x="${x + 70}" y="${y + 950}" width="${w - 140}" height="${h - 1020}" rx="48" fill="#ffffff"/>
   <text x="${cx}" y="${y + 1190}" font-family="${FONT}" font-size="210" font-weight="700" fill="${COLORS.ink}" text-anchor="middle">${esc(it.label)}</text>
   <text x="${cx}" y="${y + 1370}" font-family="${FONT}" font-size="74" font-weight="700" fill="${COLORS.ink}" text-anchor="middle">${esc(it.sub)}</text>
-  <text x="${cx}" y="${y + 1480}" font-family="${FONT}" font-size="60" font-weight="400" fill="${COLORS.ink}" text-anchor="middle">5分だけでも大歓迎</text>`;
+  <text x="${cx}" y="${y + 1480}" font-family="${FONT}" font-size="60" font-weight="400" fill="${COLORS.ink}" text-anchor="middle">10分だけでも大歓迎</text>`;
 }
 
 /** 右の小さな3つ（アイコン＋名前＋説明） */

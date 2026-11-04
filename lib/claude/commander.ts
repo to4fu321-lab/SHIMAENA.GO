@@ -118,7 +118,7 @@ export function mockPlan(input: CommanderInput): Plan {
       const note =
         m.status === "no_answer"
           ? "点呼に返事がありません。まず玄関で声をかけてください。"
-          : "5分でも助かるしま〜！足元に気をつけて。";
+          : "10分でも助かるしま〜！足元に気をつけて。";
       messages.push({
         participantId: id,
         text: `おはようございます。${input.startTime}、拠点${base.number}（${base.requesterName}）へお願いできますか。${withWho}${note}`,
@@ -129,7 +129,7 @@ export function mockPlan(input: CommanderInput): Plan {
   const short = missions.filter((m) => m.status === "short").length;
   const briefing =
     `エナガ隊長だしま〜！今朝の予報は${input.forecastCm}cm。${missions.length}軒を${input.startTime}から始めます。` +
-    (short > 0 ? `人手が足りない家が${short}軒あります。5分だけでも、近くの人お願いします。` : "全部の家に人がそろいました。");
+    (short > 0 ? `人手が足りない家が${short}軒あります。10分だけでも、近くの人お願いします。` : "全部の家に人がそろいました。");
   return { missions, messages, briefing };
 }
 

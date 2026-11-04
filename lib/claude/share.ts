@@ -13,7 +13,7 @@ export const TOWN_SHARE_KINDS: TownShareKind[] = ["today", "town", "recruit"];
 const LABEL: Record<TownShareKind, string> = {
   today: "今日の出動（今日もシマエナGO 出動）",
   town: "町の雪解け（今週の町の変化）",
-  recruit: "仲間の募集（あと1人で救える家・5分だけ参加）",
+  recruit: "仲間の募集（あと1人で救える家・10分だけ参加）",
 };
 
 /** 種類ごとに Claude に渡す数字（ここにない数字は書かせない） */
@@ -36,9 +36,9 @@ export function shareKey(kind: TownShareKind, st: PublicStats): string {
 
 const toHalf = (s: string) => s.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
 
-/** 文の中の数字が、渡した数字（と「5分」の 5）だけかを確かめる */
+/** 文の中の数字が、渡した数字（と「10分」の 10）だけかを確かめる */
 export function usesOnlyGivenNumbers(text: string, input: Record<string, unknown>): boolean {
-  const allowed = new Set<string>(["5"]);
+  const allowed = new Set<string>(["10"]);
   for (const v of Object.values(input)) for (const n of String(v ?? "").match(/\d+/g) ?? []) allowed.add(n);
   return (toHalf(text).match(/\d+/g) ?? []).every((n) => allowed.has(n));
 }
@@ -56,7 +56,7 @@ export async function shareText(kind: TownShareKind, st: PublicStats): Promise<{
   const res = await askJson({
     task:
       "町内の雪かきゲームの、SNS に投稿する文の下書きを書いてください。採点表 share の規則に従います: 115字以内、2〜4行、入力の数字だけ、名前や家は書かない、" +
-      "最後は #シマエナGO と #5分だけ出動 か #雪解け。名乗らない。読んだ人が5分だけ参加したくなる一文で終える。",
+      "最後は #シマエナGO と #10分だけ出動 か #雪解け。名乗らない。読んだ人が10分だけ参加したくなる一文で終える。",
     input,
     schema: ShareTextSchema,
     effort: "low",

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(baseUrl()),
   title: "シマエナGO ・ 寒い冬は、くっついて乗り切る。",
   description:
-    "雪の朝に LINE で点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲーム。1人でもソロ出動で5分から。Built with Claude: Japan 2026 提出作品。",
+    "雪の朝に LINE で点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲーム。1人でもソロ出動で10分から。Built with Claude: Japan 2026 提出作品。",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
