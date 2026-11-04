@@ -1,6 +1,7 @@
 "use client";
 
-// ソロ出動の画面（spec v1.3）。ミッションのカードを左右スワイプで選び、その場で完了 → 完了の演出（SNS 投稿もここ）。
+// ソロ出動の画面（spec v1.3）。ミッションを左右スワイプで選ぶ → 出撃！（開始の演出）→ 実施中（タイマー）
+// → 写真やひとことで報告 → クリア！の演出 → 羽とポイント → SNS 投稿。
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fiveMinutesAction } from "@/app/map/actions";
@@ -15,6 +16,9 @@ import QuickShare from "./QuickShare";
 import SnsShare, { type ShareOption } from "./SnsShare";
 import { clearMessage } from "@/lib/share-links";
 import SoloClear from "./SoloClear";
+import MissionFlash from "./MissionFlash";
+import MissionRun from "./MissionRun";
+import BragShare from "./BragShare";
 import Mascot, { SnowTown } from "./Mascot";
 import TabBar from "./TabBar";
 
@@ -55,31 +59,80 @@ export default function SoloScreen({
   const [pending, start] = useTransition();
   const [result, setResult] = useState<SoloActionResult | null>(null);
   const [clear, setClear] = useState<SoloClearSummary | null>(null);
-  const [busyKind, setBusyKind] = useState<string | null>(null);
   const [doneToday, setDoneToday] = useState<string[]>(status.doneToday);
   const [helpText, setHelpText] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const photoKind = useRef<string | null>(null);
+  const [flash, setFlash] = useState<{ kind: "start" | "clear"; label: string } | null>(null);
+  // 実施中のミッション（画面を開き直しても続きから。この端末だけに残す）
+  const runKey = `solo-run-${viewerId}`;
+  const [running, setRunningState] = useState<{ kind: string; startedAt: number } | null>(null);
+  const beforeKey = `solo-before-${viewerId}`;
+  const [before, setBeforeState] = useState<string | undefined>();
+  const setBefore = (d: string | undefined) => {
+    setBeforeState(d);
+    try {
+      if (d) localStorage.setItem(beforeKey, d);
+      else localStorage.removeItem(beforeKey);
+    } catch {}
+  };
+  // クリア後の自慢画像（自分の家の雪かき: Before / After と、かかった分）
+  const [brag, setBrag] = useState<{ before: string; after: string; minutes: number } | null>(null);
+  const setRunning = (r: { kind: string; startedAt: number } | null) => {
+    setRunningState(r);
+    if (!r) setBefore(undefined);
+    try {
+      if (r) localStorage.setItem(runKey, JSON.stringify(r));
+      else localStorage.removeItem(runKey);
+    } catch {}
+  };
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        const v = JSON.parse(localStorage.getItem(runKey) ?? "null");
+        if (v && typeof v.kind === "string" && typeof v.startedAt === "number" && !status.doneToday.includes(v.kind)) {
+          setRunningState(v);
+          setBeforeState(localStorage.getItem(beforeKey) ?? undefined);
+        }
+      } catch {}
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const submit = (kind: string, file?: File) => {
-    setBusyKind(kind);
+  const begin = (m: SoloMission) => {
+    setResult(null);
+    setFlash({ kind: "start", label: m.label });
+    setTimeout(() => {
+      setFlash(null);
+      setRunning({ kind: m.kind, startedAt: Date.now() });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 1500);
+  };
+
+  const submit = (kind: string, file?: File, note?: string, minutes?: number) => {
+    const shot = before;
     start(async () => {
       try {
         const fd = new FormData();
         fd.set("viewerId", viewerId);
         fd.set("kind", kind);
+        if (note) fd.set("note", note);
         if (file) fd.set("photo", new File([await shrink(file)], "solo.jpg", { type: "image/jpeg" }));
         const r = await completeSoloAction(fd);
         setResult(r);
         if (r.ok && r.summary) {
-          setClear(r.summary);
-          setTodayFeathers(r.summary.todayFeathers);
-          setDoneToday((d) => [...d, kind]);
+          const summary = r.summary;
+          setBrag(shot && file && minutes ? { before: shot, after: URL.createObjectURL(file), minutes } : null);
+          setRunning(null);
+          setFlash({ kind: "clear", label: summary.label });
+          setTimeout(() => {
+            setFlash(null);
+            setClear(summary);
+            setTodayFeathers(summary.todayFeathers);
+            setDoneToday((d) => [...d, kind]);
+          }, 1700);
         }
       } catch (e) {
         setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
-      } finally {
-        setBusyKind(null);
       }
     });
   };
@@ -138,13 +191,16 @@ export default function SoloScreen({
     if (best !== active) setActive(best);
   };
   const current = list[active] ?? list[0];
+  const runMission = running ? list.find((m) => m.kind === running.kind) : undefined;
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-clip bg-paper text-ink">
     <main className="min-w-0 flex-1 space-y-3 px-4 pb-4 pt-3">
+      {flash && <MissionFlash kind={flash.kind} label={flash.label} />}
       {clear && (
-        <SoloClear summary={clear} onClose={() => setClear(null)} q={q}>
-          <QuickShare text={clearMessage("solo", clear.onsite ? 10 : 3)} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
+        <SoloClear summary={clear} onClose={() => setClear(null)} q={q} minutesLabel={brag ? `${brag.minutes}分` : undefined}>
+          {brag && <BragShare before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} />}
+          <QuickShare text={clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
           {shareOptions.length > 0 && (
             <details className="mt-3 rounded-2xl bg-card ring-1 ring-ink/10">
               <summary className="flex min-h-12 cursor-pointer items-center justify-between px-3 text-base font-bold">
@@ -174,7 +230,7 @@ export default function SoloScreen({
       {/* ゲームの HUD: 呼びかけ＋今日の成績 */}
       <div className="rounded-2xl bg-ink px-4 py-2 text-white shadow-md">
         <p className="text-lg font-bold leading-snug">
-          {pickFive ? "⚡ 出動要請！ 10分で町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
+          {runMission ? "🎯 遂行中！ 報告でクリア" : pickFive ? "⚡ 出動要請！ 10分で町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
         </p>
         <p className="flex items-center justify-between text-sm font-bold text-white/85">
           <span>クリア {doneCount}/{list.length}</span>
@@ -188,8 +244,20 @@ export default function SoloScreen({
         </p>
       )}
 
+      {runMission && running && (
+        <MissionRun
+          mission={runMission}
+          startedAt={running.startedAt}
+          pending={pending}
+          q={q}
+          before={before}
+          onBefore={setBefore}
+          onReport={(file, note) => submit(runMission.kind, file, note, Math.max(1, Math.round((Date.now() - running.startedAt) / 60000)))}
+          onQuit={() => setRunning(null)}
+        />
+      )}
       {/* ミッションのカード（左右スワイプで選ぶ） */}
-      <section aria-label="ミッションをえらぶ" aria-roledescription="カルーセル">
+      <section aria-label="ミッションをえらぶ" aria-roledescription="カルーセル" hidden={Boolean(runMission)}>
         <div
           ref={trackRef}
           onScroll={onScroll}
@@ -197,7 +265,6 @@ export default function SoloScreen({
         >
           {list.map((m, i) => {
             const done = doneToday.includes(m.kind);
-            const busy = pending && busyKind === m.kind;
             const tp = soloTeamPoints(m);
             return (
               <article
@@ -218,7 +285,7 @@ export default function SoloScreen({
                 <h2 className="text-2xl font-bold leading-tight">{done ? "✓ " : ""}{m.label}</h2>
                 <p className="text-base leading-snug">{m.description}</p>
                 <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-2 text-center text-sm font-bold">
-                  <p><span className="block text-2xl tabular-nums">{m.minutes}分</span>時間</p>
+                  <p><span className="block text-2xl tabular-nums">{m.beforeAfter ? "自由" : `${m.minutes}分`}</span>時間</p>
                   <p><span className="block text-2xl text-lamp">{DIFF[m.difficulty]}</span>むずかしさ</p>
                   <p>
                     <span className="block text-2xl tabular-nums text-camellia-deep">+{m.feathers}羽</span>
@@ -239,25 +306,14 @@ export default function SoloScreen({
                     ✓ クリア済み　次へ ›
                   </button>
                 ) : (
-                  <div className={`mt-auto grid gap-2 ${m.photo === "optional" ? "grid-cols-[auto_1fr]" : "grid-cols-1"}`}>
-                    {m.photo === "optional" && (
-                      <button
-                        tabIndex={i === active ? 0 : -1}
-                        disabled={pending}
-                        aria-label="写真をつけて完了にする"
-                        onClick={() => {
-                          photoKind.current = m.kind;
-                          fileRef.current?.click();
-                        }}
-                        className="btn btn-white whitespace-nowrap rounded-full px-4 text-base"
-                      >
-                        📷 写真
-                      </button>
-                    )}
-                    <button tabIndex={i === active ? 0 : -1} disabled={pending} onClick={() => submit(m.kind)} className="btn btn-lamp whitespace-nowrap rounded-full text-lg">
-                      {busy ? "…" : "クリア！"}
-                    </button>
-                  </div>
+                  <button
+                    tabIndex={i === active ? 0 : -1}
+                    disabled={pending || Boolean(flash)}
+                    onClick={() => begin(m)}
+                    className="btn btn-lamp mt-auto whitespace-nowrap rounded-full text-xl"
+                  >
+                    ▶ 出撃する！
+                  </button>
                 )}
               </article>
             );
@@ -284,7 +340,7 @@ export default function SoloScreen({
           </button>
         </div>
         <p className="mt-1 text-center text-sm text-ink-soft">
-          {current?.photo === "optional" ? "📷 写真をつけると「確認済み」の印がつきます" : "← 左右にスワイプしてミッションをえらぶ →"}
+          {current?.photo === "optional" ? "📷 写真で報告すると「確認済み」の印がつきます" : "← 左右にスワイプしてミッションをえらぶ →"}
         </p>
       </section>
 
@@ -348,18 +404,6 @@ export default function SoloScreen({
 
       <FriendShare />
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f && photoKind.current) submit(photoKind.current, f);
-          e.target.value = "";
-        }}
-      />
     </main>
     <div className="sticky bottom-0 z-20">
       <TabBar active="home" q={q} />

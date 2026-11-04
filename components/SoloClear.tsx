@@ -2,6 +2,7 @@
 
 // ソロ出動の完了演出（spec v1.3）。羽が舞い、入った羽・連続出動・カード・ひとことを見せる。
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { SoloClearSummary } from "@/lib/solo/ops";
 import Mascot, { SnowTown } from "./Mascot";
 
@@ -25,7 +26,29 @@ function Feather({ color }: { color: string }) {
   );
 }
 
-export default function SoloClear({ summary, onClose, q, children }: { summary: SoloClearSummary; onClose: () => void; q: string; children?: React.ReactNode }) {
+/** 0 から数えあがる数字。数え終わると、ぽんと弾む */
+function CountUp({ to, delay = 300, ms = 900 }: { to: number; delay?: number; ms?: number }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const t0 = performance.now() + delay;
+    const tick = (t: number) => {
+      const k = reduce ? 1 : Math.min(1, Math.max(0, (t - t0) / ms));
+      setN(Math.round(to * (1 - (1 - k) ** 3)));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to, delay, ms]);
+  return (
+    <span key={n === to ? "done" : "run"} className={`inline-block tabular-nums ${n === to ? "count-pop" : ""}`}>
+      {n}
+    </span>
+  );
+}
+
+export default function SoloClear({ summary, onClose, q, minutesLabel, children }: { summary: SoloClearSummary; onClose: () => void; q: string; minutesLabel?: string; children?: React.ReactNode }) {
   const s = summary;
   const bonus = s.bonuses.reduce((a, b) => a + b.feathers, 0);
   return (
@@ -43,7 +66,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
           <div className="flex items-center gap-2">
             <Mascot size={88} mood="happy" className="lamp-glow shrink-0" />
             <h2 className="whitespace-nowrap text-lg font-bold leading-snug">
-              あなたの<span className="text-2xl text-lamp-deep">{s.onsite ? "10分" : "3分"}</span>が、
+              あなたの<span className="text-2xl text-lamp-deep">{minutesLabel ?? (s.onsite ? "10分" : "3分")}</span>が、
               <br />
               町の力になりました！
             </h2>
@@ -57,12 +80,12 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
           </p>
         )}
         <p className="mt-3 text-center">
-          <span className="text-5xl font-bold text-camellia-deep">+{s.feathers}</span>
+          <span className="text-5xl font-bold text-camellia-deep">+<CountUp to={s.feathers} /></span>
           <span className="text-xl font-bold"> 羽</span>
           {bonus > 0 && <span className="ml-2 rounded-full bg-camellia-soft px-2 py-0.5 text-sm font-bold text-camellia-deep ring-1 ring-camellia">ごほうび +{bonus}</span>}
         </p>
         {s.teamPoints > 0 && (
-          <p className="mt-1 text-center text-lg font-bold">
+          <p className="pop-late mt-1 text-center text-lg font-bold">
             {s.teamName ?? "チーム"} に <span className="text-2xl text-lamp-deep">+{s.teamPoints}点</span>
           </p>
         )}
