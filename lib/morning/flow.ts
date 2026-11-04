@@ -49,6 +49,8 @@ export interface MorningRecord {
   teacherTip?: { line: string };
   /** コツを送ってくれるのを待っている人（「教える」を押した人） */
   awaitingTip?: string[];
+  /** あなたが主役の招待文（spec v1.6）: 完了した人ごとに3案 */
+  invites?: Record<string, string[]>;
 }
 
 export interface ThanksRecord {

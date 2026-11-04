@@ -43,6 +43,8 @@ export interface ClearSummary {
   firstFlight?: boolean;
   /** 画面を見ている人が、この家に来た人のひとりか */
   mine?: boolean;
+  /** あなたが主役の招待文（本人の完了のときだけ、spec v1.6） */
+  invites?: string[];
   /** 写真から見えた雪質（v1.2）と労いの一言 */
   snowTypeLabel?: string;
   care?: string;
@@ -131,6 +133,11 @@ export function summarizeClear(
     defeatedAt: prog.defeatedAt,
     completedAt,
   };
+}
+
+/** 本人の完了なら、招待文を添える */
+export function withInvites(c: ClearSummary | null, invites?: string[]): ClearSummary | null {
+  return c && c.mine && invites && invites.length > 0 ? { ...c, invites } : c;
 }
 
 /**

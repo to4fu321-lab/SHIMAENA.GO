@@ -289,7 +289,7 @@ export const MSG = {
       [pb("それでも完了にする", "done:manual"), B.camera, B.roll],
     ),
   /** 写真や報告で完了したときの返事（最大5つの吹き出し）。ボタンは最後に付く */
-  doneReport: (r: { baseNumber: number | string; comment: string; notes?: string[]; team?: { name: string; points: number }; allDoneLine?: string; grid?: string }) =>
+  doneReport: (r: { baseNumber: number | string; comment: string; notes?: string[]; team?: { name: string; points: number }; allDoneLine?: string; grid?: string; inviteUrl?: string }) =>
     bubbles(
       [
         `拠点${r.baseNumber} 完了だしま〜！🎉\nあなたの5分で、1軒が助かりました。`,
@@ -298,7 +298,8 @@ export const MSG = {
         [r.allDoneLine, r.team && `${r.team.name}に +${r.team.points} 点。ありがとうカードは後で届きます。`].filter(Boolean).join("\n"),
         r.grid && `結果をそのまま LINE や SNS に貼れます。\n${r.grid}`,
       ],
-      [B.card, B.map],
+      // 友だちを誘う（spec v1.6）: あなたが主役の招待文を入れた LINE の「送る」画面
+      [B.card, ...(r.inviteUrl ? [{ type: "uri", label: "友だちを誘う", uri: r.inviteUrl } as Button] : []), B.map],
     ),
   doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number) =>
     bubbles([`拠点${baseNumber}は、${byName}さんの写真で完了になりました。`, `${teamName}に +${points} 点。おつかれさまでした！`], [B.card]),

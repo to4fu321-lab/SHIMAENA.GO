@@ -8,6 +8,7 @@ import type { ClearSummary } from "@/lib/morning/clear";
 import { TEAMS } from "@/lib/teams";
 import Mascot, { SnowTown } from "./Mascot";
 import QuickShare from "./QuickShare";
+import InviteDrafts from "./InviteDrafts";
 import { clearMessage } from "@/lib/share-links";
 
 const FEATHERS = [
@@ -146,6 +147,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
 
         {/* 自分の完了なら、その場で X・LINE・Instagram に知らせられる */}
         {clear.mine && <QuickShare text={clearMessage("house")} image={`/api/share/today.png?v=${clear.done}`} />}
+        {clear.mine && clear.invites && clear.invites.length > 0 && <InviteDrafts drafts={clear.invites} />}
 
         <button onClick={onClose} className="btn btn-ink btn-big mt-4 w-full">
           町の地図へ戻る

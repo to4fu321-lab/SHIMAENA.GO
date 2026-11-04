@@ -10,6 +10,9 @@ import { readWords, requestLabel } from "../claude/words";
 import { safetyLine } from "../safety";
 import { captainLines } from "../claude/captain";
 import { pickTeacher } from "../claude/teacher";
+import { inviteDrafts } from "../claude/invite";
+import { lineShareUrl } from "../share-links";
+import { baseUrl } from "../url";
 import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
@@ -29,7 +32,7 @@ import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
 import { recapText } from "../claude/recap";
 import { CHEER_CHOICES, parseCheer, type CheerChoice, type CheerRecord } from "./cheer";
-import { summarizeClear, type ClearSummary } from "./clear";
+import { summarizeClear, withInvites, type ClearSummary } from "./clear";
 import { buildRecapInput } from "./recap";
 import { progress, snowHp, viewBases } from "./view";
 import { viewCells } from "../cells";
@@ -449,6 +452,23 @@ async function finishMission(
   if (check.care) notes.push(check.care);
   if (check.icy) notes.push("凍っているところがあるようです。砂をまくと安心です。");
   const prog = progress(s.morning);
+  // あなたが主役の招待文（spec v1.6）: 写真を送った本人の今朝の活動から3案。失敗しても完了は止めない
+  let invites: string[] | undefined;
+  try {
+    const minutes = Number(s.answers.find((a) => a.participantId === participantId)?.answer) || 5;
+    invites = await inviteDrafts({
+      minutes: Math.min(60, Math.max(5, minutes)),
+      firstTime: (s.firstFlights ?? []).includes(participantId),
+      snowCm: s.morning.rollcall.forecastCm,
+      snowName: s.morning.rollcall.snowName,
+      teamName: myTeam?.name,
+    });
+    s.invites = { ...(s.invites ?? {}), [participantId]: invites };
+    await saveMorning(s);
+  } catch (e) {
+    console.error("[invite] 招待文を書けませんでした:", e instanceof Error ? e.message : e);
+  }
+  const joinUrl = process.env.NEXT_PUBLIC_LINE_ADD_FRIEND_URL || `${baseUrl()}/public/town?via=invite`;
   // 1つの吹き出しに1つの話題: 完了 → ひとこと → 雪質と労い → 点 → 絵文字グリッド（そのまま LINE グループや X に貼れる）
   const reply = MSG.doneReport({
     baseNumber: number,
@@ -457,9 +477,10 @@ async function finishMission(
     team: myTeam ? { name: myTeam.name, points: pointsOf(myTeam.id) } : undefined,
     allDoneLine: prog.allDone ? `今朝の家は ${prog.total}軒すべて終わりました。町じゅうに灯りがともりました！` : undefined,
     grid: emojiGrid(viewCells([...viewBases(s.morning).values()], roster), s.morning),
+    inviteUrl: invites?.[0] ? lineShareUrl(invites[0], joinUrl) : undefined,
   });
   const clear =
-    summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId, firstFlightIds: s.firstFlights }) ?? undefined;
+    withInvites(summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId, firstFlightIds: s.firstFlights }), invites) ?? undefined;
   if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
   return { done: true, messages: reply, clear };
