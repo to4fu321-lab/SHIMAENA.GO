@@ -40,6 +40,7 @@ export default function MapScreen({
   rescue = [],
   recap,
   thanks,
+  teacher,
   shareText,
   cheers = [],
   home,
@@ -60,6 +61,8 @@ export default function MapScreen({
   recap?: string;
   /** 自分が行った家の、お願いした人からのひとこと（ありがとう点呼） */
   thanks?: { label: string; sentence: string };
+  /** 今朝の先生のコツ（spec v1.6） */
+  teacher?: string;
   /** 絵文字グリッド（共有用の文字） */
   shareText?: string;
   /** 自分が行った家の、ご家族からの応援スタンプ */
@@ -190,6 +193,11 @@ export default function MapScreen({
               <p className="rounded-2xl bg-warm px-3 py-2 text-base ring-2 ring-lamp">
                 <span className="eyebrow block">お願いした人から</span>
                 {[requestLabel(myMission.request), myMission.request.note].filter(Boolean).join("・")}
+              </p>
+            )}
+            {myMission && teacher && (
+              <p className="rounded-2xl bg-warm px-3 py-2 text-base">
+                <span className="eyebrow block">🎓 今朝の先生のコツ</span>「{teacher}」
               </p>
             )}
             {myMission?.reason && (

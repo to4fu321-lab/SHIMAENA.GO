@@ -75,6 +75,8 @@ export interface PlaceCard {
   mapUrl: string;
   /** その家までの道順（向かう本人だけ）。なければルートのボタンは出さない */
   routeUrl?: string;
+  /** 今朝の先生のコツ（spec v1.6）。あれば本文に枠で出す */
+  tip?: string;
 }
 
 /** 行き先の画像（/api/line/hero/go.png）。氏名・住所は入れず、時刻と拠点の番号だけ */
@@ -103,6 +105,21 @@ export function placeCard(p: PlaceCard): FlexMessage {
         contents: [
           { type: "text", text: title, size: "xl", weight: "bold", color: COLORS.ink, wrap: true },
           { type: "text", text: p.note, size: "md", color: COLORS.winter, wrap: true },
+          ...(p.tip
+            ? [
+                {
+                  type: "box",
+                  layout: "vertical",
+                  backgroundColor: COLORS.warm,
+                  cornerRadius: "lg",
+                  paddingAll: "12px",
+                  contents: [
+                    { type: "text", text: "🎓 今朝の先生のコツ", size: "sm", weight: "bold", color: COLORS.lamp },
+                    { type: "text", text: `「${p.tip}」`, size: "lg", weight: "bold", color: COLORS.ink, wrap: true },
+                  ],
+                },
+              ]
+            : []),
           bigButton("🗺 地図で見る", { type: "uri", label: "地図で見る", uri: p.mapUrl }, p.routeUrl ? "line" : "main"),
           ...(p.routeUrl ? [bigButton("📍 ルートを表示", { type: "uri", label: "ルートを表示", uri: p.routeUrl }, "main")] : []),
         ],

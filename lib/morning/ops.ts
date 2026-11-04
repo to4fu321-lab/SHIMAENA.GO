@@ -9,6 +9,8 @@ import { weeklyText } from "../claude/weekly";
 import { readWords, requestLabel } from "../claude/words";
 import { safetyLine } from "../safety";
 import { captainLines } from "../claude/captain";
+import { pickTeacher } from "../claude/teacher";
+import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstMinutes, jstIso } from "../jst";
@@ -131,7 +133,33 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
   putAnswer(s, p.id, answer, now.toISOString());
   s.log.push(`${p.nickname}さんが点呼に回答（${value}）`);
   await saveMorning(s);
-  return MSG.rollcallThanks(value);
+  // お願いする側には、まだ教えてもらっていなければ（または2週間ぶりなら）雪かきのコツを聞く（任意、spec v1.6）
+  const last = p.role === "requester" ? await lastTipAt(p.id) : "skip";
+  const askTip = last === undefined || (last !== "skip" && now.getTime() - Date.parse(last) > 14 * 86400000);
+  return [...MSG.rollcallThanks(value), ...(askTip ? MSG.tipAsk() : [])];
+}
+
+/** 今朝の先生: 「教える」→ 待つ。「また今度」→ そのまま */
+export async function tipStart(lineUserId: string, data: string): Promise<LineMessage[]> {
+  const p = await repo().findParticipantByLineUserId(lineUserId);
+  if (!p) return MSG.notRegistered();
+  if (data !== "tip:ask") return MSG.tipLater();
+  const s = await loadMorning();
+  s.awaitingTip = [...(s.awaitingTip ?? []).filter((x) => x !== p.id), p.id];
+  await saveMorning(s);
+  return MSG.tipPrompt();
+}
+
+/** 「教える」を押した人の次の文をコツとして受け取る。待っていなければ null */
+export async function tipReceive(lineUserId: string, text: string, now = new Date()): Promise<LineMessage[] | null> {
+  const p = await repo().findParticipantByLineUserId(lineUserId);
+  const s = await loadMorning();
+  if (!p || !s.awaitingTip?.includes(p.id)) return null;
+  s.awaitingTip = s.awaitingTip.filter((x) => x !== p.id);
+  const ok = await addTip(p.id, text, now);
+  if (ok) s.log.push(`${p.nickname}さんが雪かきのコツを教えてくれた`);
+  await saveMorning(s);
+  return MSG.tipThanks(ok);
 }
 
 /** 隊長カードに渡す今朝の雪（量・名前・安全の一文） */
@@ -187,6 +215,14 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   } catch (e) {
     await saveMorning(s); // open に戻して、もう一度押せるようにする
     throw e;
+  }
+  // 今朝の先生: 町のコツから今朝の雪に合う1つ（失敗しても作戦は止めない）
+  try {
+    const rc = s.morning.rollcall;
+    const pick = await pickTeacher({ cm: rc.forecastCm, tempMinC: rc.tempMinC, tips: await loadTips() });
+    s.teacherTip = pick ? { line: pick.line } : undefined;
+  } catch (e) {
+    console.error("[teacher] 今朝の先生を選べませんでした:", e instanceof Error ? e.message : e);
   }
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
   const personal = new Map<string, LineMessage[]>();
@@ -266,7 +302,7 @@ export async function setGoing(participantId: string, go: boolean, now = new Dat
     if (mission.status === "assigned") mission.status = "in_progress";
     s.log.push(`${who}さんが拠点${number}へ「行く」`);
     await saveMorning(s);
-    return MSG.goConfirmed(number, routeTo(roster, mission.baseId, participantId), mission.request);
+    return MSG.goConfirmed(number, routeTo(roster, mission.baseId, participantId), mission.request, s.teacherTip?.line);
   }
   s.morning.sorties = s.morning.sorties.filter((x) => x.id !== sortie.id);
   const going = s.morning.sorties.filter((x) => x.missionId === mission.id).length;
@@ -655,7 +691,7 @@ export async function joinMission(
   if (!m || !p?.teamId || m.status === "done") return MSG.noSortie();
   const number = baseNumberOf(roster, m.baseId);
   if (s.morning.sorties.some((x) => x.missionId === m.id && x.participantId === p.id && x.status === "going")) {
-    return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id), m.request);
+    return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id), m.request, s.teacherTip?.line);
   }
   const enough = missingPeople(s, m) <= 0;
   if (enough && !opts.extra) return MSG.helpAlreadyEnough(number);
@@ -675,7 +711,7 @@ export async function joinMission(
     `${p.nickname}さんが${enough ? "偵察・補給で" : "ヘルプで"}拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`,
   );
   await saveMorning(s);
-  return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id), m.request);
+  return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id), m.request, s.teacherTip?.line);
 }
 
 export interface JoinNearbyResult {

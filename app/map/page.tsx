@@ -48,6 +48,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         rescue={listShort(record, roster)}
         recap={record.recap?.text}
         thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
+        teacher={record.teacherTip?.line}
         shareText={emojiGrid(cells, state)}
         cheers={myMissionId ? (record.cheers?.[myMissionId] ?? []).map((c) => c.label) : []}
         home={viewer?.location}

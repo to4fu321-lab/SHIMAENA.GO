@@ -252,6 +252,19 @@ export const MSG = {
         ? bubbles(["「一緒なら」で受け付けました。"])
         : [],
   wordsAskBack: (q: string) => bubbles([q]),
+  // ---- 今朝の先生（spec v1.6）: お願いする側の人に、雪かきのコツを1つ聞く（任意） ----
+  tipAsk: () => [
+    ask("よければ、雪かきのコツを1つ教えてもらえますか？\n（お名前は出さずに、手伝う人のカードに載ります）", [
+      { label: "教える", data: "tip:ask" },
+      { label: "また今度", data: "tip:no", tone: "soft" },
+    ]),
+  ],
+  tipPrompt: () => bubbles(["ありがとうございます。ひとことで送ってください。", "例「雪は朝のうちに」「重い雪は少しずつ」"]),
+  tipThanks: (ok: boolean) =>
+    ok
+      ? bubbles(["教えてくださって、ありがとうございます。🎓", "雪の朝に、手伝う人のカードに「今朝の先生のコツ」として載ります。"])
+      : bubbles(["ありがとうございます。", "お名前や番号が入っていたので、今回は載せずにおきますね。"]),
+  tipLater: () => bubbles(["わかりました。また今度、教えてくださいね。"]),
   rollcallClosed: () => bubbles(["いまは点呼の時間ではありません。", "雪の朝 6:30 に、ここへ届きます。"], [B.go, B.map]),
   notRegistered: () => bubbles(["登録がまだです。1分で終わります。"], [B.register, B.guide]),
   planForRequester: (startTime: string, ns: string[]) =>
@@ -262,9 +275,9 @@ export const MSG = {
   // ---- 朝の一本道（spec 2: 行く → 写真 → 完了） ----
   planForHelper: (body: string) => [card(body, [choose("👟 行く", "go:yes"), choose("今朝は行けない", "go:no", "soft"), mapChoice])],
   /** 「行く」のあと: 了解 → 行き先カード（大きな画像・地図・ルート）→ 終わったら写真。ことばの依頼があれば段取りを先に */
-  goConfirmed: (baseNumber: number | string, routeUrl?: string, request?: RequestNote) => [
+  goConfirmed: (baseNumber: number | string, routeUrl?: string, request?: RequestNote, tip?: string) => [
     text("了解だしま〜！🙌"),
-    placeCard({ time: "7:00", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl }),
+    placeCard({ time: "7:00", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl, tip }),
     photoAsk("終わったら、玄関の前から道路の方を写した写真を1枚送ってください。"),
   ],
   goDeclined: () => bubbles(["わかりました。無理しないでくださいね。", "ほかの人に声をかけるしま〜！"]),
@@ -316,9 +329,9 @@ export const MSG = {
     ...bubbles(["助けてほしい家があります。🙏", `拠点${baseNumber}、あと${missing}人です。`]),
     card(`5分でもOK: ${tasks.slice(0, 2).join("／")}\n行けますか？`, [choose("👟 行く（5分でも）", `help:go=${missionId}`), choose("今は無理", "help:no", "soft"), mapChoice]),
   ],
-  helpJoined: (baseNumber: number | string, routeUrl?: string, request?: RequestNote) => [
+  helpJoined: (baseNumber: number | string, routeUrl?: string, request?: RequestNote, tip?: string) => [
     text("ありがとうしま〜！🙌"),
-    placeCard({ time: "now", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl }),
+    placeCard({ time: "now", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl, tip }),
     photoAsk("終わったら、写真を1枚送ってください。"),
   ],
   helpDeclined: () => bubbles(["わかりました。気にしないでくださいね。", "また次の機会に、よろしくしま〜！"]),

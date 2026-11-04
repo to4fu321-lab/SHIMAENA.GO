@@ -16,6 +16,8 @@ import {
   sendCheer,
   sendThanks,
   setGoing,
+  tipReceive,
+  tipStart,
 } from "../morning/ops";
 import { repo } from "../repo";
 import { jstDate } from "../jst";
@@ -212,8 +214,21 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     return;
   }
 
+  // 今朝の先生（spec v1.6）: 「教える」「また今度」
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("tip:")) {
+    const messages = await tipStart(lineUserId, ev.postback.data);
+    if (ev.replyToken) await reply(ev.replyToken, messages);
+    return;
+  }
+
   // ことばで答える・頼む（spec v1.6）: 登録の途中でなければ、点呼の時間のふつうの文を答えとして読む
+  // （「教える」を押したあとの文は、先にコツとして受け取る）
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && parseText(ev.message.text).kind === "text" && !(await r.getSession(lineUserId))) {
+    const tip = await tipReceive(lineUserId, ev.message.text);
+    if (tip) {
+      if (ev.replyToken) await reply(ev.replyToken, tip);
+      return;
+    }
     const messages = await answerByWords(lineUserId, ev.message.text);
     if (messages) {
       if (ev.replyToken) await reply(ev.replyToken, messages);

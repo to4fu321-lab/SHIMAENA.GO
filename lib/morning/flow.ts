@@ -45,6 +45,10 @@ export interface MorningRecord {
   cheers?: Record<string, CheerRecord[]>;
   /** 隊長のひとこと（状態ごと、spec v1.6）。点呼の時に1回だけ書いて、みんなで使い回す */
   captainLines?: Partial<Record<CaptainState, string>>;
+  /** 今朝の先生のコツ（作戦の時に選ぶ、spec v1.6） */
+  teacherTip?: { line: string };
+  /** コツを送ってくれるのを待っている人（「教える」を押した人） */
+  awaitingTip?: string[];
 }
 
 export interface ThanksRecord {
