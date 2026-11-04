@@ -8,7 +8,6 @@ import { clearProblems } from "@/lib/ops/problems";
 import { applySchema, seedTown } from "@/lib/db";
 import { issueCardsForMission } from "@/lib/cards/issue";
 import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
-import { setupRichMenu } from "@/lib/line/richmenu";
 import { isThanksChoice } from "@/lib/claude/thanks";
 import { isCheerChoice } from "@/lib/morning/cheer";
 import { latestClear } from "@/lib/morning/clear";
@@ -213,18 +212,6 @@ export async function runWeekly() {
       return;
     }
     refresh();
-  });
-}
-
-/** LINE のリッチメニューを作って全員の既定にする（画像は SVG から） */
-export async function makeRichMenu() {
-  return guarded("makeRichMenu", async () => {
-    try {
-      const r = await setupRichMenu();
-      await update((s) => void s.log.push(r.richMenuId ? `リッチメニューを作成（${r.richMenuId}）` : "リッチメニュー: LINE の鍵がないので画像だけ作成"));
-    } catch (e) {
-      await update((s) => void s.log.push(`リッチメニューの作成に失敗: ${e instanceof Error ? e.message : String(e)}`));
-    }
   });
 }
 

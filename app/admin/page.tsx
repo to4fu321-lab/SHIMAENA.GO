@@ -21,7 +21,6 @@ import {
   stormToggleAction,
   completeOne,
   helpNextRing,
-  makeRichMenu,
   prepareDatabase,
   rescue,
   ringNow,
@@ -150,6 +149,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           {usage.dryRun > 0 && <> ・ 送らずに記録（LINE_DRY_RUN） {usage.dryRun} 通</>}
           {" "}・ 無料プランは月 200 通。実数は LINE Official Account Manager で確認
         </p>
+        <Link href="/admin/settings" className="text-sm text-ink-soft underline">
+          管理者ダッシュボード（リッチメニュー・設定）へ
+        </Link>
         {gate === "ok" && (
           <form action={logoutAction}>
             <button className="text-sm text-ink-soft underline">ログアウト</button>
@@ -405,13 +407,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
         </section>
       )}
 
-      <section className="space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-        <h2 className="font-bold">LINE のメニュー</h2>
-        <p className="text-sm text-ink-soft">出動する／町の地図／活動カード／使い方 の4つ（大きいサイズ 2500×1686）。設定は Web の /settings。画像は SVG から作る。何度押しても作り直すだけ。</p>
-        <form action={makeRichMenu}>
-          <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">リッチメニューを作る</button>
-        </form>
-      </section>
+      <Link href="/admin/settings" className="block rounded-2xl bg-ink px-4 py-3 text-center text-lg font-bold text-white">
+        管理者ダッシュボード（リッチメニュー・設定）
+      </Link>
 
       <section className="rounded-2xl bg-card p-4 text-sm shadow-sm ring-1 ring-ink/10">
         <h2 className="font-bold">記録</h2>
