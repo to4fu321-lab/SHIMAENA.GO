@@ -1,5 +1,6 @@
 // AI参加コンシェルジュの本体（spec v1.7）: 自由な文 → その人の今の状況 → 開いている参加の方法 → Claude が1つ選ぶ（3往復まで）
 // → その人用の画像つきのカードで、アプリの活動へ誘う。返信（reply）だけで完結するので、LINE の月の通数は使わない。
+import { isNight } from "../night";
 import { askConcierge, MAX_TURNS, type ConciergeInput } from "../claude/concierge";
 import { jstHourMinute } from "../jst";
 import { youImagePath } from "../line/you-image";
@@ -43,6 +44,7 @@ export async function conciergeContext(p: Participant, record: MorningRecord, no
     safety: isToday && Boolean(safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs })),
     firstTime: logs.length === 0 && cards.length === 0,
     tipOk,
+    night: isNight(now),
   };
 }
 
@@ -64,7 +66,7 @@ export async function concierge(lineUserId: string, text: string, now = new Date
     firstTime: ctx.firstTime,
     snowCm: ctx.rollcall === "none" ? 0 : rc.forecastCm,
     safety: ctx.safety,
-    hour: Number(jstHourMinute(now).slice(0, 2)),
+    hour: Number(jstHourMinute(now).slice(11, 13)),
     options: options.map(({ id, title, minutes, points, about }) => ({ id, title, minutes, points, about })),
     history: session?.history ?? [],
     text: text.slice(0, 200),

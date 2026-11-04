@@ -1,5 +1,6 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
+import { isNight } from "../night";
 import { issueCardsForMission, rerenderBacks } from "../cards/issue";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
@@ -308,6 +309,7 @@ function baseNumberOf(roster: Roster, baseId: string): number | string {
 
 /** 「行く」「今朝は行けない」。行けない人は外し、足りなくなった家は人手不足にする */
 export async function setGoing(participantId: string, go: boolean, now = new Date()): Promise<LineMessage[]> {
+  if (go && isNight(now)) return MSG.nightOwnHouseOnly(); // 夜はよその家に行かない（spec v1.8 防犯）
   const s = await loadMorning();
   const roster = await loadRoster();
   const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
@@ -433,7 +435,7 @@ async function finishMission(
   const me = byId.get(participantId);
   const pointsOf = (teamId: string) => events.filter((e) => e.teamId === teamId).reduce((a, e) => a + e.points, 0);
   s.log.push(`${clockTextJst(now)} 拠点${number} 完了（${names.join("・")}）写真: ${check.comment}`);
-  // その朝だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る（初出撃の人には歓迎も）
+  // その時だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る（初出撃の人には歓迎も）
   try {
     const issued = await issueCardsForMission(s, roster, mission, sorties);
     s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
@@ -718,6 +720,7 @@ export async function joinMission(
   now = new Date(),
   opts: { extra?: boolean } = {},
 ): Promise<LineMessage[]> {
+  if (isNight(now)) return MSG.nightOwnHouseOnly(); // 夜はよその家に行かない（spec v1.8 防犯）
   const s = await loadMorning();
   const roster = await loadRoster();
   const m = s.morning.missions.find((x) => x.id === missionId);
@@ -759,6 +762,7 @@ export interface JoinNearbyResult {
  * どこかに向かっている最中の人には何も出さない（まず自分の家を）。
  */
 export async function joinNearby(participantId: string, minutes: NowMinutes = 10, now = new Date()): Promise<JoinNearbyResult> {
+  if (isNight(now)) return { joined: false, messages: MSG.nightOwnHouseOnly() };
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);
@@ -834,7 +838,8 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
 }
 
 /** 「出動する（10／20／30／60分）」: 近くの小タスクを1件さがして提案する */
-export async function offerTaskNow(participantId: string, minutes: NowMinutes): Promise<LineMessage[]> {
+export async function offerTaskNow(participantId: string, minutes: NowMinutes, now = new Date()): Promise<LineMessage[]> {
+  if (isNight(now)) return MSG.nightOwnHouseOnly();
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);

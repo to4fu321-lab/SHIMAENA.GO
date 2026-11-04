@@ -112,7 +112,7 @@ function info(art: CardArt, c: InfoColors): string {
   <text x="60" y="692" font-family="${EN}" font-style="italic" font-size="18" fill="${c.subtitle}" letter-spacing="1">${escapeXml(art.designNameEn)}</text>
   <text x="60" y="734" font-family="${font}" font-size="${names.length > 16 ? 15 : 18}" fill="${c.names}">${escapeXml(names)}</text>
   <text x="60" y="762" font-family="${font}" font-size="14" fill="${c.meta}" letter-spacing="1">${escapeXml(dateLabel(art.date))} ｜ ${escapeXml(teamsLabel(art.members))}</text>
-  <text x="60" y="808" font-family="${font}" font-size="11" fill="${c.meta}" opacity="0.8" letter-spacing="2">この朝だけ ${art.issuedCount} 枚発行 ・ 排雪 ${art.snowKg}kg（${escapeXml(art.snowKgComparison)}） ・ #シマエナGO</text>`;
+  <text x="60" y="808" font-family="${font}" font-size="11" fill="${c.meta}" opacity="0.8" letter-spacing="2">この時だけ ${art.issuedCount} 枚発行 ・ 排雪 ${art.snowKg}kg（${escapeXml(art.snowKgComparison)}） ・ #シマエナGO</text>`;
 }
 
 // ---- 1. かわいいシティポップ（基本） ----
@@ -483,7 +483,7 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
   <g fill="none" stroke="#ffb3d9" stroke-width="3" stroke-linecap="round"><path d="M80 190 q20 -14 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0"/></g>
   ${ribbon}
   ${thanks}
-  <text x="80" y="395" font-family="${JP}" font-size="14" fill="#8a7bb5" letter-spacing="2">この朝にやったこと</text>
+  <text x="80" y="395" font-family="${JP}" font-size="14" fill="#8a7bb5" letter-spacing="2">このときにやったこと</text>
   ${lines}
   <rect x="60" y="650" width="480" height="110" rx="20" fill="#f1ecff"/>
   <text x="300" y="692" font-family="${JP}" font-size="16" fill="#6b4fcf" text-anchor="middle">どけた雪 およそ</text>

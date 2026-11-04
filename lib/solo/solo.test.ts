@@ -78,7 +78,7 @@ describe("羽と連続出動（純粋な関数）", () => {
 describe("アプリの今日", () => {
   it("点呼の日付が本当の日付の前後1日なら本当の日付、デモの 12 月なら点呼の日付", () => {
     const rec = { morning: { rollcall: { date: DEMO_DATE } } } as Parameters<typeof appToday>[0];
-    expect(appToday(rec, new Date("2026-11-03T12:00:00Z"))).toBe(DEMO_DATE);
+    expect(appToday(rec, new Date("2026-11-03T03:00:00Z"))).toBe(DEMO_DATE);
     expect(appToday(rec, new Date("2026-12-14T23:30:00Z"))).toBe("2026-12-15"); // JST では 12/15 の朝
     expect(dayDiff("2026-12-15", "2026-12-14")).toBe(1);
   });
@@ -88,7 +88,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
   beforeEach(() => {
     for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive"]) delete (globalThis as Record<string, unknown>)[k];
   });
-  const now = new Date("2026-11-03T12:00:00Z");
+  const now = new Date("2026-11-03T03:00:00Z");
 
   it("1日1回、初回はボーナスとカード。現地はチームに +3点、オンラインは +1点（v1.7）", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
@@ -159,7 +159,7 @@ describe("初参加の歓迎（T39）", () => {
 
   it("次のおすすめは、今日まだの外の5分ミッション", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
-    const now = new Date("2026-11-03T12:00:00Z");
+    const now = new Date("2026-11-03T03:00:00Z");
     const r1 = await completeSolo("h4", "patrol", { now });
     expect(r1.ok && r1.summary.nextMission).toBe("雪の多い場所を報告する");
     const r2 = await completeSolo("h4", "report_snow", { now });
@@ -181,7 +181,7 @@ describe("ソロのチーム得点（v1.7）", () => {
   beforeEach(() => {
     for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive", "__shimaenaSoloScores"]) delete (globalThis as Record<string, unknown>)[k];
   });
-  const now = new Date("2026-11-03T12:00:00Z");
+  const now = new Date("2026-11-03T03:00:00Z");
 
   it("計算: 自分の家 +5、ほかの現地 +3、写真の確認 +2、オンライン +1（1日3点まで）、チームなし・家の手伝いは 0、1日 15点まで", () => {
     const base = { teamId: "salvia" as const, participantId: "h3", at: now.toISOString() };

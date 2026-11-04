@@ -23,6 +23,8 @@ export interface ConciergeContext {
   firstTime: boolean;
   /** 今朝の先生にコツを教えられるか（お願いする側で、2週間に1回まで） */
   tipOk: boolean;
+  /** 夜（18時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
+  night?: boolean;
 }
 
 export type OptionAction = { kind: "uri"; path: string } | { kind: "postback"; data: string };
@@ -147,7 +149,9 @@ export function buildOptions(ctx: ConciergeContext): ConciergeOption[] {
     list.push(O.cheer());
     if (!ctx.safety && open("own_house")) list.push(O.own_house(ctx));
   }
-  return list.slice(0, 5);
+  // 夜は、よその家・道の見回り・人手不足の家には誘わない（自分の家と家の中だけ）
+  const nightOk: OptionId[] = ["rollcall", "own_house", "online", "tip", "cheer"];
+  return (ctx.night ? list.filter((o) => nightOk.includes(o.id)) : list).slice(0, 5);
 }
 
 /** 言葉の中の、体・病気のことば（体調は判断しない。記録にも残さない） */

@@ -174,7 +174,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
 
       {cards.length === 0 && (
         <p className="rounded-2xl bg-card p-4 text-base shadow-sm ring-1 ring-ink/10">
-          雪の朝に動くと、その朝だけのカードがここに増えていきます。二度と同じカードは発行されません。
+          雪の朝に動くと、その時だけのカードがここに増えていきます。二度と同じカードは発行されません。
         </p>
       )}
 

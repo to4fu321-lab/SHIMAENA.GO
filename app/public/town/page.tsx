@@ -162,7 +162,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string }> 
         <ul className="list-disc space-y-1 pl-5">
           <li>雪の朝、LINE に1問だけの点呼が届きます。</li>
           <li>町内の3チームが、ひとり暮らしの家の雪を10分単位でどけます。</li>
-          <li>動いた朝だけのカードが届きます。お金には換えません。</li>
+          <li>動いた時だけのカードが届きます。お金には換えません。</li>
         </ul>
         <h3 className="text-lg font-bold">1人でも「ソロ出動」</h3>
         <p>仲間がいない日も、見回り・雪の報告・自分の家の雪かきなど 3〜10分のミッションで参加できます。羽ポイントとカードがたまり、地図に足あとが残ります。</p>

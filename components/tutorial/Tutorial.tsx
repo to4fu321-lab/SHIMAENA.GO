@@ -399,7 +399,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
       </div>
       {photo ? (
         <Hint>
-          町の地図のマスが<b>チームの色</b>に塗られて、その朝だけの<b>カード</b>が届きます。
+          町の地図のマスが<b>チームの色</b>に塗られて、その時だけの<b>カード</b>が届きます。
         </Hint>
       ) : (
         <button type="button" onClick={() => go(5)} className="min-h-11 shrink-0 text-base font-bold underline">

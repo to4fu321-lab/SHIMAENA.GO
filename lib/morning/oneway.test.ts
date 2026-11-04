@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
 import { sniffImageType } from "../image";
 import { handleEvent } from "../line/handle";
 import type { LineEvent, TextMessage } from "../line/types";
@@ -8,6 +8,13 @@ import { DEMO_DATE, fillAnswers } from "./flow";
 import { announce, completeWithPhoto, plan, reportShort, ring, setGoing } from "./ops";
 import { loadMorning, saveMorning } from "./store";
 import { loadRoster } from "./roster";
+
+// 夜（18時〜6時）はよその家に行かない決まり（spec v1.8）。テストは実際の時計に左右されないよう、同じ日の昼 10時（日本時間）に固定する
+beforeEach(() => {
+  const day = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date(`${day}T10:00:00+09:00`) });
+});
+afterEach(() => vi.useRealTimers());
 
 // 吹き出しが分かれても読めるように、全部の文をつなげて調べる
 const t = (m: { type: string } | { type: string }[]) => [m].flat().map((x) => (x as TextMessage).text ?? "").join("\n");

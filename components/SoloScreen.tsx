@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { fiveMinutesAction } from "@/app/map/actions";
 import { completeSoloAction, type SoloActionResult } from "@/app/solo/actions";
 import { soloTeamPoints, type SoloMission } from "@/lib/solo/missions";
+import { allowedAtNight, NIGHT_TEXT } from "@/lib/night";
 import type { SoloClearSummary, SoloStatus } from "@/lib/solo/ops";
 import type { Role } from "@/lib/types";
 import { shrink } from "./shrink";
@@ -29,6 +30,7 @@ export default function SoloScreen({
   shortHouses,
   pickFive,
   focus,
+  night = false,
   q,
   shareOptions = [],
 }: {
@@ -44,6 +46,8 @@ export default function SoloScreen({
   pickFive: boolean;
   /** LINE のコンシェルジュがすすめたミッション（最初に大きく出す） */
   focus?: string;
+  /** 夜（18時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
+  night?: boolean;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
   shareOptions?: ShareOption[];
@@ -91,11 +95,13 @@ export default function SoloScreen({
     });
 
   const list = missions.filter((m) => m.kind !== "help_house");
+  /** 今この時間にしてよいか（夜は自分の家と家の中だけ。spec v1.8 防犯） */
+  const okNow = (m: SoloMission) => !night || allowedAtNight(m.kind, m.onsite);
   const house = missions.find((m) => m.kind === "help_house");
   const firstIndex = () => {
     const f = list.findIndex((m) => m.kind === focus);
     if (f >= 0) return f;
-    const open = list.findIndex((m) => !status.doneToday.includes(m.kind));
+    const open = list.findIndex((m) => !status.doneToday.includes(m.kind) && okNow(m));
     return open >= 0 ? open : 0;
   };
   const [active, setActive] = useState(firstIndex);
@@ -219,7 +225,12 @@ export default function SoloScreen({
                     {tp !== null ? `チーム+${tp}点` : "ごほうび"}
                   </p>
                 </div>
-                {done ? (
+                {!done && !okNow(m) ? (
+                  <p className="mt-auto rounded-2xl bg-warm px-3 py-2 text-base" role="note">
+                    🌙 {NIGHT_TEXT.short}
+                    {NIGHT_TEXT.why}
+                  </p>
+                ) : done ? (
                   <button
                     tabIndex={i === active ? 0 : -1}
                     onClick={() => goTo(Math.min(i + 1, list.length - 1))}

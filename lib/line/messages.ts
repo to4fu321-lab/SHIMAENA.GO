@@ -5,6 +5,7 @@
 //       付けるのは3文に1つくらい（あいさつ・了解・完了など気持ちが動くところ）。質問・お願い・注意は普通の言い方。
 //       お願いする側・家族・見守り・体調にふれる文は、いつもの丁寧な言い方のまま。
 // v1.5: 質問への答えは吹き出しの中の大きなボタン（choiceCard）、「どこに・何時」は大きな画像の行き先カード（placeCard）。
+import { NIGHT_TEXT } from "../night";
 import { MENU } from "../brand";
 import { teamAnnounceText, teamImageMessage } from "../team-announce";
 import type { TeamTerm } from "../team-theme";
@@ -386,6 +387,8 @@ export const MSG = {
     card(`「${label}」${minutes}分。\nお願いできますか？`, [choose("👟 行く", `help:go=${missionId}`), choose("やめておく", "help:no", "soft"), mapChoice]),
   ],
   /** 近くに仕事がないとき。無駄足や失敗と感じないように */
+  /** 夜の防犯ルール（spec v1.8）: よその家には行かず、自分の家の雪かきへ */
+  nightOwnHouseOnly: () => bubbles([NIGHT_TEXT.short, NIGHT_TEXT.why], [open("自分の家の雪かきへ", "/solo?focus=own_house")]),
   nowNothing: () =>
     bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる10分（見回りなど）もあります。"], [B.solo, B.map]),
   /** お願いする側の人が「出動する」を押したとき */

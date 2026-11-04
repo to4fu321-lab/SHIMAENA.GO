@@ -1,6 +1,7 @@
 // ソロ出動の「本番の操作」（spec v1.3）。台帳を読み、ミッションを完了にして、羽・ボーナス・ひとこと・カードを付ける。
 // v1.7: チームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2・オンライン +1〔1日3点まで〕、1人1日 15点まで。lib/solo/team-points.ts）。
 //家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
+import { allowedAtNight, isNight, nightRefusal } from "../night";
 import { randomBytes } from "node:crypto";
 import { issueSoloCard } from "../cards/issue";
 import { cellKey } from "../cells";
@@ -48,7 +49,7 @@ export interface SoloClearSummary {
 
 export type SoloResult =
   | { ok: true; summary: SoloClearSummary }
-  | { ok: false; reason: "not_registered" | "unknown" | "already" | "help_house"; text: string };
+  | { ok: false; reason: "not_registered" | "unknown" | "already" | "help_house" | "night"; text: string };
 
 /**
  * ソロミッションを1つ完了にする。同じ種類は1日1回。写真は任意（Claude が確認、判断できなくても報告として受け付ける）。
@@ -65,6 +66,10 @@ export async function completeSolo(
   if (!mission) return { ok: false, reason: "unknown", text: "そのミッションはありません。" };
   if (mission.kind === "help_house") {
     return { ok: false, reason: "help_house", text: "家の雪かきは、地図の「10分だけ参加」から加わって、写真で完了にしてください。" };
+  }
+  // 夜（18時〜6時）は、自分の家と家の中でできることだけ（spec v1.8 防犯）
+  if (isNight(opts.now) && !allowedAtNight(mission.kind, mission.onsite)) {
+    return { ok: false, reason: "night", text: nightRefusal() };
   }
   const record = await loadMorning();
   const today = appToday(record, opts.now);

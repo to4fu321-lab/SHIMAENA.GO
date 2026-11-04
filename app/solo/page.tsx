@@ -1,3 +1,4 @@
+import { isNight } from "@/lib/night";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -89,6 +90,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         canHelpHouse={canHelpHouse}
         shortHouses={shorts.length}
         pickFive={pick === "10" || pick === "5"}
+        night={isNight()}
         focus={SOLO_MISSIONS.some((m) => m.kind === focus && m.kind !== "help_house") ? focus : undefined}
         q={q}
         shareOptions={shareOptions}
