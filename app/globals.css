@@ -313,10 +313,18 @@ body {
   90% { transform: translate(0, -10px) rotate(-4deg) scale(1); }
   100% { transform: translate(0, 0) rotate(0); }
 }
+/* 応援が届いたとき: 隊長が空の向こうから飛んでくる */
+.captain-arrive { animation: captain-arrive 2.2s cubic-bezier(.3,.8,.4,1) both; }
+@keyframes captain-arrive {
+  0% { transform: translate(-260%, -150%) rotate(-15deg) scale(0.5); }
+  60% { transform: translate(-20%, -30%) rotate(8deg) scale(1.05); }
+  80% { transform: translate(0, 6px) scale(1.06, 0.92); }
+  100% { transform: translate(0, 0); }
+}
 .speech-away { animation: speech-pop 0.3s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sky-flake, .sky-star, .speech-pop, .captain-idle, .captain-fly { animation: none; }
+  .sky-flake, .sky-star, .speech-pop, .captain-idle, .captain-fly, .captain-arrive { animation: none; }
   .sky-flake { display: none; }
 }
 

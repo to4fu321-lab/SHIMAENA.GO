@@ -38,20 +38,34 @@ export function parseSkyParam(v: string | undefined): Sky | undefined {
   return { time: t as TimeOfDay, weather: w as Weather };
 }
 
+export interface CurrentWeather {
+  code?: number;
+  tempC?: number;
+  windMs?: number;
+}
+
 /** いまの天気コード。15分ごとに取り直す。失敗したら undefined（画面は止めない） */
 export async function currentWeatherCode(center: LatLng): Promise<number | undefined> {
+  return (await currentWeather(center)).code;
+}
+
+/** いまの天気・気温・風（休みのひとこと用）。15分ごとに取り直す。失敗したら空 */
+export async function currentWeather(center: LatLng): Promise<CurrentWeather> {
   try {
     const url = new URL("https://api.open-meteo.com/v1/forecast");
     url.searchParams.set("latitude", String(center[0]));
     url.searchParams.set("longitude", String(center[1]));
-    url.searchParams.set("current", "weather_code");
+    url.searchParams.set("current", "weather_code,temperature_2m,wind_speed_10m");
+    url.searchParams.set("wind_speed_unit", "ms");
     url.searchParams.set("timezone", "Asia/Tokyo");
     const res = await fetch(url, { next: { revalidate: 900 }, signal: AbortSignal.timeout(2500) });
-    if (!res.ok) return undefined;
-    const json = (await res.json()) as { current?: { weather_code?: number } };
-    return typeof json.current?.weather_code === "number" ? json.current.weather_code : undefined;
+    if (!res.ok) return {};
+    const json = (await res.json()) as { current?: { weather_code?: number; temperature_2m?: number; wind_speed_10m?: number } };
+    const c = json.current ?? {};
+    const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+    return { code: num(c.weather_code), tempC: num(c.temperature_2m), windMs: num(c.wind_speed_10m) };
   } catch {
-    return undefined;
+    return {};
   }
 }
 

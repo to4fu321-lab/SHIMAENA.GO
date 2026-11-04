@@ -19,7 +19,11 @@ import { captainLine, captainRotation, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
 import { soloStatus } from "@/lib/solo/ops";
 import { jstMinutes } from "@/lib/jst";
-import { currentWeatherCode, parseSkyParam, timeOfDay, weatherOf } from "@/lib/sky";
+import { currentWeather, parseSkyParam, timeOfDay, weatherOf } from "@/lib/sky";
+import HomeCheerButtons from "@/components/HomeCheerButtons";
+import { cheerButtons, myCheerNews } from "@/lib/solo/cheer-ops";
+import { arrivalLines } from "@/lib/solo/home-cheer";
+import { restLine } from "@/lib/claude/rest";
 import { TOWN } from "@/lib/town";
 import { repo } from "@/lib/repo";
 import { appToday } from "@/lib/morning/today";
@@ -37,15 +41,15 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
   const { as, sky: skyParam } = await searchParams;
-  const [record, roster, cookieStore, weatherCode] = await Promise.all([
+  const [record, roster, cookieStore, wx] = await Promise.all([
     loadMorning(),
     loadRoster(),
     cookies(),
-    parseSkyParam(skyParam) ? Promise.resolve(undefined) : currentWeatherCode(TOWN.center),
+    parseSkyParam(skyParam) ? Promise.resolve({} as Awaited<ReturnType<typeof currentWeather>>) : currentWeather(TOWN.center),
   ]);
   const m = record.morning;
   // 背景の空: いまの天気と時間（デモでは ?sky=night-snow のように上書きできる）
-  const sky = parseSkyParam(skyParam) ?? { time: timeOfDay(jstMinutes()), weather: weatherOf(weatherCode, m.rollcall.status === "closed" ? 0 : m.rollcall.forecastCm) };
+  const sky = parseSkyParam(skyParam) ?? { time: timeOfDay(jstMinutes()), weather: weatherOf(wx.code, m.rollcall.status === "closed" ? 0 : m.rollcall.forecastCm) };
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
@@ -90,7 +94,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   );
   const safety = rc.status !== "closed" ? safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs }) : undefined;
   const night = !open;
-  // いま自宅で雪かき中の人（ソロの「いまから始める」、リアルタイム）。夜はこれだけを出す
+  // いま自宅を雪かき中の人（ソロの自分の家の「出撃する！」、リアルタイム）。夜はこれだけを出す
   const homeNow = countHomeNow(record, new Date());
   // 夜（19時〜6時）は、よその家の数字（あと何軒）の代わりに、今日 自分の家の雪かきを終えた人の数も
   const homeToday = night
@@ -99,6 +103,21 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         .then((ls) => new Set(ls.filter((l) => l.kind === "own_house").map((l) => l.participantId)).size)
         .catch(() => 0)
     : 0;
+  // 応援・おつかれさま（11/4）: 送るボタンの数と、自分に届いた知らせ（隊長が飛んできて話す）
+  const now = new Date();
+  const [cheerBtn, news] = me ? await Promise.all([cheerButtons(me.id, now).catch(() => undefined), myCheerNews(me.id, now).catch(() => undefined)]) : [undefined, undefined];
+  // 休みのひとこと（AI）: いまの天気と、今日この人が動いた回数から
+  const myHouseDone = me ? m.sorties.filter((x) => x.participantId === me.id && x.status === "done" && x.completedAt && appToday(record) === m.rollcall.date).length : 0;
+  const rest = me
+    ? await restLine(appToday(record), {
+        todayCount: (st?.doneToday.length ?? 0) + myHouseDone,
+        weather: sky.weather,
+        tempC: wx.tempC,
+        windMs: wx.windMs,
+        timeOfDay: sky.time,
+        snowCm: rc.status !== "closed" ? rc.forecastCm : undefined,
+      }).catch(() => undefined)
+    : undefined;
   const captainLines = captainRotation({
     main: captain,
     safety: safety && safety !== captain ? safety : undefined,
@@ -113,6 +132,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     dokayuki: bonuses.includes("ドカ雪+5"),
     teamName: myTeam?.team.name,
   });
+  if (rest) captainLines.splice(1, 0, rest);
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
@@ -161,7 +181,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       <div className="relative min-h-10 flex-1 overflow-hidden">
         <SkyBackdrop sky={sky} />
         {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
-        <CaptainStage lines={captainLines} team={myTeam?.team.id} />
+        <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} />
       </div>
 
       <main className="relative -mt-4 shrink-0 space-y-2.5 px-4 pb-3 short:space-y-2 short:pb-2">
@@ -214,7 +234,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               {night ? (
                 <span className="flex items-center gap-1 whitespace-nowrap">
                   <span className="text-xs leading-tight">
-                    いま自宅で
+                    自宅を
                     <br />
                     雪かき中
                   </span>
@@ -244,6 +264,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               )}
             </p>
           </div>
+          {me && cheerBtn && <HomeCheerButtons viewerId={me.id} {...cheerBtn} />}
         </section>
 
         {/* 出動（いちばん大事なボタン）と、ソロ活動 */}

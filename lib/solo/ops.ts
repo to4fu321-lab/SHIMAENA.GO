@@ -276,7 +276,7 @@ export async function soloStatus(participantId: string, now: Date): Promise<Solo
   };
 }
 
-// ---- いま自宅で雪かき中（11/4）: 「いまから始める」と「クリア！」 ----
+// ---- いま自宅を雪かき中（11/4）: 「いまから始める」と「クリア！」 ----
 
 /** 自分の家の雪かきを「いまから始める」。夜でも自分の家は OK（lib/night.ts） */
 export async function startHomeNow(participantId: string, now: Date): Promise<{ ok: boolean; text: string }> {
@@ -285,7 +285,7 @@ export async function startHomeNow(participantId: string, now: Date): Promise<{ 
   const s = await loadMorning();
   startHome(s, p.id, now);
   await saveMorning(s);
-  return { ok: true, text: "いま自宅で雪かき中。終わったら「クリア！」を押してください。" };
+  return { ok: true, text: "いま自宅を雪かき中。終わったら「クリア！」を押してください。" };
 }
 
 export async function stopHomeNow(participantId: string): Promise<void> {

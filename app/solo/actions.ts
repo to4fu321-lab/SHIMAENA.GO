@@ -37,7 +37,7 @@ export async function completeSoloAction(formData: FormData): Promise<SoloAction
   });
 }
 
-/** 自分の家の雪かきを「いまから始める」（ホームの「自宅で雪かき中」に入る） */
+/** 自分の家の雪かきを「いまから始める」（ホームの「自宅を雪かき中」に入る） */
 export async function startHomeAction(formData: FormData): Promise<{ ok: boolean; text: string }> {
   return withStateLock("solo:startHomeAction", async () => {
     const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
@@ -48,7 +48,7 @@ export async function startHomeAction(formData: FormData): Promise<{ ok: boolean
   });
 }
 
-/** 自分の家の雪かきを途中でやめた（「いま自宅で雪かき中」から抜ける） */
+/** 自分の家の雪かきを途中でやめた（「いま自宅を雪かき中」から抜ける） */
 export async function stopHomeAction(formData: FormData): Promise<{ ok: boolean }> {
   return withStateLock("solo:stopHomeAction", async () => {
     const id = await trustedViewer(String(formData.get("viewerId") ?? ""));

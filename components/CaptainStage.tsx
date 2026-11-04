@@ -3,16 +3,43 @@
 // タップすると空へ飛んでいって、反対側から戻ってくる（戻ったら次のことばへ）。30秒ごとに自分でも飛ぶ。
 import { useCallback, useEffect, useRef, useState } from "react";
 import Mascot from "@/components/Mascot";
+import { cheersSeenAction } from "@/app/home-actions";
 import type { TeamId } from "@/lib/types";
 
 const TALK_MS = 7000;
 const FLY_MS = 2600;
 const AUTO_FLY_MS = 30000;
 
-export default function CaptainStage({ lines, team }: { lines: string[]; team?: TeamId }) {
+export default function CaptainStage({
+  lines: base,
+  team,
+  arrival = [],
+  viewerId,
+}: {
+  lines: string[];
+  team?: TeamId;
+  /** 応援・おつかれさまが届いていたら、隊長が飛んできて先に話す（聞いたらしるしを付ける） */
+  arrival?: string[];
+  viewerId?: string;
+}) {
+  // 飛んできたときの文は、最初に開いたときのものを使い続ける（8秒ごとの更新で消えないように）
+  const [arrived] = useState(arrival);
+  const lines = [...arrived, ...base];
   const [i, setI] = useState(0);
   const [flying, setFlying] = useState(false);
+  const [arriving, setArriving] = useState(arrived.length > 0);
   const flyingRef = useRef(false);
+
+  useEffect(() => {
+    if (arrived.length === 0) return;
+    const t = window.setTimeout(() => setArriving(false), 2200);
+    if (viewerId) {
+      const fd = new FormData();
+      fd.set("viewerId", viewerId);
+      void cheersSeenAction(fd).catch(() => {});
+    }
+    return () => window.clearTimeout(t);
+  }, [arrived.length, viewerId]);
 
   const next = useCallback(() => setI((n) => (n + 1) % Math.max(1, lines.length)), [lines.length]);
 
@@ -44,10 +71,10 @@ export default function CaptainStage({ lines, team }: { lines: string[]; team?: 
     <>
       {/* 吹き出し（しっぽは隊長の口元へ）。ことばが変わるたびにふわっと出る */}
       <div className="absolute left-3 top-2 z-10 max-w-[78%] short:top-1" aria-live="polite">
-        <div key={`${i}-${flying}`} className={flying ? "speech-away" : "speech-pop"}>
+        <div key={`${i}-${flying}-${arriving}`} className={flying ? "speech-away" : "speech-pop"}>
           <p className="relative rounded-3xl bg-card px-4 py-2 text-lg font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
             <span className="block text-sm font-bold text-lamp-deep">シマエナ隊長</span>
-            {flying ? "いってくるしま〜！" : line}
+            {flying ? "いってくるしま〜！" : arriving ? "おーい！知らせがあるえな〜！" : line}
           </p>
           <svg viewBox="0 0 40 30" className="absolute -bottom-[22px] right-[14%] h-[26px] w-9" aria-hidden="true">
             <path d="M2 0 C10 10 24 22 38 28 C30 18 26 8 26 0 Z" fill="var(--card)" stroke="rgba(41,68,92,.15)" strokeWidth="2" strokeLinejoin="round" />
@@ -68,7 +95,7 @@ export default function CaptainStage({ lines, team }: { lines: string[]; team?: 
         aria-label="シマエナ隊長（タップすると飛びます）"
         className="absolute bottom-[17%] right-[10%] h-[66%] max-h-40 cursor-pointer"
       >
-        <span className={`block h-full ${flying ? "captain-fly" : "captain-idle"}`}>
+        <span className={`block h-full ${flying ? "captain-fly" : arriving ? "captain-arrive" : "captain-idle"}`}>
           <Mascot team={team} className="h-full w-auto drop-shadow-md" />
         </span>
       </button>

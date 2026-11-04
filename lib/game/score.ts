@@ -17,6 +17,7 @@ export const POINTS = {
   solo_onsite: 3, // v1.7: ソロの見回り・報告など（10分・現地）
   solo_photo: 2, // v1.7: ソロの写真を Claude が確認できた
   solo_online: 1, // v1.7: オンライン（アプリを開いて地図を見る・報告する）
+  home_cheer: 1, // 11/4: 応援・おつかれさまを10人分受け取るごとに +1（1人 0.1点）
 } as const satisfies Record<ScoreReason, number>;
 
 /** ソロ出動からチームに入る点の、1人1日の上限（spec v1.7） */

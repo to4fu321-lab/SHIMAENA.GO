@@ -3,7 +3,7 @@ import { countHomeNow, endHome, isHomeNow, startHome } from "./home-now";
 
 const t = (hm: string) => new Date(`2026-12-14T${hm}:00+09:00`);
 
-describe("いま自宅で雪かき中", () => {
+describe("いま自宅を雪かき中", () => {
   it("始めると数え、クリアで抜ける。同じ人は1人", () => {
     const rec: { homeNow?: Record<string, string> } = {};
     startHome(rec, "a", t("20:00"));

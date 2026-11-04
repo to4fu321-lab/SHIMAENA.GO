@@ -76,7 +76,7 @@ export interface CaptainScene {
   night: boolean;
   /** 夜: 今日 自分の家の雪かきをした人の数 */
   homeToday?: number;
-  /** いま自宅で雪かき中の人数（リアルタイム） */
+  /** いま自宅を雪かき中の人数（リアルタイム） */
   homeNow?: number;
   morningBonus: boolean;
   dokayuki: boolean;
@@ -92,7 +92,7 @@ function tenMinutes(line: string): string {
 export function captainRotation(s: CaptainScene): string[] {
   const lines = [tenMinutes(s.main)];
   if (s.night) lines.push("夜は自分の家の雪かきだけにしようね。");
-  if (s.night && s.homeNow) lines.push(`いま${s.homeNow}人が、自分の家で雪かき中えな〜！`);
+  if (s.night && s.homeNow) lines.push(`いま${s.homeNow}人が、自宅を雪かき中えな〜！`);
   if (s.night && s.homeToday) lines.push(`今日は${s.homeToday}人が、自分の家の雪かきをしたしま〜！`);
   if (s.snowCm && s.snowCm > 0) lines.push(`今日の雪は${s.snowCm}cm${s.snowName ? `、${s.snowName}` : ""}だしま〜！`);
   if (!s.night && s.active > 0) lines.push(`いま${s.active}人が雪かき中えな〜！`);

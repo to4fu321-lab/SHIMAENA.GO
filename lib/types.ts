@@ -212,7 +212,8 @@ export type ScoreReason =
   | "solo_home" // 自分の家の雪かき 10分 +5
   | "solo_onsite" // 見回り・報告など現地 10分 +3
   | "solo_photo" // 写真を Claude が確認できた +2
-  | "solo_online"; // オンライン（アプリで地図を見る・報告）+1、1人1日 3点まで
+  | "solo_online" // オンライン（アプリで地図を見る・報告）+1、1人1日 3点まで
+  | "home_cheer"; // 11/4: 自宅の雪かきへの応援・おつかれさま。1人 0.1点（10人で +1点）、1人1日 2点まで
 
 export interface ScoreEvent {
   id: string;

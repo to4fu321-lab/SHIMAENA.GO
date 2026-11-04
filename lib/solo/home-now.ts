@@ -26,7 +26,7 @@ export function endHome(rec: Rec, participantId: string): boolean {
   return true;
 }
 
-/** いま自宅で雪かき中の人数 */
+/** いま自宅を雪かき中の人数 */
 export function countHomeNow(rec: Rec, now: Date): number {
   return Object.values(rec.homeNow ?? {}).filter((at) => fresh(at, now)).length;
 }
@@ -34,4 +34,11 @@ export function countHomeNow(rec: Rec, now: Date): number {
 export function isHomeNow(rec: Rec, participantId: string, now: Date): boolean {
   const at = rec.homeNow?.[participantId];
   return Boolean(at && fresh(at, now));
+}
+
+/** いま自宅を雪かき中の人の ID */
+export function homeNowIds(rec: Rec, now: Date): string[] {
+  return Object.entries(rec.homeNow ?? {})
+    .filter(([, at]) => fresh(at, now))
+    .map(([id]) => id);
 }

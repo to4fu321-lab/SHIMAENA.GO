@@ -53,6 +53,8 @@ export interface MorningRecord {
   invites?: Record<string, string[]>;
   /** いま自分の家の雪かきをしている人（参加者 ID → 始めた時刻 ISO）。lib/solo/home-now.ts */
   homeNow?: Record<string, string>;
+  /** 自宅の雪かきへの応援・おつかれさま（その日だけ）。lib/solo/home-cheer.ts */
+  homeCheers?: import("../solo/home-cheer").HomeCheers;
 }
 
 export interface ThanksRecord {

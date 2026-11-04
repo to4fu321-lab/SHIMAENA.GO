@@ -21,6 +21,7 @@ export const REASON_LABEL: Record<ScoreReason, string> = {
   solo_onsite: "ソロ: 現地の活動",
   solo_photo: "ソロ: 写真で確認",
   solo_online: "ソロ: アプリで参加",
+  home_cheer: "応援・おつかれさま",
 };
 
 export interface ClearItem {

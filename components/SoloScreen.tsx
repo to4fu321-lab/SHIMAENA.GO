@@ -98,7 +98,7 @@ export default function SoloScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 自分の家の雪かき: 出撃でホームの「いま自宅で雪かき中」に入り、やめたら抜ける（クリアでも抜ける）
+  // 自分の家の雪かき: 出撃でホームの「いま自宅を雪かき中」に入り、やめたら抜ける（クリアでも抜ける）
   const homeSignal = (kind: string, on: boolean) => {
     if (kind !== "own_house") return;
     const fd = new FormData();
