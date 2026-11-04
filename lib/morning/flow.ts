@@ -183,6 +183,7 @@ export function applyPlan(s: MorningRecord, roster: Roster, plan: Plan): void {
       status: m.status,
       startAt: iso(s, 7 * 60),
       reason: m.reason,
+      ...(s.answers.find((a) => a.participantId === r.id)?.request ? { request: s.answers.find((a) => a.participantId === r.id)!.request } : {}),
     });
   }
   s.morning.missions = missions;

@@ -5,6 +5,7 @@ import { judgeLevel } from "../claude/level";
 import { assignTeam, makeLinkCode } from "../game/team";
 import { sniffImageType } from "../image";
 import {
+  answerByWords,
   answerRollcall,
   completeManually,
   completeWithPhoto,
@@ -209,6 +210,17 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     }
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
+  }
+
+  // ことばで答える・頼む（spec v1.6）: 登録の途中でなければ、点呼の時間のふつうの文を答えとして読む
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && parseText(ev.message.text).kind === "text" && !(await r.getSession(lineUserId))) {
+    const messages = await answerByWords(lineUserId, ev.message.text);
+    if (messages) {
+      if (ev.replyToken) await reply(ev.replyToken, messages);
+      await planIfDue();
+      await escalateHelpIfDue();
+      return;
+    }
   }
 
   let input = toInput(ev);

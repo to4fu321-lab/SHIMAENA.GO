@@ -6,6 +6,7 @@ import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } fro
 import { planMorning } from "../claude/commander";
 import { checkPhoto, decidePhoto, SNOW_TYPE_LABEL, type PhotoInput } from "../claude/photo";
 import { weeklyText } from "../claude/weekly";
+import { readWords, requestLabel } from "../claude/words";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstMinutes, jstIso } from "../jst";
@@ -17,7 +18,7 @@ import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
-import type { HelperAnswer, Mission, Participant, PhotoCheck, RequesterAnswer, Role, Sortie } from "../types";
+import type { HelperAnswer, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
 import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
 import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
@@ -124,6 +125,41 @@ export async function answerRollcall(lineUserId: string, data: string, now = new
   return MSG.rollcallThanks(value);
 }
 
+/**
+ * ことばで答える・頼む（spec v1.6）: 点呼の時間に送られたふつうの文を、点呼の答えと段取りにする。
+ * 点呼の時間でなければ null（ふだんの案内に回す）。
+ */
+export async function answerByWords(lineUserId: string, text: string, now = new Date()): Promise<LineMessage[] | null> {
+  const p = await repo().findParticipantByLineUserId(lineUserId);
+  if (!p || (p.role !== "requester" && p.role !== "helper")) return null;
+  const s0 = await loadMorning();
+  const status = s0.morning.rollcall.status;
+  if (status !== "open" && status !== "planned") return null;
+  const w = await readWords({ text, role: p.role });
+  if (w.answer === "unknown") {
+    const question = p.role === "requester" ? MSG.rollcallRequester(s0.morning.rollcall.forecastCm, s0.morning.rollcall.snowName) : MSG.rollcallHelper(s0.morning.rollcall.forecastCm, s0.morning.rollcall.snowName);
+    return [...MSG.wordsAskBack(w.askBack ?? "もう一度、下のボタンで教えてください。"), question.at(-1)!];
+  }
+  const replyMsgs = await answerRollcall(lineUserId, `rc:ans=${w.answer}`, now);
+  const request: RequestNote = {
+    ...(w.deadline ? { deadline: w.deadline } : {}),
+    ...(w.area ? { area: w.area } : {}),
+    ...(w.note ? { note: w.note } : {}),
+  };
+  const hasRequest = p.role === "requester" && w.answer !== "yes" && Object.keys(request).length > 0;
+  if (hasRequest) {
+    const s = await loadMorning();
+    const a = s.answers.find((x) => x.participantId === p.id);
+    if (a) a.request = request;
+    const base = (await loadRoster()).bases.find((b) => b.requesterId === p.id);
+    const m = base && s.morning.missions.find((x) => x.baseId === base.id);
+    if (m) m.request = request;
+    s.log.push(`${p.nickname}さんがことばで依頼（${requestLabel(request) || request.note}）`);
+    await saveMorning(s);
+  }
+  return [...MSG.wordsHeard(p.role, w.answer, hasRequest ? requestLabel(request) : ""), ...replyMsgs];
+}
+
 /** 6:40 の作戦: 司令官（Claude かモック）→ ミッションと出撃 → LINE で配信 */
 export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   if (!(await claimPlanning())) return { record: await loadMorning(), sent: 0 };
@@ -215,7 +251,7 @@ export async function setGoing(participantId: string, go: boolean, now = new Dat
     if (mission.status === "assigned") mission.status = "in_progress";
     s.log.push(`${who}さんが拠点${number}へ「行く」`);
     await saveMorning(s);
-    return MSG.goConfirmed(number, routeTo(roster, mission.baseId, participantId));
+    return MSG.goConfirmed(number, routeTo(roster, mission.baseId, participantId), mission.request);
   }
   s.morning.sorties = s.morning.sorties.filter((x) => x.id !== sortie.id);
   const going = s.morning.sorties.filter((x) => x.missionId === mission.id).length;
@@ -604,7 +640,7 @@ export async function joinMission(
   if (!m || !p?.teamId || m.status === "done") return MSG.noSortie();
   const number = baseNumberOf(roster, m.baseId);
   if (s.morning.sorties.some((x) => x.missionId === m.id && x.participantId === p.id && x.status === "going")) {
-    return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id));
+    return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id), m.request);
   }
   const enough = missingPeople(s, m) <= 0;
   if (enough && !opts.extra) return MSG.helpAlreadyEnough(number);
@@ -624,7 +660,7 @@ export async function joinMission(
     `${p.nickname}さんが${enough ? "偵察・補給で" : "ヘルプで"}拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`,
   );
   await saveMorning(s);
-  return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id));
+  return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id), m.request);
 }
 
 export interface JoinNearbyResult {

@@ -87,6 +87,15 @@ export interface RollcallAnswer {
   participantId: string;
   answer: RequesterAnswer | HelperAnswer;
   answeredAt: string; // ISO
+  /** ことばで頼んだときの段取り（spec v1.6）。原文は残さない */
+  request?: RequestNote;
+}
+
+/** ことばで頼まれた段取り（spec v1.6）: 締め切り・範囲・手伝う人へのひとこと */
+export interface RequestNote {
+  deadline?: string; // "09:00"
+  area?: "entrance" | "garage" | "road";
+  note?: string; // 20字まで。名前・体のことは入れない
 }
 
 // ---- ミッションと小タスク ----
@@ -120,6 +129,8 @@ export interface Mission {
   reason?: string;
   /** この家でどけた雪の目安 kg（カード発行時に Claude が推定、v1.2）。町内の合計に使う */
   snowKg?: number;
+  /** お願いする人がことばで伝えた段取り（spec v1.6） */
+  request?: RequestNote;
 }
 
 // ---- 出撃 ----

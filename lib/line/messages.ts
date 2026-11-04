@@ -11,6 +11,8 @@ import type { TeamTerm } from "../team-theme";
 import type { TeamId } from "../types";
 import { liffUrl } from "../url";
 import { captainCard, choiceCard, placeCard, type CardAction, type Choice, type Tone } from "./flex";
+import { AREA_LABEL } from "../request-note";
+import type { RequestNote } from "../types";
 import type { FlexMessage, LineMessage, QuickReplyAction, TextMessage } from "./types";
 
 type Button = QuickReplyAction;
@@ -115,6 +117,13 @@ const hello = (forecastCm?: number, snowName?: string): LineMessage[] =>
           lines: ["おはようだしま〜！☃️", snowName ? `今朝は雪${forecastCm}cm、相手は『${snowName}』です。` : `今朝は雪${forecastCm}cmです。`],
         }),
       ];
+
+/** 行き先カードの下の1行: ことばの依頼の段取り（9:00 まで・玄関前／ひとこと）か、ふだんの一言 */
+function placeNote(r?: RequestNote): string {
+  const head = [r?.deadline && `${r.deadline} まで`, r?.area && AREA_LABEL[r.area]].filter(Boolean).join("・");
+  const parts = [head && `お願い: ${head}`, r?.note].filter(Boolean);
+  return parts.length > 0 ? `${parts.join("。")}。足元に気をつけて。` : "5分でも助かります。足元に気をつけて。";
+}
 
 const names = (ns: string[]) => ns.map((n) => `${n}さん`).join("、");
 
@@ -232,6 +241,14 @@ export const MSG = {
           : answer === "0"
             ? bubbles(["わかりました。今朝はゆっくり休んでください。", "またの朝に、よろしくしま〜！"])
             : bubbles(["ありがとうしま〜！", "6:40 に、行き先をお知らせします。"]),
+  /** ことばの答えを受け取ったとき（spec v1.6）。段取りがあれば読み取った内容を返して確かめてもらう */
+  wordsHeard: (role: "requester" | "helper", answer: string, label: string) =>
+    role === "requester" && label
+      ? bubbles([`「${label}」で受け付けました。手伝う人に伝えます。`])
+      : role === "requester" && answer === "together"
+        ? bubbles(["「一緒なら」で受け付けました。"])
+        : [],
+  wordsAskBack: (q: string) => bubbles([q]),
   rollcallClosed: () => bubbles(["いまは点呼の時間ではありません。", "雪の朝 6:30 に、ここへ届きます。"], [B.go, B.map]),
   notRegistered: () => bubbles(["登録がまだです。1分で終わります。"], [B.register, B.guide]),
   planForRequester: (startTime: string, ns: string[]) =>
@@ -241,10 +258,10 @@ export const MSG = {
 
   // ---- 朝の一本道（spec 2: 行く → 写真 → 完了） ----
   planForHelper: (body: string) => [card(body, [choose("👟 行く", "go:yes"), choose("今朝は行けない", "go:no", "soft"), mapChoice])],
-  /** 「行く」のあと: 了解 → 行き先カード（大きな画像・地図・ルート）→ 終わったら写真 */
-  goConfirmed: (baseNumber: number | string, routeUrl?: string) => [
+  /** 「行く」のあと: 了解 → 行き先カード（大きな画像・地図・ルート）→ 終わったら写真。ことばの依頼があれば段取りを先に */
+  goConfirmed: (baseNumber: number | string, routeUrl?: string, request?: RequestNote) => [
     text("了解だしま〜！🙌"),
-    placeCard({ time: "7:00", baseNumber, note: "5分でも助かります。足元に気をつけて。", mapUrl: liffUrl("/map"), routeUrl }),
+    placeCard({ time: "7:00", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl }),
     photoAsk("終わったら、玄関の前から道路の方を写した写真を1枚送ってください。"),
   ],
   goDeclined: () => bubbles(["わかりました。無理しないでくださいね。", "ほかの人に声をかけるしま〜！"]),
@@ -296,9 +313,9 @@ export const MSG = {
     ...bubbles(["助けてほしい家があります。🙏", `拠点${baseNumber}、あと${missing}人です。`]),
     card(`5分でもOK: ${tasks.slice(0, 2).join("／")}\n行けますか？`, [choose("👟 行く（5分でも）", `help:go=${missionId}`), choose("今は無理", "help:no", "soft"), mapChoice]),
   ],
-  helpJoined: (baseNumber: number | string, routeUrl?: string) => [
+  helpJoined: (baseNumber: number | string, routeUrl?: string, request?: RequestNote) => [
     text("ありがとうしま〜！🙌"),
-    placeCard({ time: "now", baseNumber, note: "5分でも助かります。足元に気をつけて。", mapUrl: liffUrl("/map"), routeUrl }),
+    placeCard({ time: "now", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl }),
     photoAsk("終わったら、写真を1枚送ってください。"),
   ],
   helpDeclined: () => bubbles(["わかりました。気にしないでくださいね。", "また次の機会に、よろしくしま〜！"]),

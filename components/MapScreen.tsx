@@ -9,6 +9,7 @@ import { TEAMS } from "@/lib/teams";
 import type { Base, LatLng, Role, TeamId } from "@/lib/types";
 import type { Destination } from "@/lib/nav";
 import type { ClearSummary } from "@/lib/morning/clear";
+import { requestLabel } from "@/lib/request-note";
 import type { ShortHouse } from "@/lib/morning/watch";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
@@ -184,6 +185,12 @@ export default function MapScreen({
                   </a>
                 ))}
               </div>
+            )}
+            {myMission?.request && (
+              <p className="rounded-2xl bg-warm px-3 py-2 text-base ring-2 ring-lamp">
+                <span className="eyebrow block">お願いした人から</span>
+                {[requestLabel(myMission.request), myMission.request.note].filter(Boolean).join("・")}
+              </p>
             )}
             {myMission?.reason && (
               <p className="rounded-2xl bg-warm px-3 py-2 text-base">
