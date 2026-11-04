@@ -11,6 +11,7 @@ import {
   completeWithPhoto,
   escalateHelpIfDue,
   joinMission,
+  askForHelp,
   helpOpenFor,
   offerTaskNow,
   planIfDue,
@@ -167,6 +168,12 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     // 手伝える家がない日は、何分？を聞かずにコンシェルジュのおすすめへ（行き止まりにしない）
     const messages = p && !(await helpOpenFor(p.id)) ? await nothingNow(lineUserId) : MSG.nowAsk();
     if (ev.replyToken) await reply(ev.replyToken, messages);
+    return;
+  }
+  // 雪かきを頼む（spec v1.10）: 6〜19時いつでも
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^(雪かきを頼む|雪かきをたのむ|雪かき頼む)$/.test(ev.message.text.trim())) {
+    if (ev.replyToken) await reply(ev.replyToken, await askForHelp(lineUserId));
+    await planIfDue();
     return;
   }
   // 隊長に相談とよくある質問（spec v1.10）

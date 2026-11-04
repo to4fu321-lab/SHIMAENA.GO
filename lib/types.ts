@@ -144,6 +144,8 @@ export interface Mission {
   request?: RequestNote;
   /** その日の何回目の雪かきか（v1.8）。降り続く日は終わった家がもう一度開く。ないときは1回目 */
   round?: number;
+  /** 「雪かきを頼む」で開いた家（spec v1.10）。600m・1km へは広げない */
+  ask?: boolean;
 }
 
 // ---- 出撃 ----

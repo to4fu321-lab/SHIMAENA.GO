@@ -48,6 +48,14 @@ export function pickHelpTargets(s: MorningRecord, roster: Roster, m: Mission, ri
   return helpTargets(requester.location, roster.participants, ring, exclude).filter((h) => !zero.has(h.id));
 }
 
+/** 「雪かきを頼む」の知らせ先: 300m 以内の手伝える人。頼んだ本人・その日もう3回受けた人は除き、多くて5人（月の通数を守る） */
+export function pickAskTargets(s: MorningRecord, roster: Roster, m: Mission, cap = 3, max = 5): Participant[] {
+  const requesterId = roster.bases.find((b) => b.id === m.baseId)?.requesterId;
+  return pickHelpTargets(s, roster, m, 0)
+    .filter((h) => h.lineUserId && h.id !== requesterId && (s.askSends?.[h.id] ?? 0) < cap)
+    .slice(0, max);
+}
+
 /** 返事なしの家の「声かけ」をお願いする人: 300m 以内の手伝う側（向かっている人は除く） */
 export function pickKnockTargets(s: MorningRecord, roster: Roster, m: Mission): Participant[] {
   const base = roster.bases.find((b) => b.id === m.baseId);

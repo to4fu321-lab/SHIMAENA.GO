@@ -67,6 +67,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   ].filter(Boolean);
   const shorts = listShort(record, roster);
   const planned = m.rollcall.status === "planned";
+  // 「雪かきを頼む」で開いた、まだ終わっていない家（spec v1.10）
+  const asks = m.missions.filter((x) => x.ask && x.status !== "done").length;
   const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
   // 出動する: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && onTeam(me);
@@ -211,9 +213,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <p className="text-lg font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
               ) : (
                 <p className="text-lg font-bold">
-                  {rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
+                  {asks > 0 ? `雪かきのお願い ${asks}軒` : rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
                   <span className="block text-sm">
-                    {rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "朝6:40に、手伝ってほしい家が地図に出ます"}
+                    {asks > 0 ? "地図の赤い家へ。10分だけでも大歓迎" : rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "朝6:40に、手伝ってほしい家が地図に出ます"}
                   </span>
                 </p>
               )}

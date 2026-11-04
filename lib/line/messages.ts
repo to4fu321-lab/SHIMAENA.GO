@@ -404,6 +404,21 @@ export const MSG = {
   nightOwnHouseOnly: () => bubbles([NIGHT_TEXT.short, NIGHT_TEXT.why], [open("自分の家の雪かきへ", "/solo?focus=own_house")]),
   nowNothing: () =>
     bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる10分（見回りなど）もあります。"], [B.solo, B.map]),
+  // ---- 雪かきを頼む（spec v1.10）: お願いする側が 6〜19時いつでも。返事は返信なので通数0（知らせは別） ----
+  askNight: () => bubbles(["夜（19時〜朝6時）は、よその人に雪かきを頼めません。", "明日の朝6時から頼めます。"], [say("隊長に相談")]),
+  askHelperOnly: () =>
+    bubbles(["頼めるのは、お願いする側として登録した家です。", "ご自分の家の雪かきを頼みたいときは、設定から登録を変えられます。"], [open("設定を開く", "/settings"), say("隊長に相談")]),
+  askAlready: (baseNumber: number | string) => bubbles([`拠点${baseNumber}は、もう地図に「雪かき待ち」で出ています。`, "来てくれる人が決まったら、お知らせします。"], [B.map]),
+  askQueued: () => bubbles(["受け付けました。", "雪の朝の作戦（6:40）で、来てくれる人を決めます。"], [B.map]),
+  askOpened: (baseNumber: number | string, sent: number) =>
+    bubbles(
+      [
+        `拠点${baseNumber}を、今日の「雪かき待ち」として地図に出しました。`,
+        sent > 0 ? `近くの ${sent}人に知らせました。` : "近くの人が地図で見つけたら、来てくれます。",
+        "玄関の鍵を開けて、ゆっくり待っていてくださいね。",
+      ],
+      [B.map, say("隊長に相談")],
+    ),
   // ---- 隊長に相談（spec v1.10）: 入口とよくある質問。どれも返信なので通数0 ----
   consultStart: (registered: boolean) =>
     registered
