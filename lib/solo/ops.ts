@@ -5,7 +5,8 @@ import { allowedAtNight, isNight, nightRefusal } from "../night";
 import { randomBytes } from "node:crypto";
 import { issueSoloCard } from "../cards/issue";
 import { cellKey } from "../cells";
-import { checkPhoto, decidePhoto, type PhotoInput } from "../claude/photo";
+import { checkPhoto, decidePhoto, hazardLines, type PhotoInput } from "../claude/photo";
+import { photoFingerprint, photoSeen, rememberPhoto } from "../ops/photo-seen";
 import { soloHitokoto } from "../claude/solo";
 import { scoreSolo, SOLO_TEAM_DAILY_CAP } from "../game/score";
 import { getTeam } from "../teams";
@@ -83,10 +84,26 @@ export async function completeSolo(
   let photoChecked: boolean | undefined;
   let photoNote: string | undefined;
   if (opts.photo && mission.photo === "optional") {
-    const check = await checkPhoto(opts.photo);
-    const outcome = decidePhoto(check);
-    photoChecked = outcome === "done";
-    photoNote = outcome === "done" ? `写真を確認しました。${check.comment}` : `写真では確かめきれませんでしたが、報告として受け付けました。${check.comment}`;
+    // 同じ日に同じ写真なら、Claude を呼ばずに「確認済み」にしない（使い回しを防ぐ。活動の記録はそのまま受け付ける）
+    const fp = photoFingerprint(opts.photo.bytes);
+    if (await photoSeen(today, fp)) {
+      photoChecked = false;
+      photoNote = "前に送られた写真と同じだったので、写真の確認はしませんでした。活動の記録は受け付けました。";
+    } else {
+      const check = await checkPhoto(opts.photo);
+      const outcome = decidePhoto(check);
+      photoChecked = outcome === "done";
+      const seen = check.evidence ? `（Claude の確認: ${check.evidence}）` : "";
+      photoNote =
+        outcome === "done"
+          ? `写真を確認しました${seen}。${check.comment}`
+          : check.unrelated
+            ? `雪の写真ではないようなので、確認済みにはしませんでした。活動の記録は受け付けました。`
+            : `写真では確かめきれませんでしたが、報告として受け付けました。${check.comment}`;
+      const hz = hazardLines(check);
+      if (hz.length > 0) photoNote += ` ⚠️ ${hz.join(" ")}`;
+      if (outcome === "done") await rememberPhoto(today, fp);
+    }
   }
 
   const log: SoloLog = {

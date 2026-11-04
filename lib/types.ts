@@ -154,7 +154,18 @@ export interface PhotoCheck {
   snowType?: SnowType;
   /** 労いの一言（30字、v1.2）。体調の判断はしない */
   care?: string;
+  /** v1.8: 判断の根拠（写真の何を見たか、30字）。完了画面と LINE に出す */
+  evidence?: string;
+  /** v1.8: 通れる幅（narrow=狭い／one=人1人／two=すれ違える／unknown） */
+  width?: PathWidth;
+  /** v1.8: 写真に見えた危ないもの。文は AI ではなく決まった文（HAZARD_TEXT） */
+  hazards?: Hazard[];
+  /** v1.8: 雪かきと関係ない写真（室内・人物だけ・画面のスクショ など） */
+  unrelated?: boolean;
 }
+
+export type PathWidth = "narrow" | "one" | "two" | "unknown";
+export type Hazard = "roof_snow" | "icicle" | "icy_step";
 
 export interface Sortie {
   id: string;

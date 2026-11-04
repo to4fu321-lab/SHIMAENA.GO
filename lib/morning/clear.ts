@@ -1,6 +1,6 @@
 // ミッション完了の「まとめ」（spec v1.1: MISSION CLEAR）。点の内訳・チーム得点・雪HPの減りを1つの形にする。
 // 得点そのものは lib/game/score.ts が決める。ここは見せるために集計するだけ（純粋な関数）。
-import { SNOW_TYPE_LABEL } from "../claude/photo";
+import { SNOW_TYPE_LABEL, hazardLines, WIDTH_LABEL } from "../claude/photo";
 import type { ScoreEvent, ScoreReason, TeamId } from "../types";
 import type { Roster } from "./roster";
 import { type MorningState, progress, snowHp, teamTotals } from "./view";
@@ -52,6 +52,11 @@ export interface ClearSummary {
   /** 写真から見えた雪質（v1.2）と労いの一言 */
   snowTypeLabel?: string;
   care?: string;
+  /** v1.8: Claude が写真で見たこと（判断の根拠）と通れる幅 */
+  evidence?: string;
+  widthLabel?: string;
+  /** v1.8: 写真に見えた危ないもの（決まった安全の文） */
+  hazards?: string[];
   hpBefore: number;
   hpAfter: number;
   hpMax: number;
@@ -127,6 +132,9 @@ export function summarizeClear(
     mine,
     snowTypeLabel,
     care: check?.care || undefined,
+    evidence: check?.evidence || undefined,
+    widthLabel: check?.width && check.width !== "unknown" ? WIDTH_LABEL[check.width] : undefined,
+    hazards: check ? hazardLines(check) : undefined,
     hpBefore: opts.hpBefore ?? Math.min(hp.max, hp.current + state.rollcall.forecastCm),
     hpAfter: hp.current,
     hpMax: hp.max,

@@ -20,6 +20,7 @@ async function morningWithOneDone() {
   await saveMorning(s);
   await plan();
   const going = (await loadMorning()).morning.sorties.find((x) => x.status === "going")!;
+  delete (globalThis as Record<string, unknown>).__shimaenaPhotoSeen; // 朝ごとに別の写真として扱う（同じ写真の使い回しの判定を消す）
   const r = await completeWithPhoto(going.participantId, { bytes: new Uint8Array([1, 2, 3]), mediaType: "image/jpeg" });
   expect(r.done).toBe(true);
   return going.missionId;

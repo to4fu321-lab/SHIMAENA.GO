@@ -90,6 +90,22 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
             {clear.care}
           </p>
         )}
+        {clear.evidence && (
+          <p className="mt-2 rounded-2xl bg-ice-soft px-3 py-2 text-base">
+            <b>📷 Claude が写真で見たこと</b>
+            <span className="block">
+              {clear.evidence}
+              {clear.widthLabel && <span className="ml-1 rounded-full bg-white px-2 py-0.5 text-sm font-bold">{clear.widthLabel}</span>}
+            </span>
+          </p>
+        )}
+        {clear.hazards && clear.hazards.length > 0 && (
+          <ul className="mt-2 space-y-1 rounded-2xl bg-alert-soft px-3 py-2 text-base font-bold" aria-label="気をつけること">
+            {clear.hazards.map((h) => (
+              <li key={h}>⚠️ {h}</li>
+            ))}
+          </ul>
+        )}
 
         {/* 町の変化: 雪の減り */}
         <div className="mt-3 rounded-2xl bg-card px-4 py-3 ring-1 ring-ink/10">

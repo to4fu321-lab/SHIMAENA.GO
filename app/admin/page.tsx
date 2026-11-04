@@ -349,6 +349,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
                     )}
                     {help.knockIds && help.knockIds.length > 0 && <span className="text-sm text-ink-soft"> 声かけ依頼済み</span>}
                     {x.reason && <span className="block text-sm text-ink-soft">司令官の理由: {x.reason}</span>}
+                    {going.find((so) => so.photoCheck)?.photoCheck?.evidence && (
+                      <span className="block text-sm text-ink-soft">写真の確認（Claude）: {going.find((so) => so.photoCheck)?.photoCheck?.evidence}</span>
+                    )}
                     {s.thanks?.[x.id] && (
                       <span className="block text-sm text-camellia-deep">
                         ありがとう点呼「{s.thanks[x.id].label}」→ {s.thanks[x.id].sentence}

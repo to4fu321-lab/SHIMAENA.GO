@@ -5,7 +5,8 @@ import { issueCardsForMission, rerenderBacks } from "../cards/issue";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
 import { planMorning } from "../claude/commander";
-import { checkPhoto, decidePhoto, SNOW_TYPE_LABEL, type PhotoInput } from "../claude/photo";
+import { checkPhoto, decidePhoto, hazardLines, SNOW_TYPE_LABEL, WIDTH_LABEL, type PhotoInput } from "../claude/photo";
+import { photoFingerprint, photoSeen, rememberPhoto } from "../ops/photo-seen";
 import { weeklyText } from "../claude/weekly";
 import { readWords, requestLabel } from "../claude/words";
 import { safetyLine } from "../safety";
@@ -370,14 +371,24 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   const mission = sortie && s.morning.missions.find((m) => m.id === sortie.missionId);
   if (!sortie || !mission) return { done: false, messages: MSG.noSortie() };
 
-  const check = await checkPhoto(image);
   const number = baseNumberOf(roster, mission.baseId);
+  // 同じ日に同じ写真がもう受け付けられていたら、Claude を呼ばずに別の写真をお願いする（使い回しを防ぐ）
+  const day = appToday(s, now);
+  const fp = photoFingerprint(image.bytes);
+  if (await photoSeen(day, fp)) {
+    s.log.push(`拠点${number}の写真: 前に受け付けた写真と同じ → 撮り直しをお願い`);
+    await saveMorning(s);
+    return { done: false, retry: true, messages: MSG.photoNotCleared("前に送られた写真と同じでした。いまの玄関前から道路側を、新しく撮ってください。") };
+  }
+  const check = await checkPhoto(image);
   const outcome = decidePhoto(check);
   if (outcome === "retry") {
-    s.log.push(`拠点${number}の写真: まだ（${check.comment}）`);
+    s.log.push(`拠点${number}の写真: ${check.unrelated ? "雪かきの場所ではない" : "まだ"}（${check.comment}）`);
     await saveMorning(s);
-    return { done: false, retry: true, messages: MSG.photoNotCleared(check.comment) };
+    const ask = check.unrelated ? `${check.comment}玄関前から道路側を写してください。` : check.comment;
+    return { done: false, retry: true, messages: MSG.photoNotCleared(ask) };
   }
+  await rememberPhoto(day, fp);
   if (outcome === "accepted") {
     // 写真では判断できない → 本人の報告として受け付ける（AI を最終判定者にしない）
     check.comment = `写真では確かめきれませんでしたが、報告として受け付けました。${check.comment}`;
@@ -468,7 +479,8 @@ async function finishMission(
   const notes: string[] = [];
   if (check.snowType && check.snowType !== "unknown") notes.push(`雪質: ${SNOW_TYPE_LABEL[check.snowType]}。`);
   if (check.care) notes.push(check.care);
-  if (check.icy) notes.push("凍っているところがあるようです。砂をまくと安心です。");
+  if (check.evidence) notes.push(`Claude の確認: ${check.evidence}${check.width && check.width !== "unknown" ? `（${WIDTH_LABEL[check.width]}）` : ""}`);
+  notes.push(...hazardLines(check).map((x) => `⚠️ ${x}`));
   const prog = progress(s.morning);
   // あなたが主役の招待文（spec v1.6）: 写真を送った本人の今朝の活動から3案。失敗しても完了は止めない
   let invites: string[] | undefined;
