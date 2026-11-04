@@ -184,22 +184,22 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} />
       </div>
 
-      <main className="relative -mt-4 shrink-0 space-y-2.5 px-4 pb-3 short:space-y-2 short:pb-2">
+      <main className="relative -mt-3 shrink-0 space-y-2 px-4 pb-2.5 short:space-y-1.5 short:pb-1.5">
         {/* 今日のミッション・数字（1枚のカード） */}
-        <section className="rounded-3xl bg-card px-4 pb-2 pt-3 shadow-md ring-1 ring-ink/10 short:pt-2" aria-label="今日のミッション">
+        <section className="rounded-3xl bg-card px-4 pb-2 pt-2 shadow-md ring-1 ring-ink/10 short:pt-1.5 short:pb-1.5" aria-label="今日のミッション">
           <div className="flex items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-warm">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-warm">
               <Icon name="map" size={26} accent="var(--lamp)" />
             </span>
             <div className="min-w-0 flex-1 leading-tight">
               {night ? (
-                <p className="text-xl font-bold">
+                <p className="text-lg font-bold">
                   今夜は自分の家の雪かき
                   <span className="block text-sm">よその家の手伝いは、朝6時から</span>
                 </p>
               ) : prog.total > 0 && !prog.allDone ? (
                 <>
-                  <p className="text-xl font-bold">
+                  <p className="text-lg font-bold">
                     あと<span className="mx-1 text-4xl tabular-nums text-lamp">{prog.left}</span>軒で完了！
                   </p>
                   <p className="text-sm font-bold">
@@ -207,9 +207,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                   </p>
                 </>
               ) : prog.allDone && prog.total > 0 ? (
-                <p className="text-xl font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
+                <p className="text-lg font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
               ) : (
-                <p className="text-xl font-bold">
+                <p className="text-lg font-bold">
                   {rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
                   <span className="block text-sm">
                     {rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "朝6:40に、手伝ってほしい家が地図に出ます"}
@@ -223,7 +223,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               </span>
             )}
           </div>
-          <div className="mt-2 grid grid-cols-2 divide-x divide-ink/15 border-t border-ink/10 pt-2 short:mt-1 short:pt-1">
+          <div className="mt-1.5 grid grid-cols-2 divide-x divide-ink/15 border-t border-ink/10 pt-1.5 short:mt-1 short:pt-1">
             <p className="flex items-center justify-center gap-2 text-base font-bold">
               <svg viewBox="0 0 40 40" width="28" height="28" aria-hidden="true" className="shrink-0">
                 <circle cx="14" cy="13" r="6" fill="#29445c" />
@@ -270,7 +270,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         {/* 出動（いちばん大事なボタン）と、ソロ活動 */}
         <Link
           href={goHref}
-          className={`btn ${open ? "btn-lamp" : "btn-ink opacity-80"} min-h-18 justify-start gap-3 rounded-full px-5 short:min-h-15 short:py-1.5`}
+          className={`btn ${open ? "btn-lamp" : "btn-ink opacity-80"} min-h-16 justify-start gap-3 rounded-full px-5 py-1.5 short:min-h-14 short:py-1`}
         >
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lamp">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -284,7 +284,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             </span>
           </span>
         </Link>
-        <Link href={fiveHref} className="btn btn-white min-h-14 gap-3 rounded-full bg-ice-soft/60 short:py-1">
+        <Link href={fiveHref} className="btn btn-white min-h-13 gap-3 rounded-full bg-ice-soft/60 py-1 short:min-h-12 short:py-0.5">
           <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <circle cx="12" cy="12" r="9" />
             <path d="M12 7 V12 L15.5 14" />

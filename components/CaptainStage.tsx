@@ -70,13 +70,13 @@ export default function CaptainStage({
   return (
     <>
       {/* 吹き出し（しっぽは隊長の口元へ）。ことばが変わるたびにふわっと出る */}
-      <div className="absolute left-3 top-2 z-10 max-w-[78%] short:top-1" aria-live="polite">
+      <div className="absolute left-3 top-2 z-10 max-w-[64%] short:top-1" aria-live="polite">
         <div key={`${i}-${flying}-${arriving}`} className={flying ? "speech-away" : "speech-pop"}>
-          <p className="relative rounded-3xl bg-card px-4 py-2 text-lg font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
-            <span className="block text-sm font-bold text-lamp-deep">シマエナ隊長</span>
+          <p className="relative rounded-3xl bg-card px-3.5 py-1.5 text-base font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
+            <span className="block text-xs font-bold text-lamp-deep">シマエナ隊長</span>
             {flying ? "いってくるしま〜！" : arriving ? "おーい！知らせがあるえな〜！" : line}
           </p>
-          <svg viewBox="0 0 40 30" className="absolute -bottom-[22px] right-[14%] h-[26px] w-9" aria-hidden="true">
+          <svg viewBox="0 0 40 30" className="absolute -bottom-[20px] right-[6%] h-[24px] w-8" aria-hidden="true">
             <path d="M2 0 C10 10 24 22 38 28 C30 18 26 8 26 0 Z" fill="var(--card)" stroke="rgba(41,68,92,.15)" strokeWidth="2" strokeLinejoin="round" />
             <path d="M3 -2 H25 V3 H3 Z" fill="var(--card)" />
           </svg>
@@ -93,7 +93,7 @@ export default function CaptainStage({
         type="button"
         onClick={fly}
         aria-label="シマエナ隊長（タップすると飛びます）"
-        className="absolute bottom-[17%] right-[10%] h-[66%] max-h-40 cursor-pointer"
+        className="absolute bottom-[16%] right-[5%] h-[58%] max-h-36 min-h-16 cursor-pointer"
       >
         <span className={`block h-full ${flying ? "captain-fly" : arriving ? "captain-arrive" : "captain-idle"}`}>
           <Mascot team={team} className="h-full w-auto drop-shadow-md" />

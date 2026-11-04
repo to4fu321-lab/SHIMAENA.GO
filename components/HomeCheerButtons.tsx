@@ -28,9 +28,9 @@ export default function HomeCheerButtons({
       const r = await sendCheerAction(fd);
       setDone((d) => ({ ...d, [kind]: r.sent }));
     });
-  const btn = "flex min-h-11 min-w-0 flex-1 basis-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 text-sm font-bold shadow-sm ring-1 ring-ink/15 disabled:cursor-default";
+  const btn = "flex min-h-10 min-w-0 flex-1 basis-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 text-sm font-bold shadow-sm ring-1 ring-ink/15 disabled:cursor-default";
   return (
-    <div className="mt-1.5 flex gap-2" aria-label="自宅の雪かきへの応援">
+    <div className="mt-1.5 flex gap-2 short:mt-1" aria-label="自宅の雪かきへの応援">
       <button
         type="button"
         disabled={pending || working === 0 || cheer === 0 || done.cheer !== undefined}
