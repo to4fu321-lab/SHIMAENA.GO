@@ -27,7 +27,7 @@ import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
 import type { HelperAnswer, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
 import { SNOW_THRESHOLD_CM, forecastSnowUntilMorning } from "../weather";
-import { applyPlan, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
+import { applyPlan, autoAnswerProxyHomes, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
 import { recapText } from "../claude/recap";
@@ -98,6 +98,7 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
     console.error("[captain] 隊長のひとことを書けませんでした（定型を使います）:", e instanceof Error ? e.message : e);
   }
   const roster = await loadRoster();
+  autoAnswerProxyHomes(s, roster, new Date().toISOString());
   const of = (role: Role) => lineIds(roster.participants.filter((p) => p.role === role));
   const requesters = of("requester");
   const helpers = of("helper");

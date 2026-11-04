@@ -1,0 +1,21 @@
+# 毎朝 6:40（日本時間）に作戦を配信する。
+# Vercel の無料プランは Cron が1日2本までなので、6:40 の分だけ GitHub Actions から呼ぶ。
+# 必要な設定: リポジトリの Settings → Secrets and variables → Actions に
+#   APP_URL     … 公開している URL（例 https://xxxx.vercel.app、末尾の / なし）
+#   CRON_SECRET … Vercel の環境変数 CRON_SECRET と同じ値
+name: plan-0640
+on:
+  schedule:
+    - cron: "40 21 * * *" # UTC 21:40 = 日本時間 6:40
+  workflow_dispatch: {}
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 作戦配信を呼ぶ
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then echo "APP_URL と CRON_SECRET を Secrets に入れてください"; exit 1; fi
+          curl -fsS --retry 3 --retry-delay 20 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/plan"

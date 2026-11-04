@@ -166,9 +166,9 @@ describe("ヘルプ通知", () => {
 
 describe("週とシャッフル", () => {
   it("週は日曜はじまり", () => {
-    expect(weekStart("2026-12-14")).toBe("2026-12-13"); // 月曜 → 前日の日曜
-    expect(weekStart("2026-12-13")).toBe("2026-12-13"); // 日曜はその日
-    expect(weekStart("2026-12-19")).toBe("2026-12-13"); // 土曜
+    expect(weekStart("2026-12-14")).toBe("2026-12-14"); // 月曜はその日
+    expect(weekStart("2026-12-13")).toBe("2026-12-07"); // 日曜は週の最後の日（前の月曜から）
+    expect(weekStart("2026-12-19")).toBe("2026-12-14"); // 土曜
   });
 
   const helpers: Participant[] = Array.from({ length: 12 }, (_, i) => ({

@@ -4,7 +4,7 @@ import type { CommanderInput, Plan } from "../claude/commander";
 import { decompose } from "../game/mission";
 import { scoreMission } from "../game/score";
 import { clockText, jstIso } from "../jst";
-import type { HelperAnswer, Mission, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
+import type { HelperAnswer, Mission, Participant, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
 import type { CheerRecord } from "./cheer";
 import type { CaptainState } from "../captain";
 import type { Roster } from "./roster";
@@ -107,6 +107,27 @@ export function ringRollcall(s: MorningRecord): void {
   s.log.push("6:30 エナガ点呼を送りました");
 }
 
+/**
+ * 家族が代理登録した LINE のない家（本人の LINE がまだ紐づいていない）。
+ * 点呼は届かないので、毎回「一緒になら雪かきできる」として扱い（返事なしの見守りにしない）、
+ * 手伝う人が最初に声かけ（見守り）をしながら一緒に雪かきをする。
+ */
+export function isProxyHome(p: Participant): boolean {
+  return p.role === "requester" && !p.lineUserId && Boolean(p.registeredByFamilyId);
+}
+
+/** 代理登録の家の点呼の答えを「一緒なら」で入れる（本人の答えはない） */
+export function autoAnswerProxyHomes(s: MorningRecord, roster: Roster, answeredAt: string): number {
+  let n = 0;
+  for (const p of roster.participants) {
+    if (!isProxyHome(p)) continue;
+    putAnswer(s, p.id, "together", answeredAt);
+    n++;
+  }
+  if (n > 0) s.log.push(`代理登録の家 ${n} 軒は、点呼なしで「一緒なら」として扱いました（声かけの見守りつき）`);
+  return n;
+}
+
 /** 点呼の答えを入れる（同じ人の前の答えは置き換える） */
 export function putAnswer(s: MorningRecord, participantId: string, answer: RollcallAnswer["answer"], answeredAt: string): void {
   s.answers = s.answers.filter((a) => a.participantId !== participantId);
@@ -121,7 +142,7 @@ export function fillAnswers(s: MorningRecord, roster: Roster, seed = 7): void {
   let x = seed >>> 0;
   const rand = () => ((x = (Math.imul(x ^ (x >>> 15), 2246822507) + 3266489909) >>> 0) / 2 ** 32);
   for (const p of roster.participants) {
-    if (p.lineUserId) continue;
+    if (p.lineUserId || isProxyHome(p)) continue;
     const r = rand();
     if (p.role === "requester") {
       if (r < 0.12) {
@@ -188,7 +209,10 @@ export function applyPlan(s: MorningRecord, roster: Roster, plan: Plan): void {
       baseId: m.baseId,
       importance: m.importance,
       requiredPeople: m.requiredPeople,
-      subtasks: decompose(r.clearArea ?? "entrance", r.level ?? 2),
+      subtasks: [
+        ...(isProxyHome(r) ? [{ id: "check", kind: "scout" as const, label: "声かけ（ごあいさつ・見守り）", minutes: 5 as const }] : []),
+        ...decompose(r.clearArea ?? "entrance", r.level ?? 2),
+      ],
       status: m.status,
       startAt: iso(s, 7 * 60),
       reason: m.reason,

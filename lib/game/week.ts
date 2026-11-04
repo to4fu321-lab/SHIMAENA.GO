@@ -1,13 +1,13 @@
-// 週の集計（日〜土）とチームのシャッフル。spec 5。
+// 週の集計（月〜日。チームの期間と同じ）とチームのシャッフル。spec 5。
 import type { MorningRecord } from "../morning/flow";
 import type { Roster } from "../morning/roster";
 import type { Participant, ScoreEvent, TeamId } from "../types";
 import { scoreWeeklyGoal } from "./score";
 
-/** その日を含む週の日曜日（YYYY-MM-DD） */
+/** その日を含む週の月曜日（YYYY-MM-DD）。週は月曜〜日曜で、日曜の夜に締めて組み直す */
 export function weekStart(dateYmd: string): string {
   const d = new Date(`${dateYmd}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
   return d.toISOString().slice(0, 10);
 }
 

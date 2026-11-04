@@ -52,7 +52,7 @@ export function buildPublicStats(input: {
   record: MorningRecord;
   roster: Roster;
   today: string;
-  /** 今週（日曜〜今日）の全員のソロ台帳 */
+  /** 今週（月曜〜今日）の全員のソロ台帳 */
   soloWeek: SoloLog[];
   /** 今週の朝の記録（今朝を含む） */
   weekRecords: MorningRecord[];

@@ -1,7 +1,7 @@
 // Vercel Cron の入口（vercel.json）。CRON_SECRET を Vercel の環境変数に入れると、Vercel が Authorization に付けて呼んでくる。
 //   announce: 前夜 21:00 JST — Open-Meteo を見て予告
 //   rollcall: 6:30 JST — 点呼
-//   plan:     6:40 JST — 作戦配信（Hobby プランでは cron に置けないので、Pro か外部の cron から）
+//   plan:     6:40 JST — 作戦配信（Hobby プランの cron は2本までなので、GitHub Actions の .github/workflows/plan.yml から呼ぶ。答えが届いた時の planIfDue は予備）
 //   weekly:   日曜の「今週の群れ」（announce が日曜なら先に行う。単独で呼ぶ用）
 import { checkForecastAndAnnounce, plan, ring, weeklyRecap } from "@/lib/morning/ops";
 

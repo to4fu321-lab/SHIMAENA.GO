@@ -78,7 +78,7 @@ describe("日曜のまとめ（メモリ保存・LINE には送らない）", ()
     const a = await morningDone("2026-12-14", 3);
     await archiveMorning(a);
     const b = await morningDone("2026-12-15", 4);
-    expect((await listMornings("2026-12-13", "2026-12-19")).map((r) => r.morning.rollcall.date)).toEqual(["2026-12-14", "2026-12-15"]);
+    expect((await listMornings("2026-12-14", "2026-12-20")).map((r) => r.morning.rollcall.date)).toEqual(["2026-12-14", "2026-12-15"]);
     const beforeTeams = Object.fromEntries((await loadRoster()).participants.filter((p) => p.role === "helper").map((p) => [p.id, p.teamId]));
     const r = await weeklyRecap(new Date("2026-12-15T12:00:00Z")); // JST 12/15 21:00（この週）
     expect(r.summary.days).toBe(2);
@@ -91,6 +91,25 @@ describe("日曜のまとめ（メモリ保存・LINE には送らない）", ()
     expect(s.weekly?.commentary).toContain("今週の群れ");
     expect(s.log.at(-1)).toContain("今週の群れ");
     expect(b.morning.rollcall.date).toBe("2026-12-15");
+  });
+});
+
+describe("代理登録の家（LINE のない家族の家）", () => {
+  it("点呼なしで「一緒なら」になり、返事なしの見守りにならず、声かけつきのミッションになる", async () => {
+    await memoryRepo.upsertParticipant({
+      id: "p-proxy", nickname: "ひまわりさんのご家族", role: "requester", location: [43.0401, 141.3701],
+      soloMinutes: 30, clearArea: "entrance", level: 2, registeredByFamilyId: "U-family",
+    });
+    await memoryRepo.upsertBase({ id: "base-p-proxy", number: 99, requesterId: "p-proxy" });
+    await announce({ date: "2026-12-16", forecastCm: 12 });
+    await ring();
+    let s = await loadMorning();
+    expect(s.answers.find((a) => a.participantId === "p-proxy")?.answer).toBe("together");
+    await plan();
+    s = await loadMorning();
+    const m = s.morning.missions.find((x) => x.baseId === "base-p-proxy")!;
+    expect(m.status).not.toBe("no_answer");
+    expect(m.subtasks[0].label).toContain("声かけ");
   });
 });
 
