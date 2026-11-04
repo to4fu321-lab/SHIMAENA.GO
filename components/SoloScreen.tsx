@@ -1,8 +1,8 @@
 "use client";
 
-// ソロ出動の画面（spec v1.3）。今日の自分 → ミッション一覧（現地／オンライン）→ 完了の演出 → 活動記録。
+// ソロ出動の画面（spec v1.3）。ミッションのカードを左右スワイプで選び、その場で完了 → 完了の演出（SNS 投稿もここ）。
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { fiveMinutesAction } from "@/app/map/actions";
 import { completeSoloAction, type SoloActionResult } from "@/app/solo/actions";
 import { soloTeamPoints, type SoloMission } from "@/lib/solo/missions";
@@ -69,6 +69,7 @@ export default function SoloScreen({
         setResult(r);
         if (r.ok && r.summary) {
           setClear(r.summary);
+          setTodayFeathers(r.summary.todayFeathers);
           setDoneToday((d) => [...d, kind]);
         }
       } catch (e) {
@@ -89,145 +90,190 @@ export default function SoloScreen({
       }
     });
 
-  const [pickedKind, setPickedKind] = useState<string | null>(focus ?? null);
-  const [showAll, setShowAll] = useState(false);
-  const onsite = missions.filter((m) => m.onsite && m.kind !== "help_house");
-  const online = missions.filter((m) => !m.onsite);
+  const list = missions.filter((m) => m.kind !== "help_house");
   const house = missions.find((m) => m.kind === "help_house");
+  const firstIndex = () => {
+    const f = list.findIndex((m) => m.kind === focus);
+    if (f >= 0) return f;
+    const open = list.findIndex((m) => !status.doneToday.includes(m.kind));
+    return open >= 0 ? open : 0;
+  };
+  const [active, setActive] = useState(firstIndex);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const doneCount = list.filter((m) => doneToday.includes(m.kind)).length;
+  const [todayFeathers, setTodayFeathers] = useState(status.todayFeathers);
 
-  const featured =
-    missions.find((m) => m.kind === pickedKind) ??
-    onsite.find((m) => !doneToday.includes(m.kind)) ??
-    online.find((m) => !doneToday.includes(m.kind)) ??
-    onsite[0];
-  const featuredDone = doneToday.includes(featured.kind);
-  const featuredBusy = pending && busyKind === featured.kind;
-  const doneCount = missions.filter((m) => doneToday.includes(m.kind)).length;
+  // 指定のカードへ横スクロール（スワイプと同じ動き）
+  const goTo = (i: number, smooth = true) => {
+    const el = trackRef.current?.children[i] as HTMLElement | undefined;
+    const track = trackRef.current;
+    if (!el || !track) return;
+    track.scrollTo({ left: el.offsetLeft - (track.clientWidth - el.clientWidth) / 2, behavior: smooth ? "smooth" : "auto" });
+  };
+  useEffect(() => {
+    goTo(active, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // いま真ん中にあるカードを「選んでいるミッション」にする
+  const onScroll = () => {
+    const track = trackRef.current;
+    if (!track) return;
+    const center = track.scrollLeft + track.clientWidth / 2;
+    let best = 0;
+    let dist = Infinity;
+    Array.from(track.children).forEach((c, i) => {
+      const el = c as HTMLElement;
+      const d = Math.abs(el.offsetLeft + el.clientWidth / 2 - center);
+      if (d < dist) {
+        dist = d;
+        best = i;
+      }
+    });
+    if (best !== active) setActive(best);
+  };
+  const current = list[active] ?? list[0];
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper text-ink">
-    <main className="flex-1 space-y-3 px-4 pb-4 pt-3">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-clip bg-paper text-ink">
+    <main className="min-w-0 flex-1 space-y-3 px-4 pb-4 pt-3">
       {clear && (
         <SoloClear summary={clear} onClose={() => setClear(null)} q={q}>
-          <QuickShare text={clearMessage("solo", clear.onsite ? 5 : 3)} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
-          <button
-            onClick={() => {
-              setClear(null);
-              setTimeout(() => document.getElementById("share")?.scrollIntoView({ behavior: "smooth" }), 50);
-            }}
-            className="btn btn-white mt-3 w-full text-base"
-          >
-            投稿文を直してから投稿する
-          </button>
+          <QuickShare text={clearMessage("solo", clear.onsite ? 10 : 3)} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
+          {shareOptions.length > 0 && (
+            <details className="mt-3 rounded-2xl bg-card ring-1 ring-ink/10">
+              <summary className="flex min-h-12 cursor-pointer items-center justify-between px-3 text-base font-bold">
+                <span>✏️ 投稿文を直してから投稿する</span>
+                <span aria-hidden="true">›</span>
+              </summary>
+              <div className="px-1 pb-2">
+                <SnsShare options={shareOptions} title="SNS に投稿する" />
+              </div>
+            </details>
+          )}
         </SoloClear>
       )}
-      <header className="snowfield relative -mx-4 -mt-3 h-36 overflow-hidden px-4 pt-3">
-        <SnowTown className="absolute inset-x-0 bottom-0 h-[60%] w-full" />
+      <header className="snowfield relative -mx-4 -mt-3 h-24 overflow-hidden px-4 pt-2">
+        <SnowTown className="absolute inset-x-0 bottom-0 h-[55%] w-full" />
         <Link href={`/${q}`} aria-label="ホームへ戻る" className="absolute left-3 top-3 z-10 grid size-12 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
           ‹
         </Link>
         <div className="relative z-10 px-14 text-center">
           <p className="text-sm font-bold">シマエナ<span className="text-lamp-deep">GO</span></p>
-          <h1 className="text-3xl font-bold leading-tight">ソロミッション</h1>
+          <h1 className="whitespace-nowrap text-[28px] font-bold leading-tight">ソロミッション</h1>
           <p className="sr-only">{nickname}さん</p>
-          <p className="text-sm font-bold">ひとりでも楽しめます</p>
         </div>
-        <Mascot size={84} className="absolute bottom-0 right-3 z-10 drop-shadow-md" />
+        <Mascot size={56} className="absolute bottom-0 right-2 z-10 drop-shadow-md" />
       </header>
 
-      {pickFive && (
-        <p className="rounded-2xl bg-camellia-soft px-3 py-2 text-base ring-1 ring-camellia">
-          <b className="text-camellia-deep">10分だけ出動</b>: 下のミッションから1つどうぞ。
+      {/* ゲームの HUD: 呼びかけ＋今日の成績 */}
+      <div className="rounded-2xl bg-ink px-4 py-2 text-white shadow-md">
+        <p className="text-lg font-bold leading-snug">
+          {pickFive ? "⚡ 出動要請！ 10分で町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
         </p>
-      )}
+        <p className="flex items-center justify-between text-sm font-bold text-white/85">
+          <span>クリア {doneCount}/{list.length}</span>
+          <span>今日 +{todayFeathers}羽</span>
+          <span>連続 {status.streak}日</span>
+        </p>
+      </div>
       {result && !result.ok && (
         <p className="rounded-2xl bg-warm px-3 py-2 text-base" role="status">
           {result.text}
         </p>
       )}
 
-      {/* 今日のミッション（1つ大きく） */}
-      <section className="space-y-3 rounded-3xl bg-card p-4 shadow-md ring-1 ring-ink/10" aria-label="今日のミッション">
-        <span className="inline-block rounded-full bg-ink px-3 py-0.5 text-sm font-bold text-white">ミッション</span>
-        {focus === featured.kind && (
-          <span className="ml-2 inline-block rounded-full bg-camellia-soft px-3 py-0.5 text-sm font-bold text-camellia-deep ring-1 ring-camellia">
-            <span aria-hidden="true">🐦</span> 隊長のおすすめ
-          </span>
-        )}
-        <h2 className="text-2xl font-bold leading-tight">{featured.label}</h2>
-        <p className="text-base leading-snug">{featured.description}</p>
-        <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-2 text-center text-sm font-bold">
-          <p><span className="block text-2xl tabular-nums">{featured.minutes}分</span>時間</p>
-          <p><span className="block text-2xl text-lamp">{DIFF[featured.difficulty]}</span>むずかしさ</p>
-          <p><span className="block text-2xl tabular-nums text-camellia-deep">+{featured.feathers}</span>羽{soloTeamPoints(featured) !== null && <b className="block text-ink">チーム +{soloTeamPoints(featured)}点</b>}</p>
-        </div>
-        <div className="flex items-center gap-2 rounded-2xl bg-ice-soft px-3 py-2">
-          <span className="text-sm font-bold">進行状況</span>
-          <span className="h-3 flex-1 overflow-hidden rounded-full bg-white">
-            <span className="block h-full rounded-full bg-ice" style={{ width: featuredDone ? "100%" : "0%" }} />
-          </span>
-          <b className="tabular-nums">{featuredDone ? 1 : 0} / 1</b>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="btn btn-white rounded-full text-base">
-            {showAll ? "とじる" : "ほかを見る"}
-          </button>
-          {featuredDone ? (
-            <span className="btn rounded-full bg-ice-soft text-base">✓ 今日は完了</span>
-          ) : (
-            <button disabled={pending} onClick={() => submit(featured.kind)} className="btn btn-lamp rounded-full text-lg">
-              {featuredBusy ? "…" : "完了にする"}
-            </button>
-          )}
-        </div>
-        {featured.photo === "optional" && !featuredDone && (
-          <button
-            disabled={pending}
-            onClick={() => {
-              photoKind.current = featured.kind;
-              fileRef.current?.click();
-            }}
-            className="btn btn-white w-full text-base"
-          >
-            📷 写真をつけて完了にする
-          </button>
-        )}
-      </section>
-
-      {showAll && (
-        <section className="space-y-2" aria-label="ミッションの一覧">
-          <p className="text-sm font-bold">えらぶと、上の大きなミッションが切りかわります。</p>
-          <ul className="space-y-2">
-            {missions
-              .filter((m) => m.kind !== "help_house")
-              .map((m) => (
-                <li key={m.kind}>
+      {/* ミッションのカード（左右スワイプで選ぶ） */}
+      <section aria-label="ミッションをえらぶ" aria-roledescription="カルーセル">
+        <div
+          ref={trackRef}
+          onScroll={onScroll}
+          className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-[7%] pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {list.map((m, i) => {
+            const done = doneToday.includes(m.kind);
+            const busy = pending && busyKind === m.kind;
+            const tp = soloTeamPoints(m);
+            return (
+              <article
+                key={m.kind}
+                aria-label={`${i + 1}/${list.length} ${m.label}`}
+                aria-hidden={i !== active}
+                className={`relative flex w-[86%] shrink-0 snap-center flex-col gap-2 rounded-3xl bg-card p-4 shadow-md ring-1 transition-transform ${i === active ? "ring-ink/20" : "scale-95 opacity-70 ring-ink/10"}`}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-3 py-0.5 text-sm font-bold ${m.onsite ? "bg-ink text-white" : "bg-ice-soft text-ink ring-1 ring-ice"}`}>
+                    {m.onsite ? "現地ミッション" : "おうちミッション"}
+                  </span>
+                  {focus === m.kind && (
+                    <span className="rounded-full bg-camellia-soft px-2 py-0.5 text-sm font-bold text-camellia-deep ring-1 ring-camellia">🐦 隊長のおすすめ</span>
+                  )}
+                  <span className="ml-auto text-sm font-bold tabular-nums text-ink-soft">{i + 1}/{list.length}</span>
+                </div>
+                <h2 className="text-2xl font-bold leading-tight">{done ? "✓ " : ""}{m.label}</h2>
+                <p className="text-base leading-snug">{m.description}</p>
+                <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-2 text-center text-sm font-bold">
+                  <p><span className="block text-2xl tabular-nums">{m.minutes}分</span>時間</p>
+                  <p><span className="block text-2xl text-lamp">{DIFF[m.difficulty]}</span>むずかしさ</p>
+                  <p>
+                    <span className="block text-2xl tabular-nums text-camellia-deep">+{m.feathers}羽</span>
+                    {tp !== null ? `チーム+${tp}点` : "ごほうび"}
+                  </p>
+                </div>
+                {done ? (
                   <button
-                    onClick={() => {
-                      setPickedKind(m.kind);
-                      setShowAll(false);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="flex min-h-14 w-full items-center gap-2 rounded-2xl bg-card px-3 py-2 text-left ring-1 ring-ink/15"
+                    tabIndex={i === active ? 0 : -1}
+                    onClick={() => goTo(Math.min(i + 1, list.length - 1))}
+                    className="btn mt-auto rounded-full bg-ice-soft text-lg"
                   >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-base font-bold leading-snug">{doneToday.includes(m.kind) ? "✓ " : ""}{m.label}</span>
-                      <span className="block text-sm">{m.minutes}分 ・ {m.onsite ? "外に出る" : "家の中"} ・ +{m.feathers}羽</span>
-                    </span>
-                    <span aria-hidden="true">›</span>
+                    ✓ クリア済み　次へ ›
                   </button>
-                </li>
-              ))}
-          </ul>
-        </section>
-      )}
-
-      {/* ミッションのコツ */}
-      <section className="flex items-center gap-3 rounded-3xl bg-ice-soft p-3" aria-label="ミッションのコツ">
-        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-2xl" aria-hidden="true">💡</span>
-        <p className="text-base leading-snug">
-          <b>ミッションのコツ</b>
-          <span className="block">{featured.photo === "optional" ? "雪の様子を撮影しておくと、確認済みの印がつきます。" : "無理はしない。10分でやめても大丈夫です。"}</span>
+                ) : (
+                  <div className={`mt-auto grid gap-2 ${m.photo === "optional" ? "grid-cols-[auto_1fr]" : "grid-cols-1"}`}>
+                    {m.photo === "optional" && (
+                      <button
+                        tabIndex={i === active ? 0 : -1}
+                        disabled={pending}
+                        aria-label="写真をつけて完了にする"
+                        onClick={() => {
+                          photoKind.current = m.kind;
+                          fileRef.current?.click();
+                        }}
+                        className="btn btn-white whitespace-nowrap rounded-full px-4 text-base"
+                      >
+                        📷 写真
+                      </button>
+                    )}
+                    <button tabIndex={i === active ? 0 : -1} disabled={pending} onClick={() => submit(m.kind)} className="btn btn-lamp whitespace-nowrap rounded-full text-lg">
+                      {busy ? "…" : "クリア！"}
+                    </button>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+        <div className="flex items-center justify-center gap-3">
+          <button aria-label="前のミッション" disabled={active === 0} onClick={() => goTo(active - 1)} className="grid size-10 place-items-center rounded-full bg-card text-xl font-bold shadow-sm ring-1 ring-ink/15 disabled:opacity-30">
+            ‹
+          </button>
+          <div className="flex gap-1.5" role="tablist" aria-label="ミッションの番号">
+            {list.map((m, i) => (
+              <button
+                key={m.kind}
+                role="tab"
+                aria-selected={i === active}
+                aria-label={`${i + 1}. ${m.label}`}
+                onClick={() => goTo(i)}
+                className={`h-2.5 rounded-full transition-all ${i === active ? "w-6 bg-ink" : doneToday.includes(m.kind) ? "w-2.5 bg-lamp" : "w-2.5 bg-ink/25"}`}
+              />
+            ))}
+          </div>
+          <button aria-label="次のミッション" disabled={active >= list.length - 1} onClick={() => goTo(active + 1)} className="grid size-10 place-items-center rounded-full bg-card text-xl font-bold shadow-sm ring-1 ring-ink/15 disabled:opacity-30">
+            ›
+          </button>
+        </div>
+        <p className="mt-1 text-center text-sm text-ink-soft">
+          {current?.photo === "optional" ? "📷 写真をつけると「確認済み」の印がつきます" : "← 左右にスワイプしてミッションをえらぶ →"}
         </p>
       </section>
 
@@ -238,7 +284,7 @@ export default function SoloScreen({
         </summary>
         <div className="px-4 pb-3">
           <div className="grid grid-cols-3 gap-2 text-center text-sm font-bold">
-            <p>今日の羽<span className="block text-2xl tabular-nums text-camellia-deep">{status.todayFeathers}</span></p>
+            <p>今日の羽<span className="block text-2xl tabular-nums text-camellia-deep">{todayFeathers}</span></p>
             <p>連続出動<span className="block text-2xl tabular-nums">{status.streak}日</span></p>
             <p>合計の羽<span className="block text-2xl tabular-nums">{status.totalFeathers}</span></p>
           </div>
@@ -257,11 +303,6 @@ export default function SoloScreen({
           <p className="mt-2 text-sm">次のカード: <b>{status.nextCard.label}</b>（{status.nextCard.hint}）</p>
         </div>
       </details>
-
-      <div className="flex min-h-14 items-center justify-between rounded-2xl bg-card px-4 ring-1 ring-ink/15">
-        <span className="text-base font-bold">🏆 今日のミッション達成</span>
-        <b className="text-2xl tabular-nums">{doneCount} / {missions.length}</b>
-      </div>
 
       <section className="space-y-2" aria-label="1軒の雪かきを手伝う">
         {house && (
@@ -294,7 +335,6 @@ export default function SoloScreen({
         )}
       </section>
 
-      {shareOptions.length > 0 && <SnsShare options={shareOptions} title="今日の出動を SNS に" />}
       <FriendShare />
 
       <input

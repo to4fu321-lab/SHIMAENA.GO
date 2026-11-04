@@ -91,6 +91,7 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
             <p className="text-xl font-bold tabular-nums">{s.totalFeathers}羽</p>
           </div>
         </div>
+        {children}
         {!s.onsite && <p className="mt-2 text-center text-xs text-ink-soft">オンラインの確認は雪かき完了にはなりません。次は10分、外へ。</p>}
         {s.photoNote && <p className="mt-2 rounded-2xl bg-card px-3 py-2 text-sm ring-1 ring-ink/10">{s.photoNote}</p>}
         <p className="mt-3 rounded-2xl bg-warm px-3 py-2 text-center text-base">
@@ -116,7 +117,6 @@ export default function SoloClear({ summary, onClose, q, children }: { summary: 
             次のおすすめ: <b>{s.nextMission}</b>（10分）
           </p>
         )}
-        {children}
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link href={`/cards${q}`} className="btn btn-white text-base">
             活動カード
