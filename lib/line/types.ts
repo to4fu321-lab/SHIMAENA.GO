@@ -47,7 +47,13 @@ export interface LineSource {
   userId?: string;
 }
 
-export type LineEvent =
+/** どのイベントにも付く印（同じイベントの送り直しを見分ける） */
+export interface LineEventMeta {
+  webhookEventId?: string;
+  deliveryContext?: { isRedelivery: boolean };
+}
+
+export type LineEvent = LineEventMeta & (
   | { type: "follow"; replyToken: string; source: LineSource; timestamp: number }
   | { type: "unfollow"; replyToken?: undefined; source: LineSource; timestamp: number }
   | {
@@ -61,7 +67,8 @@ export type LineEvent =
         | { id: string; type: "image" | "video" | "audio" | "file" | "sticker" };
     }
   | { type: "postback"; replyToken: string; source: LineSource; timestamp: number; postback: { data: string } }
-  | { type: string; replyToken?: string; source: LineSource; timestamp: number };
+  | { type: string; replyToken?: string; source: LineSource; timestamp: number }
+);
 
 export interface WebhookBody {
   destination: string;

@@ -17,6 +17,7 @@ import {
   answerRandomly,
   backToSample,
   cheerDemo,
+  clearProblemsAction,
   completeOne,
   helpNextRing,
   makeRichMenu,
@@ -31,6 +32,12 @@ import {
   writeShareTextsNow,
 } from "./actions";
 import { THANKS_CHOICES } from "@/lib/claude/thanks";
+import { adminGate } from "@/lib/admin-auth";
+import { makeNameMasker } from "@/lib/admin-names";
+import { demoEnabled } from "@/lib/env";
+import { readLineUsage } from "@/lib/ops/line-usage";
+import { listProblems } from "@/lib/ops/problems";
+import { loginAction, logoutAction } from "./auth-actions";
 
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
 
@@ -67,14 +74,50 @@ function Step({ n, label, action, disabled }: { n: string; label: string; action
   );
 }
 
-async function AdminContent() {
+/** 合言葉の入力（ログインしていないとき） */
+function Login({ failed, unconfigured }: { failed: boolean; unconfigured: boolean }) {
+  return (
+    <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-paper px-4 py-8 text-ink">
+      <h1 className="text-2xl font-bold">デモ操作（運営の人だけ）</h1>
+      {unconfigured ? (
+        <p className="text-lg">
+          合言葉がまだ設定されていません。Vercel の環境変数に <b>ADMIN_PASSWORD</b> を入れてください（入れるまで、誰も操作できません）。
+        </p>
+      ) : (
+        <form action={loginAction} className="space-y-3">
+          <label className="block text-lg font-bold" htmlFor="password">
+            合言葉
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            className="w-full rounded-2xl bg-card px-4 py-3 text-lg ring-1 ring-ink/20"
+          />
+          {failed && <p className="text-base text-alert">合言葉が違います。</p>}
+          <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">開く</button>
+        </form>
+      )}
+    </main>
+  );
+}
+
+async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: string }> }) {
   await connection();
-  const [s, db, roster] = await Promise.all([loadMorning(), dbStatus(), loadRoster()]);
+  const gate = await adminGate();
+  if (gate === "login" || gate === "unconfigured") {
+    const { login } = await searchParams;
+    return <Login failed={login === "failed"} unconfigured={gate === "unconfigured"} />;
+  }
+  const [s, db, roster, problems, usage] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), readLineUsage()]);
+  const names = makeNameMasker(roster.participants);
   const m = s.morning;
   const totals = teamTotals(m);
   const hp = snowHp(m);
   const prog = progress(m);
-  const name =(id: string) => roster.participants.find((p) => p.id === id)?.nickname ?? id;
+  const name = names.label;
   const helpers = roster.participants.filter((p) => p.role === "helper");
   const lineCount = roster.participants.filter((p) => p.lineUserId).length;
   const status = m.rollcall.status;
@@ -97,9 +140,36 @@ async function AdminContent() {
         </p>
         <p className="text-sm text-ink-soft">
           司令官「エナガ隊長」: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
-          {hasLineKeys() ? "設定済み" : "未設定"}
+          {hasLineKeys() ? "設定済み" : "未設定"} ・ デモ操作: {demoEnabled() ? "オン" : "オフ（DEMO_MODE=off）"}
         </p>
+        <p className="text-sm text-ink-soft">
+          LINE のプッシュ（{usage.month}、このアプリで数えた目安）: 送信 <b>{usage.sent}</b> 通
+          {usage.dryRun > 0 && <> ・ 送らずに記録（LINE_DRY_RUN） {usage.dryRun} 通</>}
+          {" "}・ 無料プランは月 200 通。実数は LINE Official Account Manager で確認
+        </p>
+        {gate === "ok" && (
+          <form action={logoutAction}>
+            <button className="text-sm text-ink-soft underline">ログアウト</button>
+          </form>
+        )}
       </header>
+
+      {problems.length > 0 && (
+        <section className="space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-2 ring-alert" aria-label="問題">
+          <h2 className="font-bold text-alert">問題（{problems.length} 件・新しい順）</h2>
+          <ul className="space-y-1 text-sm">
+            {problems.slice(0, 10).map((x, i) => (
+              <li key={i}>
+                <span className="tabular-nums text-ink-soft">{new Date(x.at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</span> <b>{x.where}</b>{" "}
+                {names.mask(x.message)}
+              </li>
+            ))}
+          </ul>
+          <form action={clearProblemsAction}>
+            <button className="text-sm text-ink-soft underline">記録を空にする</button>
+          </form>
+        </section>
+      )}
 
       {db.kind !== "none" && db.kind !== "ready" && (
         <section className="space-y-2 rounded-2xl bg-warm p-4 shadow-sm ring-1 ring-ink/10">
@@ -178,9 +248,11 @@ async function AdminContent() {
           <button className="w-full rounded-2xl px-4 py-1 text-sm text-ink-soft underline">SNS の投稿文を Claude に書いてもらう（完了のたびに自動）</button>
         </form>
         <Step n="6" label="日曜の夜: 今週の群れ（実況・称号・シャッフル）" action={runWeekly} />
-        <form action={backToSample}>
-          <button className="w-full rounded-2xl px-4 py-2 text-sm text-ink-soft underline">朝 7:10 の見本の状態に戻す</button>
-        </form>
+        {demoEnabled() && (
+          <form action={backToSample}>
+            <button className="w-full rounded-2xl px-4 py-2 text-sm text-ink-soft underline">朝 7:10 の見本の状態に戻す</button>
+          </form>
+        )}
       </section>
 
       {s.recap && (
@@ -203,7 +275,7 @@ async function AdminContent() {
             ))}
           </ul>
           {s.weekly.titles.length > 0 && (
-            <p className="mt-2 text-sm">称号: {s.weekly.titles.map((t) => `${t.nickname}「${t.title}」${t.rareCard ? "（レア確定）" : ""}`).join("、")}</p>
+            <p className="mt-2 text-sm">称号: {s.weekly.titles.map((t) => `${names.mask(t.nickname)}「${t.title}」${t.rareCard ? "（レア確定）" : ""}`).join("、")}</p>
           )}
         </section>
       )}
@@ -221,7 +293,7 @@ async function AdminContent() {
               className="rounded-full px-3 py-1 text-sm font-bold text-white"
               style={{ background: TEAMS.find((t) => t.id === h.teamId)?.color }}
             >
-              {h.nickname}
+              {name(h.id)}
             </Link>
           ))}
         </div>
@@ -254,7 +326,7 @@ async function AdminContent() {
       {s.briefing && (
         <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
           <h2 className="font-bold">{status === "announced" ? "前夜の予告" : "町内へのまとめ"}</h2>
-          <p className="mt-1">{s.briefing}</p>
+          <p className="mt-1">{names.mask(s.briefing)}</p>
         </section>
       )}
 
@@ -300,7 +372,7 @@ async function AdminContent() {
               <li key={msg.participantId} className="rounded-2xl bg-ice-soft px-3 py-2 text-base">
                 <span className="text-xs text-ink-soft">{name(msg.participantId)}さんへ</span>
                 <br />
-                {msg.text}
+                {names.mask(msg.text)}
               </li>
             ))}
           </ul>
@@ -319,7 +391,7 @@ async function AdminContent() {
         <h2 className="font-bold">記録</h2>
         <ol className="mt-1 list-inside list-decimal">
           {s.log.slice(-8).map((line, i) => (
-            <li key={i}>{line}</li>
+            <li key={i}>{names.mask(line)}</li>
           ))}
         </ol>
       </section>
@@ -327,10 +399,10 @@ async function AdminContent() {
   );
 }
 
-export default function AdminPage() {
+export default function AdminPage({ searchParams }: { searchParams: Promise<{ login?: string }> }) {
   return (
     <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <AdminContent />
+      <AdminContent searchParams={searchParams} />
     </Suspense>
   );
 }

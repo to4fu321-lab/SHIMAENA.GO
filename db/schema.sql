@@ -103,6 +103,19 @@ create table if not exists town_cheers (
   count integer not null default 0
 );
 
+-- 運用（11/4 精査 P0）: LINE の同じイベントを2回処理しないための印（7日で消す）
+create table if not exists line_events (
+  event_id text primary key,
+  received_at timestamptz not null default now()
+);
+
+-- 運用（11/4 精査 P0）: 今朝の状態を1つずつ書き換えるための鍵（期限つき）
+create table if not exists state_locks (
+  key text primary key,
+  holder text not null,
+  until timestamptz not null
+);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

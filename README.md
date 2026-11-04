@@ -115,6 +115,12 @@ npm run dev
 3. 「保存: Neon（参加者 12 人）」と出れば完了。以後、地図とデモ操作の状態は Neon に保存される。
 4. 表が増えたとき（`db/schema.sql` が変わったとき）は、`/admin` にまた黄色い枠が出るので、もう一度押す。
 
+### 管理画面と運用の設定（11/4 追加）
+- `ADMIN_PASSWORD`: `/admin`（デモ操作）を開く合言葉。**公開版では入れるまで誰も操作できません。**
+- `DEMO_MODE=off`: 本当に町内で使うとき。`?as=h3` のような架空の人として押すことと、「見本の状態に戻す」ができなくなります（既定はオン＝審査・撮影用）。
+- `LINE_DRY_RUN=1`: LINE に本当には送らず、記録だけします（検証で月の通数を使わないため）。
+- `/admin` には、LINE の送信失敗や Webhook の処理失敗が赤い「問題」として出ます。LINE のプッシュの通数（このアプリで数えた目安）も出ます。
+
 ### LINE をつなぐ
 1. Vercel の環境変数に `LINE_CHANNEL_SECRET`・`LINE_CHANNEL_ACCESS_TOKEN`・`NEXT_PUBLIC_LIFF_ID` を入れる。
 2. LINE Developers の Messaging API チャネルで、Webhook URL を `https://yukikaki-karano-kaihou.vercel.app/api/line/webhook` にして「検証」→「Webhook の利用」をオン。

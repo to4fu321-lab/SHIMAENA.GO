@@ -64,8 +64,8 @@ export async function announce(opts: { date: string; forecastCm: number; tempMin
   const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
   const ids = lineIds(roster.participants);
-  await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName, safetyLine({ cm: opts.forecastCm, tempMinC: opts.tempMinC, windMaxMs: opts.windMaxMs }))); // 予告はエナガ隊長のカード1枚に
-  s.log.push(`予告を LINE で ${ids.length} 人に送信`);
+const ok =   await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName, safetyLine({ cm: opts.forecastCm, tempMinC: opts.tempMinC, windMaxMs: opts.windMaxMs }))); // 予告はエナガ隊長のカード1枚に
+  s.log.push(ok ? `予告を LINE で ${ids.length} 人に送信` : "⚠ 予告を LINE で送れませんでした（/admin の「問題」を見てください）");
   await saveMorning(s);
   return s;
 }
@@ -102,9 +102,10 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
   const of = (role: Role) => lineIds(roster.participants.filter((p) => p.role === role));
   const requesters = of("requester");
   const helpers = of("helper");
-  await multicast(requesters, MSG.rollcallRequester(...rcArgs(s)));
-  await multicast(helpers, MSG.rollcallHelper(...rcArgs(s)));
-  const sent = requesters.length + helpers.length;
+  const okR = await multicast(requesters, MSG.rollcallRequester(...rcArgs(s)));
+  const okH = await multicast(helpers, MSG.rollcallHelper(...rcArgs(s)));
+  const sent = (okR ? requesters.length : 0) + (okH ? helpers.length : 0);
+  if (!okR || !okH) s.log.push("⚠ 点呼の一部が LINE で送れませんでした（/admin の「問題」を見てください）");
   s.log.push(`点呼を LINE で ${sent} 人に送信`);
   await saveMorning(s);
   return { record: s, sent };
@@ -247,15 +248,16 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   // 町内へのまとめ（s.briefing、エナガ隊長の文）は /admin と記録に残す。LINE は短くする
   const houses = s.morning.missions.filter((m) => m.status !== "no_answer").length;
   let sent = 0;
+  let failed = 0;
   for (const p of roster.participants) {
     if (!p.lineUserId) continue;
     const mine = personal.get(p.lineUserId) ?? [];
     const head = MSG.morningHello(...rcArgs(s));
     const body = p.role === "helper" ? [...MSG.housesToday(houses, mine.length === 0), ...mine] : mine;
-    await push(p.lineUserId, [...head, ...body]);
-    sent++;
+    if (await push(p.lineUserId, [...head, ...body])) sent++;
+    else failed++;
   }
-  s.log.push(`作戦を LINE で ${sent} 人に送信`);
+  s.log.push(`作戦を LINE で ${sent} 人に送信${failed > 0 ? `（⚠ ${failed} 人に送れず。/admin の「問題」を見てください）` : ""}`);
   await saveMorning(s);
   // 開始 20 分前（6:40）の時点で足りない家はすぐヘルプ通知（spec 4-a）、返事なしの家は声かけと家族へ（spec 4）
   for (const m of s.morning.missions) {
@@ -522,8 +524,7 @@ export async function applyThanks(
   for (const x of sorties) {
     const p = byId.get(x.participantId);
     if (!p?.lineUserId) continue;
-    await push(p.lineUserId, MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence));
-    sentTo++;
+    if (await push(p.lineUserId, MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence))) sentTo++;
   }
   const record: ThanksRecord = { choice, label, sentence, at: now.toISOString(), sentTo };
   s.thanks = { ...(s.thanks ?? {}), [m.id]: record };
@@ -570,8 +571,7 @@ export async function applyCheer(
   for (const x of sorties) {
     const p = byId.get(x.participantId);
     if (!p?.lineUserId) continue;
-    await push(p.lineUserId, MSG.cheerToHelper(requester?.nickname ?? "お願いした人", label, base.number));
-    sentTo++;
+    if (await push(p.lineUserId, MSG.cheerToHelper(requester?.nickname ?? "お願いした人", label, base.number))) sentTo++;
   }
   const record: CheerRecord = { choice, label, at: now.toISOString(), sentTo };
   s.cheers = { ...(s.cheers ?? {}), [m.id]: [...(s.cheers?.[m.id] ?? []), record] };
@@ -644,8 +644,7 @@ export async function notifyHelp(missionId: string, now = new Date()): Promise<{
   let sent = 0;
   for (const t of targets) {
     if (!t.lineUserId) continue;
-    await push(t.lineUserId, MSG.helpRequest(m.id, number, missing, tasks.length ? tasks : ["偵察（5分）"]));
-    sent++;
+    if (await push(t.lineUserId, MSG.helpRequest(m.id, number, missing, tasks.length ? tasks : ["偵察（5分）"]))) sent++;
   }
   setHelpState(s, m.id, {
     ...state,
@@ -806,15 +805,13 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
     if (p.role === "helper" && nextTeams[p.id]) {
       msgs.push(...MSG.weeklyNewTeam(nextTeams[p.id], nextTeamTerm(today)));
     }
-    await push(p.lineUserId, msgs);
-    sent++;
+    if (await push(p.lineUserId, msgs)) sent++;
   }
   for (const [requesterId, count] of Object.entries(summary.helpedCount)) {
     const requester = roster.participants.find((p) => p.id === requesterId);
     for (const link of await repo().listFamilyLinksByRequester(requesterId)) {
       if (link.familyLineUserId === requester?.lineUserId) continue;
-      await push(link.familyLineUserId, MSG.weeklyFamily(count));
-      sent++;
+      if (await push(link.familyLineUserId, MSG.weeklyFamily(count))) sent++;
     }
   }
   s.weekly = { weekStart: from, commentary: text.commentary, nextWeek: text.nextWeek, ranking: summary.ranking, teamTotals: summary.teamTotals, titles: summary.titles, at: now.toISOString() };

@@ -21,6 +21,8 @@ describe("splitSql（schema.sql を1文ずつに分ける）", () => {
       "line_sessions",
       "solo_logs",
       "town_cheers",
+      "line_events",
+      "state_locks",
     ]);
     expect(out.at(-1)).toMatch(/^insert into teams/);
     for (const s of out) expect(s).not.toContain("--");

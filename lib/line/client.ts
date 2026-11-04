@@ -1,5 +1,9 @@
 // LINE Messaging API を呼ぶ（返信・プッシュ・プロフィール）。サーバー側でだけ使う。
-// LINE_CHANNEL_ACCESS_TOKEN がない間は送らずにログに出す（開発用）。
+// LINE_CHANNEL_ACCESS_TOKEN がない間・LINE_DRY_RUN=1 の間は送らずにログに出す（開発・検証用）。
+// 送信の失敗は例外にしない: 1人に届かなくても、残りの人への配信を止めない。失敗は /admin の「問題」に残る。
+import { lineDryRun } from "../env";
+import { countLinePush } from "../ops/line-usage";
+import { recordProblem } from "../ops/problems";
 import { fitFive } from "./messages";
 import type { LineMessage } from "./types";
 
@@ -13,38 +17,49 @@ function token(): string | undefined {
   return process.env.LINE_CHANNEL_ACCESS_TOKEN;
 }
 
-async function post(pathname: string, body: unknown): Promise<void> {
+/** 送る。成功（または送らない設定）で true、失敗で false。例外は投げない */
+async function post(pathname: string, body: unknown, pushRecipients = 0): Promise<boolean> {
   const t = token();
-  if (!t) {
-    console.log(`[line] (送信せず) POST ${pathname}`, JSON.stringify(body));
-    return;
+  if (!t || lineDryRun()) {
+    console.log(`[line] (送信せず${t ? "・LINE_DRY_RUN" : ""}) POST ${pathname}`, JSON.stringify(body).slice(0, 2000));
+    if (t) await countLinePush(pushRecipients, true);
+    return true;
   }
-  const res = await fetch(`${API}${pathname}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`LINE API ${pathname} が ${res.status} を返しました: ${await res.text()}`);
+  try {
+    const res = await fetch(`${API}${pathname}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      await recordProblem(`line${pathname}`, `LINE API が ${res.status} を返しました: ${(await res.text()).slice(0, 200)}`);
+      return false;
+    }
+    await countLinePush(pushRecipients, false);
+    return true;
+  } catch (e) {
+    await recordProblem(`line${pathname}`, e);
+    return false;
   }
 }
 
 /** 返信（無料。replyToken は1回・約1分だけ有効、5通まで） */
-export async function reply(replyToken: string, messages: LineMessage[]): Promise<void> {
-  if (messages.length === 0) return;
-  await post("/message/reply", { replyToken, messages: fitFive(messages) });
+export async function reply(replyToken: string, messages: LineMessage[]): Promise<boolean> {
+  if (messages.length === 0) return true;
+  return post("/message/reply", { replyToken, messages: fitFive(messages) });
 }
 
-/** プッシュ（無料プランは月 200 通までなので、予告・点呼・作戦など大事なものだけに使う） */
-export async function push(to: string, messages: LineMessage[]): Promise<void> {
-  if (messages.length === 0) return;
-  await post("/message/push", { to, messages: fitFive(messages) });
+/** プッシュ（無料プランは月 200 通までなので、予告・点呼・作戦など大事なものだけに使う）。届けられたら true */
+export async function push(to: string, messages: LineMessage[]): Promise<boolean> {
+  if (messages.length === 0) return true;
+  return post("/message/push", { to, messages: fitFive(messages) }, 1);
 }
 
-/** 同じ文面を何人かに送る（500 人まで。通数は人数ぶん数える） */
-export async function multicast(to: string[], messages: LineMessage[]): Promise<void> {
-  if (to.length === 0 || messages.length === 0) return;
-  await post("/message/multicast", { to: to.slice(0, 500), messages: fitFive(messages) });
+/** 同じ文面を何人かに送る（500 人まで。通数は人数ぶん数える）。届けられたら true */
+export async function multicast(to: string[], messages: LineMessage[]): Promise<boolean> {
+  if (to.length === 0 || messages.length === 0) return true;
+  const list = to.slice(0, 500);
+  return post("/message/multicast", { to: list, messages: fitFive(messages) }, list.length);
 }
 
 /** ユーザーが送ってきた画像などの中身を取る（完了写真） */

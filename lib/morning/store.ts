@@ -1,6 +1,8 @@
 // 「今朝の状態」の保存先。DATABASE_URL があれば Neon の morning_state 表に JSON でまるごと置く。
 // ない間はサーバーのメモリに持つ（開発用。Vercel ではリクエストごとに別のサーバーになるので DB が要る）。
 import { hasDb, query } from "../db";
+import { isDeployed } from "../env";
+import { recordProblem } from "../ops/problems";
 import type { MorningRecord } from "./flow";
 import { DEMO_MORNING } from "./sample";
 
@@ -19,8 +21,17 @@ function initial(): MorningRecord {
   };
 }
 
-/** DB の不調（表がまだない・つながらない）は画面を止めず、メモリに退避して続ける。様子は /admin の「保存:」に出る */
+/**
+ * DB の不調（表がまだない・つながらない）のとき。
+ * 手元の開発では画面を止めず、メモリに退避して続ける。
+ * 公開している環境（Vercel）では退避しない: サーバーが別々なので、退避すると「保存できたように見えて消える」から。
+ * 失敗をそのまま返し、/admin の「問題」に残す。
+ */
 function fallback(e: unknown): void {
+  if (isDeployed()) {
+    void recordProblem("morning/store", e);
+    throw e;
+  }
   console.error("[morning/store] DB に保存できないのでメモリで続けます:", e instanceof Error ? e.message : e);
 }
 

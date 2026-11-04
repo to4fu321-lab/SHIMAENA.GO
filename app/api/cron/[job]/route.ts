@@ -4,6 +4,8 @@
 //   plan:     6:40 JST — 作戦配信（Hobby プランの cron は2本までなので、GitHub Actions の .github/workflows/plan.yml から呼ぶ。答えが届いた時の planIfDue は予備）
 //   weekly:   日曜の「今週の群れ」（announce が日曜なら先に行う。単独で呼ぶ用）
 import { checkForecastAndAnnounce, plan, ring, weeklyRecap } from "@/lib/morning/ops";
+import { withStateLock } from "@/lib/ops/lock";
+import { recordProblem } from "@/lib/ops/problems";
 
 export async function GET(req: Request, ctx: { params: Promise<{ job: string }> }): Promise<Response> {
   const secret = process.env.CRON_SECRET;
@@ -11,6 +13,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ job: string }> 
   if (req.headers.get("authorization") !== `Bearer ${secret}`) return new Response("Unauthorized", { status: 401 });
 
   const { job } = await ctx.params;
+  return withStateLock(`cron:${job}`, () => run(job));
+}
+
+async function run(job: string): Promise<Response> {
   try {
     switch (job) {
       case "announce": {
@@ -33,7 +39,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ job: string }> 
         return new Response("知らない仕事です: " + job, { status: 404 });
     }
   } catch (e) {
-    console.error(`[cron/${job}]`, e);
+    await recordProblem(`cron/${job}`, e);
     return Response.json({ ok: false, job, error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
 }

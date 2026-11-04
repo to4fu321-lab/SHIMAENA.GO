@@ -1,6 +1,7 @@
 // 今朝の先生（spec v1.6）: お願いする側の人が教えてくれた雪かきのコツ。朝をまたいで残す。
 // 表を増やさず、morning_state の「town_tips」の行に JSON で置く（日付のキーとはぶつからない）。DB がなければメモリ。
 import { hasDb, query } from "../db";
+import { isDeployed } from "../env";
 
 export interface Tip {
   id: string;
@@ -36,6 +37,7 @@ async function saveTips(tips: Tip[]): Promise<void> {
       [KEY, JSON.stringify({ tips })],
     );
   } catch (e) {
+    if (isDeployed()) throw e; // 公開環境では「保存できたように見えて消える」を避ける
     console.error("[tips] 保存できないのでメモリで続けます:", e instanceof Error ? e.message : e);
   }
 }
