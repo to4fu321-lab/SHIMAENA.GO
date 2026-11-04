@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { onTeam } from "@/lib/member";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -66,15 +67,17 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   ].filter(Boolean);
   const shorts = listShort(record, roster);
   const planned = m.rollcall.status === "planned";
+  // 「雪かきを頼む」で開いた、まだ終わっていない家（spec v1.10）
+  const asks = m.missions.filter((x) => x.ask && x.status !== "done").length;
   const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
   // 出動する: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
-  const canHelpHouse = planned && me?.role === "helper" && Boolean(me.teamId);
+  const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
   const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
-  const myTeam = me?.role === "helper" && me.teamId ? teamTheme(me.teamId) : undefined;
+  const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
   // 隊長のひとこと（spec v1.6）: 状態は計算、文は朝に1回だけ書いたもの（なければ定型）
   const st = me ? await soloStatus(me.id, new Date()).catch(() => undefined) : undefined;
   const last = st?.recent[0]?.date;
@@ -213,9 +216,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <p className="text-lg font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
               ) : (
                 <p className="text-lg font-bold">
-                  {rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
+                  {asks > 0 ? `雪かきのお願い ${asks}軒` : rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
                   <span className="block text-sm">
-                    {rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "朝6:40に、手伝ってほしい家が地図に出ます"}
+                    {asks > 0 ? "地図の赤い家へ。10分だけでも大歓迎" : rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "朝6:40に、手伝ってほしい家が地図に出ます"}
                   </span>
                 </p>
               )}

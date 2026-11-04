@@ -148,6 +148,8 @@ export function buildOptions(ctx: ConciergeContext): ConciergeOption[] {
     if (open("check_area")) list.push(O.online());
     list.push(O.cheer());
     if (!ctx.safety && open("own_house")) list.push(O.own_house(ctx));
+    // お互いさま（v1.10）: チームに入っていれば、人手の足りない家にも誘える（体を使うので前には出さない）
+    if (!ctx.safety && ctx.hasTeam && ctx.rollcall === "planned" && ctx.shortHouses > 0) list.push(O.join(ctx));
   }
   // 夜は、よその家・道の見回り・人手不足の家には誘わない（自分の家と家の中だけ）
   const nightOk: OptionId[] = ["rollcall", "own_house", "online", "tip", "cheer"];

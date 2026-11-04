@@ -156,13 +156,15 @@ describe("いまからやる", () => {
 });
 
 describe("リッチメニュー", () => {
-  it("4つのボタン（出動する／町の地図／活動カード／使い方）。設定は Web へ。大きいサイズに隙間なく敷きつめる", async () => {
+  it("4つのボタン（きょうの町／雪かきを頼む／町の地図／隊長に相談）。大きいサイズに隙間なく敷きつめる", async () => {
     const items = menuItems();
-    expect(items.map((i) => i.label)).toEqual(["出動する", "町の地図", "活動カード", "使い方"]);
+    expect(items.map((i) => i.label)).toEqual(["きょうの町", "雪かきを頼む", "町の地図", "隊長に相談"]);
     const obj = richMenuObject(items);
     expect(obj.size).toEqual({ width: 2500, height: 1686 });
     expect(obj.areas).toHaveLength(4);
-    expect(obj.areas[0].action).toEqual({ type: "message", label: "出動する", text: "出動する" });
+    expect(obj.areas[0].action).toMatchObject({ type: "uri", label: "きょうの町" });
+    expect(obj.areas[1].action).toEqual({ type: "message", label: "雪かきを頼む", text: "雪かきを頼む" });
+    expect(obj.areas[3].action).toEqual({ type: "message", label: "隊長に相談", text: "隊長に相談" });
     expect(obj.areas[0].bounds).toEqual({ x: 0, y: 0, width: 1250, height: 1686 });
     // タップ領域の面積の合計 = 画像の面積（すき間も重なりもない）
     const area = obj.areas.reduce((a, x) => a + x.bounds.width * x.bounds.height, 0);
@@ -170,7 +172,7 @@ describe("リッチメニュー", () => {
     expect(obj.chatBarText.length).toBeLessThanOrEqual(14);
     for (const a of obj.areas) expect(a.action.label.length).toBeLessThanOrEqual(20);
     const svg = richMenuSvg(items);
-    for (const label of ["出動する", "町の地図", "活動カード", "使い方"]) expect(svg).toContain(label);
+    for (const label of ["きょうの町", "雪かきを頼む", "町の地図", "隊長に相談"]) expect(svg).toContain(label);
     expect(svg).not.toContain("設定");
     const r = await setupRichMenu(); // トークンなし → 画像だけ
     expect(r.richMenuId).toBeNull();

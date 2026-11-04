@@ -1,6 +1,7 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
 import { isNight } from "../night";
+import { onTeam } from "../member";
 import { consistentSnowType } from "../snow-estimate";
 import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
@@ -32,9 +33,10 @@ import { TOWN } from "../town";
 import type { NowMinutes } from "./watch";
 import type { HelperAnswer, HelperWhen, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
 import { SNOW_THRESHOLD_CM, fetchHourlySnow, forecastSnowUntilMorning, sumSnowfall } from "../weather";
-import { activeHelpers, reopenDone } from "./rounds";
+import { activeHelpers, MAX_ROUNDS, reopenDone } from "./rounds";
+import { decompose, importance, requiredPeople } from "../game/mission";
 import { recordProblem } from "../ops/problems";
-import { applyPlan, autoAnswerProxyHomes, commanderInput, emptyMorning, putAnswer, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
+import { applyPlan, autoAnswerProxyHomes, commanderInput, DEMO_DATE, emptyMorning, putAnswer, requestDay, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
 import { recapText } from "../claude/recap";
@@ -54,6 +56,7 @@ import {
   helpDue,
   helpState,
   missingPeople,
+  pickAskTargets,
   pickHelpTargets,
   pickKnockTargets,
   pickTaskNow,
@@ -61,13 +64,17 @@ import {
   setHelpState,
 } from "./watch";
 
+/** 前の朝の記録は日付で残す（週のまとめに使う）。見本やまっさらな朝は残さない */
+async function archiveIfReal(current: MorningRecord, nextDate: string): Promise<void> {
+  if (current.morning.missions.length > 0 && current.morning.rollcall.date !== nextDate && current.answers.length > 0) {
+    await archiveMorning(current);
+  }
+}
+
 /** 前夜の予告: 今朝の状態を作り直し、LINE のある全員に送る */
 export async function announce(opts: { date: string; forecastCm: number; tempMinC?: number; windMaxMs?: number; depthCm?: number }): Promise<MorningRecord> {
   const current = await loadMorning();
-  // 前の朝の記録は日付で残す（週のまとめに使う）。見本やまっさらな朝は残さない
-  if (current.morning.missions.length > 0 && current.morning.rollcall.date !== opts.date && current.answers.length > 0) {
-    await archiveMorning(current);
-  }
+  await archiveIfReal(current, opts.date);
   const a = await announceText({ date: opts.date, forecastCm: opts.forecastCm });
   const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
@@ -681,6 +688,7 @@ export async function notifyHelp(missionId: string, now = new Date()): Promise<{
   const roster = await loadRoster();
   const m = s.morning.missions.find((x) => x.id === missionId);
   if (!m || m.status === "done") return null;
+  if (m.ask) return null; // 「雪かきを頼む」の家は 300m の1回だけ（月の通数を守る）
   const state = helpState(s, m.id);
   if (state.stage >= 4) return null;
   const missing = missingPeople(s, m);
@@ -720,7 +728,7 @@ export async function escalateHelpIfDue(now = new Date()): Promise<number> {
   const s = await loadMorning();
   let n = 0;
   for (const m of s.morning.missions) {
-    if (m.status !== "short") continue;
+    if (m.status !== "short" || m.ask) continue;
     if (!helpDue(helpState(s, m.id), now)) continue;
     if ((await notifyHelp(m.id, now)) !== null) n++;
   }
@@ -807,7 +815,7 @@ export async function joinNearby(participantId: string, minutes: NowMinutes = 10
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);
-  if (!p || p.role !== "helper" || !p.teamId || s.morning.rollcall.status !== "planned") {
+  if (!p || !onTeam(p) || s.morning.rollcall.status !== "planned") {
     return { joined: false, messages: MSG.nowNothing() };
   }
   const offer = pickTaskNow(s, roster, p, minutes);
@@ -845,7 +853,7 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
   s.morning.scores = [...s.morning.scores.filter((e) => e.reason !== "weekly_goal"), ...summary.goalEvents];
 
   // 翌週のチーム: 出撃回数と体力でバランス（Claude の案ではなく計算。週ごとの種で毎週変わる）
-  const helpers = roster.participants.filter((p) => p.role === "helper");
+  const helpers = roster.participants.filter((p) => p.role === "helper" || onTeam(p));
   const seed = Number(from.replace(/-/g, "")) % 100000;
   const nextTeams = shuffleTeams(helpers, summary.sortieDays, seed);
   for (const h of helpers) {
@@ -860,7 +868,7 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
     const msgs: LineMessage[] = MSG.weeklyToAll(text.commentary, text.nextWeek);
     const title = titleOf.get(p.id);
     if (title) msgs.push(...MSG.weeklyTitle(title.title, title.rareCard));
-    if (p.role === "helper" && nextTeams[p.id]) {
+    if (nextTeams[p.id]) {
       msgs.push(...MSG.weeklyNewTeam(nextTeams[p.id], nextTeamTerm(today)));
     }
     if (await push(p.lineUserId, msgs)) sent++;
@@ -879,13 +887,98 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
 }
 
 /** 「出動する（10／20／30／60分）」: 近くの小タスクを1件さがして提案する */
+// ---- 雪かきを頼む（spec v1.10）: 6〜19時いつでも ----
+
+/** 知らせる範囲・1人1日の回数・1回で知らせる人数（月 200 通の無料枠を守る） */
+export const ASK_DAILY_CAP = 3;
+export const ASK_MAX_RECIPIENTS = 5;
+
+/**
+ * お願いする側の「雪かきを頼む」: その人の家を今日の雪かき待ちにして地図に出し、300m 以内の手伝える人へ LINE で知らせる。
+ * 雪の朝でない日は、その日の記録を新しく始める（出動・写真・完了・カードの流れはそのまま使える）。
+ */
+export async function askForHelp(lineUserId: string, now = new Date()): Promise<LineMessage[]> {
+  if (isNight(now)) return MSG.askNight();
+  const roster = await loadRoster();
+  const p = roster.participants.find((x) => x.lineUserId === lineUserId);
+  if (!p) return MSG.notRegistered();
+  if (p.role !== "requester") return MSG.askHelperOnly();
+  const base = roster.bases.find((b) => b.requesterId === p.id);
+  if (!base) return MSG.notRegistered();
+
+  let s = await loadMorning();
+  // 見本の朝（デモ）ならその中に、そうでなければ本当の今日の記録に（前の雪の日の記録には足さない）
+  const today = s.morning.rollcall.date === DEMO_DATE ? DEMO_DATE : jstDate(now);
+  if (s.morning.rollcall.date !== today || s.morning.rollcall.status === "closed") {
+    await archiveIfReal(s, today);
+    s = requestDay({ date: today, viewerId: s.morning.viewerId });
+  }
+  const at = now.toISOString();
+  const rc = s.morning.rollcall;
+  // 雪の朝の点呼の最中（作戦の前）: 点呼の答えとして受け付け、作戦で人を決める
+  if (rc.status === "announced" || rc.status === "open") {
+    putAnswer(s, p.id, "no", at);
+    s.log.push(`拠点${base.number}: 「雪かきを頼む」を点呼の答えとして受け付け`);
+    await saveMorning(s);
+    return MSG.askQueued();
+  }
+  const prev = s.morning.missions.filter((m) => m.baseId === base.id);
+  if (prev.some((m) => m.status !== "done") || s.asked?.[base.id] || prev.length >= MAX_ROUNDS) return MSG.askAlready(base.number);
+
+  const level = p.level ?? 2;
+  const round = prev.length + 1;
+  const m: Mission = {
+    id: round === 1 ? `m-${base.id}` : `m-${base.id}-r${round}`,
+    rollcallId: rc.id,
+    baseId: base.id,
+    importance: importance(level, "no"),
+    requiredPeople: requiredPeople(level, "no"),
+    subtasks: decompose(p.clearArea ?? "entrance", level),
+    status: "short",
+    startAt: at,
+    reason: "お願いがありました",
+    round,
+    ask: true,
+  };
+  s.morning.missions.push(m);
+  putAnswer(s, p.id, "no", at);
+  s.asked = { ...s.asked, [base.id]: at };
+
+  // 300m 以内の手伝える人へ（1人1日3回まで・1回で5人まで）
+  const targets = pickAskTargets(s, roster, m, ASK_DAILY_CAP, ASK_MAX_RECIPIENTS);
+  const tasks = m.subtasks.filter((t) => t.minutes === 10).map((t) => `${t.label}（10分）`);
+  let sent = 0;
+  for (const t of targets) {
+    if (!t.lineUserId) continue;
+    if (await push(t.lineUserId, MSG.helpRequest(m.id, base.number, missingPeople(s, m), tasks.length ? tasks : ["偵察（10分）"]))) {
+      sent++;
+      s.askSends = { ...s.askSends, [t.id]: (s.askSends?.[t.id] ?? 0) + 1 };
+    }
+  }
+  setHelpState(s, m.id, { stage: 1, lastAt: at, notifiedIds: targets.map((t) => t.id) });
+  s.log.push(`拠点${base.number}: 「雪かきを頼む」で雪かき待ちに（近くの ${sent}人に LINE）`);
+  await saveMorning(s);
+  return MSG.askOpened(base.number, sent);
+}
+
+/** いま、この人に手伝える家があるか（「出動する」を行き止まりにしないため。spec v1.10） */
+export async function helpOpenFor(participantId: string, minutes: NowMinutes = 60, now = new Date()): Promise<boolean> {
+  if (isNight(now)) return true; // 夜は offerTaskNow が夜の案内を返す
+  const s = await loadMorning();
+  if (s.morning.rollcall.status !== "planned") return false;
+  const roster = await loadRoster();
+  const p = roster.participants.find((x) => x.id === participantId);
+  if (!p || !(p.role === "helper" || onTeam(p))) return true; // チームのないお願いする側の案内は offerTaskNow のまま
+  return pickTaskNow(s, roster, p, minutes) !== null;
+}
+
 export async function offerTaskNow(participantId: string, minutes: NowMinutes, now = new Date()): Promise<LineMessage[]> {
   if (isNight(now)) return MSG.nightOwnHouseOnly();
   const s = await loadMorning();
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.id === participantId);
-  if (p?.role === "requester") return MSG.nowForRequester();
-  if (!p || p.role !== "helper") return MSG.nowNothing();
+  if (p?.role === "requester" && !onTeam(p)) return MSG.nowForRequester();
+  if (!p || !(p.role === "helper" || onTeam(p))) return MSG.nowNothing();
   if (s.morning.rollcall.status !== "planned") return MSG.nowNothing();
   const offer = pickTaskNow(s, roster, p, minutes);
   if (!offer) return MSG.nowNothing();

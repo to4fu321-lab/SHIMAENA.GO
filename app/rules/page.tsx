@@ -62,29 +62,29 @@ export default function RulesPage() {
     <>
     <Card title="LINE のメニュー（下の4つ）">
       <ul className="space-y-2">
-        {(["go", "map", "card", "guide"] as MenuKey[]).map((k) => (
+        {(["town", "ask", "map", "consult"] as MenuKey[]).map((k) => (
           <li key={k} className="flex items-center gap-3">
             <span className="grid size-12 shrink-0 place-items-center rounded-xl ring-1 ring-ink/20" style={{ background: MENU[k].bg, color: MENU[k].fg }}>
               <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
-                <Icon name={MENU[k].icon} size={26} accent={k === "go" ? MENU[k].bg : MENU[k].accent} />
+                <Icon name={MENU[k].icon} size={26} accent={k === "town" ? MENU[k].bg : MENU[k].accent} />
               </span>
             </span>
             <span>
               <b>{MENU[k].label}</b>
               <span className="block text-base text-ink-soft">
-                {k === "go"
-                  ? "何分動けるかを選ぶと、近くの手伝いを1つ探します。なければ、ひとりでできる10分を案内します。"
-                  : k === "map"
-                    ? "町の雪の状況と、助けが必要な家（50m のマス）を見られます。"
-                    : k === "card"
-                      ? "今日の活動と、もらったカードをふりかえります。"
-                      : "このページです。触って覚えるチュートリアルと、このルール。"}
+                {k === "town"
+                  ? "ホームを開きます。のぞくだけでもOK。今日の雪・チーム・出動・ソロ活動はここから。"
+                  : k === "ask"
+                    ? "6〜19時ならいつでも、自分の家の雪かきを頼めます。近くの人に知らせます。"
+                    : k === "map"
+                      ? "町の雪の状況と、助けが必要な家（50m のマス）を見られます。"
+                      : "シマエナ隊長に、何をすればいいか・今日の雪などを聞けます。文でも声でもOK。"}
               </span>
             </span>
           </li>
         ))}
       </ul>
-      <p className="text-base">登録の確認・やり直しは、ホームの下の「設定」から。</p>
+      <p className="text-base">活動カード・使い方は、ホームの下のタブから。登録の確認・やり直しは「設定」から。</p>
     </Card>
 
     <Card title="手伝う人は、3つだけ">

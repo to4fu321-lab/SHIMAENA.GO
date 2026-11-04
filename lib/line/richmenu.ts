@@ -1,5 +1,6 @@
-// LINE のリッチメニュー（spec v1.4）: 出動する／町の地図／活動カード／使い方 の4つ。設定は Web の画面（/settings）へ移した。
-// 画像は SVG から作る（大きいサイズ 2500×1686）。左半分が「出動する」（いちばん目立つ灯りオレンジ）、右に3つを縦に並べる。
+// LINE のリッチメニュー（spec v1.10）: きょうの町／雪かきを頼む／町の地図／隊長に相談 の4つ。
+// 左の大きい「きょうの町」はホームを開くだけ（押しても何も決まらない）。活動カード・使い方・設定はホームの下のタブから。
+// 画像は SVG から作る（大きいサイズ 2500×1686）。左半分が「きょうの町」（いちばん目立つ灯りオレンジ）、右に3つを縦に並べる。
 // 色・アイコン・名前は Web と同じもの（lib/brand.ts）。作るときは古い同名メニューを消してから。
 import { COLORS, MENU, type MenuKey, iconSvg } from "../brand";
 import { svgToPng } from "../cards/png";
@@ -33,11 +34,11 @@ export function menuItems(): MenuItem[] {
     bounds,
   });
   return [
-    // 「出動する」は文字を送る → Bot が「何分動けますか？」と聞き、近くの手伝いを探す
-    item("go", { type: "message", text: MENU.go.label }, { x: 0, y: 0, width: half, height: H }),
-    item("map", { type: "uri", uri: liffUrl("/map") }, { x: half, y: 0, width: half, height: row }),
-    item("card", { type: "uri", uri: liffUrl("/cards") }, { x: half, y: row, width: half, height: row }),
-    item("guide", { type: "uri", uri: liffUrl("/rules") }, { x: half, y: row * 2, width: half, height: H - row * 2 }),
+    // 「きょうの町」はホームを開く。「雪かきを頼む」「隊長に相談」は文字を送り、Bot が返事をする（返信なので通数0）
+    item("town", { type: "uri", uri: liffUrl("/") }, { x: 0, y: 0, width: half, height: H }),
+    item("ask", { type: "message", text: MENU.ask.label }, { x: half, y: 0, width: half, height: row }),
+    item("map", { type: "uri", uri: liffUrl("/map") }, { x: half, y: row, width: half, height: row }),
+    item("consult", { type: "message", text: MENU.consult.label }, { x: half, y: row * 2, width: half, height: H - row * 2 }),
   ];
 }
 
@@ -52,7 +53,7 @@ function snowDots(): string {
   return dots.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#ffffff"/>`).join("");
 }
 
-/** 左の大きな「出動する」 */
+/** 左の大きな「きょうの町」 */
 function bigTile(it: MenuItem): string {
   const m = MENU[it.key];
   const x = it.bounds.x + GAP;
@@ -67,7 +68,7 @@ function bigTile(it: MenuItem): string {
   <rect x="${x + 70}" y="${y + 950}" width="${w - 140}" height="${h - 1020}" rx="48" fill="#ffffff"/>
   <text x="${cx}" y="${y + 1190}" font-family="${FONT}" font-size="210" font-weight="700" fill="${COLORS.ink}" text-anchor="middle">${esc(it.label)}</text>
   <text x="${cx}" y="${y + 1370}" font-family="${FONT}" font-size="74" font-weight="700" fill="${COLORS.ink}" text-anchor="middle">${esc(it.sub)}</text>
-  <text x="${cx}" y="${y + 1480}" font-family="${FONT}" font-size="60" font-weight="400" fill="${COLORS.ink}" text-anchor="middle">10分だけでも大歓迎</text>`;
+  <text x="${cx}" y="${y + 1480}" font-family="${FONT}" font-size="60" font-weight="400" fill="${COLORS.ink}" text-anchor="middle">雪の様子・チーム・出動・ソロ</text>`;
 }
 
 /** 右の小さな3つ（アイコン＋名前＋説明） */
@@ -83,7 +84,7 @@ function smallTile(it: MenuItem): string {
   <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="56" fill="${m.bg}"${light ? ` stroke="${COLORS.ink}" stroke-opacity="0.25" stroke-width="4"` : ""}/>
   <circle cx="${x + 230}" cy="${cy}" r="170" fill="#ffffff"/>
   <g transform="translate(${x + 230 - 120} ${cy - 120}) scale(2.4)">${iconSvg(m.icon, COLORS.ink, m.accent)}</g>
-  <text x="${x + 460}" y="${cy + 10}" font-family="${FONT}" font-size="132" font-weight="700" fill="${m.fg}">${esc(it.label)}</text>
+  <text x="${x + 460}" y="${cy + 10}" font-family="${FONT}" font-size="${it.label.length > 5 ? 112 : 132}" font-weight="700" fill="${m.fg}">${esc(it.label)}</text>
   <text x="${x + 462}" y="${cy + 120}" font-family="${FONT}" font-size="58" font-weight="700" fill="${m.fg}">${esc(it.sub)}</text>`;
 }
 
@@ -103,7 +104,7 @@ export function richMenuObject(items = menuItems()) {
     size: { width: W, height: H },
     selected: true,
     name: RICH_MENU_NAME,
-    chatBarText: "メニュー（出動・地図）",
+    chatBarText: "メニュー（町・相談）",
     areas: items.map((it) => ({
       bounds: it.bounds,
       action: it.action.type === "uri" ? { type: "uri", label: it.label, uri: it.action.uri } : { type: "message", label: it.label, text: it.action.text },

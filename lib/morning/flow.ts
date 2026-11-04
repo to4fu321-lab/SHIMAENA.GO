@@ -55,6 +55,9 @@ export interface MorningRecord {
   homeNow?: Record<string, string>;
   /** 自宅の雪かきへの応援・おつかれさま（その日だけ）。lib/solo/home-cheer.ts */
   homeCheers?: import("../solo/home-cheer").HomeCheers;
+  /** 「雪かきを頼む」（spec v1.10）: 頼んだ家（拠点 ID → 時刻 ISO）と、知らせを受けた人の回数（参加者 ID → 回数）。その日だけ */
+  asked?: Record<string, string>;
+  askSends?: Record<string, number>;
 }
 
 export interface ThanksRecord {
@@ -103,6 +106,14 @@ export function emptyMorning(
     clockMin: 6 * 60 + 25,
     log: ["前夜 21:00 予告を送りました"],
   };
+}
+
+/** 雪の朝でない日に「雪かきを頼む」が押されたときの、その日の記録（作戦のあとと同じ形にして、出動・地図・完了の流れをそのまま使う） */
+export function requestDay(opts: { date: string; viewerId?: string }): MorningRecord {
+  const s = emptyMorning({ date: opts.date, forecastCm: 0, viewerId: opts.viewerId, announcement: "今日は雪かきのお願いがあります。" });
+  s.morning.rollcall.status = "planned";
+  s.log = ["「雪かきを頼む」で今日の記録を始めました"];
+  return s;
 }
 
 export function ringRollcall(s: MorningRecord): void {

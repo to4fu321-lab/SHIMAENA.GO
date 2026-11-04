@@ -16,7 +16,7 @@ export const COLORS = {
 /** アイコンの中の「差し色」。描く側で好きな色に置き換える */
 export const ACCENT_TOKEN = "var(--icon-accent, currentColor)";
 
-export type IconName = "go" | "map" | "card" | "guide" | "settings" | "house";
+export type IconName = "go" | "map" | "card" | "guide" | "settings" | "house" | "town" | "ask" | "chat";
 
 /** 線の書式。w は線の太さ、fill は塗り（なしなら none） */
 const st = (w = 7, fill = "none") => `fill="${fill}" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
@@ -36,10 +36,20 @@ export const ICONS: Record<IconName, string> = {
   settings: `<circle cx="50" cy="50" r="14" ${st(7, A)}/><path d="M50 12 V24 M50 76 V88 M12 50 H24 M76 50 H88 M23 23 L32 32 M68 68 L77 77 M77 23 L68 32 M32 68 L23 77" ${st()}/>`,
   // 家と灯り
   house: `<path d="M14 48 L50 16 L86 48 V86 H14 Z" ${st()}/><rect x="38" y="52" width="24" height="20" rx="3" ${st(5, A)}/>`,
+  // きょうの町: ならんだ2軒の家と雪
+  town: `<path d="M10 56 L32 36 L54 56 V86 H10 Z" ${st(6)}/><path d="M46 46 L68 26 L90 46 V86 H54" ${st(6)}/><rect x="25" y="64" width="14" height="14" rx="2" ${st(5, A)}/><rect x="64" y="54" width="12" height="12" rx="2" ${st(5, A)}/><circle cx="22" cy="18" r="4" fill="currentColor"/><circle cx="40" cy="10" r="3" fill="currentColor"/><circle cx="86" cy="12" r="3" fill="currentColor"/>`,
+  // 雪かきを頼む: 家と、上がった手（ハート）
+  ask: `<path d="M12 50 L42 24 L72 50 V86 H12 Z" ${st(6)}/><rect x="34" y="60" width="16" height="26" rx="2" ${st(5)}/><path d="M78 40 c-6 -8 -18 -4 -14 6 l14 14 l14 -14 c4 -10 -8 -14 -14 -6 Z" ${st(5, A)}/>`,
+  // 隊長に相談: ふきだし
+  chat: `<path d="M16 22 H84 a6 6 0 0 1 6 6 V62 a6 6 0 0 1 -6 6 H46 L28 84 V68 H16 a6 6 0 0 1 -6 -6 V28 a6 6 0 0 1 6 -6 Z" ${st(7, A)}/><circle cx="32" cy="45" r="5" fill="currentColor"/><circle cx="50" cy="45" r="5" fill="currentColor"/><circle cx="68" cy="45" r="5" fill="currentColor"/>`,
 };
 
 /** LINE のメニューと Web で同じ名前・説明・色を使う */
 export const MENU = {
+  // v1.10 のリッチメニュー: きょうの町（ホーム）／雪かきを頼む／町の地図／隊長に相談
+  town: { label: "きょうの町", sub: "のぞくだけでもOK", icon: "town", bg: COLORS.lamp, fg: COLORS.white, accent: COLORS.warm },
+  ask: { label: "雪かきを頼む", sub: "6〜19時いつでも", icon: "ask", bg: COLORS.ink, fg: COLORS.white, accent: COLORS.camellia },
+  consult: { label: "隊長に相談", sub: "なんでも聞いてね", icon: "chat", bg: COLORS.warm, fg: COLORS.ink, accent: COLORS.ice },
   go: { label: "出動する", sub: "近くの雪かき・手伝いを探す", icon: "go", bg: COLORS.lamp, fg: COLORS.white, accent: COLORS.warm },
   map: { label: "町の地図", sub: "雪の状況・助けが必要な家", icon: "map", bg: COLORS.winter, fg: COLORS.white, accent: COLORS.lamp },
   card: { label: "活動カード", sub: "今日の活動をふりかえる", icon: "card", bg: COLORS.ink, fg: COLORS.white, accent: COLORS.camellia },

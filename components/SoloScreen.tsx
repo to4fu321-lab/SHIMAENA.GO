@@ -470,7 +470,7 @@ export default function SoloScreen({
               </div>
             ) : (
               <p className="mt-2 rounded-2xl bg-paper px-3 py-2 text-sm text-ink-soft">
-                {role === "helper" ? "今は家の募集がありません（雪の朝の作戦中に出ます）。見回りをどうぞ。" : "家の雪かきの募集は手伝う側の画面に出ます。自分の家の雪かきをどうぞ。"}
+                {role === "helper" ? "今は家の募集がありません（雪の朝や、近所から頼まれたときに出ます）。見回りをどうぞ。" : "今は家の募集がありません（雪の朝や、近所から頼まれたときに出ます）。自分の家の雪かきをどうぞ。"}
               </p>
             )}
             {helpText && (

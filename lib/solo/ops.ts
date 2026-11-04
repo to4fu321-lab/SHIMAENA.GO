@@ -4,6 +4,7 @@
 import { inviteDrafts } from "../claude/invite";
 import { claimPairing, inviteResultLine, inviteUrl, readInviteStats } from "../invite";
 import { allowedAtNight, isNight, nightRefusal } from "../night";
+import { onTeam } from "../member";
 import { randomBytes } from "node:crypto";
 import { issueSoloCard, revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
@@ -175,7 +176,7 @@ export async function completeSolo(
   // チームの得点（現地だけ・1人1日 15点まで）。失敗しても羽と記録は残す
   let teamPoints = 0;
   let teamCapped = false;
-  if (p.role === "helper" && p.teamId) {
+  if (onTeam(p) && p.teamId) {
     try {
       const already = await soloPointsToday(record, p.id, today);
       const events = scoreSolo({ kind: mission.kind, onsite: mission.onsite, photoChecked, teamId: p.teamId, participantId: p.id, at }, already.all, already.online);
