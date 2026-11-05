@@ -1,5 +1,5 @@
 // 雪かき中の印（spec v1.12）。行き先カードの「雪かき中の印（玄関で見せる）」から開く。
-// 腕章は町内で1種類（色なし）。毎週変わるチームの色と、毎日変わる合言葉はこの画面で見せる。名前は出さない。
+// 持ち物（腕章など）は使わない。毎週変わるチームの色と、毎日変わる合言葉はこの画面で見せる。名前は出さない。
 // 本人（LINE でログインした人・デモの架空の人）だけが見られる。夜は合言葉を出さない。
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -56,7 +56,7 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
     <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper text-ink">
       <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
 
-      {/* 町内共通の印（毎週同じ。腕章と同じもの） */}
+      {/* 町内共通の印（毎週同じ） */}
       <section className="bg-ink px-4 py-3 text-center text-white" aria-label="町内共通の印">
         <p className="text-sm font-bold tracking-[0.2em]">{TOWN.name.replace("（架空）", "")} 公認</p>
         <p className="text-2xl font-bold">シマエナGO 雪かき中</p>
@@ -99,7 +99,7 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
 
       {/* 玄関での約束（決まった文） */}
       <section className="space-y-1 bg-card px-4 py-4 text-lg" aria-label="玄関での約束">
-        <p>🪪 町内の腕章をつけて、この画面を見せます。</p>
+        <p>📱 玄関では、この画面を見せます。</p>
         <p>🚪 玄関は開けてもらわなくて大丈夫です。</p>
         <p>💴 お金や物は受け取りません。家には上がりません。</p>
         <Link href={`/map${q}`} className="btn btn-white mt-3 w-full text-lg">
