@@ -10,6 +10,7 @@ import Mascot, { SnowTown } from "./Mascot";
 import QuickShare from "./QuickShare";
 import InviteDrafts from "./InviteDrafts";
 import CardReveal from "./CardReveal";
+import NakamaAfter from "./NakamaAfter";
 import { clearMessage } from "@/lib/share-links";
 
 const FEATHERS = [
@@ -172,6 +173,9 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
         {/* 自分の完了なら、その場で X・LINE・Instagram に知らせられる */}
         {clear.mine && <QuickShare text={clearMessage("house")} image={`/api/share/today.png?v=${clear.done}`} />}
         {clear.mine && clear.invites && clear.invites.length > 0 && <InviteDrafts drafts={clear.invites} url={clear.inviteUrl} result={clear.inviteResult} />}
+
+        {/* 次の人へバトン・次は？（spec v1.13。任意） */}
+        {clear.mine && clear.viewerId && <NakamaAfter viewerId={clear.viewerId} source="help_house" missionId={clear.missionId} photoChecked={Boolean(clear.evidence)} />}
 
         <button onClick={onClose} className="btn btn-ink btn-big mt-4 w-full">
           町の地図へ戻る

@@ -51,6 +51,8 @@ export interface ClearSummary {
   firstFlight?: boolean;
   /** 画面を見ている人が、この家に来た人のひとりか */
   mine?: boolean;
+  /** 本人の完了のときだけ、その人の ID（完了画面のバトンと「次は？」に使う。spec v1.13） */
+  viewerId?: string;
   /** あなたが主役の招待文（本人の完了のときだけ、spec v1.6） */
   invites?: string[];
   /** v1.8: 招待リンク（あなたからの招待の印つき）と、誘った結果のひとこと */
@@ -142,6 +144,7 @@ export function summarizeClear(
     myPoints,
     firstFlight,
     mine,
+    ...(mine && opts.viewerId ? { viewerId: opts.viewerId } : {}),
     snowTypeLabel,
     care: check?.care || undefined,
     evidence: check?.evidence || undefined,

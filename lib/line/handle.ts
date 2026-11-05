@@ -33,6 +33,7 @@ import { teamTerm } from "../team-theme";
 import type { FamilyLink, Participant } from "../types";
 import { getMessageContent, getProfile, push, reply } from "./client";
 import { liffUrl } from "../url";
+import { answerMeetup } from "../nakama/ops";
 import { ensureTeam } from "../member";
 import { MSG } from "./messages";
 import { STORM_LINES, stormHeadline, stormStatus } from "../storm";
@@ -297,6 +298,20 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^\s*道の?通知\s*$/.test(ev.message.text)) {
     const p = await r.findParticipantByLineUserId(lineUserId);
     if (ev.replyToken) await reply(ev.replyToken, p ? MSG.roadAsk() : MSG.notRegistered());
+    return;
+  }
+
+  // ゆるく合流の返事（spec v1.13）: 「一緒にやる」「今回はやめておく」。答えられるのは誘われた本人だけ
+  if (ev.type === "postback" && "postback" in ev && /^nk:(yes|no)=/.test(ev.postback.data)) {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    let messages: LineMessage[] = MSG.notRegistered();
+    if (p) {
+      const yes = ev.postback.data.startsWith("nk:yes=");
+      const a = await answerMeetup(p.id, ev.postback.data.slice(7), yes, new Date());
+      const place = a.matched ? (a.matched.baseNumber ? `地図の${a.matched.baseNumber}番の家で、10分だけ一緒にどうぞ。` : "それぞれの家の前で、同じ10分を。") : "";
+      messages = MSG.nakamaAnswer(a.matched ? `🎉 ${a.matched.otherName}さんと${a.text}\n${place}` : a.text, Boolean(a.matched));
+    }
+    if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
   }
 

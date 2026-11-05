@@ -19,6 +19,7 @@ import MissionFlash from "./MissionFlash";
 import MissionRun from "./MissionRun";
 import RoadReportRun from "./RoadReportRun";
 import BragShare from "./BragShare";
+import NakamaAfter from "./NakamaAfter";
 import Mascot, { SnowTown } from "./Mascot";
 import TabBar from "./TabBar";
 
@@ -380,6 +381,9 @@ export default function SoloScreen({
               </Link>
             </p>
           )}
+          {(clear.kind === "own_house" || clear.kind === "report_snow") && (
+            <NakamaAfter viewerId={viewerId} source={clear.kind === "report_snow" ? "road" : "own_house"} photoChecked={clear.photoChecked} q={q} />
+          )}
           {brag && <BragShare viewerId={viewerId} before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />}
           <QuickShare text={roadDone ? "近所の道の危険を、写真と場所で知らせました。⚠️\nみんなで冬の道を安全に。\n#シマエナGO #雪道" : clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
           {shareOptions.length > 0 && (
@@ -418,6 +422,13 @@ export default function SoloScreen({
           <span>今日 +{todayFeathers}羽</span>
           <span>連続 {status.streak}日</span>
         </p>
+        {!runMission && (
+          // なかま（spec v1.13）: 任意。ひとりでの出動はこのままワンタップ
+          <Link href={`/nakama${q}`} className="mt-1 flex min-h-10 items-center justify-between rounded-xl bg-white/15 px-3 text-base font-bold">
+            <span>👥 だれかと一緒に・バトン（任意）</span>
+            <span aria-hidden="true">›</span>
+          </Link>
+        )}
       </div>
       {result && (!result.ok || (result.road && !result.summary && !flash)) && (
         <p className={`shrink-0 rounded-2xl px-3 py-2 text-base ${result.ok ? "bg-ice-soft" : "bg-warm"}`} role="status">

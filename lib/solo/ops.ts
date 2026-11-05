@@ -55,6 +55,8 @@ export interface SoloClearSummary {
   nextCard: NextCard;
   /** 写真を付けたとき: 確認できたか／報告として受け付けたか */
   photoNote?: string;
+  /** 写真を Claude が確認できたか（バトンの「写真で確認済み」に使う。spec v1.13） */
+  photoChecked?: boolean;
   /** v1.7: チームに入った点（現地の活動だけ。オンラインとチームのない人は 0） */
   teamPoints: number;
   teamName?: string;
@@ -245,6 +247,7 @@ export async function completeSolo(
     hitokoto,
     nextCard: nextCard(card ? [...cards, card] : cards, streak),
     photoNote,
+    photoChecked,
     teamPoints,
     teamName: p.teamId ? getTeam(p.teamId).name : undefined,
     teamCapped,

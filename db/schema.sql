@@ -145,6 +145,58 @@ create table if not exists road_alert_sends (
   primary key (participant_id, date)
 );
 
+-- なかま機能（spec v1.13: ゆるく合流・雪かきバトン・再会）。足すだけで今の表には触らない。最初に使うときにも自動で作る
+-- 交流の希望（今日のスタイル・次は？）。選ばなければ行はなく、いつもどおり自由参加
+create table if not exists nakama_prefs (
+  participant_id text primary key,
+  next_wish text,                 -- reunion / new / solo / none
+  today_mode text,                -- solo / together / reunion / new
+  today_date text,
+  today_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+-- 合流の提案。誘った人と誘われた人の両方の同意（accepted）でだけ成立。家の場所は持たない（地図の家の番号だけ）
+create table if not exists meetups (
+  id text primary key,
+  date text not null,
+  from_id text not null,
+  to_id text not null,
+  kind text not null,             -- reunion / welcome / senior / new / nearby
+  win text not null,              -- now10 / today
+  base_number smallint,
+  mission_id text,
+  status text not null,           -- proposed / accepted / declined
+  message text not null,
+  created_at timestamptz not null,
+  responded_at timestamptz
+);
+create index if not exists meetups_date on meetups (date);
+
+-- 雪かきバトン。地域は約250m四方。書いた人は画面に出さない。写真は保存しない（確認済みの印だけ）
+create table if not exists batons (
+  id text primary key,
+  participant_id text not null,
+  date text not null,
+  area text not null,
+  source text not null,           -- own_house / help_house / road
+  status text not null,           -- done / partial
+  message text not null,
+  photo_checked boolean not null default false,
+  story text,
+  at timestamptz not null
+);
+create index if not exists batons_area on batons (date, area);
+
+-- バトンへの「前の人ありがとう」「続きをやります」（1人1回）
+create table if not exists baton_reactions (
+  baton_id text not null,
+  participant_id text not null,
+  reaction text not null,         -- thanks / continue
+  at timestamptz not null default now(),
+  primary key (baton_id, participant_id)
+);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

@@ -483,4 +483,21 @@ export const MSG = {
       pb("通知を止める", "road:off"),
     ]),
   ],
+  /** ゆるく合流（spec v1.13）: 誘われた人へ1回だけ。家の場所は出さない。断ってもよいことを必ず書く */
+  nakamaInvite: (o: { id: string; fromName: string; message: string; windowLabel: string }): LineMessage[] => [
+    card(`👥 ${o.fromName}さんから、ゆるく合流のお誘い（${o.windowLabel}）\n${o.message}\n断っても大丈夫。理由は相手に伝わりません。`, [
+      choose("一緒にやる", `nk:yes=${o.id}`),
+      choose("今回はやめておく", `nk:no=${o.id}`, "soft"),
+      { label: "画面で見る", action: { type: "uri", label: "画面で見る", uri: liffUrl("/nakama") }, tone: "line" },
+    ]),
+  ],
+  /** 合流が成立した（誘った人へ1回だけ） */
+  nakamaMatched: (o: { otherName: string; windowLabel: string; baseNumber?: number }): LineMessage[] => [
+    withButtons(
+      `🎉 ${o.otherName}さんと合流が決まりました（${o.windowLabel}）。\n${o.baseNumber ? `地図の${o.baseNumber}番の家で、10分だけ一緒にどうぞ。` : "それぞれの家の前で、同じ10分を。終わったらバトンで報告しあいましょう。"}`,
+      [open("合流を見る", "/nakama")],
+    ),
+  ],
+  /** 合流の返事（返信なので通数を使わない） */
+  nakamaAnswer: (t: string, matched: boolean): LineMessage[] => [withButtons(t, [open(matched ? "合流を見る" : "なかまの画面", "/nakama"), B.solo])],
 } satisfies Record<string, (...args: never[]) => LineMessage[]>;
