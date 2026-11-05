@@ -195,7 +195,7 @@ export const MSG = {
   /** 登録のすぐあと: 雪の朝を待たずに、まずはひとりで10分（spec v1.3） */
   soloInvite: (_url: string, role: "helper" | "requester") =>
     role === "helper"
-      ? bubbles(["雪の朝を待たずに、ひとりで10分の出動（ソロ出動）もできます。見回りや雪の報告で、最初のカードがもらえます。"], [B.solo, B.guide])
+      ? bubbles(["雪の朝を待たずに、ひとりで10分の出動（ソロ出動）もできます。自分の家の雪かきや道の危険の報告で、最初のカードがもらえます。"], [B.solo, B.guide])
       : bubbles(["ご自分の家の雪かきも、ソロ出動で10分やったら記録できます。無理はしないでくださいね。"], [B.solo, B.guide]),
   requesterDone: (message: string, level: number, requiredPeople: number) => bubbles([message, `家のレベル: ${level}（必要な人数: ${requiredPeople}人）`]),
   proxyDone: (code: string) =>
@@ -283,6 +283,8 @@ export const MSG = {
   tipLater: () => bubbles(["わかりました。また今度、教えてくださいね。"]),
   rollcallClosed: () => bubbles(["いまは点呼の時間ではありません。", "雪の朝 6:30 に、ここへ届きます。"], [B.go, B.map]),
   /** 画面で30秒の登録へ（spec v1.14） */
+  /** スタンプ・音声・動画・ファイル: 読めないので、文字かボタンをお願いする（spec 12: 音声入力はしない） */
+  unsupported: () => bubbles(["ごめんなさい、スタンプや音声・動画は読めません。", "文字で送るか、下のボタンから選んでください。"], [say("隊長に相談"), B.go, B.map]),
   startInvite: (): LineMessage[] => [withButtons("LINE の中の画面で、30秒で登録できます。", [open("30秒で登録する", "/start")])],
   notRegistered: () => bubbles(["登録がまだです。1分で終わります。"], [B.register, B.guide]),
   planForRequester: (startTime: string, ns: string[]) =>
@@ -414,7 +416,7 @@ export const MSG = {
   /** 夜の防犯ルール（spec v1.8）: よその家には行かず、自分の家の雪かきへ */
   nightOwnHouseOnly: () => bubbles([NIGHT_TEXT.short, NIGHT_TEXT.why], [open("自分の家の雪かきへ", "/solo?focus=own_house")]),
   nowNothing: () =>
-    bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる10分（見回りなど）もあります。"], [B.solo, B.map]),
+    bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる10分（自分の家の雪かき・道の危険の報告）もあります。"], [B.solo, B.map]),
   // ---- 雪かきを頼む（spec v1.10）: お願いする側が 6〜19時いつでも。返事は返信なので通数0（知らせは別） ----
   askNight: () => bubbles(["夜（19時〜朝6時）は、よその人に雪かきを頼めません。", "明日の朝6時から頼めます。"], [say("隊長に相談")]),
   askHelperOnly: () =>
@@ -442,7 +444,7 @@ export const MSG = {
   consultTeam: (hasTeam: boolean) =>
     hasTeam
       ? bubbles(["今週のあなたのチームの点数と、仲間の活動が見られます。"], [open("チームを見る", "/team"), open("きょうの町を開く", "/")])
-      : bubbles(["チームはまだ決まっていません。", "次に雪かきや見回りをすると、チームに入って点が入ります。"], [open("きょうの町を開く", "/"), say("何をすればいい？")]),
+      : bubbles(["チームはまだ決まっていません。", "次に雪かきや道の報告をすると、チームに入って点が入ります。"], [open("きょうの町を開く", "/"), say("何をすればいい？")]),
   consultGuide: () => bubbles(["使い方は1ページにまとめてあります。触って覚えるチュートリアルもあります。"], [B.guide, say("何をすればいい？")]),
   /** 「雪かきGO！」で近くに手伝える家がないとき、コンシェルジュのおすすめの前に置く */
   nowNoneLead: () => [text("今は近くに手伝える家はありません。かわりに、こんなのはどうしま〜？")],

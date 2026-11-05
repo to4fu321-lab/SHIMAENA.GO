@@ -12,7 +12,8 @@ import { nextReward } from "@/lib/cards/collection";
 import { loadRoster } from "@/lib/morning/roster";
 import { repo } from "@/lib/repo";
 import { soloStatus } from "@/lib/solo/ops";
-import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import LineLoginButton from "@/components/LineLoginButton";
 
 export const metadata: Metadata = { title: "活動カード ・ シマエナGO" };
 
@@ -50,10 +51,11 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
   await connection();
   const { as } = await searchParams;
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
-  const demoAs = as && /^h\d+$/.test(as) ? as : undefined;
-  const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value) ?? "h7";
-  const me = roster.participants.find((p) => p.id === viewerId);
-  const cards = await repo().listCardsByRecipient(viewerId).catch(() => []);
+  const demoAs = as && isDemoViewer(as) ? as : undefined;
+  // 誰の画面か: デモの架空の人 → LINE でログインした本人。どちらでもなければ「登録すると、ここにたまります」（他人のカードは見せない）
+  const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
+  const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
+  const cards = me ? await repo().listCardsByRecipient(me.id).catch(() => []) : [];
   const reward = nextReward(cards.length);
   const solo = me ? await soloStatus(me.id, new Date()) : undefined;
   const recent = solo?.recent.slice(0, 3) ?? [];
@@ -93,6 +95,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           </p>
         </div>
 
+        {!me && !demoAs && <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} />}
         {solo && (
           <div className="grid grid-cols-3 gap-2 text-center">
             {[

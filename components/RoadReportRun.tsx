@@ -108,12 +108,12 @@ export default function RoadReportRun({
             aria-checked={hz === h.id}
             aria-label={h.label}
             onClick={() => setHz(h.id)}
-            className={`flex min-h-14 min-w-0 flex-col items-center justify-center rounded-xl text-[11px] font-bold leading-tight tracking-tighter ring-2 ${
+            className={`flex min-h-14 min-w-0 flex-col items-center justify-center rounded-xl px-0.5 text-xs font-bold leading-tight ring-2 ${
               hz === h.id ? "bg-ink text-white ring-ink" : "bg-paper ring-ink/10"
             }`}
           >
             <span className="text-2xl leading-none" aria-hidden="true">{h.emoji}</span>
-            <span className="mt-0.5 whitespace-nowrap">{h.short}</span>
+            <span className="mt-0.5 text-balance">{h.short}</span>
           </button>
         ))}
       </div>

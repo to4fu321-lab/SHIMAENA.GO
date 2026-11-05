@@ -379,6 +379,12 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     }
   }
 
+  // スタンプ・音声・動画・ファイル: 読めないので文字かボタンをお願いする（返信なので通数は使わない。黙って無視しない）
+  if (ev.type === "message" && "message" in ev && ["sticker", "audio", "video", "file"].includes(ev.message.type)) {
+    if (ev.replyToken) await reply(ev.replyToken, MSG.unsupported());
+    return;
+  }
+
   let input = toInput(ev);
   if (!input) return;
   if (input.kind === "code" && !(await r.findFamilyLinkByCode(input.code))) {

@@ -18,7 +18,7 @@ import { agoText, hazard, SHOW_MS } from "@/lib/road/hazards";
 import { listRoadReportsSince } from "@/lib/road/store";
 import { destinationsFor } from "@/lib/nav";
 import { emojiGrid } from "@/lib/share";
-import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "地図 ・ シマエナGO" };
 
@@ -27,7 +27,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   const { as, road: focusRoad } = await searchParams;
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   // 誰の画面か: ?as=h3（デモで3台のスマホに別の人を出す）→ LIFF でログインした本人（cookie）→ 既定の人
-  const demoAs = as && /^h\d+$/.test(as) ? as : undefined;
+  const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value) ?? record.morning.viewerId;
   const state = { ...record.morning, viewerId };
   // 家の正確な位置はサーバーに置いたまま、画面には 50m マスだけを渡す

@@ -11,7 +11,12 @@ import LineChat, { type ChatMsg } from "./LineChat";
 
 const STEPS = ["はじめに", "参加する", "雪かきに行く", "雪かきをする", "完了する", "仲間になる"] as const;
 const LAST = STEPS.length - 1;
-const MINUTES = [10, 20, 30, 60] as const;
+/** 点呼の答え（本物の LINE と同じ。spec v1.8: いつ手伝えそうか） */
+const WHEN = [
+  ["am", "朝（〜9時）"],
+  ["noon", "お昼（〜13時）"],
+  ["pm", "夕方（〜19時）"],
+] as const;
 const SNOW = 5; // 雪の山（ひとすくい × 5）
 
 /* ---------- 小さな絵 ---------- */
@@ -107,7 +112,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
   const [dragX, setDragX] = useState(0);
   const [rulesOpen, setRulesOpen] = useState(false);
   // 練習の進み具合
-  const [minutes, setMinutes] = useState<number | null>(null);
+  const [when, setWhen] = useState<string | null>(null);
   const [picked, setPicked] = useState(false);
   const [going, setGoing] = useState(false);
   const [snow, setSnow] = useState(SNOW);
@@ -183,20 +188,27 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
   };
 
   const team = TEAMS[0];
-  const practiced = [minutes !== null, going, snow === 0, photo];
+  const practiced = [when !== null, going, snow === 0, photo];
 
   /* --- LINE の会話（押したボタンから組み立てる） --- */
   const rollcall: ChatMsg[] = [
     { id: "h1", from: "bot", text: "おはようだしま〜！☃️\n今朝は雪12cm、相手は『ぼた雪のドンブリ』です。" },
-    { id: "h2", from: "bot", text: "今朝、何分動けますか？" },
+    { id: "h2", from: "bot", text: "今日、いつ手伝えそうですか？\n（6時〜19時なら、いつでも10分から）" },
   ];
-  if (minutes !== null) {
-    rollcall.push({ id: "a", from: "me", text: minutes === 0 ? "今朝は休む" : `${minutes}分` });
-    rollcall.push(
-      minutes === 0
-        ? { id: "r", from: "bot", text: "わかりました。今朝はゆっくり休んでください。\nまたの朝に、よろしくしま〜！" }
-        : { id: "r", from: "bot", text: "ありがとうしま〜！\n6:40 に、行き先をお知らせします。" },
-    );
+  if (when !== null) {
+    rollcall.push({ id: "a", from: "me", text: when === "0" ? "今日は休む" : (WHEN.find(([k]) => k === when)?.[1] ?? "") });
+    rollcall.push({
+      id: "r",
+      from: "bot",
+      text:
+        when === "0"
+          ? "わかりました。今日はゆっくり休んでください。\nまたの雪の日に、よろしくしま〜！"
+          : when === "noon"
+            ? "ありがとうしま〜！\n11:30 ごろ、まだ待っている家をお知らせします。"
+            : when === "pm"
+              ? "ありがとうしま〜！\n16:30 ごろ、まだ待っている家をお知らせします。"
+              : "ありがとうしま〜！\n6:40 に、行き先をお知らせします。",
+    });
   }
   const report: ChatMsg[] = [
     { id: "g", from: "bot", text: "了解だしま〜！🙌\n拠点3へ 7:00 に集合です！" },
@@ -247,21 +259,21 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
     /* 1 参加する: 点呼に答える */
     <>
       <Title id="tut-h-1" sub="雪の朝 6:30、LINE にこの1問が届きます。下のボタンを押してみよう。">
-        今朝、何分動けますか？
+        今日、いつ手伝えそうですか？
       </Title>
       <div className="relative flex min-h-0 flex-1 flex-col">
         <LineChat
           className="flex-1"
           messages={rollcall}
           replies={
-            minutes === null
-              ? [...MINUTES.map((m) => ({ label: `${m}分`, onClick: () => setMinutes(m) })), { label: "今朝は休む", onClick: () => setMinutes(0) }]
-              : [{ label: "↺ 選び直す", onClick: () => setMinutes(null) }]
+            when === null
+              ? [...WHEN.map(([k, label]) => ({ label, onClick: () => setWhen(k) })), { label: "今日は休む", onClick: () => setWhen("0") }]
+              : [{ label: "↺ 選び直す", onClick: () => setWhen(null) }]
           }
         />
       </div>
       <Hint>
-        <b>10分だけでも大歓迎！</b> できる範囲でOK。体調がすぐれない朝は「今朝は休む」で大丈夫です。
+        <b>10分だけでも大歓迎！</b> 朝に間に合わなくても、19時まで自分の時間で。体調がすぐれない日は「今日は休む」で大丈夫です。
       </Hint>
     </>,
 

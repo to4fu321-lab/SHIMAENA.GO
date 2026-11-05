@@ -185,7 +185,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
               <li>動いた時だけのカードが届きます。お金には換えません。</li>
             </ul>
             <h3 className="text-lg font-bold">1人でも「ソロ出動」</h3>
-            <p>仲間がいない日も、見回り・雪の報告・自分の家の雪かきなど 3〜10分のミッションで参加できます。羽ポイントとカードがたまり、地図に足あとが残ります。</p>
+            <p>仲間がいない日も、自分の家の雪かき・道の危険の報告のミッションで、10分から参加できます。羽ポイントとカードがたまり、地図に足あとが残ります。</p>
             <p className="text-lg font-bold">寒い冬は、くっついて乗り切る。</p>
           </section>
         </div>

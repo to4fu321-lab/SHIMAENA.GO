@@ -97,7 +97,7 @@ export default function MapScreen({
   const myView = views.find((v) => v.baseId === myMission?.baseId);
   const [, month, day] = state.rollcall.date.split("-").map(Number);
   const activeCount = new Set(state.sorties.filter((s) => s.status === "going").map((s) => s.participantId)).size;
-  const q = /^h\d+$/.test(state.viewerId) ? `?as=${state.viewerId}` : "";
+  const q = /^[hr]\d+$/.test(state.viewerId) ? `?as=${state.viewerId}` : "";
   // 雪かきGO（出発前）: 割り当てがあって、まだ「行く」を押していないとき。「あとで」で閉じられる
   const [later, setLater] = useState(false);
   const briefing = Boolean(myBase && myView && mySortie?.status === "going" && !mySortie.confirmedAt && !later && !prog.allDone);

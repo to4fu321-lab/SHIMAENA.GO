@@ -65,7 +65,7 @@ export default function RescueList({
       )}
       {items.length === 0 && !hasAssignment && (
         <button disabled={pending} onClick={() => run(() => fiveMinutesAction(viewerId))} className="btn btn-lamp w-full text-lg">
-          {pending ? "さがしています…" : "10分だけ参加する（見回り・補給）"}
+          {pending ? "さがしています…" : "10分だけ参加する（偵察・補給）"}
         </button>
       )}
       {result && (

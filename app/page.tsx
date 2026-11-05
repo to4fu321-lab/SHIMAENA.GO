@@ -80,8 +80,23 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
+  // 本人の記録・夜の人数・応援は互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
+  const now = new Date();
+  const night = !open;
+  const [st, homeToday, cheerBtn, news] = await Promise.all([
+    me ? soloStatus(me.id, now).catch(() => undefined) : undefined,
+    // 夜（19時〜6時）は、よその家の数字（あと何軒）の代わりに、今日 自分の家の雪かきを終えた人の数も
+    night
+      ? repo()
+          .listSoloLogsBetween(appToday(record), appToday(record))
+          .then((ls) => new Set(ls.filter((l) => l.kind === "own_house").map((l) => l.participantId)).size)
+          .catch(() => 0)
+      : 0,
+    // 応援・おつかれさま（11/4）: 送るボタンの数と、自分に届いた知らせ（隊長が飛んできて話す）
+    me ? cheerButtons(me.id, now).catch(() => undefined) : undefined,
+    me ? myCheerNews(me.id, now).catch(() => undefined) : undefined,
+  ]);
   // 隊長のひとこと（spec v1.6）: 状態は計算、文は朝に1回だけ書いたもの（なければ定型）
-  const st = me ? await soloStatus(me.id, new Date()).catch(() => undefined) : undefined;
   const last = st?.recent[0]?.date;
   const daysSinceLast = st && last ? Math.round((Date.parse(st.today) - Date.parse(last)) / 86400000) : st && st.cards > 0 ? 7 : undefined;
   const rc = m.rollcall;
@@ -98,19 +113,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     record.captainLines,
   );
   const safety = rc.status !== "closed" ? safetyLine({ cm: rc.forecastCm, tempMinC: rc.tempMinC, windMaxMs: rc.windMaxMs }) : undefined;
-  const night = !open;
   // いま自宅を雪かき中の人（ソロの自分の家の「出撃する！」、リアルタイム）。夜はこれだけを出す
-  const homeNow = countHomeNow(record, new Date());
-  // 夜（19時〜6時）は、よその家の数字（あと何軒）の代わりに、今日 自分の家の雪かきを終えた人の数も
-  const homeToday = night
-    ? await repo()
-        .listSoloLogsBetween(appToday(record), appToday(record))
-        .then((ls) => new Set(ls.filter((l) => l.kind === "own_house").map((l) => l.participantId)).size)
-        .catch(() => 0)
-    : 0;
-  // 応援・おつかれさま（11/4）: 送るボタンの数と、自分に届いた知らせ（隊長が飛んできて話す）
-  const now = new Date();
-  const [cheerBtn, news] = me ? await Promise.all([cheerButtons(me.id, now).catch(() => undefined), myCheerNews(me.id, now).catch(() => undefined)]) : [undefined, undefined];
+  const homeNow = countHomeNow(record, now);
   // 休みのひとこと（AI）: いまの天気と、今日この人が動いた回数から
   const myHouseDone = me ? m.sorties.filter((x) => x.participantId === me.id && x.status === "done" && x.completedAt && appToday(record) === m.rollcall.date).length : 0;
   const rest = me
@@ -296,7 +300,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               </svg>
               <span className="min-w-0 leading-tight">
                 <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">ソロ活動</span>
-                <span className="block whitespace-nowrap text-xs font-bold max-[380px]:text-[11px]">自分の家の雪かき</span>
+                <span className="block whitespace-nowrap text-xs font-bold">自宅の雪かき</span>
               </span>
             </Link>
           </div>
@@ -325,7 +329,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           </svg>
           <span className="text-left leading-tight">
             <span className="block text-lg">ソロ活動をする</span>
-            <span className="block text-sm font-normal">自分の家の雪かき・積雪の報告など</span>
+            <span className="block text-sm font-normal">自分の家の雪かき・道の危険の報告</span>
           </span>
         </Link>
           </>

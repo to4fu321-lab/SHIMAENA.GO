@@ -40,7 +40,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
       <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 py-5 text-ink">
         <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
         <h1 className="text-2xl font-bold">
-          雪かきGO！ <span className="text-base font-normal text-ink-soft">ひとりで10分（ソロ出動）</span>
+          雪かきGO！ <span className="block text-base font-normal text-ink-soft">ひとりで10分（ソロ出動）</span>
         </h1>
         <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">仲間がいなくても、自分の10分で町を変えられる。</p>

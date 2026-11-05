@@ -15,7 +15,7 @@ import Pager, { Screen } from "@/components/Pager";
 import TabBar from "@/components/TabBar";
 import { soloStatus } from "@/lib/solo/ops";
 import { TEAMS } from "@/lib/teams";
-import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "カード図鑑 ・ シマエナGO" };
 
@@ -23,9 +23,9 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
   await connection();
   const { as } = await searchParams;
   const [roster, cookieStore, record] = await Promise.all([loadRoster(), cookies(), loadMorning()]);
-  const viewerId = (as && /^h\d+$/.test(as) ? as : undefined) ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value) ?? "h7";
+  const viewerId = (as && isDemoViewer(as) ? as : undefined) ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = roster.participants.find((p) => p.id === viewerId);
-  const cards = await repo().listCardsByRecipient(viewerId);
+  const cards = viewerId ? await repo().listCardsByRecipient(viewerId) : [];
   const team = TEAMS.find((t) => t.id === me?.teamId);
   const col = collection(cards);
   const reward = nextReward(cards.length);

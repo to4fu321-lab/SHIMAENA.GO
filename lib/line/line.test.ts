@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assignTeam, makeLinkCode } from "../game/team";
 import { memoryRepo } from "../repo";
 import { finishRegistration, handleEvent, toInput } from "./handle";
+import { MSG } from "./messages";
 import { parseText, step, type RegSession } from "./registration";
 import { signBody, verifySignature } from "./signature";
 import type { LineEvent, LineMessage, TextMessage } from "./types";
@@ -222,5 +223,16 @@ describe("Webhook の処理（メモリ保存・LINE には送らない）", () 
     // 知らない番号は見つからない、で終わる（途中経過は作らない）
     await handleEvent(text("U-x", "000001"));
     expect(await memoryRepo.getSession("U-x")).toBeUndefined();
+  });
+});
+
+describe("スタンプ・音声・動画への返事（行き止まりにしない）", () => {
+  it("読めないことを伝え、隊長に相談・雪かきGO！・町の地図のボタンを付ける", () => {
+    const m = MSG.unsupported();
+    expect(m.length).toBe(2);
+    expect(labels(m.at(-1) as TextMessage)).toEqual(["隊長に相談", "雪かきGO！", "町の地図を開く"]);
+  });
+  it("スタンプのイベントは例外にならない（返信して終わる）", async () => {
+    await expect(handleEvent({ type: "message", replyToken: "r", source: { type: "user", userId: "U-sticker" }, timestamp: 0, message: { id: "9", type: "sticker" } })).resolves.toBeUndefined();
   });
 });
