@@ -20,6 +20,7 @@
 - LINE Messaging API ＋ LIFF（`LINE_CHANNEL_SECRET` / `LINE_CHANNEL_ACCESS_TOKEN` / `NEXT_PUBLIC_LIFF_ID`）。
 - 地図は Leaflet ＋ OpenStreetMap。天気は Open-Meteo。
 - 画面はスマホ表示が最優先。本文 18px 以上、ボタンは少なく大きく。
+- **基本1画面**: どの画面もスマホ（390×844）で縦スクロールなしに収める。入りきらないときは中身を減らすか、タブで分ける（スクショで確かめる）。
 
 ## 約束ごと
 - 私（本人）はプログラミング初心者。何をしたかは日本語で短く説明する。
