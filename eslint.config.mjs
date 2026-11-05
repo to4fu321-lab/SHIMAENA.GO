@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // ループの自己確認用スクリプト（Node の CommonJS）
     "scripts/**/*.cjs",
     ".shots/**",
+    // 並行作業用の作業コピー（Claude Code）
+    ".claude/worktrees/**",
   ]),
 ]);
 
