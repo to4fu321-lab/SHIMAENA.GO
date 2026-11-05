@@ -7,6 +7,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import CheerButton from "@/components/CheerButton";
 import Icon from "@/components/Icon";
 import TabBar from "@/components/TabBar";
+import Pager, { Screen } from "@/components/Pager";
 import FriendShare from "@/components/FriendShare";
 import SnsShare, { type ShareOption } from "@/components/SnsShare";
 import { CHEER_COOKIE, cheeredToday } from "@/lib/public/cheer";
@@ -37,7 +38,7 @@ const STATUS_TEXT = {
   none: "",
 } as const;
 
-/** くわしく: ホームに入りきらない「今日のあなた・今朝のようす・カード・SNS」（ホームはスクロールしない1画面にしたため） */
+/** くわしく: ホームに入りきらない「今日のあなた・今朝のようす・カード・SNS」。このページも1画面（タブで切りかえ） */
 async function Details({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
@@ -81,135 +82,150 @@ async function Details({ searchParams }: { searchParams: Promise<{ as?: string }
     });
   }
 
-  return (
-    <div className="flex h-dvh flex-col bg-paper text-ink">
-      <AutoRefresh seconds={8} />
-      <header className="flex shrink-0 items-center gap-2 bg-card px-2 py-2 shadow-sm">
-        <Link href={`/${q}`} className="btn min-h-12 px-3 text-base">
-          ‹ ホーム
-        </Link>
-        <h1 className="text-xl font-bold">今朝のようす</h1>
-      </header>
-      <main className="mx-auto w-full max-w-md flex-1 space-y-4 overflow-y-auto px-4 py-4">
-      {/* 今日の自分 */}
-      {me && (
-        <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日のあなた">
-          <div className="flex items-baseline justify-between">
-            <p className="eyebrow">今日のあなた</p>
-            {myTeam && (
-              <Link href={`/team${q}`} className="rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: myTeam.color, color: teamTheme(myTeam.id).onColor }}>
-                {myTeam.name}チーム ›
-              </Link>
-            )}
-          </div>
-          {solo && (
-            <p className="flex flex-wrap gap-x-4 text-base">
-              <span>
-                羽ポイント <b className="text-2xl tabular-nums">{solo.todayFeathers}</b>（合計 {solo.totalFeathers}）
-              </span>
-              <span>
-                連続出動 <b className="text-2xl tabular-nums">{solo.streak}</b> 日
-              </span>
-            </p>
+  // 1画面に収める（11/5 本人の指示「基本1画面」）: 縦に並べていたものをタブに分ける。いちばん大事な「今朝のようす」を最初に
+  const youPanel = me && (
+    <div key="you" className="flex min-h-0 flex-1 flex-col gap-2">
+      <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日のあなた">
+        <div className="flex items-baseline justify-between">
+          <p className="eyebrow">今日のあなた</p>
+          {myTeam && (
+            <Link href={`/team${q}`} className="rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: myTeam.color, color: teamTheme(myTeam.id).onColor }}>
+              {myTeam.name}チーム ›
+            </Link>
           )}
-          <Link href={`/solo${q}`} className="block rounded-2xl bg-ice-soft px-3 py-2 ring-1 ring-ice">
-            <span className="block text-lg font-bold">ソロ出動へ →</span>
-            <span className="block text-base">ひとりで3〜10分。自分の家の雪かき・見回り・雪の報告でも羽が入ります。</span>
-          </Link>
-          {myBase && myView ? (
-            <p className="text-base">
-              担当は <b>拠点 {myBase.number}</b>（{STATUS_TEXT[myView.status]}）
-            </p>
-          ) : me.role === "helper" ? (
-            <p className="text-base text-ink-soft">{solo?.todayFeathers === 0 ? "まだ今日の出動はありません。" : "今朝のチームの担当はありません。"}</p>
-          ) : null}
-        </section>
-      )}
-
-      {/* 今朝のようす: 雪のかさ・チームの得点・実況・応援 */}
-      <section className="space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今朝のようす">
-        <p className="eyebrow">今朝のようす</p>
-        <div className="rounded-2xl bg-ice-soft px-3 py-2">
-          <div className="flex items-baseline justify-between gap-2 text-sm">
-            <span className="truncate font-bold">今朝の雪{m.rollcall.snowName ? `『${m.rollcall.snowName}』` : ""}</span>
-            <span className="shrink-0 tabular-nums">
-              のこり {hp.current} / {hp.max}
-            </span>
-          </div>
-          <span className="mt-1 block h-3 overflow-hidden rounded-full bg-white ring-1 ring-ink/10">
-            <span className="block h-full rounded-full bg-ice" style={{ width: `${hp.max > 0 ? (hp.current / hp.max) * 100 : 100}%` }} />
-          </span>
-          <p className="mt-1 text-sm text-ink-soft">
-            {!planned ? (m.rollcall.status === "open" ? "点呼中です（6:40 に作戦）" : "作戦はまだです") : prog.allDone ? <b className="text-ink">雪はすべてどけました。</b> : `あと ${prog.left} 軒で、今朝の雪はぜんぶどけられます。`}
-          </p>
         </div>
-
-        <ul className="space-y-1.5" aria-label="チームの得点">
-          {TEAMS.map((t) => (
-            <li key={t.id} className="flex items-center gap-2 text-sm">
-              <span className="w-32 shrink-0 font-bold">
-                <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" />
-                {t.name}
-              </span>
-              <span className="h-3 flex-1 overflow-hidden rounded-full bg-ice-soft">
-                <span className="block h-full rounded-full" style={{ width: `${(totals[t.id] / max) * 100}%`, background: t.color }} />
-              </span>
-              <span className="w-12 text-right font-bold tabular-nums">{totals[t.id]}点</span>
-            </li>
-          ))}
-        </ul>
-
-        {record.recap && (
-          <div className="rounded-2xl bg-warm px-3 py-2">
-            <p className="eyebrow">今朝の実況（シマエナ隊長）</p>
-            <p className="text-base">{record.recap.text}</p>
-          </div>
+        {solo && (
+          <p className="flex flex-wrap gap-x-4 text-base">
+            <span>
+              羽ポイント <b className="text-2xl tabular-nums">{solo.todayFeathers}</b>（合計 {solo.totalFeathers}）
+            </span>
+            <span>
+              連続出動 <b className="text-2xl tabular-nums">{solo.streak}</b> 日
+            </span>
+          </p>
         )}
-
-        <CheerButton compact count={stats.cheers} already={cheeredToday(cookieStore.get(CHEER_COOKIE)?.value, stats.today)} />
+        <Link href={`/solo${q}`} className="block rounded-2xl bg-ice-soft px-3 py-2 ring-1 ring-ice">
+          <span className="block text-lg font-bold">ソロ出動へ →</span>
+          <span className="block text-base">ひとりで3〜10分。自分の家の雪かき・見回り・雪の報告でも羽が入ります。</span>
+        </Link>
+        {myBase && myView ? (
+          <p className="text-base">
+            担当は <b>拠点 {myBase.number}</b>（{STATUS_TEXT[myView.status]}）
+          </p>
+        ) : me.role === "helper" ? (
+          <p className="text-base text-ink-soft">{solo?.todayFeathers === 0 ? "まだ今日の出動はありません。" : "今朝のチームの担当はありません。"}</p>
+        ) : null}
       </section>
 
       {/* 今日のシマエナカード（本人の最新の1枚） */}
-      {me && (
-        <Link href={`/cards${q}`} className="flex min-h-14 items-center gap-3 rounded-3xl bg-camellia-soft p-3 ring-1 ring-camellia">
-          {latestCard ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/api/cards/${latestCard.id}/front.svg`} alt="" className="aspect-[600/840] w-16 shrink-0 rounded-lg" />
-              <span className="min-w-0">
-                <span className="eyebrow block text-camellia-deep">今日のシマエナカード</span>
-                <span className="block truncate text-base font-bold">{latestCard.designName}</span>
-                <span className="block text-sm text-ink-soft">{STYLE_NAME[latestCard.style]} ・ 活動カードを開く</span>
-              </span>
-            </>
-          ) : (
+      <Link href={`/cards${q}`} className="flex min-h-14 items-center gap-3 rounded-3xl bg-camellia-soft p-3 ring-1 ring-camellia">
+        {latestCard ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/api/cards/${latestCard.id}/front.svg`} alt="" className="aspect-[600/840] w-16 shrink-0 rounded-lg" />
             <span className="min-w-0">
               <span className="eyebrow block text-camellia-deep">今日のシマエナカード</span>
-              <span className="block text-base">まだありません。{solo?.nextCard.hint ?? "ミッションを1つ終えると最初のカード"}</span>
+              <span className="block truncate text-base font-bold">{latestCard.designName}</span>
+              <span className="block text-sm text-ink-soft">{STYLE_NAME[latestCard.style]} ・ 活動カードを開く</span>
             </span>
-          )}
-        </Link>
-      )}
-
-      <FriendShare />
-
-      <SnsShare options={shareOptions} />
-
-      <nav className="grid gap-3" aria-label="そのほか">
-        <Link href={`/settings${q}`} className="btn btn-white gap-2 text-lg">
-          <Icon name="settings" size={28} accent="var(--ice)" />
-          設定（登録の確認・やり直し）
-        </Link>
-        <Link href="/public/town" className="btn text-base text-ink underline">
-          町の雪解け（公開ページ）
-        </Link>
-        <Link href="/admin" className="btn text-sm text-ink-soft underline">
-          デモ操作（審査・撮影用）
-        </Link>
-      </nav>
-      </main>
-      <TabBar active="home" q={q} />
+          </>
+        ) : (
+          <span className="min-w-0">
+            <span className="eyebrow block text-camellia-deep">今日のシマエナカード</span>
+            <span className="block text-base">まだありません。{solo?.nextCard.hint ?? "ミッションを1つ終えると最初のカード"}</span>
+          </span>
+        )}
+      </Link>
     </div>
+  );
+
+  const tabs = [
+    { key: "town", label: "ようす" },
+    ...(me ? [{ key: "you", label: "あなた" }] : []),
+    { key: "post", label: "投稿" },
+    { key: "invite", label: "誘う" },
+    { key: "more", label: "ほか" },
+  ];
+
+  return (
+    <Screen
+      header={
+        <header className="flex items-center gap-2 bg-card px-2 py-2 shadow-sm">
+          <AutoRefresh seconds={8} />
+          <Link href={`/${q}`} className="btn min-h-12 px-3 text-base">
+            ‹ ホーム
+          </Link>
+          <h1 className="text-xl font-bold">今朝のようす</h1>
+        </header>
+      }
+      footer={<TabBar active="home" q={q} />}
+    >
+      <div className="h-2 shrink-0" />
+      <Pager tabs={tabs}>
+        {/* 今朝のようす: 雪のかさ・チームの得点・実況・応援 */}
+        <section key="town" className="flex min-h-0 flex-1 flex-col gap-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今朝のようす">
+          <div className="rounded-2xl bg-ice-soft px-3 py-2">
+            <div className="flex items-baseline justify-between gap-2 text-sm">
+              <span className="truncate font-bold">今朝の雪{m.rollcall.snowName ? `『${m.rollcall.snowName}』` : ""}</span>
+              <span className="shrink-0 tabular-nums">
+                のこり {hp.current} / {hp.max}
+              </span>
+            </div>
+            <span className="mt-1 block h-3 overflow-hidden rounded-full bg-white ring-1 ring-ink/10">
+              <span className="block h-full rounded-full bg-ice" style={{ width: `${hp.max > 0 ? (hp.current / hp.max) * 100 : 100}%` }} />
+            </span>
+            <p className="mt-1 text-sm text-ink-soft">
+              {!planned ? (m.rollcall.status === "open" ? "点呼中です（6:40 に作戦）" : "作戦はまだです") : prog.allDone ? <b className="text-ink">雪はすべてどけました。</b> : `あと ${prog.left} 軒で、今朝の雪はぜんぶどけられます。`}
+            </p>
+          </div>
+
+          <ul className="space-y-1.5" aria-label="チームの得点">
+            {TEAMS.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 text-sm">
+                <span className="w-32 shrink-0 font-bold">
+                  <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" />
+                  {t.name}
+                </span>
+                <span className="h-3 flex-1 overflow-hidden rounded-full bg-ice-soft">
+                  <span className="block h-full rounded-full" style={{ width: `${(totals[t.id] / max) * 100}%`, background: t.color }} />
+                </span>
+                <span className="w-12 text-right font-bold tabular-nums">{totals[t.id]}点</span>
+              </li>
+            ))}
+          </ul>
+
+          {record.recap && (
+            <div className="min-h-0 rounded-2xl bg-warm px-3 py-2">
+              <p className="eyebrow">今朝の実況（シマエナ隊長）</p>
+              <p className="text-base">{record.recap.text}</p>
+            </div>
+          )}
+
+          <div className="mt-auto">
+            <CheerButton compact count={stats.cheers} already={cheeredToday(cookieStore.get(CHEER_COOKIE)?.value, stats.today)} />
+          </div>
+        </section>
+        {youPanel}
+        <SnsShare key="post" options={shareOptions} compact />
+        <div key="invite" className="flex min-h-0 flex-1 flex-col gap-2">
+          <FriendShare />
+        </div>
+        <div key="more" className="flex min-h-0 flex-1 flex-col gap-2">
+          <nav className="grid gap-3" aria-label="そのほか">
+            <Link href={`/settings${q}`} className="btn btn-white gap-2 text-lg">
+              <Icon name="settings" size={28} accent="var(--ice)" />
+              設定（登録の確認・やり直し）
+            </Link>
+            <Link href="/public/town" className="btn text-base text-ink underline">
+              町の雪解け（公開ページ）
+            </Link>
+            <Link href="/admin" className="btn text-sm text-ink-soft underline">
+              デモ操作（審査・撮影用）
+            </Link>
+          </nav>
+        </div>
+      </Pager>
+    </Screen>
   );
 }
 
