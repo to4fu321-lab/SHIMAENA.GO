@@ -371,33 +371,31 @@ export default function SoloScreen({
     <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 px-4 pb-2 pt-3">
       {flash && <MissionFlash kind={flash.kind} label={flash.label} />}
       {clear && (
-        <SoloClear summary={clear} onClose={() => setClear(null)} q={q} minutesLabel={brag ? `${brag.minutes}分` : roadDone ? "報告" : undefined}>
-          {roadDone && (
-            <p className="mt-3 rounded-2xl bg-ice-soft px-3 py-2 text-center text-base ring-1 ring-ice">
-              📍 地図にピンを立てました。
-              <span className="block text-sm">{roadDone.later ? "近くの人には、朝 6:30 にお知らせします。" : "近くで「受け取る」にした人へ LINE でお知らせします。"}</span>
-              <Link href={`/map${q ? `${q}&` : "?"}road=${roadDone.id}`} className="mt-1 inline-block font-bold underline">
-                地図で見る
-              </Link>
-            </p>
-          )}
-          {(clear.kind === "own_house" || clear.kind === "report_snow") && (
-            <NakamaAfter viewerId={viewerId} source={clear.kind === "report_snow" ? "road" : "own_house"} photoChecked={clear.photoChecked} q={q} />
-          )}
-          {brag && <BragShare viewerId={viewerId} before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />}
-          <QuickShare text={roadDone ? "近所の道の危険を、写真と場所で知らせました。⚠️\nみんなで冬の道を安全に。\n#シマエナGO #雪道" : clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />
-          {shareOptions.length > 0 && (
-            <details className="mt-3 rounded-2xl bg-card ring-1 ring-ink/10">
-              <summary className="flex min-h-12 cursor-pointer items-center justify-between px-3 text-base font-bold">
-                <span>✏️ 投稿文を直してから投稿する</span>
-                <span aria-hidden="true">›</span>
-              </summary>
-              <div className="px-1 pb-2">
-                <SnsShare options={shareOptions} title="SNS に投稿する" />
-              </div>
-            </details>
-          )}
-        </SoloClear>
+        <SoloClear
+          summary={clear}
+          onClose={() => setClear(null)}
+          q={q}
+          minutesLabel={brag ? `${brag.minutes}分` : roadDone ? "報告" : undefined}
+          share={[
+            roadDone && (
+              <p key="pin" className="rounded-2xl bg-ice-soft px-3 py-2 text-center text-base ring-1 ring-ice">
+                📍 地図にピンを立てました。
+                <span className="block text-sm">{roadDone.later ? "近くの人には、朝 6:30 にお知らせします。" : "近くで「受け取る」にした人へ LINE でお知らせします。"}</span>
+                <Link href={`/map${q ? `${q}&` : "?"}road=${roadDone.id}`} className="mt-1 inline-block font-bold underline">
+                  地図で見る
+                </Link>
+              </p>
+            ),
+            brag && <BragShare key="brag" viewerId={viewerId} before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />,
+            <QuickShare key="quick" text={roadDone ? "近所の道の危険を、写真と場所で知らせました。⚠️\nみんなで冬の道を安全に。\n#シマエナGO #雪道" : clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />,
+            shareOptions.length > 0 && <SnsShare key="sns" options={shareOptions} title="✏️ 投稿文を直してから投稿する" compact />,
+          ]}
+          baton={
+            clear.kind === "own_house" || clear.kind === "report_snow"
+              ? (view) => <NakamaAfter viewerId={viewerId} source={clear.kind === "report_snow" ? "road" : "own_house"} photoChecked={clear.photoChecked} q={q} view={view} />
+              : undefined
+          }
+        />
       )}
       <header hidden={Boolean(running)} className="snowfield relative -mx-4 -mt-3 h-20 shrink-0 overflow-hidden px-4 pt-2">
         <SnowTown className="absolute inset-x-0 bottom-0 h-[55%] w-full" />

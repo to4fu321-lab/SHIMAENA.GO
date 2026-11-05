@@ -502,28 +502,33 @@ export default function BragShare({
     a.remove();
   };
 
+  // 1画面に収めるため、画像は左に小さく、ボタンは右に（11/5 本人の指示「基本1画面」）。押すと大きな画像のまま投稿・保存する
   return (
-    <div className="pop-late mt-3 space-y-2 rounded-2xl bg-card p-3 ring-2 ring-lamp" aria-label="Before と After を自慢する">
-      <p className="text-base font-bold">📸 Before → After を自慢しよう！{cardId ? "（カードも一緒に）" : ""}</p>
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="雪かきの前と後の写真と、どけた雪の量" className="aspect-[4/5] w-full rounded-xl object-cover" />
-      ) : (
-        <div className="grid aspect-[4/5] w-full place-items-center rounded-xl bg-paper text-sm">{safe ? "画像をつくっています…" : "🔍 AI がナンバー・表札・顔・家をぼかしています…"}</div>
-      )}
-      <button type="button" disabled={!file} onClick={share} className="btn btn-lamp w-full rounded-full text-lg">
-        この画像を SNS に投稿する
-      </button>
-      <button type="button" disabled={!file} onClick={save} className="btn btn-white w-full text-base">
-        画像を保存する
-      </button>
+    <div className="pop-late space-y-2 rounded-2xl bg-card p-3 ring-2 ring-lamp" aria-label="Before と After を自慢する">
+      <p className="text-base font-bold">📸 Before→After を自慢しよう！</p>
+      <div className="flex gap-2">
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="雪かきの前と後の写真と、どけた雪の量" className="aspect-[4/5] w-24 shrink-0 rounded-xl object-cover" />
+        ) : (
+          <div className="grid aspect-[4/5] w-24 shrink-0 place-items-center rounded-xl bg-paper p-1 text-center text-sm">{safe ? "画像をつくっています…" : "🔍 AI がナンバー・表札・顔・家をぼかしています…"}</div>
+        )}
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+          <button type="button" disabled={!file} onClick={share} className="btn btn-lamp w-full rounded-full px-2 text-lg leading-tight">
+            SNS に投稿する
+          </button>
+          <button type="button" disabled={!file} onClick={save} className="btn btn-white w-full px-2 text-base">
+            画像を保存する
+          </button>
+        </div>
+      </div>
       {msg && (
         <p className="text-sm" role="status">
           {msg}
         </p>
       )}
       {safe && <p className="text-sm font-bold">🫥 {safe.note}</p>}
-      <p className="text-xs text-ink-soft">AI のぼかしにも漏れはあります。表札・番地・車のナンバーが見えていないか確かめてから投稿してね。自動では投稿しません。</p>
+      <p className="text-xs text-ink-soft">{cardId ? "カードも一緒に渡します。" : ""}AI のぼかしにも漏れはあります。表札・番地・車のナンバーが見えていないか確かめてから投稿してね。自動では投稿しません。</p>
     </div>
   );
 }

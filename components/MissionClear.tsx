@@ -3,13 +3,16 @@
 // 雪かき完了の画面（spec v1.1 の MISSION CLEAR）。
 // 「あなたの10分で、1軒が助かりました」を真ん中に。家の窓に灯りがともり、羽が舞う。点の内訳・チーム得点・雪の減りはその下に。
 // 自分の「終わりました」のあとに出る。他の人の完了に気づいたとき（ClearWatcher）は数秒で自動で閉じる。
-import { useEffect } from "react";
+// 11/5 本人の指示「基本1画面」: 縦にスクロールさせず、けっか／カード／詳しく／つなぐ（知らせる・バトン・次は？）のタブに分ける。
+import { useEffect, useState } from "react";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { TEAMS } from "@/lib/teams";
 import Mascot, { SnowTown } from "./Mascot";
 import QuickShare from "./QuickShare";
 import InviteDrafts from "./InviteDrafts";
 import CardReveal from "./CardReveal";
+import ClearFrame, { ConnectPanel, FIT_CARD, Panel } from "./ClearFrame";
+import { PagedList, type PagerTab } from "./Pager";
 import NakamaAfter from "./NakamaAfter";
 import { clearMessage } from "@/lib/share-links";
 
@@ -44,11 +47,78 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
   const teams = TEAMS.filter((t) => clear.teamIds.includes(t.id));
   const people = clear.members.length;
   const who = clear.mine ? "あなた" : people > 1 ? "みんな" : clear.members[0] ? `${clear.members[0]}さん` : "あなた";
+  const hasPhoto = Boolean(clear.care || clear.snowTypeLabel || clear.depthLabel || clear.evidence);
+  const hasShare = Boolean(clear.mine);
+  const hasBaton = Boolean(clear.mine && clear.viewerId);
+  const tabs: PagerTab[] = [
+    { key: "result", label: "けっか" },
+    ...(clear.card ? [{ key: "card", label: "カード" }] : []),
+    { key: "detail", label: "詳しく" },
+    ...(hasShare || hasBaton ? [{ key: "connect", label: "つなぐ" }] : []),
+  ];
+  const [tab, setTab] = useState(0);
+  const [go, setGo] = useState<number | undefined>(undefined);
+  const cardIndex = tabs.findIndex((t) => t.key === "card");
+
+  // くわしく: 点の内訳とチームの得点 → 写真で見たこと（1つずつ ‹ ›）
+  const details = [
+    <div key="points" className="space-y-2 rounded-2xl bg-card px-4 py-3 ring-1 ring-ink/10">
+      <p className="flex items-baseline justify-between text-base font-bold">
+        <span>この家で入った点</span>
+        <span className="tabular-nums">+{clear.totalPoints} 点</span>
+      </p>
+      <ul className="space-y-1 border-t border-ink/10 pt-2" aria-label="点の内訳">
+        {clear.items.map((i) => (
+          <li key={i.reason} className="flex items-baseline justify-between text-base">
+            <span>
+              {i.label}
+              {i.count > 1 && <span className="text-ink-soft"> ×{i.count}</span>}
+            </span>
+            <b className="tabular-nums">+{i.points}</b>
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-2 text-sm">
+        {teams.map((t) => (
+          <span key={t.id} className="rounded-full bg-paper px-3 py-1 font-bold ring-2" style={{ "--tw-ring-color": t.color } as React.CSSProperties}>
+            <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" />
+            {t.name} {clear.teamTotals[t.id]} 点
+          </span>
+        ))}
+        {clear.myPoints !== undefined && clear.myPoints > 0 && <span className="rounded-full bg-paper px-3 py-1 font-bold ring-1 ring-ink/15">あなたの今朝 {clear.myPoints} 点</span>}
+      </div>
+    </div>,
+    ...(hasPhoto
+      ? [
+          <div key="photo" className="space-y-2">
+            {(clear.care || clear.snowTypeLabel) && (
+              <p className="rounded-2xl bg-warm px-3 py-2 text-base">
+                {clear.snowTypeLabel && <span className="mr-2 rounded-full bg-ice-soft px-2 py-0.5 text-sm font-bold">{clear.snowTypeLabel}</span>}
+                {clear.snowTypeReason && <span className="mr-2 text-sm text-ink-soft">（{clear.snowTypeReason}）</span>}
+                {clear.care}
+              </p>
+            )}
+            {clear.depthLabel && <p className="text-center text-sm text-ink-soft">雪の深さ（推定）: {clear.depthLabel}</p>}
+            {clear.evidence && (
+              <p className="rounded-2xl bg-ice-soft px-3 py-2 text-base">
+                <b>📷 Claude が写真で見たこと</b>
+                <span className="block">
+                  {clear.evidence}
+                  {clear.widthLabel && <span className="ml-1 rounded-full bg-white px-2 py-0.5 text-sm font-bold">{clear.widthLabel}</span>}
+                </span>
+              </p>
+            )}
+          </div>,
+        ]
+      : []),
+  ];
+  const shares = clear.mine ? [<QuickShare key="quick" text={clearMessage("house")} image={`/api/share/today.png?v=${clear.done}`} />] : [];
+  const invite = clear.mine && clear.invites && clear.invites.length > 0 ? <InviteDrafts drafts={clear.invites} url={clear.inviteUrl} result={clear.inviteResult} /> : undefined;
 
   return (
-    // z-[1200]: Leaflet の地図（z-index 400〜1000）より手前に出す
-    <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-ink/70 p-3 backdrop-blur-sm sm:items-center" role="dialog" aria-label="雪かき完了">
-      <div className="relative max-h-[calc(100dvh-24px)] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-paper p-5 text-ink shadow-2xl">
+    <ClearFrame
+      label="雪かき完了"
+      decor={
         <div className="feathers pointer-events-none absolute inset-0" aria-hidden="true">
           {FEATHERS.map((f, i) => (
             <span key={i} className="feather" style={{ left: `${f.left}%`, animationDelay: `${f.delay}s` }}>
@@ -56,21 +126,38 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
             </span>
           ))}
         </div>
-
-        {/* 喜ぶシマエナガと「あなたの10分で、1軒が助かりました！」（イメージの完了カード） */}
-        <div className="relative -mx-5 -mt-5 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-10 pt-5">
+      }
+      hero={
+        // 喜ぶシマエナガと「あなたの10分で、1軒が助かりました！」（イメージの完了カード）
+        <div className="relative mb-2 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-7 pt-3 [@media(max-height:700px)]:mb-1 [@media(max-height:700px)]:pb-5 [@media(max-height:700px)]:pt-2">
           <p className="eyebrow">雪かき 完了</p>
           <div className="flex items-center gap-2">
-            <Mascot size={88} mood="happy" className="lamp-glow shrink-0" />
+            <Mascot size={72} mood="happy" className="lamp-glow shrink-0" />
             <h2 className="whitespace-nowrap text-lg font-bold leading-snug">
               {who}の<span className="text-2xl">10分</span>で
               <br />
               <span className="text-3xl text-lamp-deep">1軒</span>が助かりました！
             </h2>
           </div>
-          <SnowTown className="absolute inset-x-0 bottom-0 h-10 w-full" />
+          <SnowTown className="absolute inset-x-0 bottom-0 h-7 w-full" />
         </div>
-        <p className="mt-2 text-center text-base">
+      }
+      heroOn={tab === 0}
+      tabs={tabs}
+      index={go}
+      onTab={(i) => {
+        setTab(i);
+        setGo(undefined);
+      }}
+      footer={
+        <button onClick={onClose} className="btn btn-ink btn-big w-full">
+          町の地図へ戻る
+        </button>
+      }
+    >
+      {/* けっか: 灯り・何軒目・初出撃・来た人・危ないもの・雪の減り */}
+      <Panel center>
+        <p className="text-center text-base">
           拠点{clear.baseNumber}の家に灯りがともりました。
           {clear.total > 0 && (
             <>
@@ -79,45 +166,21 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
             </>
           )}
         </p>
-
-        {clear.card && (
-          <div className="mt-3">
-            <CardReveal card={clear.card} label={clear.firstFlight ? "はじめてのカードを発行しました" : "この時だけのカードを発行しました"} />
-          </div>
-        )}
         {clear.firstFlight && (
-          <p className="mt-3 rounded-2xl bg-camellia-soft px-3 py-2 text-base font-bold ring-1 ring-camellia">
+          <p className="rounded-2xl bg-camellia-soft px-3 py-1.5 text-base font-bold ring-1 ring-camellia">
             初出撃おめでとう！ 今日からあなたも、町内の群れの一員です。最初のカードが届きます。
           </p>
         )}
-        {people > 0 && <p className="mt-2 text-center text-sm text-ink-soft">来た人: {clear.members.map((m) => `${m}さん`).join("・")}</p>}
-        {(clear.care || clear.snowTypeLabel) && (
-          <p className="mt-2 rounded-2xl bg-warm px-3 py-2 text-base">
-            {clear.snowTypeLabel && <span className="mr-2 rounded-full bg-ice-soft px-2 py-0.5 text-sm font-bold">{clear.snowTypeLabel}</span>}
-            {clear.snowTypeReason && <span className="mr-2 text-sm text-ink-soft">（{clear.snowTypeReason}）</span>}
-            {clear.care}
-          </p>
-        )}
-        {clear.depthLabel && <p className="mt-1 text-center text-sm text-ink-soft">雪の深さ（推定）: {clear.depthLabel}</p>}
-        {clear.evidence && (
-          <p className="mt-2 rounded-2xl bg-ice-soft px-3 py-2 text-base">
-            <b>📷 Claude が写真で見たこと</b>
-            <span className="block">
-              {clear.evidence}
-              {clear.widthLabel && <span className="ml-1 rounded-full bg-white px-2 py-0.5 text-sm font-bold">{clear.widthLabel}</span>}
-            </span>
-          </p>
-        )}
+        {people > 0 && <p className="text-center text-sm text-ink-soft">来た人: {clear.members.map((m) => `${m}さん`).join("・")}</p>}
         {clear.hazards && clear.hazards.length > 0 && (
-          <ul className="mt-2 space-y-1 rounded-2xl bg-alert-soft px-3 py-2 text-base font-bold" aria-label="気をつけること">
+          <ul className="space-y-1 rounded-2xl bg-alert-soft px-3 py-2 text-base font-bold" aria-label="気をつけること">
             {clear.hazards.map((h) => (
               <li key={h}>⚠️ {h}</li>
             ))}
           </ul>
         )}
-
         {/* 町の変化: 雪の減り */}
-        <div className="mt-3 rounded-2xl bg-card px-4 py-3 ring-1 ring-ink/10">
+        <div className="rounded-2xl bg-card px-4 py-2 ring-1 ring-ink/10">
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="truncate font-bold">{clear.snowName ? `今朝の雪『${clear.snowName}』` : "今朝の雪"}</span>
             <span className="shrink-0 tabular-nums">
@@ -139,48 +202,34 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
             )}
           </p>
         </div>
+        {cardIndex >= 0 && (
+          <button onClick={() => setGo(cardIndex)} className="btn btn-lamp w-full text-lg">
+            🎴 カードを見る ›
+          </button>
+        )}
+      </Panel>
 
-        {/* 点の内訳とチームの得点（くわしく） */}
-        <details className="mt-3 rounded-2xl bg-card px-4 py-3 ring-1 ring-ink/10">
-          <summary className="flex min-h-10 cursor-pointer items-center justify-between text-base font-bold">
-            <span>この家で入った点 <span className="text-sm font-normal text-ink-soft">▼ くわしく</span></span>
-            <span className="tabular-nums">+{clear.totalPoints} 点</span>
-          </summary>
-          <ul className="mt-2 space-y-1 border-t border-ink/10 pt-2" aria-label="点の内訳">
-            {clear.items.map((i) => (
-              <li key={i.reason} className="flex items-baseline justify-between text-base">
-                <span>
-                  {i.label}
-                  {i.count > 1 && <span className="text-ink-soft"> ×{i.count}</span>}
-                </span>
-                <b className="tabular-nums">+{i.points}</b>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-2 flex flex-wrap gap-2 text-sm">
-            {teams.map((t) => (
-              <span key={t.id} className="rounded-full bg-paper px-3 py-1 font-bold ring-2" style={{ "--tw-ring-color": t.color } as React.CSSProperties}>
-                <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" />
-                {t.name} {clear.teamTotals[t.id]} 点
-              </span>
-            ))}
-            {clear.myPoints !== undefined && clear.myPoints > 0 && (
-              <span className="rounded-full bg-paper px-3 py-1 font-bold ring-1 ring-ink/15">あなたの今朝 {clear.myPoints} 点</span>
-            )}
-          </div>
-        </details>
+      {/* カード: 発行の演出（タブを開いたときに動かす） */}
+      {clear.card && (
+        <Panel center>
+          <div className={FIT_CARD}>{tab === cardIndex && <CardReveal card={clear.card} label={clear.firstFlight ? "はじめてのカードを発行しました" : "この時だけのカードを発行しました"} />}</div>
+        </Panel>
+      )}
 
-        {/* 自分の完了なら、その場で X・LINE・Instagram に知らせられる */}
-        {clear.mine && <QuickShare text={clearMessage("house")} image={`/api/share/today.png?v=${clear.done}`} />}
-        {clear.mine && clear.invites && clear.invites.length > 0 && <InviteDrafts drafts={clear.invites} url={clear.inviteUrl} result={clear.inviteResult} />}
+      <Panel>
+        <PagedList items={details} label="くわしく" render={(node) => node} />
+      </Panel>
 
-        {/* 次の人へバトン・次は？（spec v1.13。任意） */}
-        {clear.mine && clear.viewerId && <NakamaAfter viewerId={clear.viewerId} source="help_house" missionId={clear.missionId} photoChecked={Boolean(clear.evidence)} />}
-
-        <button onClick={onClose} className="btn btn-ink btn-big mt-4 w-full">
-          町の地図へ戻る
-        </button>
-      </div>
-    </div>
+      {/* つなぐ: 共有／誘う／次の人へバトン・次は？（spec v1.13。任意） */}
+      {(hasShare || hasBaton) && (
+        <Panel>
+          <ConnectPanel
+            shares={shares}
+            invite={invite}
+            baton={hasBaton ? (view) => <NakamaAfter viewerId={clear.viewerId!} source="help_house" missionId={clear.missionId} photoChecked={Boolean(clear.evidence)} view={view} /> : undefined}
+          />
+        </Panel>
+      )}
+    </ClearFrame>
   );
 }

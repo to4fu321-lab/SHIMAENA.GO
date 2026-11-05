@@ -35,8 +35,8 @@ function download(file: File) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-/** compact: 1画面に収める並び（画像と投稿文を横に、ボタンを詰める）。ほかの画面はこれまでどおり */
-export default function SnsShare({ options, title = "SNS に投稿する", compact = false }: { options: ShareOption[]; title?: string; compact?: boolean }) {
+/** compact: 完了画面のタブの中など、1画面に収める置き方（画像は小さく横に、ボタンは3列）。fill: パネルの残りの高さを埋める置き方（/today）。11/5 本人の指示「基本1画面」 */
+export default function SnsShare({ options, title = "SNS に投稿する", compact = false, fill = false }: { options: ShareOption[]; title?: string; compact?: boolean; fill?: boolean }) {
   const [key, setKey] = useState(options[0]?.key);
   const opt = options.find((o) => o.key === key) ?? options[0];
   const [texts, setTexts] = useState<Record<string, string>>({});
@@ -87,7 +87,82 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
     });
 
   const btn = "btn text-base";
+  const tabs = options.length > 1 && (
+    <div className="flex flex-wrap gap-2" role="tablist">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          role="tab"
+          aria-selected={o.key === opt.key}
+          onClick={() => setKey(o.key)}
+          className={`min-h-11 rounded-full px-3 py-1 text-sm font-bold ring-1 ${o.key === opt.key ? "bg-ink text-white ring-ink" : "bg-card text-ink ring-ink/30"}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+  const image = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`${opt.image}${opt.image.includes("?") ? "&" : "?"}format=square`}
+      alt={`${opt.label}のシェア画像`}
+      className={compact ? "aspect-square w-24 shrink-0 self-start rounded-xl ring-1 ring-ink/10" : "aspect-square w-full rounded-2xl ring-1 ring-ink/10"}
+    />
+  );
+  const textArea = (
+    <label className="block min-w-0 flex-1 text-sm text-ink-soft">
+      投稿文（直してから投稿できます）
+      <textarea
+        value={text}
+        onChange={(e) => setTexts((t) => ({ ...t, [opt.key]: e.target.value }))}
+        rows={compact ? 3 : 5}
+        className={`mt-1 w-full rounded-2xl bg-paper text-base text-ink ring-1 ring-ink/15 ${compact ? "p-2" : "p-3"}`}
+      />
+    </label>
+  );
+  const status = msg && (
+    <p className="rounded-2xl bg-paper px-3 py-2 text-sm" role="status">
+      {msg}
+    </p>
+  );
+  const note = <p className="text-sm text-ink-soft">自動では投稿しません。名前や家の場所は画像に入りません。</p>;
   if (compact) {
+    const cb = `${btn} min-h-12 px-1 leading-tight`;
+    return (
+      // 見出しは下の「投稿文（直してから投稿できます）」と同じ意味なので、読み上げ（aria-label）だけにして高さを詰める
+      <section className="space-y-2 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-ink/10" aria-label={title}>
+        {tabs}
+        <div className="flex gap-2">
+          {image}
+          {textArea}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <button onClick={postX} className={`${cb} bg-black text-white`}>
+            X に投稿
+          </button>
+          <button onClick={postLine} className={`${cb} bg-[#06C755] text-white`}>
+            LINE で送る
+          </button>
+          <button disabled={busy} onClick={() => shareImage("square")} className={`${cb} bg-ink text-white`}>
+            Instagram など
+          </button>
+          <button disabled={busy} onClick={() => save("square")} className={`${cb} btn-white`}>
+            画像を保存
+          </button>
+          <button disabled={busy} onClick={() => save("story")} className={`${cb} btn-white`}>
+            ストーリーズ用
+          </button>
+          <button disabled={busy} onClick={copy} className={`${cb} btn-white`}>
+            文をコピー
+          </button>
+        </div>
+        {status}
+        {note}
+      </section>
+    );
+  }
+  if (fill) {
     return (
       <section className="flex min-h-0 flex-1 flex-col gap-2 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-ink/10" aria-label={title}>
         <h2 className="text-lg font-bold leading-tight">{title}</h2>
@@ -133,32 +208,9 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
   return (
     <section id="share" className="scroll-mt-4 space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label={title}>
       <h2 className="text-lg font-bold">{title}</h2>
-      {options.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="tablist">
-          {options.map((o) => (
-            <button
-              key={o.key}
-              role="tab"
-              aria-selected={o.key === opt.key}
-              onClick={() => setKey(o.key)}
-              className={`min-h-11 rounded-full px-3 py-1 text-sm font-bold ring-1 ${o.key === opt.key ? "bg-ink text-white ring-ink" : "bg-card text-ink ring-ink/30"}`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`${opt.image}${opt.image.includes("?") ? "&" : "?"}format=square`} alt={`${opt.label}のシェア画像`} className="aspect-square w-full rounded-2xl ring-1 ring-ink/10" />
-      <label className="block text-sm text-ink-soft">
-        投稿文（直してから投稿できます）
-        <textarea
-          value={text}
-          onChange={(e) => setTexts((t) => ({ ...t, [opt.key]: e.target.value }))}
-          rows={5}
-          className="mt-1 w-full rounded-2xl bg-paper p-3 text-base text-ink ring-1 ring-ink/15"
-        />
-      </label>
+      {tabs}
+      {image}
+      {textArea}
       <div className="grid grid-cols-2 gap-2">
         <button onClick={postX} className={`${btn} bg-black text-white`}>
           X に投稿
@@ -179,12 +231,8 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
       <button disabled={busy} onClick={copy} className="btn w-full text-base text-ink underline">
         文をコピー
       </button>
-      {msg && (
-        <p className="rounded-2xl bg-paper px-3 py-2 text-sm" role="status">
-          {msg}
-        </p>
-      )}
-      <p className="text-sm text-ink-soft">自動では投稿しません。名前や家の場所は画像に入りません。</p>
+      {status}
+      {note}
     </section>
   );
 }

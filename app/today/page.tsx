@@ -206,7 +206,7 @@ async function Details({ searchParams }: { searchParams: Promise<{ as?: string }
           </div>
         </section>
         {youPanel}
-        <SnsShare key="post" options={shareOptions} compact />
+        <SnsShare key="post" options={shareOptions} fill />
         <div key="invite" className="flex min-h-0 flex-1 flex-col gap-2">
           <FriendShare />
         </div>
