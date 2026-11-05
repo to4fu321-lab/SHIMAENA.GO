@@ -102,3 +102,25 @@ export async function getProfile(userId: string): Promise<{ displayName: string 
     return undefined;
   }
 }
+
+let basicIdCache: string | undefined;
+/**
+ * 公式アカウントの ID（@ から始まる）。「LINE で送ってログイン」のリンク（line.me/R/oaMessage/…）に使う。
+ * 環境変数 NEXT_PUBLIC_LINE_BOT_ID があればそれ、なければ Messaging API の /info から取る。取れなければ undefined
+ */
+export async function botBasicId(): Promise<string | undefined> {
+  const env = process.env.NEXT_PUBLIC_LINE_BOT_ID?.trim();
+  if (env) return env.startsWith("@") ? env : `@${env}`;
+  if (basicIdCache) return basicIdCache;
+  const t = token();
+  if (!t) return undefined;
+  try {
+    const res = await fetch(`${API}/info`, { headers: { Authorization: `Bearer ${t}` } });
+    if (!res.ok) return undefined;
+    const json = (await res.json()) as { basicId?: string };
+    basicIdCache = json.basicId;
+    return basicIdCache;
+  } catch {
+    return undefined;
+  }
+}

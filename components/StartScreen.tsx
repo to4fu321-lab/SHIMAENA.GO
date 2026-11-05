@@ -11,6 +11,7 @@ import { signInWithLiff } from "@/app/map/actions";
 import { registerWithLiff } from "@/app/start/actions";
 import type { LatLng } from "@/lib/types";
 import Mascot from "./Mascot";
+import LineLoginButton from "./LineLoginButton";
 
 const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
 
@@ -45,8 +46,12 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
     if (!liffId) return;
     (async () => {
       try {
+        // LINE が別の画面（町の地図など）へ移す途中なら、ここでは何もしない（11/5 本人の報告: 地図→ソロへ勝手に移った）
+        const passing = () => new URLSearchParams(location.search).has("liff.state") || location.pathname !== "/start";
+        if (passing()) return;
         const { default: liff } = await import("@line/liff");
         await liff.init({ liffId });
+        if (passing()) return;
         if (!liff.isLoggedIn()) {
           setPhase("outside"); // Safari など。LINE アプリで開き直してもらう
           return;
@@ -58,7 +63,8 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
         if (prof?.displayName) setName(prof.displayName);
         const r = await signInWithLiff(t);
         if (r.ok) {
-          router.replace("/solo"); // もう登録している人は、そのまま出動へ
+          if (passing()) return;
+          router.replace("/"); // もう登録している人は、いつものホームへ（勝手に出動の画面へは進めない。11/5 本人の報告）
           return;
         }
         setPhase(r.reason === "not_registered" ? "role" : "error");
@@ -153,6 +159,8 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
             ) : (
               <p className="rounded-2xl bg-card px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加してください。</p>
             )}
+            <p className="text-base font-bold">もう LINE で登録している方</p>
+            <LineLoginButton />
             <Link href="/?as=h3" className="btn btn-white text-lg">
               デモを見る（登録なし）
             </Link>

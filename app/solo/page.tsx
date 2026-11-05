@@ -37,14 +37,13 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   if (!me) {
     const join = lineJoinUrl();
     return (
-      <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-4 py-6 text-ink">
+      <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 py-5 text-ink">
         <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
         <h1 className="text-2xl font-bold">
           雪かきGO！ <span className="text-base font-normal text-ink-soft">ひとりで10分（ソロ出動）</span>
         </h1>
         <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">仲間がいなくても、自分の10分で町を変えられる。</p>
-          <p>見回り・雪の報告・自分の家の雪かき。1人でできる 3〜10分のミッションで、羽ポイントとカードがたまります。</p>
           <p className="text-base">ソロ出動は LINE で登録した人の画面です。</p>
           <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} />
           {join ? (

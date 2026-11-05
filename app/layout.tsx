@@ -21,6 +21,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className={`${notoSansJP.variable} h-full antialiased`}>
+      <head>
+        {/* LINE（LIFF）が行き先の画面へ移す途中は、間の画面（ホームの地図など）を見せない。3秒たったら必ず見せる */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "if(location.search.indexOf('liff.state')>=0){var d=document.documentElement;d.style.visibility='hidden';setTimeout(function(){d.style.visibility=''},3000)}",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         {/* LINE の中で開いたら、どのページでも本人を確かめる（ホームの「きょうの町」から来ても出動・ソロへ進めるように） */}
         <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} banner />

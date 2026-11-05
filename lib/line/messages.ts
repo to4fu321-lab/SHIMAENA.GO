@@ -282,6 +282,8 @@ export const MSG = {
       : bubbles(["ありがとうございます。", "お名前や番号が入っていたので、今回は載せずにおきますね。"]),
   tipLater: () => bubbles(["わかりました。また今度、教えてくださいね。"]),
   rollcallClosed: () => bubbles(["いまは点呼の時間ではありません。", "雪の朝 6:30 に、ここへ届きます。"], [B.go, B.map]),
+  /** 画面で30秒の登録へ（spec v1.14） */
+  startInvite: (): LineMessage[] => [withButtons("LINE の中の画面で、30秒で登録できます。", [open("30秒で登録する", "/start")])],
   notRegistered: () => bubbles(["登録がまだです。1分で終わります。"], [B.register, B.guide]),
   planForRequester: (startTime: string, ns: string[]) =>
     ns.length > 0

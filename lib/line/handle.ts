@@ -34,9 +34,10 @@ import type { FamilyLink, Participant } from "../types";
 import { getMessageContent, getProfile, push, reply } from "./client";
 import { liffUrl } from "../url";
 import { answerMeetup } from "../nakama/ops";
+import { bindLogin, parseLoginText } from "../weblogin";
 import { CHILD_NOTE } from "../nakama/rules";
 import { ensureTeam } from "../member";
-import { MSG } from "./messages";
+import { MSG, text as lineText } from "./messages";
 import { STORM_LINES, stormHeadline, stormStatus } from "../storm";
 import { parseText, step, type RegInput, type Registration } from "./registration";
 import type { LineEvent, LineMessage } from "./types";
@@ -298,6 +299,19 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       messages = MSG.roadPref(ev.postback.data === "road:on");
     }
     if (ev.replyToken) await reply(ev.replyToken, messages);
+    return;
+  }
+  // ブラウザでログイン（spec v1.16）: ブラウザに出た「ログイン ABC123」が送られたら、その人と結ぶ
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && parseLoginText(ev.message.text)) {
+    const p = await r.findParticipantByLineUserId(lineUserId);
+    let text = "まだ登録がありません。下のボタンから30秒で登録できます。";
+    if (p) {
+      const ok = await bindLogin(parseLoginText(ev.message.text)!, p.id).catch(() => false);
+      text = ok
+        ? "✅ ブラウザでログインしました。ブラウザの画面に戻ってください（数秒で切りかわります）。\n心当たりがないときは、そのブラウザの画面を閉じてください。"
+        : "この合言葉は使えませんでした（10分で切れます）。ブラウザの画面で新しい合言葉を出してください。";
+    }
+    if (ev.replyToken) await reply(ev.replyToken, p ? [lineText(text)] : [lineText(text), ...MSG.startInvite()]);
     return;
   }
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^\s*道の?通知\s*$/.test(ev.message.text)) {

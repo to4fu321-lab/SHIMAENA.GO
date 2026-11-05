@@ -63,7 +63,7 @@ export default function LiffBridge({ liffId, enabled = true, banner = false }: {
       set(r.status);
       if (r.status === "ok" && r.changed && first) router.refresh(); // 「自分」が分かったので、画面を本人の中身にする
       // LINE の友だちでも登録がまだなら、その場で登録の画面へ（spec v1.14 LINE で1タップ開始）
-      if (r.status === "not_registered" && first && location.pathname !== "/start") router.replace("/start");
+      if (r.status === "not_registered" && first && location.pathname !== "/start" && !new URLSearchParams(location.search).has("liff.state")) router.replace("/start");
     });
     return () => {
       alive = false;
@@ -71,13 +71,6 @@ export default function LiffBridge({ liffId, enabled = true, banner = false }: {
   }, [liffId, enabled, router]);
 
   if (!banner) return null;
-  if (status === "checking") {
-    return (
-      <p className="fixed inset-x-0 top-0 z-[2000] bg-ink px-4 py-2 text-center text-base font-bold text-white" role="status">
-        LINE であなたを確かめています…
-      </p>
-    );
-  }
   if (status === "error") {
     return (
       <div className="fixed inset-x-0 top-0 z-[2000] bg-warm px-4 py-3 text-center text-base text-ink shadow-md" role="alert">
