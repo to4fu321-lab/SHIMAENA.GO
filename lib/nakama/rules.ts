@@ -11,6 +11,9 @@ export type TodayMode = "solo" | "together" | "reunion" | "new";
 /** 次は？（活動を終えたときに選ぶ）。none = 特に希望しない */
 export type NextWish = "reunion" | "new" | "solo" | "none";
 
+/** 子どもは保護者と一緒なら合流してよい（11/5 本人の答え）。年齢は集めないので、誘い・成立の画面と LINE に必ず添える */
+export const CHILD_NOTE = "お子さんは保護者と一緒に参加してください。";
+
 export const TODAY_MODES: { id: TodayMode; label: string; sub: string }[] = [
   { id: "solo", label: "ひとりで自由に", sub: "いつもどおり" },
   { id: "together", label: "誰かと一緒に", sub: "近くの人と10分" },

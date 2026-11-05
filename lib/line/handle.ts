@@ -34,6 +34,7 @@ import type { FamilyLink, Participant } from "../types";
 import { getMessageContent, getProfile, push, reply } from "./client";
 import { liffUrl } from "../url";
 import { answerMeetup } from "../nakama/ops";
+import { CHILD_NOTE } from "../nakama/rules";
 import { ensureTeam } from "../member";
 import { MSG } from "./messages";
 import { STORM_LINES, stormHeadline, stormStatus } from "../storm";
@@ -309,7 +310,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       const yes = ev.postback.data.startsWith("nk:yes=");
       const a = await answerMeetup(p.id, ev.postback.data.slice(7), yes, new Date());
       const place = a.matched ? (a.matched.baseNumber ? `地図の${a.matched.baseNumber}番の家で、10分だけ一緒にどうぞ。` : "それぞれの家の前で、同じ10分を。") : "";
-      messages = MSG.nakamaAnswer(a.matched ? `🎉 ${a.matched.otherName}さんと${a.text}\n${place}` : a.text, Boolean(a.matched));
+      messages = MSG.nakamaAnswer(a.matched ? `🎉 ${a.matched.otherName}さんと${a.text}\n${place}\n${CHILD_NOTE}` : a.text, Boolean(a.matched));
     }
     if (ev.replyToken) await reply(ev.replyToken, messages);
     return;
