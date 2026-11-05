@@ -1021,10 +1021,17 @@ function clockTextJst(d: Date): string {
 }
 
 /** LIFF のアクセストークンから「この地図を見ている参加者」を決める */
-export async function resolveViewerByLiff(accessToken: string): Promise<Participant | undefined> {
+/** LIFF のアクセストークンから参加者を探す。LINE に確かめられない・登録がまだ、を分けて返す（画面で案内を変えるため） */
+export async function resolveViewerByLiff(
+  accessToken: string,
+): Promise<{ ok: true; participant: Participant } | { ok: false; reason: "no_profile" | "not_registered" }> {
   const profile = await getProfileByAccessToken(accessToken);
-  if (!profile) return undefined;
-  return repo().findParticipantByLineUserId(profile.userId);
+  if (!profile) {
+    console.error("[liff] LINE のプロフィールを取れませんでした（アクセストークンが無効か、LIFF に profile の権限がない）");
+    return { ok: false, reason: "no_profile" };
+  }
+  const p = await repo().findParticipantByLineUserId(profile.userId);
+  return p ? { ok: true, participant: p } : { ok: false, reason: "not_registered" };
 }
 
 export { jstIso };

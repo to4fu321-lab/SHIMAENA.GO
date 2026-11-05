@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import LiffBridge from "@/components/LiffBridge";
 import { baseUrl } from "@/lib/url";
 import "./globals.css";
 
@@ -20,7 +21,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className={`${notoSansJP.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* LINE の中で開いたら、どのページでも本人を確かめる（ホームの「きょうの町」から来ても出動・ソロへ進めるように） */}
+        <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} banner />
+        {children}
+      </body>
     </html>
   );
 }
