@@ -11,6 +11,8 @@ import type { Destination } from "@/lib/nav";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { requestLabel } from "@/lib/request-note";
 import type { ShortHouse } from "@/lib/morning/watch";
+import { useState } from "react";
+import GoBriefing from "./GoBriefing";
 import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
@@ -96,6 +98,9 @@ export default function MapScreen({
   const [, month, day] = state.rollcall.date.split("-").map(Number);
   const activeCount = new Set(state.sorties.filter((s) => s.status === "going").map((s) => s.participantId)).size;
   const q = /^h\d+$/.test(state.viewerId) ? `?as=${state.viewerId}` : "";
+  // 雪かきGO（出発前）: 割り当てがあって、まだ「行く」を押していないとき。「あとで」で閉じられる
+  const [later, setLater] = useState(false);
+  const briefing = Boolean(myBase && myView && mySortie?.status === "going" && !mySortie.confirmedAt && !later && !prog.allDone);
 
   const peekNode = (
     <div aria-label="今朝の雪のこり">
@@ -128,7 +133,7 @@ export default function MapScreen({
           ‹ ホーム
         </Link>
         <h1 className="text-center text-xl font-bold leading-tight">
-          町の地図
+          {briefing ? "雪かきGO" : "町の地図"}
           <span className="block text-xs font-normal">
             {month}月{day}日の朝
           </span>
@@ -178,8 +183,20 @@ export default function MapScreen({
           </p>
         </div>
 
+      {briefing && myBase && myView && (
+        <GoBriefing
+          viewerId={state.viewerId}
+          baseNumber={myBase.number}
+          team={viewerTeam}
+          goingPeople={myView.goingPeople}
+          requiredPeople={myView.requiredPeople}
+          request={myMission?.request ? [requestLabel(myMission.request), myMission.request.note].filter(Boolean).join("・") : undefined}
+          destination={destinations.find((d) => d.missionId === myMission?.id)}
+          onLater={() => setLater(true)}
+        />
+      )}
       {/* 下のシート: つまみをスライドで畳める（畳むと地図が大きくなる） */}
-      <MapSheet
+      {!briefing && <MapSheet
         startClosed={Boolean(focusRoad)}
         peek={peekNode}
         footer={
@@ -320,7 +337,7 @@ export default function MapScreen({
             </Link>
           </div>
         </details>
-      </MapSheet>
+      </MapSheet>}
       </main>
     </div>
   );

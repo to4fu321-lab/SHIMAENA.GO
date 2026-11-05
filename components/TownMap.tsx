@@ -1,7 +1,7 @@
 "use client";
 
 // 建物のぬりえ地図。Leaflet はブラウザでしか動かないので、ここは画面側だけで読み込む。
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Destination } from "@/lib/nav";
 import type { LatLng } from "@/lib/types";
 import "leaflet/dist/leaflet.css";
@@ -97,6 +97,8 @@ export default function TownMap({
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
 
+  // 地図そのもの（タイル・建物）は最初の1回だけ作る。数秒ごとの取り直しで作り直すと、画面がちらつく
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     let map: import("leaflet").Map | undefined;
     let ro: ResizeObserver | undefined;
@@ -129,11 +131,40 @@ export default function TownMap({
           interactive: false,
         }).addTo(map);
       }
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+      ro?.disconnect();
+      mapRef.current = null;
+      map?.remove();
+    };
+  }, []);
+
+  // 中身が本当に変わったときだけ、マスやピンを描き直す（同じ中身の取り直しでは何もしない）
+  const dataKey = JSON.stringify({ cells, home, destinations, solo, road });
+  const fitted = useRef("");
+  const focused = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const { cells, home, destinations, solo, road } = JSON.parse(dataKey) as {
+      cells: CellView[];
+      home?: LatLng;
+      destinations: Destination[];
+      solo: SoloCell[];
+      road: RoadPin[];
+    };
+    let layer: import("leaflet").LayerGroup | undefined;
+    let cancelled = false;
+    import("leaflet").then((L) => {
+      if (cancelled) return;
+      layer = L.layerGroup().addTo(map);
 
       // 50m マスを塗る（どの家かは出さない）
       for (const cell of cells) {
         const style = cellStyle(cell);
-        L.polygon(cellPolygon(cell.key), { ...style, interactive: false }).addTo(map);
+        L.polygon(cellPolygon(cell.key), { ...style, interactive: false }).addTo(layer!);
         L.marker(cellCenter(cell.key), {
           interactive: false,
           icon: L.divIcon({
@@ -142,20 +173,20 @@ export default function TownMap({
             iconSize: [28, 28],
             iconAnchor: [14, 40], // マスの上に出して、塗った色を隠さない
           }),
-        }).addTo(map);
+        }).addTo(layer!);
       }
 
       // ソロ出動の足あと: 氷の青の薄い塗り（拠点のマスでなければ）と羽のピン。赤・緑は使わない
       const baseKeys = new Set(cells.map((c) => c.key));
       for (const sc of solo) {
         if (!baseKeys.has(sc.key)) {
-          L.polygon(cellPolygon(sc.key), { color: ICE, weight: 2, dashArray: "4 4", fillColor: ICE, fillOpacity: 0.35, interactive: false }).addTo(map);
+          L.polygon(cellPolygon(sc.key), { color: ICE, weight: 2, dashArray: "4 4", fillColor: ICE, fillOpacity: 0.35, interactive: false }).addTo(layer!);
         }
         const [lat, lng] = cellCenter(sc.key);
         L.marker([lat, lng], {
           interactive: false,
           icon: L.divIcon({ className: "", html: `<div class="solo-pin">🪶${sc.count}</div>`, iconSize: [40, 22], iconAnchor: [-4, 30] }),
-        }).addTo(map);
+        }).addTo(layer!);
       }
 
       // 道の危険（写真の場所にピン）。押すと写真と内容
@@ -167,8 +198,9 @@ export default function TownMap({
             `<div class="road-pop"><img src="/api/road/${encodeURIComponent(rp.id)}/photo" alt="" loading="lazy" /><b>${rp.emoji} ${esc(rp.label)}</b><span>${esc(rp.ago)}${rp.note ? `・${esc(rp.note)}` : ""}</span></div>`,
             { maxWidth: 200, minWidth: 180 },
           )
-          .addTo(map);
-        if (rp.id === focusRoad) {
+          .addTo(layer!);
+        if (rp.id === focusRoad && focused.current !== focusRoad) {
+          focused.current = focusRoad;
           map.setView(rp.location, 17);
           mk.openPopup();
         }
@@ -179,28 +211,31 @@ export default function TownMap({
         L.marker(home, {
           interactive: false,
           icon: L.divIcon({ className: "", html: `<div class="me-pin">あなた</div>`, iconSize: [48, 24], iconAnchor: [24, 12] }),
-        }).addTo(map);
+        }).addTo(layer!);
       }
       for (const d of destinations) {
         L.marker(d.location, {
           interactive: false,
           icon: L.divIcon({ className: "", html: `<div class="dest-pin">拠点${d.baseNumber} ここ</div>`, iconSize: [96, 26], iconAnchor: [48, 34] }),
-        }).addTo(map);
-        L.circleMarker(d.location, { radius: 7, color: RED, weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(map);
-        if (home) L.polyline([home, d.location], { color: INK, weight: 3, dashArray: "6 8", opacity: 0.8, interactive: false }).addTo(map);
+        }).addTo(layer!);
+        L.circleMarker(d.location, { radius: 7, color: RED, weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(layer!);
+        if (home) L.polyline([home, d.location], { color: INK, weight: 3, dashArray: "6 8", opacity: 0.8, interactive: false }).addTo(layer!);
       }
-      if (destinations.length > 0) {
+      // 行き先に合わせるのは、行き先が変わったときだけ（自分で動かした地図を戻さない）
+      const destKey = JSON.stringify(destinations.map((d) => d.location));
+      if (destinations.length > 0 && fitted.current !== destKey) {
+        fitted.current = destKey;
         const pts = [...destinations.map((d) => d.location), ...(home ? [home] : [])];
-        map.fitBounds(L.latLngBounds(pts).pad(0.4), { maxZoom: 17 });
+        // 上の札と下のシートに隠れないよう、見えている真ん中に収める
+        const h = map.getSize().y;
+        map.fitBounds(L.latLngBounds(pts).pad(0.25), { maxZoom: 17, paddingTopLeft: [16, 80], paddingBottomRight: [16, Math.round(h * 0.64)] });
       }
     });
     return () => {
       cancelled = true;
-      ro?.disconnect();
-      mapRef.current = null;
-      map?.remove();
+      layer?.remove();
     };
-  }, [cells, home, destinations, solo, road, focusRoad]);
+  }, [ready, dataKey, focusRoad]);
 
   // 現在地（GPS）: 許可があれば青い点を動かす。許可がなければ何も出さない
   useEffect(() => {
