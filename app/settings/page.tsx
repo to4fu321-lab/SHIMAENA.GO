@@ -1,4 +1,5 @@
 // 設定（v1.4）: LINE のリッチメニューから外して Web に置いた。登録の確認と、やり直しの方法だけ。
+// 1画面（11/5 本人の指示）: タブ「あなたの登録／やり直す／お知らせ」を横スワイプ。縦にはスクロールしない。
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -6,6 +7,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import Icon from "@/components/Icon";
 import LiffBridge from "@/components/LiffBridge";
+import Pager, { Screen } from "@/components/Pager";
 import RedoRegistration from "@/components/RedoRegistration";
 import { lineJoinUrl } from "@/lib/line/join";
 import { loadRoster } from "@/lib/morning/roster";
@@ -38,9 +40,9 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
   const join = lineJoinUrl();
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 pb-8 pt-5 text-ink">
-      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
-      <header className="flex items-center justify-between gap-2">
+    <Screen
+      header={
+      <header className="flex items-center justify-between gap-2 px-4 pb-2 pt-4">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
           <Icon name="settings" size={34} accent="var(--ice)" />
           設定
@@ -49,6 +51,20 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
           ホーム
         </Link>
       </header>
+      }
+      footer={
+      <nav className="grid grid-cols-2 gap-3 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
+        <Link href="/rules" className="btn btn-white text-lg">
+          使い方
+        </Link>
+        <Link href={`/${q}`} className="btn btn-white text-lg">
+          ホームへ戻る
+        </Link>
+      </nav>
+      }
+    >
+      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
+      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "line", label: "お知らせ" }]}>
 
       {me ? (
         <section className="rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="あなたの登録">
@@ -104,15 +120,8 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
         <p className="text-sm text-ink-soft">お知らせを止めたいときは、LINE で「シマエナGO」をブロックしてください。いつでも戻せます。</p>
       </section>
 
-      <nav className="grid grid-cols-2 gap-3">
-        <Link href="/rules" className="btn btn-white text-lg">
-          使い方
-        </Link>
-        <Link href={`/${q}`} className="btn btn-white text-lg">
-          ホームへ戻る
-        </Link>
-      </nav>
-    </main>
+      </Pager>
+    </Screen>
   );
 }
 

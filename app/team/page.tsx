@@ -1,5 +1,6 @@
 // 今週のチーム（T47）。LINE のチーム発表の「チームを見る」から開く。
 // 1週間（月曜〜日曜）のチームを、チームの色・チーム色のマフラーのシマエナガ・期間で大きく見せる。名前は出さない（人数だけ）。
+// 1画面（11/5 本人の指示）: タブ「あなたのチーム／3チーム／しくみ」を横スワイプ。縦にはスクロールしない。
 import type { Metadata } from "next";
 import { onTeam } from "@/lib/member";
 import Link from "next/link";
@@ -8,6 +9,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import LiffBridge from "@/components/LiffBridge";
 import Mascot from "@/components/Mascot";
+import Pager, { Screen } from "@/components/Pager";
 import { jstDate } from "@/lib/jst";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
@@ -34,13 +36,25 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
   const members = (id: string) => roster.participants.filter((p) => onTeam(p) && p.teamId === id).length;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md bg-paper pb-6 text-ink">
+    <Screen
+      footer={
+        <nav className="grid grid-cols-2 gap-3 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
+          <Link href={`/map${q}`} className="btn btn-white text-lg">
+            町の地図
+          </Link>
+          <Link href={`/${q}`} className="btn btn-lamp text-lg">
+            ホームへ
+          </Link>
+        </nav>
+      }
+    >
       <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
-
+      <div className="pt-3" />
+      <Pager tabs={[{ key: "mine", label: mine ? "あなた" : "今週" }, { key: "three", label: "3チーム" }, { key: "how", label: "しくみ" }]}>
       {/* 発表（チームの色いっぱいに） */}
       {mine ? (
         <section
-          className="relative overflow-hidden rounded-b-[2.5rem] px-4 pb-6 pt-4 text-center shadow-md"
+          className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-[2rem] px-4 py-3 text-center shadow-md"
           style={{ background: mine.team.color, color: mine.onColor }}
           aria-label="あなたのチーム"
         >
@@ -56,7 +70,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
           <p className="relative mx-auto inline-block rounded-full bg-white px-5 py-1 text-lg font-bold shadow-sm" style={{ color: mine.deep }}>
             🎉 今週のあなたのチーム 🎉
           </p>
-          <Mascot team={mine.team.id} mood="happy" className="team-reveal relative mx-auto mt-2 h-40 w-auto drop-shadow-lg" />
+          <Mascot team={mine.team.id} mood="happy" className="team-reveal relative mx-auto mt-2 h-auto min-h-0 w-auto max-h-40 flex-1 drop-shadow-lg" />
           <p className="relative text-xl font-bold">あなたは</p>
           <h1 className={`team-name relative font-bold leading-tight ${mine.team.name.length > 5 ? "whitespace-nowrap text-[2.6rem]" : "text-6xl tracking-wide"}`}>{mine.team.name}</h1>
           <p className="relative text-base font-bold tracking-[0.3em]">TEAM {mine.team.nameEn}</p>
@@ -64,8 +78,8 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
           <p className="relative mt-1 text-base font-bold">日曜の夜 9時に、次の週のチームを発表</p>
         </section>
       ) : (
-        <section className="rounded-b-[2.5rem] bg-ice-soft px-4 pb-5 pt-5 text-center" aria-label="今週のチーム">
-          <Mascot className="mx-auto h-28 w-auto" />
+        <section className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-[2rem] bg-ice-soft px-4 py-4 text-center" aria-label="今週のチーム">
+          <Mascot className="mx-auto h-auto max-h-28 min-h-0 w-auto flex-1" />
           <h1 className="text-3xl font-bold">今週のチーム</h1>
           <p className="mt-1 text-lg font-bold">{term.label}</p>
           <p className="mt-1 text-base">
@@ -74,74 +88,65 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
         </section>
       )}
 
-      <div className="space-y-4 px-4 pt-4">
-        {/* 3チーム */}
-        <section aria-label="3つのチーム">
-          <h2 className="mb-2 text-lg font-bold">今週の3チーム</h2>
-          <ul className="grid grid-cols-3 gap-2">
-            {TEAMS.map((t) => {
-              const th = teamTheme(t.id);
-              const isMine = mine?.team.id === t.id;
-              return (
-                <li
-                  key={t.id}
-                  className={`relative rounded-2xl bg-card px-1 pb-2 pt-1 text-center shadow-sm ${isMine ? "ring-4" : "ring-1 ring-ink/10"}`}
-                  style={isMine ? { ["--tw-ring-color" as string]: t.color } : undefined}
-                >
-                  {isMine && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 text-sm font-bold" style={{ background: t.color, color: th.onColor }}>
-                      あなた
-                    </span>
-                  )}
-                  <Mascot team={t.id} size={56} className="mx-auto" />
-                  <p className="text-base font-bold leading-tight" style={{ color: th.deep }}>
-                    {t.name}
-                  </p>
-                  <p className="text-sm">{t.colorName}・{members(t.id)}人</p>
-                  <p className="text-sm font-bold tabular-nums">今朝 {totals[t.id] ?? 0}点</p>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+      {/* 3チーム */}
+      <section aria-label="3つのチーム" className="flex min-h-0 flex-1 flex-col justify-center">
+        <h2 className="mb-3 text-lg font-bold">今週の3チーム</h2>
+        <ul className="grid grid-cols-3 gap-2">
+          {TEAMS.map((t) => {
+            const th = teamTheme(t.id);
+            const isMine = mine?.team.id === t.id;
+            return (
+              <li
+                key={t.id}
+                className={`relative rounded-2xl bg-card px-1 pb-2 pt-1 text-center shadow-sm ${isMine ? "ring-4" : "ring-1 ring-ink/10"}`}
+                style={isMine ? { ["--tw-ring-color" as string]: t.color } : undefined}
+              >
+                {isMine && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 text-sm font-bold" style={{ background: t.color, color: th.onColor }}>
+                    あなた
+                  </span>
+                )}
+                <Mascot team={t.id} size={80} className="mx-auto" />
+                <p className="text-base font-bold leading-tight" style={{ color: th.deep }}>
+                  {t.name}
+                </p>
+                <p className="text-sm">{t.colorName}・{members(t.id)}人</p>
+                <p className="text-sm font-bold tabular-nums">今朝 {totals[t.id] ?? 0}点</p>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
-        {/* 1週間のチームって？ */}
-        <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="1週間のチームって？">
-          <h2 className="text-lg font-bold">1週間のチームって？</h2>
-          <ol className="space-y-2 text-base">
-            <li className="flex gap-2">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">1</span>
-              <span>
-                <b>月曜〜日曜の1週間</b>、同じ色のチームで雪の朝に出動します。
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">2</span>
-              <span>
-                <b>日曜の夜 9時</b>に組み直して、LINE で「チーム発表」が届きます。
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">3</span>
-              <span>出撃した回数と動ける時間を見て、3チームが同じくらいの強さになるように分けます。毎週ちがう顔ぶれです。</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">4</span>
-              <span>町の地図のマスと、シマエナガのマフラーが、あなたのチームの色になります。</span>
-            </li>
-          </ol>
-        </section>
+      {/* 1週間のチームって？ */}
+      <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="1週間のチームって？">
+        <h2 className="text-lg font-bold">1週間のチームって？</h2>
+        <ol className="space-y-2 text-base">
+          <li className="flex gap-2">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">1</span>
+            <span>
+              <b>月曜〜日曜の1週間</b>、同じ色のチームで雪の朝に出動します。
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">2</span>
+            <span>
+              <b>日曜の夜 9時</b>に組み直して、LINE で「チーム発表」が届きます。
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">3</span>
+            <span>出撃した回数と動ける時間を見て、3チームが同じくらいの強さになるように分けます。毎週ちがう顔ぶれです。</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">4</span>
+            <span>町の地図のマスと、シマエナガのマフラーが、あなたのチームの色になります。</span>
+          </li>
+        </ol>
+      </section>
 
-        <nav className="grid grid-cols-2 gap-3">
-          <Link href={`/map${q}`} className="btn btn-white text-lg">
-            町の地図
-          </Link>
-          <Link href={`/${q}`} className="btn btn-lamp text-lg">
-            ホームへ
-          </Link>
-        </nav>
-      </div>
-    </main>
+      </Pager>
+    </Screen>
   );
 }
 
