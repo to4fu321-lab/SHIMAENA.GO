@@ -3,7 +3,7 @@
 // LINE の中で開いたとき、LIFF でログインしている人を「この画面の自分」にする。
 // 11/5: ホーム（リッチメニューの「きょうの町」）にこの部品がなく、LINE の友だちなのに「出動する」「ソロ」の先へ進めなかった。
 // → 全ページ共通（app/layout.tsx）で1回だけ動かす。各ページに置いてある分は、同じ1回を使うだけ（二重には動かない）。
-// LINE の中のブラウザで未ログインならログインへ。確認中・未登録・失敗は画面の上に出す（行き止まりにしない）。
+// LINE の中の普通のブラウザなら LIFF で開き直す。確認中・未登録・失敗は画面の上に出す（行き止まりにしない）。
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signInWithLiff } from "@/app/map/actions";
@@ -21,8 +21,17 @@ async function signIn(liffId: string, onChecking: () => void): Promise<Result> {
   const { default: liff } = await import("@line/liff");
   await liff.init({ liffId }); // liff.line.me/…/solo で開いたときは、ここで /solo へ移る
   if (!liff.isLoggedIn()) {
-    // LINE の中のブラウザなら LINE ログインへ（外のブラウザで公開ページを見ている人には何もしない）
-    if (!liff.isInClient() && inLineApp()) liff.login({ redirectUri: location.href });
+    // LINE のトークのリンクを LINE の中の普通のブラウザで開いたとき: LIFF（LINE の中のログイン済みの画面）で開き直す。
+    // ウェブのログイン（liff.login）は access.line.me が 400 を返したので使わない（11/5）。外のブラウザの人には何もしない
+    let tried = false;
+    try {
+      tried = sessionStorage.getItem("liff-reopen") === "1"; // 開き直しは1回だけ（行ったり来たりしないように）
+      sessionStorage.setItem("liff-reopen", "1");
+    } catch {}
+    if (!liff.isInClient() && inLineApp() && !tried) {
+      const here = `${location.pathname}${location.search}`;
+      location.href = `https://liff.line.me/${liffId}${here === "/" ? "" : here}`;
+    }
     return { status: "idle" };
   }
   const token = liff.getAccessToken();
