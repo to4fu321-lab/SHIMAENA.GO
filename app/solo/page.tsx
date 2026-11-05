@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import LiffBridge from "@/components/LiffBridge";
+import LineLoginButton from "@/components/LineLoginButton";
 import { lineJoinUrl } from "@/lib/line/join";
 import SoloScreen from "@/components/SoloScreen";
 import { loadRoster } from "@/lib/morning/roster";
@@ -44,10 +45,11 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">仲間がいなくても、自分の10分で町を変えられる。</p>
           <p>見回り・雪の報告・自分の家の雪かき。1人でできる 3〜10分のミッションで、羽ポイントとカードがたまります。</p>
-          <p className="text-sm text-ink-soft">ソロ出動は LINE で登録した人の画面です。LINE の「シマエナGO」から開いてください。</p>
+          <p className="text-base">ソロ出動は LINE で登録した人の画面です。</p>
+          <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} />
           {join ? (
-            <a href={join} className="btn btn-big bg-[#06C755] text-white">
-              LINE で参加する
+            <a href={join} className="btn btn-white text-lg">
+              はじめての方: LINE で友だち追加
             </a>
           ) : (
             <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>

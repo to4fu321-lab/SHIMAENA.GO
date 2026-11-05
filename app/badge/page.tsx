@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import LiffBridge from "@/components/LiffBridge";
+import LineLoginButton from "@/components/LineLoginButton";
 import LiveClock from "@/components/LiveClock";
 import Mascot from "@/components/Mascot";
 import { passwordOf } from "@/lib/badge";
@@ -46,6 +47,7 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
         <p className="mt-3 text-lg">
           {me ? "チームに入っている人だけに出ます。" : "LINE の行き先カードから開いてください。"}
         </p>
+        {!me && <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} className="mt-4 text-left" />}
         <Link href={`/${q}`} className="btn btn-lamp mt-6 text-lg">
           ホームへ
         </Link>

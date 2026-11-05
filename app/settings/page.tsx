@@ -7,6 +7,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import Icon from "@/components/Icon";
 import LiffBridge from "@/components/LiffBridge";
+import LineLoginButton from "@/components/LineLoginButton";
 import Pager, { Screen } from "@/components/Pager";
 import RedoRegistration from "@/components/RedoRegistration";
 import { lineJoinUrl } from "@/lib/line/join";
@@ -93,10 +94,11 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       ) : (
         <section className="space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
           <h2 className="text-lg font-bold">まだ登録がありません</h2>
-          <p className="text-base">LINE で「シマエナGO」を友だち追加すると、1分で登録できます。</p>
+          <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} />
+          <p className="text-base">はじめての方は、LINE で「シマエナGO」を友だち追加すると、1分で登録できます。</p>
           {join ? (
-            <a href={join} className="btn btn-big bg-[#06C755] text-white">
-              LINE で参加する
+            <a href={join} className="btn btn-white text-lg">
+              はじめての方: LINE で友だち追加
             </a>
           ) : (
             <p className="rounded-2xl bg-ice-soft px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
