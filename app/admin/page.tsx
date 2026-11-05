@@ -18,7 +18,6 @@ import {
   backToSample,
   cheerDemo,
   clearProblemsAction,
-  stormToggleAction,
   completeOne,
   helpNextRing,
   prepareDatabase,
@@ -38,8 +37,9 @@ import { makeNameMasker } from "@/lib/admin-names";
 import { demoEnabled } from "@/lib/env";
 import { readLineUsage } from "@/lib/ops/line-usage";
 import { listProblems } from "@/lib/ops/problems";
-import { manualStop, stormStatus } from "@/lib/storm";
 import { loginAction, logoutAction } from "./auth-actions";
+import Pager, { Screen } from "@/components/Pager";
+import PagedNodes from "./PagedNodes";
 
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
 
@@ -67,7 +67,7 @@ function Step({ n, label, action, disabled }: { n: string; label: string; action
     <form action={action}>
       <button
         disabled={disabled}
-        className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3 text-left text-lg font-bold text-ink shadow-sm ring-1 ring-ink/10 disabled:opacity-40"
+        className="flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-2 text-left text-lg font-bold text-ink shadow-sm ring-1 ring-ink/10 disabled:opacity-40"
       >
         <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ink text-sm text-white">{n}</span>
         {label}
@@ -113,7 +113,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
     const { login } = await searchParams;
     return <Login failed={login === "failed"} unconfigured={gate === "unconfigured"} />;
   }
-  const [s, db, roster, problems, usage, storm, manualStorm] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), readLineUsage(), stormStatus(), manualStop()]);
+  const [s, db, roster, problems, usage] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), readLineUsage()]);
   const names = makeNameMasker(roster.participants);
   const m = s.morning;
   const totals = teamTotals(m);
@@ -124,302 +124,252 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
   const lineCount = roster.participants.filter((p) => p.lineUserId).length;
   const status = m.rollcall.status;
 
-  return (
-    <main className="mx-auto min-h-dvh max-w-xl space-y-5 bg-paper px-4 py-5 text-ink">
-      <header>
-        <p className="text-sm text-ink-soft">デモ操作（審査・撮影用）</p>
-        <h1 className="text-2xl font-bold">
-          シマエナ<span className="text-camellia-deep">GO</span> の朝を動かす
-        </h1>
-        <p className="mt-1 text-base">
-          {m.rollcall.date} ・ 時計 <b className="tabular-nums">{clockText(s.clockMin)}</b> ・ 点呼 <b>{ROLLCALL_TEXT[status]}</b>
-          {m.rollcall.snowName && (
-            <>
-              {" "}
-              ・ 相手 <b>「{m.rollcall.snowName}」</b>
-            </>
-          )}
-        </p>
-        <p className="text-sm text-ink-soft">
-          司令官「シマエナ隊長」: {hasClaudeKey() ? "Claude（本物）" : "モック（API キー未設定）"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE:{" "}
-          {hasLineKeys() ? "設定済み" : "未設定"} ・ デモ操作: {demoEnabled() ? "オン" : "オフ（DEMO_MODE=off）"}
-        </p>
-        <p className="text-sm text-ink-soft">
-          LINE のプッシュ（{usage.month}、このアプリで数えた目安）: 送信 <b>{usage.sent}</b> 通
-          {usage.dryRun > 0 && <> ・ 送らずに記録（LINE_DRY_RUN） {usage.dryRun} 通</>}
-          {" "}・ 無料プランは月 200 通。実数は LINE Official Account Manager で確認
-        </p>
-        <Link href="/admin/settings" className="text-sm text-ink-soft underline">
-          管理者ダッシュボード（リッチメニュー・設定）へ
-        </Link>
-        {gate === "ok" && (
-          <form action={logoutAction}>
-            <button className="text-sm text-ink-soft underline">ログアウト</button>
-          </form>
-        )}
-      </header>
+  const anyDone = m.missions.some((x) => x.status === "done");
+  const anyShort = m.missions.some((x) => x.status === "short");
+  const card = "rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10";
+  const link = "w-full rounded-2xl px-4 py-1 text-left text-base text-ink-soft underline disabled:opacity-40";
+  const chip = "rounded-full bg-paper px-2.5 py-1 text-base font-bold text-ink ring-1 ring-ink/15 disabled:opacity-40";
 
-      {problems.length > 0 && (
-        <section className="space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-2 ring-alert" aria-label="問題">
-          <h2 className="font-bold text-alert">問題（{problems.length} 件・新しい順）</h2>
-          <ul className="space-y-1 text-sm">
-            {problems.slice(0, 10).map((x, i) => (
-              <li key={i}>
-                <span className="tabular-nums text-ink-soft">{new Date(x.at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</span> <b>{x.where}</b>{" "}
-                {names.mask(x.message)}
-              </li>
-            ))}
-          </ul>
-          <form action={clearProblemsAction}>
-            <button className="text-sm text-ink-soft underline">記録を空にする</button>
-          </form>
-        </section>
-      )}
-
-      {db.kind !== "none" && db.kind !== "ready" && (
-        <section className="space-y-2 rounded-2xl bg-warm p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">Neon の準備がまだです</h2>
-          <p className="text-base">
-            下のボタンで表を作り、架空の町内データ（参加者12人・拠点8軒）を入れます。何度押しても大丈夫です。
-          </p>
-          {db.kind === "unprepared" && <p className="text-sm text-ink-soft">足りない表: {db.missing.join("・")}</p>}
-          {db.kind === "error" && <p className="text-sm text-alert">接続エラー: {db.message}</p>}
-          <form action={prepareDatabase}>
-            <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">DB を準備する</button>
-          </form>
-        </section>
-      )}
-
-      <section className="space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="警報の日のお休み">
-        <h2 className="font-bold">警報の日のお休み</h2>
-        <p className="text-base">
-          {storm.stopped ? `⛔ お休み中（${storm.source === "jma" ? `気象庁: ${storm.names.join("・")}` : "手動"}）` : "ふつうに動いています"}
-        </p>
-        <p className="text-sm text-ink-soft">
-          気象庁の警報（暴風雪・暴風・大雪、特別警報も）が札幌市に出たら、自動で止まります（予告・点呼・作戦・出動・道の報告）。下は訓練・デモ用の手動の切りかえ。
-        </p>
-        <form action={stormToggleAction}>
-          <input type="hidden" name="on" value={manualStorm ? "0" : "1"} />
-          <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">{manualStorm ? "手動のお休みをやめる" : "手動でお休みにする"}</button>
-        </form>
-      </section>
-
-      <section className="space-y-2" aria-label="操作">
-        <Step n="0" label="前夜の予告を出す（予報 12cm のデモの朝にする）" action={startEmptyMorning} />
-        <form action={announceByForecast}>
-          <button className="w-full rounded-2xl px-4 py-1 text-sm text-ink-soft underline">本当の天気（Open-Meteo）を見て判断する</button>
-        </form>
-        <Step n="1" label="6:30 エナガ点呼を鳴らす" action={ringNow} disabled={status !== "announced"} />
-        <Step n="2" label="架空の住民の回答を入れる（ランダム）" action={answerRandomly} disabled={status !== "open"} />
-        <Step n="3" label="6:40 司令官に作戦を立ててもらう" action={runCommander} disabled={status !== "open" || s.answers.length === 0} />
-        <Step
-          n="4"
-          label="そろった家を1軒、完了にする"
-          action={completeOne}
-          disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress")}
-        />
-        <Step n="5" label="人手不足の家に駆けつける" action={rescue} disabled={!m.missions.some((x) => x.status === "short")} />
-        <Step
-          n="5b"
-          label="まだ降っている → 終わった家をもう一度（2回目・3回目）"
-          action={reopenDemo}
-          disabled={status !== "planned" || !m.missions.some((x) => x.status === "done")}
-        />
-        <form action={helpNextRing}>
-          <button
-            disabled={!m.missions.some((x) => x.status === "short")}
-            className="w-full rounded-2xl px-4 py-1 text-sm text-ink-soft underline disabled:opacity-40"
-          >
-            ヘルプ通知を次の輪へ（300m → 600m → 1km → サポーター）
-          </button>
-        </form>
-        <form action={thanksDemo} className="flex flex-wrap items-center gap-2 px-4 py-1 text-sm text-ink-soft">
-          <span>ありがとう点呼（最後に終わった家の依頼者の代わりに）:</span>
-          {(["1", "2", "3"] as const).map((c) => (
-            <button
-              key={c}
-              name="choice"
-              value={c}
-              disabled={!m.missions.some((x) => x.status === "done")}
-              className="rounded-full bg-card px-3 py-1 font-bold text-ink ring-1 ring-ink/15 disabled:opacity-40"
-            >
-              {THANKS_CHOICES[c]}
-            </button>
-          ))}
-        </form>
-        <form action={cheerDemo} className="flex flex-wrap items-center gap-2 px-4 py-1 text-sm text-ink-soft">
-          <span>家族の応援（最後に終わった家の家族の代わりに）:</span>
-          {(["1", "2", "3"] as const).map((c) => (
-            <button
-              key={c}
-              name="choice"
-              value={c}
-              disabled={!m.missions.some((x) => x.status === "done")}
-              className="rounded-full bg-card px-3 py-1 font-bold text-ink ring-1 ring-ink/15 disabled:opacity-40"
-            >
-              {CHEER_CHOICES[c]}
-            </button>
-          ))}
-        </form>
-        <form action={writeRecapNow}>
-          <button
-            disabled={status !== "planned"}
-            className="w-full rounded-2xl px-4 py-1 text-sm text-ink-soft underline disabled:opacity-40"
-          >
-            今朝の実況を書く（全軒完了では自動）
-          </button>
-        </form>
-        <form action={writeShareTextsNow}>
-          <button className="w-full rounded-2xl px-4 py-1 text-sm text-ink-soft underline">SNS の投稿文を Claude に書いてもらう（完了のたびに自動）</button>
-        </form>
-        <Step n="6" label="日曜の夜: 今週の群れ（実況・称号・シャッフル）" action={runWeekly} />
-        {demoEnabled() && (
-          <form action={backToSample}>
-            <button className="w-full rounded-2xl px-4 py-2 text-sm text-ink-soft underline">朝 7:10 の見本の状態に戻す</button>
-          </form>
-        )}
-      </section>
-
-      {s.recap && (
-        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">今朝の実況（{hasClaudeKey() ? "Claude" : "定型"}）</h2>
-          <p className="mt-1 text-base">{s.recap.text}</p>
-        </section>
-      )}
-
-      {s.weekly && (
-        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">今週の群れ（{s.weekly.weekStart} の週）</h2>
-          <p className="mt-1 text-base">{s.weekly.commentary}</p>
-          <p className="mt-1 text-sm text-ink-soft">{s.weekly.nextWeek}</p>
-          <ul className="mt-2 text-base">
-            {s.weekly.ranking.map((t, i) => (
-              <li key={t}>
-                {i + 1}位 <b>{TEAMS.find((x) => x.id === t)?.name}</b> {s.weekly!.teamTotals[t]} 点
-              </li>
-            ))}
-          </ul>
-          {s.weekly.titles.length > 0 && (
-            <p className="mt-2 text-sm">称号: {s.weekly.titles.map((t) => `${names.mask(t.nickname)}「${t.title}」${t.rareCard ? "（レア確定）" : ""}`).join("、")}</p>
-          )}
-        </section>
-      )}
-
-      <section className="space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-        <h2 className="font-bold">地図を開く（3台のスマホで別の人として）</h2>
-        <p className="text-sm text-ink-soft">
-          LINE で登録した人 {lineCount} 人には、予告・点呼・作戦が LINE に届きます（点呼の答えは LINE のボタンで）。
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {helpers.slice(0, 9).map((h) => (
-            <Link
-              key={h.id}
-              href={`/map?as=${h.id}`}
-              className="rounded-full px-3 py-1 text-sm font-bold text-white"
-              style={{ background: TEAMS.find((t) => t.id === h.teamId)?.color }}
-            >
-              {name(h.id)}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-        <h2 className="font-bold">得点と雪HP</h2>
-        <ul className="mt-1 text-base">
-          {TEAMS.map((t) => (
-            <li key={t.id}>
-              <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" /><b>{t.name}</b> {totals[t.id]} 点
-            </li>
-          ))}
-          <li>
-            {m.rollcall.snowName ? `「${m.rollcall.snowName}」のHP` : "今朝の雪HP"} {hp.current} / {hp.max} ・ {prog.done}/{prog.total} 軒
-            {prog.allDone && <b className="text-camellia-deep"> ・ 討伐{prog.defeatedAt ? ` ${prog.defeatedAt}` : ""}</b>}
+  // 様子のタブ: 1枚ずつ ‹ › で
+  const views: React.ReactNode[] = [
+    <section key="score" className={card}>
+      <h2 className="font-bold">得点と雪HP</h2>
+      <ul className="mt-1 text-lg">
+        {TEAMS.map((t) => (
+          <li key={t.id}>
+            <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" />
+            <b>{t.name}</b> {totals[t.id]} 点
           </li>
-        </ul>
-      </section>
+        ))}
+        <li>
+          {m.rollcall.snowName ? `「${m.rollcall.snowName}」` : "雪"}HP {hp.current}/{hp.max} ・ {prog.done}/{prog.total} 軒
+          {prog.allDone && <b className="text-camellia-deep"> ・ 討伐{prog.defeatedAt ? ` ${prog.defeatedAt}` : ""}</b>}
+        </li>
+      </ul>
+    </section>,
+    <section key="map" className={`${card} space-y-2`}>
+      <h2 className="font-bold">地図を開く（別の人として）</h2>
+      <p className="text-base text-ink-soft">LINE で登録した {lineCount} 人には、予告・点呼・作戦が LINE に届きます。</p>
+      <div className="flex flex-wrap gap-2">
+        {helpers.slice(0, 9).map((h) => (
+          <Link key={h.id} href={`/map?as=${h.id}`} className="rounded-full px-3 py-1 text-base font-bold text-white" style={{ background: TEAMS.find((t) => t.id === h.teamId)?.color }}>
+            {name(h.id)}
+          </Link>
+        ))}
+      </div>
+    </section>,
+  ];
+  if (s.recap)
+    views.push(
+      <section key="recap" className={`${card} min-h-0 overflow-y-auto`}>
+        <h2 className="font-bold">今朝の実況（{hasClaudeKey() ? "Claude" : "定型"}）</h2>
+        <p className="mt-1 text-lg">{s.recap.text}</p>
+      </section>,
+    );
+  if (s.answers.length > 0)
+    views.push(
+      <section key="answers" className={`${card} min-h-0 overflow-y-auto`}>
+        <h2 className="font-bold">点呼の答え（{s.answers.length} 件）</h2>
+        <p className="mt-1 text-base">
+          {s.answers.map((a) => `${name(a.participantId)}: ${String(a.answer) === "yes" ? "はい" : String(a.answer) === "no" ? "いいえ" : a.answer === "together" ? "一緒なら" : `${a.answer}分`}`).join(" ・ ")}
+        </p>
+      </section>,
+    );
+  if (s.briefing)
+    views.push(
+      <section key="briefing" className={`${card} min-h-0 overflow-y-auto`}>
+        <h2 className="font-bold">{status === "announced" ? "前夜の予告" : "町内へのまとめ"}</h2>
+        <p className="mt-1 text-base">{names.mask(s.briefing)}</p>
+      </section>,
+    );
+  if (s.weekly)
+    views.push(
+      <section key="weekly" className={`${card} min-h-0 overflow-y-auto`}>
+        <h2 className="font-bold">今週の群れ（{s.weekly.weekStart} の週）</h2>
+        <p className="mt-1 text-base">{s.weekly.commentary}</p>
+        <p className="mt-1 text-base">
+          {s.weekly.ranking.map((t, i) => `${i + 1}位 ${TEAMS.find((x) => x.id === t)?.name} ${s.weekly!.teamTotals[t]}点`).join(" ・ ")}
+        </p>
+        {s.weekly.titles.length > 0 && (
+          <p className="mt-1 text-sm">称号: {s.weekly.titles.map((t) => `${names.mask(t.nickname)}「${t.title}」${t.rareCard ? "（レア確定）" : ""}`).join("、")}</p>
+        )}
+      </section>,
+    );
+  for (const msg of s.messages.slice(0, 6))
+    views.push(
+      <section key={`msg-${msg.participantId}`} className={`${card} min-h-0 overflow-y-auto`}>
+        <h2 className="font-bold">LINE に届く文面（{name(msg.participantId)}さんへ）</h2>
+        <p className="mt-1 rounded-2xl bg-ice-soft px-3 py-2 text-base">{names.mask(msg.text)}</p>
+      </section>,
+    );
 
-      {s.answers.length > 0 && (
-        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">点呼の答え（{s.answers.length} 件）</h2>
-          <p className="mt-1 text-base">
-            {s.answers.map((a) => `${name(a.participantId)}: ${String(a.answer) === "yes" ? "はい" : String(a.answer) === "no" ? "いいえ" : a.answer === "together" ? "一緒なら" : `${a.answer}分`}`).join(" ・ ")}
+  // 家ごとのタブ: 大事な順に2軒ずつ
+  const missions = [...m.missions]
+    .sort((a, b) => b.importance - a.importance)
+    .map((x) => {
+      const base = roster.bases.find((b) => b.id === x.baseId);
+      const going = m.sorties.filter((so) => so.missionId === x.id);
+      const help = helpState(s, x.id);
+      const photo = going.find((so) => so.photoCheck)?.photoCheck?.evidence;
+      return (
+        <section key={x.id} className={`${card} text-base`}>
+          <p className="text-lg">
+            拠点{base?.number ?? "?"}：<b>{MISSION_TEXT[x.status]}</b>（{going.length}/{x.requiredPeople}人）
           </p>
+          <p className="text-ink-soft">
+            {going.map((so) => name(so.participantId)).join("・")}
+            {help.stage > 0 && <span className="text-alert"> ヘルプ {radiusLabel(help.stage - 1)}まで</span>}
+            {help.knockIds && help.knockIds.length > 0 && " 声かけ依頼済み"}
+          </p>
+          {x.reason && <p className="line-clamp-2 text-sm text-ink-soft">司令官: {x.reason}</p>}
+          {photo && <p className="line-clamp-2 text-sm text-ink-soft">写真（Claude）: {photo}</p>}
+          {s.thanks?.[x.id] && <p className="line-clamp-2 text-sm text-camellia-deep">ありがとう「{s.thanks[x.id].label}」→ {s.thanks[x.id].sentence}</p>}
+          {s.cheers?.[x.id] && s.cheers[x.id].length > 0 && <p className="text-sm text-ink-soft">家族の応援: {s.cheers[x.id].map((c) => `「${c.label}」`).join("")}</p>}
         </section>
-      )}
+      );
+    });
 
-      {s.briefing && (
-        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">{status === "announced" ? "前夜の予告" : "町内へのまとめ"}</h2>
-          <p className="mt-1">{names.mask(s.briefing)}</p>
-        </section>
-      )}
-
-      {m.missions.length > 0 && (
-        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">ミッション</h2>
-          <ul className="mt-1 space-y-1 text-base">
-            {[...m.missions]
-              .sort((a, b) => b.importance - a.importance)
-              .map((x) => {
-                const base = roster.bases.find((b) => b.id === x.baseId);
-                const going = m.sorties.filter((so) => so.missionId === x.id);
-                const help = helpState(s, x.id);
-                return (
-                  <li key={x.id}>
-                    拠点{base?.number ?? "?"}：<b>{MISSION_TEXT[x.status]}</b>（{going.length}/{x.requiredPeople}人）
-                    <span className="text-sm text-ink-soft"> {going.map((so) => name(so.participantId)).join("・")}</span>
-                    {help.stage > 0 && (
-                      <span className="text-sm text-alert"> ヘルプ {radiusLabel(help.stage - 1)}まで</span>
-                    )}
-                    {help.knockIds && help.knockIds.length > 0 && <span className="text-sm text-ink-soft"> 声かけ依頼済み</span>}
-                    {x.reason && <span className="block text-sm text-ink-soft">司令官の理由: {x.reason}</span>}
-                    {going.find((so) => so.photoCheck)?.photoCheck?.evidence && (
-                      <span className="block text-sm text-ink-soft">写真の確認（Claude）: {going.find((so) => so.photoCheck)?.photoCheck?.evidence}</span>
-                    )}
-                    {s.thanks?.[x.id] && (
-                      <span className="block text-sm text-camellia-deep">
-                        ありがとう点呼「{s.thanks[x.id].label}」→ {s.thanks[x.id].sentence}
-                      </span>
-                    )}
-                    {s.cheers?.[x.id] && s.cheers[x.id].length > 0 && (
-                      <span className="block text-sm text-ink-soft">ご家族の応援: {s.cheers[x.id].map((c) => `「${c.label}」`).join("")}</span>
-                    )}
+  return (
+    <Screen
+      header={
+        <header className="flex items-start justify-between gap-2 px-4 pt-3 pb-2">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold">
+              シマエナ<span className="text-camellia-deep">GO</span> デモ操作
+            </h1>
+            <p className="truncate text-base">
+              {m.rollcall.date} ・ <b className="tabular-nums">{clockText(s.clockMin)}</b> ・ <b>{ROLLCALL_TEXT[status]}</b>
+              {m.rollcall.snowName && <> ・ 「{m.rollcall.snowName}」</>}
+            </p>
+          </div>
+          <Link href="/admin/settings" className="shrink-0 rounded-full bg-ink px-3 py-2 text-base font-bold text-white">
+            管理
+          </Link>
+        </header>
+      }
+    >
+      <Pager
+        tabs={[
+          { key: "flow", label: "流れ" },
+          { key: "more", label: "ほか" },
+          { key: "view", label: "様子" },
+          { key: "houses", label: "家ごと" },
+          { key: "ops", label: "運営", badge: problems.length + (db.kind !== "none" && db.kind !== "ready" ? 1 : 0) },
+        ]}
+      >
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <Step n="0" label="前夜の予告（12cm）" action={startEmptyMorning} />
+          <Step n="1" label="6:30 エナガ点呼を鳴らす" action={ringNow} disabled={status !== "announced"} />
+          <Step n="2" label="住民が答える（ランダム）" action={answerRandomly} disabled={status !== "open"} />
+          <Step n="3" label="6:40 司令官の作戦" action={runCommander} disabled={status !== "open" || s.answers.length === 0} />
+          <Step
+            n="4"
+            label="1軒、完了にする"
+            action={completeOne}
+            disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress")}
+          />
+          <Step n="5" label="人手不足の家へ駆けつけ" action={rescue} disabled={!anyShort} />
+          <Step n="5b" label="まだ降っている → もう一度" action={reopenDemo} disabled={status !== "planned" || !anyDone} />
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <Step n="6" label="日曜の夜: 今週の群れ" action={runWeekly} />
+          <form action={announceByForecast}>
+            <button className={link}>本当の天気（Open-Meteo）で予告を判断</button>
+          </form>
+          <form action={helpNextRing}>
+            <button disabled={!anyShort} className={link}>
+              ヘルプ通知を次の輪へ（300m→1km）
+            </button>
+          </form>
+          <section className={`${card} space-y-1`}>
+            <p className="text-base text-ink-soft">最後に終わった家の代わりに押す</p>
+            <form action={thanksDemo} className="flex flex-wrap items-center gap-1">
+              <span className="text-base font-bold">依頼者</span>
+              {(["1", "2", "3"] as const).map((c) => (
+                <button key={c} name="choice" value={c} disabled={!anyDone} className={chip}>
+                  {THANKS_CHOICES[c]}
+                </button>
+              ))}
+            </form>
+            <form action={cheerDemo} className="flex flex-wrap items-center gap-1">
+              <span className="text-base font-bold">家族</span>
+              {(["1", "2", "3"] as const).map((c) => (
+                <button key={c} name="choice" value={c} disabled={!anyDone} className={chip}>
+                  {CHEER_CHOICES[c]}
+                </button>
+              ))}
+            </form>
+          </section>
+          <form action={writeRecapNow}>
+            <button disabled={status !== "planned"} className={link}>
+              今朝の実況を書く
+            </button>
+          </form>
+          <form action={writeShareTextsNow}>
+            <button className={link}>SNS の投稿文を書く（Claude）</button>
+          </form>
+          {demoEnabled() && (
+            <form action={backToSample}>
+              <button className={link}>7:10 の見本の状態に戻す</button>
+            </form>
+          )}
+        </div>
+        <PagedNodes nodes={views} label="様子" />
+        <PagedNodes nodes={missions} per={2} label="ミッション" empty={<p className="text-lg">まだミッションはありません（「流れ」の 3 で作戦を立てると出ます）。</p>} />
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          {db.kind !== "none" && db.kind !== "ready" && (
+            <section className="space-y-2 rounded-2xl bg-warm p-4 shadow-sm ring-1 ring-ink/10">
+              <p className="text-base">
+                <b>Neon の準備がまだです</b>
+                {db.kind === "unprepared" && <span className="text-sm text-ink-soft">（足りない表: {db.missing.join("・")}）</span>}
+                {db.kind === "error" && <span className="text-sm text-alert">（接続エラー: {db.message}）</span>}
+              </p>
+              <form action={prepareDatabase}>
+                <button className="w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white">DB を準備する（何度でも安全）</button>
+              </form>
+            </section>
+          )}
+          {problems.length > 0 && (
+            <section className={`${card} space-y-1 ring-2 ring-alert`} aria-label="問題">
+              <h2 className="font-bold text-alert">問題（{problems.length} 件・新しい順）</h2>
+              <ul className="text-sm">
+                {problems.slice(0, 3).map((x, i) => (
+                  <li key={i} className="line-clamp-2">
+                    <span className="tabular-nums text-ink-soft">{new Date(x.at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</span> <b>{x.where}</b> {names.mask(x.message)}
                   </li>
-                );
-              })}
-          </ul>
-        </section>
-      )}
-
-      {s.messages.length > 0 && (
-        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-          <h2 className="font-bold">LINE に届く文面（司令官が作成）</h2>
-          <ul className="mt-2 space-y-2">
-            {s.messages.slice(0, 6).map((msg) => (
-              <li key={msg.participantId} className="rounded-2xl bg-ice-soft px-3 py-2 text-base">
-                <span className="text-xs text-ink-soft">{name(msg.participantId)}さんへ</span>
-                <br />
-                {names.mask(msg.text)}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <Link href="/admin/settings" className="block rounded-2xl bg-ink px-4 py-3 text-center text-lg font-bold text-white">
-        管理者ダッシュボード（リッチメニュー・設定）
-      </Link>
-
-      <section className="rounded-2xl bg-card p-4 text-sm shadow-sm ring-1 ring-ink/10">
-        <h2 className="font-bold">記録</h2>
-        <ol className="mt-1 list-inside list-decimal">
-          {s.log.slice(-8).map((line, i) => (
-            <li key={i}>{names.mask(line)}</li>
-          ))}
-        </ol>
-      </section>
-    </main>
+                ))}
+              </ul>
+              <form action={clearProblemsAction}>
+                <button className="text-base text-ink-soft underline">記録を空にする</button>
+              </form>
+            </section>
+          )}
+          <section className={`${card} min-h-0 flex-1 overflow-hidden text-sm`}>
+            <h2 className="text-base font-bold">記録（新しい5件）</h2>
+            <ol className="mt-1 space-y-0.5">
+              {s.log.slice(-5).reverse().map((line, i) => (
+                <li key={i} className="line-clamp-2">
+                  {names.mask(line)}
+                </li>
+              ))}
+            </ol>
+          </section>
+          <p className="text-sm text-ink-soft">
+            隊長: {hasClaudeKey() ? "Claude" : "モック"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE: {hasLineKeys() ? "設定済み" : "未設定"} ・ 今月の送信 {usage.sent} 通
+          </p>
+          <div className="flex items-center justify-between">
+            <Link href="/admin/settings" className="text-base font-bold underline">
+              管理者ダッシュボード（メニュー・設定・警報）
+            </Link>
+            {gate === "ok" && (
+              <form action={logoutAction}>
+                <button className="text-base text-ink-soft underline">ログアウト</button>
+              </form>
+            )}
+          </div>
+        </div>
+      </Pager>
+    </Screen>
   );
 }
 

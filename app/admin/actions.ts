@@ -248,13 +248,3 @@ export async function clearProblemsAction() {
     revalidatePath("/admin");
   });
 }
-
-/** 警報の日のお休み（spec v1.11）: 手動で止める・再開する（訓練・デモ用。気象庁の警報が出ていれば、こちらに関係なく止まる） */
-export async function stormToggleAction(formData: FormData) {
-  return guarded("stormToggle", async () => {
-    const { setManualStop } = await import("@/lib/storm");
-    await setManualStop(formData.get("on") === "1");
-    revalidatePath("/admin");
-    revalidatePath("/");
-  });
-}
