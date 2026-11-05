@@ -77,6 +77,8 @@ export interface PlaceCard {
   routeUrl?: string;
   /** 今朝の先生のコツ（spec v1.6）。あれば本文に枠で出す */
   tip?: string;
+  /** 雪かき中の印（spec v1.12）。あれば「玄関で見せる」ボタンを出す */
+  badgeUrl?: string;
 }
 
 /** 行き先の画像（/api/line/hero/go.png）。氏名・住所は入れず、時刻と拠点の番号だけ */
@@ -122,6 +124,7 @@ export function placeCard(p: PlaceCard): FlexMessage {
             : []),
           bigButton("🗺 地図で見る", { type: "uri", label: "地図で見る", uri: p.mapUrl }, p.routeUrl ? "line" : "main"),
           ...(p.routeUrl ? [bigButton("📍 ルートを表示", { type: "uri", label: "ルートを表示", uri: p.routeUrl }, "main")] : []),
+          ...(p.badgeUrl ? [bigButton("🪪 雪かき中の印（玄関で見せる）", { type: "uri", label: "雪かき中の印", uri: p.badgeUrl }, "line")] : []),
         ],
       },
     },

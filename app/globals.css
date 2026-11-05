@@ -433,3 +433,8 @@ body {
 .road-pop { display: grid; gap: 4px; font-size: 14px; color: #29445c; }
 .road-pop img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; background: #eef2f6; }
 .road-pop b { font-size: 16px; }
+
+/* 雪かき中の印（spec v1.12）: ゆっくり回る輪。止まっていたらスクショの使い回し */
+@keyframes badge-spin { to { transform: rotate(360deg); } }
+.badge-ring { animation: badge-spin 4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .badge-ring { animation-duration: 12s; } }

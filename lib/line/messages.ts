@@ -6,6 +6,7 @@
 //       お願いする側・家族・見守り・体調にふれる文は、いつもの丁寧な言い方のまま。
 // v1.5: 質問への答えは吹き出しの中の大きなボタン（choiceCard）、「どこに・何時」は大きな画像の行き先カード（placeCard）。
 import { NIGHT_TEXT } from "../night";
+import { visitNoticeLines } from "../badge";
 import { MENU } from "../brand";
 import { teamAnnounceText, teamImageMessage } from "../team-announce";
 import type { TeamTerm } from "../team-theme";
@@ -283,7 +284,7 @@ export const MSG = {
   notRegistered: () => bubbles(["登録がまだです。1分で終わります。"], [B.register, B.guide]),
   planForRequester: (startTime: string, ns: string[]) =>
     ns.length > 0
-      ? bubbles([`${startTime} に ${names(ns)}が来てくれます。`, "玄関の鍵を開けておいてください。"])
+      ? bubbles([`${startTime} に ${names(ns)}が来てくれます。`, "玄関は開けなくて大丈夫です。向かう人が決まったら、合言葉をお知らせします。"])
       : bubbles(["いま、来てくれる人を集めています。", "決まったら、すぐにお知らせします。"]),
 
   // ---- 朝の一本道（spec 2: 行く → 写真 → 完了） ----
@@ -291,7 +292,7 @@ export const MSG = {
   /** 「行く」のあと: 了解 → 行き先カード（大きな画像・地図・ルート）→ 終わったら写真。ことばの依頼があれば段取りを先に */
   goConfirmed: (baseNumber: number | string, routeUrl?: string, request?: RequestNote, tip?: string) => [
     text("了解だしま〜！🙌"),
-    placeCard({ time: "7:00", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl, tip }),
+    placeCard({ time: "7:00", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl, tip, badgeUrl: liffUrl("/badge") }),
     photoAsk("終わったら、玄関の前から道路の方を写した写真を1枚送ってください。"),
   ],
   goDeclined: () => bubbles(["わかりました。無理しないでくださいね。", "ほかの人に声をかけるしま〜！"]),
@@ -351,7 +352,7 @@ export const MSG = {
   ],
   helpJoined: (baseNumber: number | string, routeUrl?: string, request?: RequestNote, tip?: string) => [
     text("ありがとうしま〜！🙌"),
-    placeCard({ time: "now", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl, tip }),
+    placeCard({ time: "now", baseNumber, note: placeNote(request), mapUrl: liffUrl("/map"), routeUrl, tip, badgeUrl: liffUrl("/badge") }),
     photoAsk("終わったら、写真を1枚送ってください。"),
   ],
   helpDeclined: () => bubbles(["わかりました。気にしないでくださいね。", "また次の機会に、よろしくしま〜！"]),
@@ -373,6 +374,8 @@ export const MSG = {
       "近所の方にも、玄関で声をかけてもらうようお願いしています。",
     ]),
   /** 家族への完了通知。missionId があれば「応援スタンプ」の3ボタン付き（spec v1.2） */
+  /** 依頼者・家族へ「来る人のお知らせ」（spec v1.12）。チームの色と今日の合言葉、玄関を開けなくてよいこと */
+  visitNotice: (teamLabel: string, password: string | undefined, forFamily: boolean) => bubbles(visitNoticeLines(teamLabel, password, forFamily)),
   familyDone: (ns: string[], missionId?: string) => {
     const lines = ["今朝、ご家族の家の雪かきが終わりました。☃️", ns.length > 0 && `来てくれたのは ${names(ns)}です。`];
     if (!missionId) return bubbles(lines);
@@ -420,7 +423,7 @@ export const MSG = {
       [
         `拠点${baseNumber}を、今日の「雪かき待ち」として地図に出しました。`,
         sent > 0 ? `近くの ${sent}人に知らせました。` : "近くの人が地図で見つけたら、来てくれます。",
-        "玄関の鍵を開けて、ゆっくり待っていてくださいね。",
+        "玄関は開けなくて大丈夫です。来る人が決まったら、合言葉をお知らせします。",
       ],
       [B.map, say("隊長に相談")],
     ),

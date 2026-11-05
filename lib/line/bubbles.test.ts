@@ -64,10 +64,10 @@ describe("Bot の吹き出し", () => {
     expect(c.altText).toBe("拠点3へ 7:00 に集合です！");
     expect(c.contents.hero?.url).toContain("/api/line/hero/go.png?t=7%3A00&n=3");
     expect((c.contents.hero?.action as { uri: string }).uri).toBe("https://maps.example/route");
-    expect(labels(c)).toEqual(["地図で見る", "ルートを表示"]);
+    expect(labels(c)).toEqual(["地図で見る", "ルートを表示", "雪かき中の印"]);
     expect(textOf(photo)).toContain("写真");
     // 道順がないときは地図だけ
-    expect(labels(MSG.helpJoined(5)[1])).toEqual(["地図で見る"]);
+    expect(labels(MSG.helpJoined(5)[1])).toEqual(["地図で見る", "雪かき中の印"]);
   });
 
   it("「行く」「今朝は行けない」は大きなボタン。押した文字がトークに出る", () => {

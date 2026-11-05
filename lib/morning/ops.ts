@@ -1,6 +1,7 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
 import { isNight } from "../night";
+import { passwordOf } from "../badge";
 import { onTeam } from "../member";
 import { consistentSnowType } from "../snow-estimate";
 import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
@@ -31,7 +32,7 @@ import { getTeam } from "../teams";
 import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
 import type { NowMinutes } from "./watch";
-import type { HelperAnswer, HelperWhen, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie } from "../types";
+import type { HelperAnswer, HelperWhen, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie, TeamId } from "../types";
 import { loadSettings } from "../ops/settings";
 import { fetchHourlySnow, forecastSnowUntilMorning, sumSnowfall } from "../weather";
 import { activeHelpers, MAX_ROUNDS, reopenDone } from "./rounds";
@@ -325,6 +326,28 @@ function baseNumberOf(roster: Roster, baseId: string): number | string {
   return roster.bases.find((b) => b.id === baseId)?.number ?? "?";
 }
 
+/**
+ * 依頼者・家族へ「来る人のお知らせ」（spec v1.12）: その家に最初の「行く」が決まったときに1回だけ。
+ * チームの色・今日の合言葉・玄関を開けなくてよいこと。送ったら mission.visitNoticeAt に残す（保存は呼ぶ側）。
+ */
+async function noticeVisit(s: MorningRecord, roster: Roster, mission: Mission, teamId: TeamId | undefined, now: Date): Promise<void> {
+  if (mission.visitNoticeAt || !teamId) return;
+  mission.visitNoticeAt = now.toISOString();
+  const base = roster.bases.find((b) => b.id === mission.baseId);
+  const requester = base && roster.participants.find((p) => p.id === base.requesterId);
+  if (!requester) return;
+  const team = getTeam(teamId);
+  const label = `${team.colorName}の${team.name}チーム`;
+  const password = passwordOf(jstDate(now));
+  let sent = 0;
+  if (requester.lineUserId && (await push(requester.lineUserId, MSG.visitNotice(label, password, false)))) sent++;
+  for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
+    if (link.familyLineUserId === requester.lineUserId) continue;
+    if (await push(link.familyLineUserId, MSG.visitNotice(label, password, true))) sent++;
+  }
+  s.log.push(`拠点${baseNumberOf(roster, mission.baseId)}: 来る人のお知らせ（${label}・合言葉）→ ${sent} 人`);
+}
+
 /** 「行く」「今朝は行けない」。行けない人は外し、足りなくなった家は人手不足にする */
 export async function setGoing(participantId: string, go: boolean, now = new Date()): Promise<LineMessage[]> {
   if (go && isNight(now)) return MSG.nightOwnHouseOnly(); // 夜はよその家に行かない（spec v1.8 防犯）
@@ -340,6 +363,7 @@ export async function setGoing(participantId: string, go: boolean, now = new Dat
     sortie.confirmedAt = now.toISOString();
     if (mission.status === "assigned") mission.status = "in_progress";
     s.log.push(`${who}さんが拠点${number}へ「行く」`);
+    await noticeVisit(s, roster, mission, sortie.teamId, now);
     await saveMorning(s);
     return MSG.goConfirmed(number, routeTo(roster, mission.baseId, participantId), mission.request, s.teacherTip?.line);
   }
@@ -795,6 +819,7 @@ export async function joinMission(
     confirmedAt: now.toISOString(),
   });
   if (goingCount(s, m.id) >= m.requiredPeople && m.status !== "no_answer") m.status = "in_progress";
+  await noticeVisit(s, roster, m, p.teamId, now);
   s.log.push(
     `${p.nickname}さんが${enough ? "偵察・補給で" : "ヘルプで"}拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`,
   );

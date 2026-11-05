@@ -146,6 +146,8 @@ export interface Mission {
   round?: number;
   /** 「雪かきを頼む」で開いた家（spec v1.10）。600m・1km へは広げない */
   ask?: boolean;
+  /** 依頼者・家族へ「来る人のお知らせ」（チーム色と合言葉）を送った時刻（spec v1.12）。1軒1回だけ */
+  visitNoticeAt?: string;
 }
 
 // ---- 出撃 ----
