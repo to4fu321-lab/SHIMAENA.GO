@@ -50,7 +50,7 @@ export const MENU = {
   town: { label: "きょうの町", sub: "のぞくだけでもOK", icon: "town", bg: COLORS.lamp, fg: COLORS.white, accent: COLORS.warm },
   ask: { label: "雪かきを頼む", sub: "6〜19時いつでも", icon: "ask", bg: COLORS.ink, fg: COLORS.white, accent: COLORS.camellia },
   consult: { label: "隊長に相談", sub: "なんでも聞いてね", icon: "chat", bg: COLORS.warm, fg: COLORS.ink, accent: COLORS.ice },
-  go: { label: "出動する", sub: "近くの雪かき・手伝いを探す", icon: "go", bg: COLORS.lamp, fg: COLORS.white, accent: COLORS.warm },
+  go: { label: "雪かきGO！", sub: "近くの雪かき・手伝いを探す", icon: "go", bg: COLORS.lamp, fg: COLORS.white, accent: COLORS.warm },
   map: { label: "町の地図", sub: "雪の状況・助けが必要な家", icon: "map", bg: COLORS.winter, fg: COLORS.white, accent: COLORS.lamp },
   card: { label: "活動カード", sub: "今日の活動をふりかえる", icon: "card", bg: COLORS.ink, fg: COLORS.white, accent: COLORS.camellia },
   guide: { label: "使い方", sub: "はじめての方へ", icon: "guide", bg: COLORS.warm, fg: COLORS.ink, accent: COLORS.ice },

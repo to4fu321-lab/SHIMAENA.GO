@@ -110,7 +110,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
                 <>
                   <p className="text-base">今日の出動はまだありません。10分だけでも、町の力になります。</p>
                   <Link href={`/solo${q}`} className="btn btn-lamp text-lg">
-                    出動する
+                    雪かきGO！
                   </Link>
                 </>
               )}

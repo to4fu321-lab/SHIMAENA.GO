@@ -1,3 +1,4 @@
+import { MENU } from "@/lib/brand";
 import type { Metadata } from "next";
 import StormBanner from "@/components/StormBanner";
 import Link from "next/link";
@@ -37,7 +38,7 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 
 /**
  * ホーム = 今朝の出撃画面（spec v1.1 10.6）。スクロールしない1画面:
- * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 出動する／ソロ活動をする → 下のタブ。
+ * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 雪かきGO！／ソロ活動をする → 下のタブ。
  * チームの得点・実況・応援・カード・SNS は「くわしく」（/today）へ。
  */
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
@@ -71,7 +72,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 「雪かきを頼む」で開いた、まだ終わっていない家（spec v1.10）
   const asks = m.missions.filter((x) => x.ask && x.status !== "done").length;
   const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
-  // 出動する: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
+  // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
@@ -311,7 +312,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             </svg>
           </span>
           <span className="text-left leading-tight">
-            <span className="block text-2xl">出動する</span>
+            <span className="block text-2xl">{MENU.go.label}</span>
             <span className="block text-sm font-bold">
               {bonuses.length > 0 ? `いまなら ${bonuses.join("・")}点` : "19時までなら、いつでも10分から"}
             </span>

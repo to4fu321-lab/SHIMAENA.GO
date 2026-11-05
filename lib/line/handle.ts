@@ -141,10 +141,13 @@ async function nothingNow(lineUserId: string): Promise<LineMessage[]> {
   return cc ? [...MSG.nowNoneLead(), ...cc] : MSG.nowNothing();
 }
 
+/** 「雪かきGO！」と送られたか（前の名前「出動する」「いまからやる」も。GO は全角・小文字でも） */
+const GO_WORDS = /^(雪かき[GＧgｇ][OＯoｏ][!！]?|出動する|出動|いまからやる)$/;
+
 /** 外に出る遊びを始める操作か（お休みの日に止めるもの） */
 function startsGame(ev: LineEvent): boolean {
   if (ev.type === "message" && "message" in ev && ev.message.type === "text") {
-    return /^(出動する|出動|いまからやる|雪かきを頼む|雪かきをたのむ|雪かき頼む)$/.test(ev.message.text.trim());
+    return (GO_WORDS.test(ev.message.text.trim()) || /^(雪かきを頼む|雪かきをたのむ|雪かき頼む)$/.test(ev.message.text.trim()));
   }
   if (ev.type === "postback" && "postback" in ev) {
     const d = ev.postback.data;
@@ -187,8 +190,8 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     return;
   }
 
-  // 「出動する」（リッチメニュー／文字。前の名前「いまからやる」も受け付ける）→ 何分？ → 近くの小タスクを1件
-  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^(出動する|出動|いまからやる)$/.test(ev.message.text.trim())) {
+  // 「雪かきGO！」（ボタン／文字。前の名前「出動する」「いまからやる」も受け付ける）→ 何分？ → 近くの小タスクを1件
+  if (ev.type === "message" && "message" in ev && ev.message.type === "text" && GO_WORDS.test(ev.message.text.trim())) {
     const p = await r.findParticipantByLineUserId(lineUserId);
     // 手伝える家がない日は、何分？を聞かずにコンシェルジュのおすすめへ（行き止まりにしない）
     const messages = p && !(await helpOpenFor(p.id)) ? await nothingNow(lineUserId) : MSG.nowAsk();

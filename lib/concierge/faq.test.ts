@@ -82,6 +82,16 @@ describe("LINE の流れ", () => {
     expect(out).not.toContain("何分動けますか");
   });
 
+  it.each(["雪かきGO！", "雪かきGO", "雪かきｇｏ!"])("「%s」でも「出動する」と同じに動く（ボタンの名前を変えた・前の名前も受け付ける）", async (text) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-04T10:00:00+09:00"));
+    await memoryRepo.upsertParticipant(me);
+    await saveMorning(emptyMorning({ date: "2026-01-01", forecastCm: 0 }));
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    await handleEvent(ev({ type: "message", message: { id: "3", type: "text", text } }));
+    expect(said(log)).toContain("今は近くに手伝える家はありません");
+  });
+
   it("「隊長に相談」でよくある質問のボタン", async () => {
     await memoryRepo.upsertParticipant(me);
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);

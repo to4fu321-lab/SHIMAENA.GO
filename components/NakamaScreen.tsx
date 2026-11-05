@@ -34,7 +34,7 @@ export default function NakamaScreen({ viewerId, view, q }: { viewerId: string; 
 
   const header = (
     <div className="flex items-center gap-3 px-4 pb-2 pt-3">
-      <Link href={`/solo${q}`} aria-label="出動するへ戻る" className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
+      <Link href={`/solo${q}`} aria-label="雪かきGO！へ戻る" className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
         ‹
       </Link>
       <div className="min-w-0">
@@ -91,7 +91,7 @@ export default function NakamaScreen({ viewerId, view, q }: { viewerId: string; 
             <p className="shrink-0 text-base leading-snug text-ink-soft">どれでも自由に参加できます。断っても何も減りません。{CHILD_NOTE}</p>
           )}
           <Link href={`/solo${q}`} className="btn btn-white shrink-0 text-lg">
-            ひとりで出動する
+            ひとりで雪かきGO！
           </Link>
         </>
 

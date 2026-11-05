@@ -33,7 +33,7 @@ function withButtons(body: string, buttons: Button[]): TextMessage {
 const pb = (label: string, data: string): Button => ({ type: "postback", label, data, displayText: label });
 /** Web の画面を開くボタン（LIFF があれば LINE の中で開く） */
 const open = (label: string, path: string): Button => ({ type: "uri", label, uri: liffUrl(path) });
-/** 文字を送るボタン（「出動する」「登録」など） */
+/** 文字を送るボタン（「雪かきGO！」「登録」など） */
 const say = (label: string, t = label): Button => ({ type: "message", label, text: t });
 
 const B = {
@@ -212,7 +212,7 @@ export const MSG = {
     captainCard({ cm: forecastCm, snowName, when: "eve", lines: [...sentences(body, 5), ...(safety ? [safety] : [])] }),
   ],
   morningHello: (forecastCm?: number, snowName?: string, safety?: string) => hello(forecastCm, snowName, safety),
-  /** 作戦のあと、手伝う側へ: 家の数と「10分だけでも」。割り当てがない人には「出動する」ボタン */
+  /** 作戦のあと、手伝う側へ: 家の数と「10分だけでも」。割り当てがない人には「雪かきGO！」ボタン */
   housesToday: (houses: number, withGoButton: boolean) =>
     houses > 0
       ? bubbles([`助けてほしい家が${houses}軒あります。`, "10分だけでも大歓迎えな〜！"], withGoButton ? [B.go, B.map] : undefined)
@@ -297,7 +297,7 @@ export const MSG = {
     photoAsk("終わったら、玄関の前から道路の方を写した写真を1枚送ってください。"),
   ],
   goDeclined: () => bubbles(["わかりました。無理しないでくださいね。", "ほかの人に声をかけるしま〜！"]),
-  noSortie: () => bubbles(["今朝の割り当てはありません。", "近くの手伝いを探すときは、下の「出動する」を押してください。"], [B.go, B.map]),
+  noSortie: () => bubbles(["今朝の割り当てはありません。", "近くの手伝いを探すときは、下の「雪かきGO！」を押してください。"], [B.go, B.map]),
   /** 写真では「まだ」。もう一度送るか、「それでも完了にする」（本人の報告）か */
   photoNotCleared: (comment: string) =>
     bubbles(
@@ -397,7 +397,7 @@ export const MSG = {
   lateRequesterShort: () => bubbles(["わかりました。近くの人に声をかけて、人を集めます。", "決まったら、お知らせします。"]),
   lateHelperThanks: () => bubbles(["ありがとうございます！", "人手が足りない家があれば、お知らせします。"]),
 
-  // ---- 「出動する」（リッチメニュー）と週末（spec 2・5・10） ----
+  // ---- 「雪かきGO！」と週末（spec 2・5・10） ----
   nowAsk: () => [text("近くの手伝いを探すしま〜！☃️"), ask("いまから何分動けますか？", [
     { label: "10分", data: "now:10" },
     { label: "20分", data: "now:20" },
@@ -442,12 +442,12 @@ export const MSG = {
       ? bubbles(["今週のあなたのチームの点数と、仲間の活動が見られます。"], [open("チームを見る", "/team"), open("きょうの町を開く", "/")])
       : bubbles(["チームはまだ決まっていません。", "次に雪かきや見回りをすると、チームに入って点が入ります。"], [open("きょうの町を開く", "/"), say("何をすればいい？")]),
   consultGuide: () => bubbles(["使い方は1ページにまとめてあります。触って覚えるチュートリアルもあります。"], [B.guide, say("何をすればいい？")]),
-  /** 「出動する」で近くに手伝える家がないとき、コンシェルジュのおすすめの前に置く */
+  /** 「雪かきGO！」で近くに手伝える家がないとき、コンシェルジュのおすすめの前に置く */
   nowNoneLead: () => [text("今は近くに手伝える家はありません。かわりに、こんなのはどうしま〜？")],
-  /** お願いする側の人が「出動する」を押したとき */
+  /** お願いする側の人が「雪かきGO！」を押したとき */
   nowForRequester: () =>
     bubbles(
-      ["「出動する」は、雪かきを手伝う方のメニューです。", "雪かきのお願いは、雪の朝 6:30 の点呼に答えるだけで大丈夫です。", "ご自分の家の雪かきを10分やったら、記録もできます。"],
+      ["「雪かきGO！」は、雪かきを手伝う方のメニューです。", "雪かきのお願いは、雪の朝 6:30 の点呼に答えるだけで大丈夫です。", "ご自分の家の雪かきを10分やったら、記録もできます。"],
       [B.solo, B.guide],
     ),
   weeklyToAll: (commentary: string, nextWeek: string) => bubbles([commentary, nextWeek]),
