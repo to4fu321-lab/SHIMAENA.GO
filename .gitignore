@@ -45,3 +45,6 @@ next-env.d.ts
 
 # 写真の評価セット（本物の写真。家や人が写るのでリポジトリに入れない）
 /eval/photos/
+
+# 並行作業用の作業コピー（Claude Code）
+/.claude/worktrees/
