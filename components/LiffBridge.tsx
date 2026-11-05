@@ -62,6 +62,8 @@ export default function LiffBridge({ liffId, enabled = true, banner = false }: {
     void g.__shimaenaLiff.then((r) => {
       set(r.status);
       if (r.status === "ok" && r.changed && first) router.refresh(); // 「自分」が分かったので、画面を本人の中身にする
+      // LINE の友だちでも登録がまだなら、その場で登録の画面へ（spec v1.14 LINE で1タップ開始）
+      if (r.status === "not_registered" && first && location.pathname !== "/start") router.replace("/start");
     });
     return () => {
       alive = false;
@@ -74,14 +76,6 @@ export default function LiffBridge({ liffId, enabled = true, banner = false }: {
       <p className="fixed inset-x-0 top-0 z-[2000] bg-ink px-4 py-2 text-center text-base font-bold text-white" role="status">
         LINE であなたを確かめています…
       </p>
-    );
-  }
-  if (status === "not_registered") {
-    return (
-      <div className="fixed inset-x-0 top-0 z-[2000] space-y-1 bg-warm px-4 py-3 text-center text-ink shadow-md" role="alert">
-        <p className="text-lg font-bold">登録がまだ終わっていません</p>
-        <p className="text-base">LINE のトークで「登録」と送ると、1分で終わります。</p>
-      </div>
     );
   }
   if (status === "error") {

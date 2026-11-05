@@ -60,9 +60,10 @@ async function nickname(lineUserId: string): Promise<string> {
 }
 
 /** 2問まで終わった登録を保存し、最後の文面を返す */
-export async function finishRegistration(lineUserId: string, reg: Registration): Promise<LineMessage[]> {
+export async function finishRegistration(lineUserId: string, reg: Registration, displayName?: string): Promise<LineMessage[]> {
   const r = repo();
-  const name = await nickname(lineUserId);
+  // 画面（/start）からの登録は、LIFF で取れた LINE の名前を使う（まだ友だちでないと Bot からは名前を取れないため）
+  const name = displayName?.trim() || (await nickname(lineUserId));
 
   if (reg.role === "helper") {
     const existing = await r.findParticipantByLineUserId(lineUserId);
