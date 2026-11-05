@@ -20,10 +20,10 @@ async function log(line: string) {
   });
 }
 
-function done(message: string): never {
+function done(message: string, tab: "menu" | "settings"): never {
   revalidatePath(PAGE);
   revalidatePath("/admin");
-  redirect(`${PAGE}?done=${encodeURIComponent(message)}`);
+  redirect(`${PAGE}?tab=${tab}&done=${encodeURIComponent(message)}`);
 }
 
 /** リッチメニューを作り直して全員の既定にする（古い同名メニューは消える） */
@@ -37,7 +37,7 @@ export async function updateRichMenuAction() {
     msg = `リッチメニューの更新に失敗: ${e instanceof Error ? e.message : String(e)}`;
   }
   await log(msg);
-  done(msg);
+  done(msg, "menu");
 }
 
 /** 使っていないリッチメニューを1つ消す（既定のものは消せない） */
@@ -51,7 +51,7 @@ export async function deleteRichMenuAction(formData: FormData) {
     msg = `リッチメニューを消せませんでした: ${e instanceof Error ? e.message : String(e)}`;
   }
   await log(msg);
-  done(msg);
+  done(msg, "menu");
 }
 
 /** 動きの設定を保存する */
@@ -69,7 +69,7 @@ export async function saveSettingsAction(formData: FormData) {
   if (before.chatBarText !== after.chatBarText) changes.push(`メニューの下の文字「${after.chatBarText}」（反映は「リッチメニューを更新」で）`);
   const msg = changes.length ? `設定を保存: ${changes.join("・")}` : "設定は変わっていません";
   if (changes.length) await log(msg);
-  done(msg);
+  done(msg, "settings");
 }
 
 /** 警報の日のお休み（手動）の切りかえ */
@@ -81,5 +81,5 @@ export async function stormToggleSettingsAction(formData: FormData) {
   revalidatePath("/");
   const msg = on ? "手動でお休みにしました" : "手動のお休みをやめました";
   await log(msg);
-  done(msg);
+  done(msg, "settings");
 }

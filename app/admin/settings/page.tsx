@@ -8,8 +8,7 @@ import { hasClaudeKey } from "@/lib/claude/client";
 import { dbStatus } from "@/lib/db";
 import { demoEnabled, lineDryRun } from "@/lib/env";
 import { lineAdminInfo } from "@/lib/line/admin-info";
-import { hasLineKeys } from "@/lib/line/client";
-import { RICH_MENU_NAME, menuItems, richMenuStatus, richMenuSvg } from "@/lib/line/richmenu";
+import { RICH_MENU_NAME, richMenuStatus, richMenuSvg } from "@/lib/line/richmenu";
 import { readLineUsage } from "@/lib/ops/line-usage";
 import { CHAT_BAR_MAX, THRESHOLD_RANGE, loadSettings } from "@/lib/ops/settings";
 import { manualStop, stormStatus } from "@/lib/storm";
@@ -17,122 +16,87 @@ import { deleteRichMenuAction, saveSettingsAction, stormToggleSettingsAction, up
 
 export const metadata: Metadata = { title: "管理者ダッシュボード ・ シマエナGO" };
 
+// 基本1画面（390×844）に収めるため、3つのタブに分ける
+const TABS = { menu: "メニュー", settings: "設定", status: "状態" } as const;
+type Tab = keyof typeof TABS;
+
 /** 鍵があるかだけを見せる（中身は出さない） */
 const KEYS: { env: string; label: string }[] = [
-  { env: "ANTHROPIC_API_KEY", label: "Claude（シマエナ隊長）" },
-  { env: "DATABASE_URL", label: "データベース（Neon）" },
-  { env: "LINE_CHANNEL_SECRET", label: "LINE のチャネルシークレット" },
-  { env: "LINE_CHANNEL_ACCESS_TOKEN", label: "LINE のアクセストークン" },
-  { env: "NEXT_PUBLIC_LIFF_ID", label: "LIFF ID（LINE の中で開く画面）" },
-  { env: "NEXT_PUBLIC_LINE_ADD_FRIEND_URL", label: "友だち追加の URL" },
-  { env: "ADMIN_PASSWORD", label: "管理画面の合言葉" },
-  { env: "CRON_SECRET", label: "定時の処理（cron）の鍵" },
+  { env: "ANTHROPIC_API_KEY", label: "Claude" },
+  { env: "DATABASE_URL", label: "Neon" },
+  { env: "LINE_CHANNEL_SECRET", label: "LINE 秘密" },
+  { env: "LINE_CHANNEL_ACCESS_TOKEN", label: "LINE トークン" },
+  { env: "NEXT_PUBLIC_LIFF_ID", label: "LIFF ID" },
+  { env: "NEXT_PUBLIC_LINE_ADD_FRIEND_URL", label: "友だち追加" },
+  { env: "ADMIN_PASSWORD", label: "合言葉" },
+  { env: "CRON_SECRET", label: "cron の鍵" },
 ];
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-3 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
-      <h2 className="text-xl font-bold">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
 const bigButton = "w-full rounded-2xl bg-ink px-4 py-3 text-lg font-bold text-white";
+const box = "space-y-2 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-ink/10";
 
-async function Dashboard({ searchParams }: { searchParams: Promise<{ done?: string }> }) {
-  await connection();
-  const gate = await adminGate();
-  if (gate === "login" || gate === "unconfigured") redirect("/admin");
-  const { done } = await searchParams;
-
-  const [settings, db, usage, storm, manualStorm, line, menus] = await Promise.all([
-    loadSettings(),
-    dbStatus(),
-    readLineUsage(),
-    stormStatus(),
-    manualStop(),
-    lineAdminInfo().catch(() => null),
-    richMenuStatus().catch((e: unknown) => (e instanceof Error ? e.message : String(e))),
-  ]);
+async function MenuTab() {
+  const menus = await richMenuStatus().catch((e: unknown) => (e instanceof Error ? e.message : String(e)));
   const preview = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(richMenuSvg())}`;
-  const items = menuItems();
-
   return (
-    <main className="mx-auto min-h-dvh max-w-xl space-y-5 bg-paper px-4 py-5 text-lg text-ink">
-      <header className="space-y-1">
-        <Link href="/admin" className="text-base text-ink-soft underline">
-          ← デモ操作にもどる
-        </Link>
-        <h1 className="text-2xl font-bold">管理者ダッシュボード</h1>
-        <p className="text-base text-ink-soft">LINE のメニューと、アプリの動きの設定。押した操作は /admin の「記録」にも残ります。</p>
-      </header>
-
-      {done && (
-        <p role="status" className="rounded-2xl bg-ice-soft px-4 py-3 text-base font-bold">
-          {done}
-        </p>
-      )}
-
-      <Card title="リッチメニュー（LINE のトーク画面の下）">
-        {/* eslint-disable-next-line @next/next/no-img-element -- その場で作る SVG の見本なので next/image は使わない */}
-        <img src={preview} alt="リッチメニューの見本" className="w-full rounded-xl ring-1 ring-ink/10" />
-        <ul className="space-y-1 text-base">
-          {items.map((it) => (
-            <li key={it.key}>
-              <b>{it.label}</b> → {it.action.type === "uri" ? "画面を開く" : `「${it.action.text}」と送る`}
-            </li>
-          ))}
-          <li className="text-ink-soft">閉じたときの文字: 「{settings.chatBarText}」</li>
-        </ul>
-        <form action={updateRichMenuAction}>
-          <button className={bigButton}>リッチメニューを更新する</button>
-        </form>
-        <p className="text-base text-ink-soft">いまの見本で作り直し、全員の既定にします。古い「{RICH_MENU_NAME}」は消えます。何度押しても大丈夫。</p>
-
-        <h3 className="pt-2 font-bold">LINE に登録されているメニュー</h3>
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- その場で作る SVG の見本なので next/image は使わない */}
+      <img src={preview} alt="リッチメニューの見本（きょうの町・雪かきを頼む・町の地図・隊長に相談）" className="w-full rounded-xl ring-1 ring-ink/10" />
+      <form action={updateRichMenuAction}>
+        <button className={bigButton}>この見本でリッチメニューを更新</button>
+      </form>
+      <section className={box}>
+        <h2 className="font-bold">LINE に登録中</h2>
         {menus === null ? (
-          <p className="text-base text-ink-soft">LINE のアクセストークンがないので見られません。</p>
+          <p className="text-base text-ink-soft">LINE のトークンがないので見られません。</p>
         ) : typeof menus === "string" ? (
-          <p className="text-base text-alert">読めませんでした: {menus}</p>
+          <p className="text-base text-alert">読めませんでした: {menus.slice(0, 80)}</p>
         ) : menus.menus.length === 0 ? (
-          <p className="text-base">まだありません。上のボタンで作ってください。</p>
+          <p className="text-base">まだありません。上のボタンで作れます。</p>
         ) : (
-          <ul className="space-y-2">
-            {menus.menus.map((m) => (
-              <li key={m.richMenuId} className="rounded-xl bg-paper p-3 text-base ring-1 ring-ink/10">
-                <p>
-                  <b>{m.name}</b> {m.isDefault && <span className="rounded-full bg-ink px-2 py-0.5 text-sm text-white">全員に表示中</span>}
-                </p>
-                <p className="text-sm break-all text-ink-soft">
-                  {m.richMenuId} ・ 「{m.chatBarText}」 ・ ボタン {m.areas} 個
-                </p>
-                {!m.isDefault && (
-                  <form action={deleteRichMenuAction} className="pt-1">
+          <ul className="space-y-1">
+            {menus.menus.slice(0, 3).map((m) => (
+              <li key={m.richMenuId} className="flex items-center justify-between gap-2 text-base">
+                <span className="min-w-0 truncate">
+                  {m.isDefault ? "✅" : "・"} <b>{m.name}</b> <span className="text-ink-soft">…{m.richMenuId.slice(-6)}</span>
+                </span>
+                {m.isDefault ? (
+                  <span className="shrink-0 text-sm text-ink-soft">表示中</span>
+                ) : (
+                  <form action={deleteRichMenuAction} className="shrink-0">
                     <input type="hidden" name="richMenuId" value={m.richMenuId} />
-                    <button className="text-base text-alert underline">このメニューを消す</button>
+                    <button className="text-base text-alert underline">消す</button>
                   </form>
                 )}
               </li>
             ))}
+            {menus.menus.length > 3 && <li className="text-sm text-ink-soft">ほか {menus.menus.length - 3} 個（更新すると同名のものは消えます）</li>}
           </ul>
         )}
-      </Card>
+        <p className="text-sm text-ink-soft">更新すると全員のメニューになり、古い「{RICH_MENU_NAME}」は消えます。</p>
+      </section>
+    </>
+  );
+}
 
-      <Card title="動きの設定">
-        <form action={saveSettingsAction} className="space-y-4">
-          <label className="flex items-start gap-3">
-            <input type="checkbox" name="linePaused" defaultChecked={settings.linePaused} className="mt-1 size-6 shrink-0" />
-            <span>
-              <b>LINE の送信を一時停止する</b>
-              <span className="block text-base text-ink-soft">予告・点呼などを送らずに記録だけ（通数を使わない確認用）。返信も止まります。</span>
-            </span>
-          </label>
-          <label className="block">
-            <b>前夜の予告を出す基準（cm）</b>
-            <span className="block text-base text-ink-soft">
-              21時に天気を見て、翌朝6時までの雪がこれ以上なら予告します（{THRESHOLD_RANGE.min}〜{THRESHOLD_RANGE.max}cm）。
-            </span>
+async function SettingsTab() {
+  const [settings, storm, manualStorm] = await Promise.all([loadSettings(), stormStatus(), manualStop()]);
+  return (
+    <>
+      <form action={saveSettingsAction} className={box}>
+        <label className="flex items-center gap-3">
+          <input type="checkbox" name="linePaused" defaultChecked={settings.linePaused} className="size-6 shrink-0" />
+          <span>
+            <b>LINE 送信を一時停止</b>
+            <span className="block text-sm text-ink-soft">送らずに記録だけ（返信も止まる）</span>
+          </span>
+        </label>
+        <label className="flex items-center justify-between gap-3">
+          <span>
+            <b>予告の基準</b>
+            <span className="block text-sm text-ink-soft">朝6時までの雪がこれ以上</span>
+          </span>
+          <span className="shrink-0">
             <input
               type="number"
               name="snowThresholdCm"
@@ -140,81 +104,121 @@ async function Dashboard({ searchParams }: { searchParams: Promise<{ done?: stri
               max={THRESHOLD_RANGE.max}
               defaultValue={settings.snowThresholdCm}
               inputMode="numeric"
-              className="mt-1 w-32 rounded-2xl bg-paper px-4 py-3 text-lg ring-1 ring-ink/20"
-            />
-          </label>
-          <label className="block">
-            <b>メニューを閉じたときの文字</b>
-            <span className="block text-base text-ink-soft">{CHAT_BAR_MAX}字まで。保存したあと「リッチメニューを更新する」で LINE に反映。</span>
-            <input
-              type="text"
-              name="chatBarText"
-              maxLength={CHAT_BAR_MAX}
-              defaultValue={settings.chatBarText}
-              className="mt-1 w-full rounded-2xl bg-paper px-4 py-3 text-lg ring-1 ring-ink/20"
-            />
-          </label>
-          <button className={bigButton}>設定を保存する</button>
-        </form>
-      </Card>
-
-      <Card title="警報の日のお休み">
-        <p>{storm.stopped ? `⛔ お休み中（${storm.source === "jma" ? `気象庁: ${storm.names.join("・")}` : "手動"}）` : "ふつうに動いています"}</p>
+              className="w-20 rounded-2xl bg-paper px-3 py-2 text-lg ring-1 ring-ink/20"
+            />{" "}
+            cm
+          </span>
+        </label>
+        <label className="block">
+          <b>メニューを閉じたときの文字</b>
+          <span className="text-sm text-ink-soft">（{CHAT_BAR_MAX}字まで）</span>
+          <input
+            type="text"
+            name="chatBarText"
+            maxLength={CHAT_BAR_MAX}
+            defaultValue={settings.chatBarText}
+            className="mt-1 w-full rounded-2xl bg-paper px-4 py-2 text-lg ring-1 ring-ink/20"
+          />
+        </label>
+        <button className={bigButton}>保存する</button>
+      </form>
+      <section className={box}>
+        <h2 className="font-bold">警報の日のお休み</h2>
+        <p className="text-base">
+          {storm.stopped ? `⛔ お休み中（${storm.source === "jma" ? `気象庁: ${storm.names.join("・")}` : "手動"}）` : "ふつうに動いています（警報の間は自動で止まります）"}
+        </p>
         <form action={stormToggleSettingsAction}>
           <input type="hidden" name="on" value={manualStorm ? "0" : "1"} />
           <button className={bigButton}>{manualStorm ? "手動のお休みをやめる" : "手動でお休みにする"}</button>
         </form>
-        <p className="text-base text-ink-soft">気象庁の警報が出ている間は、こちらに関係なく止まります。</p>
-      </Card>
+      </section>
+    </>
+  );
+}
 
-      <Card title="LINE の状態">
+async function StatusTab() {
+  const [db, usage, line] = await Promise.all([dbStatus(), readLineUsage(), lineAdminInfo().catch(() => null)]);
+  return (
+    <>
+      <section className={box}>
+        <h2 className="font-bold">LINE</h2>
         {line === null ? (
-          <p className="text-base text-ink-soft">LINE のアクセストークンがないので見られません。</p>
+          <p className="text-base text-ink-soft">トークンがないので見られません。</p>
         ) : (
-          <ul className="space-y-1 text-base">
-            <li>公式アカウント: <b>{line.botName ?? "（取得できず）"}</b></li>
+          <ul className="text-base">
+            <li className="truncate">公式アカウント: <b>{line.botName ?? "?"}</b></li>
             <li>
-              今月の送信（LINE の実数）: <b className="tabular-nums">{line.used ?? "?"}</b> / {line.quota === "none" ? "上限なし" : (line.quota ?? "?")} 通
+              今月の送信: <b className="tabular-nums">{line.used ?? "?"}</b> / {line.quota === "none" ? "上限なし" : (line.quota ?? "?")} 通（LINE の実数）
             </li>
-            <li>
-              Webhook:{" "}
-              {line.webhook ? (
-                <>
-                  <b>{line.webhook.active ? "オン" : "オフ"}</b> <span className="break-all text-ink-soft">{line.webhook.endpoint}</span>
-                </>
-              ) : (
-                "（取得できず）"
-              )}
+            <li className="truncate">
+              Webhook: <b>{line.webhook ? (line.webhook.active ? "オン" : "オフ") : "?"}</b>{" "}
+              <span className="text-sm text-ink-soft">{line.webhook?.endpoint.replace(/^https:\/\//, "")}</span>
             </li>
           </ul>
         )}
-        <p className="text-base text-ink-soft">
-          このアプリで数えた今月（{usage.month}）: 送信 {usage.sent} 通 ・ 送らずに記録 {usage.dryRun} 通
+        <p className="text-sm text-ink-soft">
+          アプリで数えた {usage.month}: 送信 {usage.sent} ・ 記録だけ {usage.dryRun}
         </p>
-      </Card>
-
-      <Card title="鍵とつながり">
-        <ul className="space-y-1 text-base">
+      </section>
+      <section className={box}>
+        <h2 className="font-bold">鍵（中身は出しません）</h2>
+        <ul className="grid grid-cols-2 gap-x-3 text-base">
           {KEYS.map((k) => (
-            <li key={k.env}>
-              {process.env[k.env] ? "✅" : "⬜"} {k.label} <span className="text-sm text-ink-soft">{k.env}</span>
+            <li key={k.env} className="truncate">
+              {process.env[k.env] ? "✅" : "⬜"} {k.label}
             </li>
           ))}
         </ul>
         <p className="text-base">
-          データベース: <b>{db.kind === "ready" ? `準備OK（参加者 ${db.participants} 人）` : db.kind === "none" ? "なし（メモリ保存）" : db.kind === "unprepared" ? "未準備（/admin で準備）" : "接続エラー"}</b>
+          DB: <b>{db.kind === "ready" ? `OK（${db.participants} 人）` : db.kind === "none" ? "メモリ" : db.kind === "unprepared" ? "未準備" : "エラー"}</b> ・ 隊長:{" "}
+          <b>{hasClaudeKey() ? "Claude" : "モック"}</b>
           <br />
-          Claude: <b>{hasClaudeKey() ? "本物" : "モック"}</b> ・ LINE: <b>{hasLineKeys() ? "設定済み" : "未設定"}</b>
-          <br />
-          デモ操作: <b>{demoEnabled() ? "オン" : "オフ"}</b> ・ LINE_DRY_RUN: <b>{lineDryRun() ? "オン" : "オフ"}</b>
+          デモ操作: <b>{demoEnabled() ? "オン" : "オフ"}</b> ・ DRY_RUN: <b>{lineDryRun() ? "オン" : "オフ"}</b>
         </p>
-        <p className="text-base text-ink-soft">鍵は Vercel の環境変数で入れます（この画面には中身を出しません）。</p>
-      </Card>
+        <p className="text-sm text-ink-soft">鍵は Vercel の環境変数で入れます。</p>
+      </section>
+    </>
+  );
+}
+
+async function Dashboard({ searchParams }: { searchParams: Promise<{ done?: string; tab?: string }> }) {
+  await connection();
+  const gate = await adminGate();
+  if (gate === "login" || gate === "unconfigured") redirect("/admin");
+  const { done, tab: rawTab } = await searchParams;
+  const tab: Tab = rawTab && rawTab in TABS ? (rawTab as Tab) : "menu";
+
+  return (
+    <main className="mx-auto min-h-dvh max-w-xl space-y-2 bg-paper px-4 py-3 text-lg text-ink">
+      <header className="flex items-baseline justify-between">
+        <h1 className="text-xl font-bold">管理者ダッシュボード</h1>
+        <Link href="/admin" className="shrink-0 text-base text-ink-soft underline">
+          デモ操作
+        </Link>
+      </header>
+      <nav className="grid grid-cols-3 gap-1 rounded-2xl bg-card p-1 ring-1 ring-ink/10" aria-label="タブ">
+        {(Object.keys(TABS) as Tab[]).map((t) => (
+          <Link
+            key={t}
+            href={`/admin/settings?tab=${t}`}
+            aria-current={t === tab ? "page" : undefined}
+            className={`rounded-xl py-2 text-center font-bold ${t === tab ? "bg-ink text-white" : "text-ink"}`}
+          >
+            {TABS[t]}
+          </Link>
+        ))}
+      </nav>
+      {done && (
+        <p role="status" className="rounded-2xl bg-ice-soft px-4 py-2 text-base font-bold">
+          {done}
+        </p>
+      )}
+      {tab === "menu" ? <MenuTab /> : tab === "settings" ? <SettingsTab /> : <StatusTab />}
     </main>
   );
 }
 
-export default function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ done?: string }> }) {
+export default function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ done?: string; tab?: string }> }) {
   return (
     <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
       <Dashboard searchParams={searchParams} />
