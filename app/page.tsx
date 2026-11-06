@@ -34,6 +34,7 @@ import { appToday } from "@/lib/morning/today";
 import { countHomeNow } from "@/lib/solo/home-now";
 import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
@@ -346,8 +347,11 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
 
 export default function Home({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   return (
-    <Suspense fallback={<main className="grid min-h-dvh place-items-center bg-paper text-ink">読み込み中…</main>}>
-      <Today searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<main className="grid min-h-dvh place-items-center bg-paper text-ink">読み込み中…</main>}>
+        <Today searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

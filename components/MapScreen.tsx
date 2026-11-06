@@ -19,6 +19,7 @@ import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
 import RescueList from "./RescueList";
 import ShareButton from "./ShareButton";
+import Bgm from "./Bgm";
 
 import type { RoadPin } from "./TownMap";
 const TownMap = dynamic(() => import("./TownMap"), {
@@ -125,8 +126,12 @@ export default function MapScreen({
     </div>
   );
 
+  // BGM（spec v1.19）: 出発前は「しらかばの朝」、「行く」のあとは「出撃！」、全軒完了のあとは「灯りがともる」
+  const bgm = prog.allDone && prog.total > 0 ? "clear" : mySortie?.status === "going" && mySortie.confirmedAt ? "mission" : "morning";
+
   return (
     <div className="flex h-dvh flex-col bg-paper text-ink">
+      <Bgm track={bgm} />
       <ClearWatcher clear={clear} />
       {/* 上: 戻る・題名（濃い冬の青） */}
       <header className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center bg-ink px-2 pb-2 pt-2 text-white">

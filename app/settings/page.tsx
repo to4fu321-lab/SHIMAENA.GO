@@ -16,6 +16,7 @@ import { loadNudge } from "@/lib/nudge/store";
 import { loadRoster } from "@/lib/morning/roster";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "設定 ・ シマエナGO" };
 
@@ -133,8 +134,11 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
 
 export default function SettingsPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   return (
-    <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <Settings searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
+        <Settings searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

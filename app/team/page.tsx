@@ -16,6 +16,7 @@ import { teamTotals } from "@/lib/morning/view";
 import { teamTerm, teamTheme } from "@/lib/team-theme";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "今週のチーム ・ シマエナGO" };
 
@@ -150,8 +151,11 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
 
 export default function TeamPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   return (
-    <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <TeamView searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
+        <TeamView searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

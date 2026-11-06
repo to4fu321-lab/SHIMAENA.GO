@@ -18,6 +18,7 @@ import SoloClear from "./SoloClear";
 import MissionFlash from "./MissionFlash";
 import MissionRun from "./MissionRun";
 import RoadReportRun from "./RoadReportRun";
+import Bgm from "./Bgm";
 import BragShare from "./BragShare";
 import NakamaAfter from "./NakamaAfter";
 import HazardIcon from "./HazardIcon";
@@ -385,6 +386,8 @@ export default function SoloScreen({
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
+    {/* BGM（spec v1.19）: ミッション中（出撃！の全画面から）は「出撃！」、完了は「灯りがともる」、それ以外は「しらかばの朝」 */}
+    <Bgm track={clear || flash?.kind === "clear" ? "clear" : running || flash?.kind === "start" ? "mission" : "morning"} />
     <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 px-4 pb-2 pt-3">
       {flash && <MissionFlash kind={flash.kind} label={flash.label} />}
       {clear && (

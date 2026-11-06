@@ -19,6 +19,7 @@ import { onTeam } from "@/lib/member";
 import { loadRoster } from "@/lib/morning/roster";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "隊長トーク ・ シマエナGO" };
 
@@ -87,8 +88,11 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
 
 export default function ChatPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   return (
-    <Suspense fallback={<div className="min-h-dvh bg-paper" />}>
-      <Chat searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" level={0.5} />
+      <Suspense fallback={<div className="min-h-dvh bg-paper" />}>
+        <Chat searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

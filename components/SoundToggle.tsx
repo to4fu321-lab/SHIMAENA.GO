@@ -3,6 +3,7 @@
 // - compact: ホームの見出しの 🔊／🔇（BGM を一発で止める・戻す）
 // - それ以外: 設定の「音」タブ（効果音・BGM の大きな切りかえ＋ためしに鳴らす）
 import { play, setSoundPrefs, soundSupported, unlock, useSoundPrefs } from "@/lib/sound/engine";
+import { useClientValue } from "./useClientValue";
 
 function Switch({ on, label, note, onChange }: { on: boolean; label: string; note: string; onChange: (v: boolean) => void }) {
   return (
@@ -28,6 +29,7 @@ function Switch({ on, label, note, onChange }: { on: boolean; label: string; not
 
 export default function SoundToggle({ compact = false }: { compact?: boolean }) {
   const prefs = useSoundPrefs();
+  const supported = useClientValue(true, soundSupported); // 端末にしか分からないので、画面が出たあとに読む
   if (compact) {
     const on = prefs.bgm;
     return (
@@ -64,7 +66,7 @@ export default function SoundToggle({ compact = false }: { compact?: boolean }) 
       >
         🎵 ためしに鳴らす
       </button>
-      <p className="text-sm text-ink-soft">{soundSupported() ? "この設定はこの端末にだけ保存されます。スマホの消音スイッチが入っていると鳴りません。" : "この端末では音が使えません。"}</p>
+      <p className="text-sm text-ink-soft">{supported ? "この設定はこの端末にだけ保存されます。スマホの消音スイッチが入っていると鳴りません。" : "この端末では音が使えません。"}</p>
     </section>
   );
 }

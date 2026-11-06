@@ -19,6 +19,7 @@ import { isNight, NIGHT_TEXT } from "@/lib/night";
 import { teamTerm, teamTheme } from "@/lib/team-theme";
 import { TOWN } from "@/lib/town";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "雪かき中の印 ・ シマエナGO" };
 
@@ -112,8 +113,11 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
 
 export default function BadgePage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   return (
-    <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <BadgeView searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="mission" />
+      <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
+        <BadgeView searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

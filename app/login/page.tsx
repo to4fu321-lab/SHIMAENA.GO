@@ -9,6 +9,7 @@ import { hasLoginKeys, safeNext } from "@/lib/auth/line-login";
 import { repo } from "@/lib/repo";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { logoutAction } from "./actions";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "ログイン ・ シマエナGO" };
 
@@ -67,8 +68,11 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
 
 export default function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
   return (
-    <Suspense fallback={<div className="min-h-dvh bg-paper" />}>
-      <Login searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<div className="min-h-dvh bg-paper" />}>
+        <Login searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

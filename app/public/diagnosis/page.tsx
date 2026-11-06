@@ -11,6 +11,7 @@ import { loadMorning } from "@/lib/morning/store";
 import { appToday } from "@/lib/morning/today";
 import { isQuizType, QUIZ_TYPES } from "@/lib/public/quiz";
 import { baseUrl } from "@/lib/url";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = {
   title: "シマエナ診断 ・ シマエナGO",
@@ -72,6 +73,7 @@ async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string 
 export default function DiagnosisPage({ searchParams }: { searchParams: Promise<{ r?: string }> }) {
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 pb-8 pt-5 text-ink">
+      <Bgm track="morning" level={0.6} />
       <header className="text-center">
         <p className="eyebrow">登録なしで遊べます</p>
         <h1 className="text-3xl font-bold">

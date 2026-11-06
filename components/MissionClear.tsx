@@ -15,6 +15,7 @@ import ClearFrame, { ConnectPanel, FIT_CARD, Panel } from "./ClearFrame";
 import { PagedList, type PagerTab } from "./Pager";
 import NakamaAfter from "./NakamaAfter";
 import { clearMessage } from "@/lib/share-links";
+import Bgm from "./Bgm";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -120,6 +121,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
       label="雪かき完了"
       decor={
         <div className="feathers pointer-events-none absolute inset-0" aria-hidden="true">
+          <Bgm track="clear" />
           {FEATHERS.map((f, i) => (
             <span key={i} className="feather" style={{ left: `${f.left}%`, animationDelay: `${f.delay}s` }}>
               <Feather color={f.color} />

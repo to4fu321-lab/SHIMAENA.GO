@@ -8,6 +8,7 @@ import NakamaScreen from "@/components/NakamaScreen";
 import StormBanner from "@/components/StormBanner";
 import { nakamaView } from "@/lib/nakama/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "なかま ・ シマエナGO" };
 
@@ -40,8 +41,11 @@ async function Content({ searchParams }: { searchParams: Promise<{ as?: string; 
 
 export default function NakamaPage({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   return (
-    <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <Content searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
+        <Content searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

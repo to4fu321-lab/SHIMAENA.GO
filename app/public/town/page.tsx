@@ -16,6 +16,7 @@ import { TEAMS } from "@/lib/teams";
 import { baseUrl } from "@/lib/url";
 import InviteBeacon from "@/components/InviteBeacon";
 import { isInviteCode } from "@/lib/invite";
+import Bgm from "@/components/Bgm";
 
 const TITLE = "しらかば町内の雪解け";
 const DESC = "町の雪解け率・今日の出動人数・今週の活動。雪かきゲーム「シマエナGO」の公開ページです。";
@@ -246,8 +247,11 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
 
 export default function TownPage({ searchParams }: { searchParams: Promise<{ via?: string; r?: string }> }) {
   return (
-    <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <Town searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" level={0.6} />
+      <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
+        <Town searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

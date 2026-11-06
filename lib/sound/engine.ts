@@ -40,6 +40,9 @@ export function setSoundPrefs(next: Partial<SoundPrefs>): void {
   emit();
 }
 
+/** 設定が変わったら知らせる（BGM 側が聞く） */
+export const onSoundPrefs = subscribe;
+
 /** 設定を画面で使う（変わったら描き直す）。サーバーでは初期値 */
 export function useSoundPrefs(): SoundPrefs {
   return useSyncExternalStore(subscribe, soundPrefs, () => DEFAULT_SOUND_PREFS);

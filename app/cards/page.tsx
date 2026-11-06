@@ -13,6 +13,7 @@ import { repo } from "@/lib/repo";
 import { soloStatus } from "@/lib/solo/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import LoginButton from "@/components/LoginButton";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "活動カード ・ シマエナGO" };
 
@@ -149,8 +150,11 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
 
 export default function CardsPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   return (
-    <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
-      <CardsContent searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
+        <CardsContent searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

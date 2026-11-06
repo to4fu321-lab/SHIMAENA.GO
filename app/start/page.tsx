@@ -8,6 +8,7 @@ import { safeNext } from "@/lib/auth/line-login";
 import { repo } from "@/lib/repo";
 import { TOWN } from "@/lib/town";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "はじめる ・ シマエナGO" };
 
@@ -26,8 +27,11 @@ async function Start({ searchParams }: { searchParams: Promise<{ next?: string; 
 
 export default function StartPage({ searchParams }: { searchParams: Promise<{ next?: string; redo?: string }> }) {
   return (
-    <Suspense fallback={<div className="min-h-dvh bg-paper" />}>
-      <Start searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<div className="min-h-dvh bg-paper" />}>
+        <Start searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

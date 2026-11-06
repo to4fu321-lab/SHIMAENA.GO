@@ -5,6 +5,7 @@ import Tutorial from "@/components/tutorial/Tutorial";
 import { lineJoinUrl } from "@/lib/line/join";
 import TabBar from "@/components/TabBar";
 import { TEAMS } from "@/lib/teams";
+import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "使い方 ・ シマエナGO" };
 
@@ -161,6 +162,7 @@ export default function RulesPage() {
   );
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-paper text-ink">
+      <Bgm track="morning" />
       <Tutorial joinUrl={lineJoinUrl()} rules={rules} />
       <TabBar active="guide" />
     </div>
