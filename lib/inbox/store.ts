@@ -132,3 +132,13 @@ export async function countOutSince(fromIso: string): Promise<number> {
   const rows = await query<{ n: string }>("select count(*)::text as n from inbox_messages where direction = 'out' and at >= $1", [fromIso]);
   return Number(rows[0]?.n ?? 0);
 }
+
+/** 1人の流れを空にする（デモの架空の人の「見本に戻す」だけで使う。本物の人の鍵には使わない） */
+export async function clearThread(key: string): Promise<void> {
+  if (!hasDb()) {
+    mem().set(key, []);
+    return;
+  }
+  await ensure();
+  await query("delete from inbox_messages where inbox_key = $1", [key]);
+}

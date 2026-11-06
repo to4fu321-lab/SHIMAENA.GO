@@ -36,6 +36,12 @@ import { refreshShareTexts } from "@/lib/sns/refresh";
 import { writeImprovements } from "@/lib/voice/improve";
 import { nudgeInactive } from "@/lib/nudge/ops";
 import { seedDemoStory } from "@/lib/kikigaki/ops";
+import { seedDemoTalk } from "@/lib/morning/demo-talk";
+import { inboxKeyOf } from "@/lib/inbox/key";
+import { push } from "@/lib/line/client";
+import { MSG } from "@/lib/line/messages";
+import { getTeam } from "@/lib/teams";
+import type { LineMessage } from "@/lib/line/types";
 
 /** 管理の操作の入口: 合言葉のログインを確かめ、今朝の状態の鍵を取ってから動かす */
 async function guarded<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -112,6 +118,7 @@ export async function completeOne() {
   return guarded("completeOne", async () => {
     const roster = await loadRoster();
     let allDone = false;
+    const notices: { key: string; messages: LineMessage[] }[] = [];
     await update(async (s) => {
       const missionId = completeNext(s, roster);
       const mission = s.morning.missions.find((m) => m.id === missionId);
@@ -130,7 +137,19 @@ export async function completeOne() {
       const now = new Date();
       await recordHouseFeathers(people, { missionId: mission.id, baseLocation: requester?.location, today: appToday(s, now), now });
       allDone = progress(s.morning).allDone;
+      // 隊長トークにも完了を届ける（来た人へ・お願いした人へ）。地図と隊長トークの話をそろえる
+      const number = base?.number ?? "?";
+      const by = people[0]?.nickname ?? "仲間";
+      const pointsOf = (teamId: string) => s.morning.scores.filter((e) => e.teamId === teamId).reduce((a, e) => a + e.points, 0);
+      for (const x of sorties) {
+        const k = inboxKeyOf(roster.participants.find((p) => p.id === x.participantId));
+        if (k) notices.push({ key: k, messages: MSG.doneByOther(number, by, getTeam(x.teamId).name, pointsOf(x.teamId)) });
+      }
+      const rk = inboxKeyOf(requester);
+      if (rk) notices.push({ key: rk, messages: MSG.requesterDoneNotice(people.map((p) => p.nickname), mission.id) });
     });
+    for (const n of notices) await push(n.key, n.messages);
+    revalidatePath("/chat");
     if (allDone) await writeRecapNow();
     else await refreshShareTexts().catch((e) => console.error("[share]", e));
   });
@@ -239,6 +258,13 @@ export async function backToSample() {
   return guarded("backToSample", async () => {
     if (!demoEnabled()) return; // 本当に町内で使っているときは、見本の状態に戻さない
     await resetToSample();
+    // 架空の人の隊長トークも、見本の朝（おはよう → 作戦 → 完了）に入れ直す（地図と話をそろえる）
+    try {
+      await seedDemoTalk(await loadMorning(), await loadRoster());
+    } catch (e) {
+      await update((s) => void s.log.push(`デモの隊長トークを入れられませんでした: ${e instanceof Error ? e.message : String(e)}`));
+    }
+    revalidatePath("/chat");
     refresh();
   });
 }
