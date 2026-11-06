@@ -5,6 +5,8 @@
 // 「自分」は trustedViewer で確かめる（画面の申告は信じない）。
 import { revalidatePath } from "next/cache";
 import { judgeLevel } from "@/lib/claude/level";
+import { readAreaFromPhoto } from "@/lib/claude/area";
+import { sniffImageType } from "@/lib/image";
 import { finishRegistration } from "@/lib/line/handle";
 import { textOf } from "@/lib/line/flex";
 import { askForHelpById } from "@/lib/morning/ops";
@@ -68,4 +70,26 @@ export async function askTodayAction(viewerId: string, style: string): Promise<A
   revalidatePath("/");
   revalidatePath("/map");
   return { ok: true, text: messages.map(textOf).join("\n") };
+}
+
+export interface AreaPhotoResult {
+  ok: boolean;
+  area?: ClearArea;
+  /** 理由（読めたとき）／どう直すか（読めなかったとき） */
+  text: string;
+}
+
+/** 写真から「どこまで」を読む（ハンドフリー、11/6 本人の指示）。写真は保存しない。登録した人だけ */
+export async function readAreaPhotoAction(formData: FormData): Promise<AreaPhotoResult> {
+  const viewerId = String(formData.get("viewerId") ?? "");
+  const p = await me(viewerId);
+  if (!p) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, text: "写真を選んでください。" };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mediaType = sniffImageType(bytes);
+  if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
+  const r = await readAreaFromPhoto({ bytes, mediaType });
+  if (!r.area) return { ok: false, text: `${r.reason}。ボタンで選んでください。` };
+  return { ok: true, area: r.area, text: r.reason };
 }

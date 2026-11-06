@@ -16,7 +16,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { isNight } from "@/lib/night";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
-export const metadata: Metadata = { title: "雪かきを頼む ・ シマエナGO" };
+export const metadata: Metadata = { title: "雪かきをお願いする ・ シマエナGO" };
 
 async function Ask({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
@@ -33,16 +33,16 @@ async function Ask({ searchParams }: { searchParams: Promise<{ as?: string }> })
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
-      <header className="flex shrink-0 items-center justify-between gap-2 bg-ice-soft px-4 pb-2 pt-4">
-        <h1 className="text-2xl font-bold">🏠 雪かきを頼む</h1>
-        <Link href={`/${q}`} className="btn btn-white min-h-11 px-3 text-sm">
+      <header className="flex shrink-0 items-center justify-between gap-2 bg-ice-soft px-4 py-2">
+        <h1 className="whitespace-nowrap text-xl font-bold">🏠 雪かきをお願いする</h1>
+        <Link href={`/${q}`} className="btn btn-white min-h-10 whitespace-nowrap px-3 text-sm">
           ホーム
         </Link>
       </header>
-      <main className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-3">
+      <main className="flex min-h-0 flex-1 flex-col gap-2.5 px-4 py-2.5 short:gap-2 short:py-2">
         {!me ? (
           <>
-            <p className="text-lg leading-snug">雪かきを頼むには、LINE でログインして登録してください。手伝う人も、頼む人も、同じアプリです。</p>
+            <p className="text-lg leading-snug">雪かきをお願いするには、LINE でログインして登録してください。手伝う人も、頼む人も、同じアプリです。</p>
             <LoginButton next="/ask" className="mt-auto" />
           </>
         ) : (

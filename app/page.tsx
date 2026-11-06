@@ -332,7 +332,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         {/* 雪かきを頼む（spec v1.20 お互いさま）: 手伝う人も頼む人も同じアプリで */}
         <Link href={`/ask${q}`} className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-card text-base font-bold ring-1 ring-ink/15 short:min-h-10">
           <span aria-hidden="true">🏠</span>
-          {me?.role === "requester" ? "うちの雪かきを頼む" : "うちの雪かきも頼める家にする"}
+          雪かきをお願いする
           <span aria-hidden="true">›</span>
         </Link>
       </main>
