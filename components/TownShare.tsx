@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { lineShareUrl, xShareUrl } from "@/lib/share-links";
 import type { ShareOption } from "./SnsShare";
+import { play } from "@/lib/sound/engine";
 
 async function fetchImage(path: string, format: "square" | "story", fileName: string): Promise<File> {
   const sep = path.includes("?") ? "&" : "?";
@@ -53,6 +54,7 @@ export default function TownShare({ options, title }: { options: ShareOption[]; 
       const file = await fetchImage(opt.image, format, fileName(format));
       if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], text: `${text}\n${opt.page}` });
+        play("share");
         return "共有しました";
       }
       download(file);
@@ -66,6 +68,7 @@ export default function TownShare({ options, title }: { options: ShareOption[]; 
   const copy = () =>
     run(async () => {
       await navigator.clipboard.writeText(`${text}\n${opt.page}`);
+      play("share");
       return "文をコピーしました";
     });
 

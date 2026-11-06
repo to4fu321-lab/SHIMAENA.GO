@@ -7,7 +7,7 @@ import { useSyncExternalStore } from "react";
 import { DEFAULT_SOUND_PREFS, readSoundPrefs, writeSoundPrefs, type SoundPrefs } from "./prefs";
 import { SFX, VIBRATE_MS, type SfxName } from "./sfx";
 
-const VOL = { master: 0.8, sfx: 1.0, bgm: 0.16 } as const;
+const VOL = { master: 0.8, sfx: 1.0, bgm: 0.55 } as const; // BGM は効果音より小さく（書き出して測った: 山 0.2〜0.3）
 
 interface Engine {
   ctx: AudioContext;
@@ -117,6 +117,7 @@ export function play(name: SfxName, opts: { delay?: number; gain?: number } = {}
       out = g;
     }
     SFX[name](e.ctx, out, e.ctx.currentTime + (opts.delay ?? 0));
+    document.dispatchEvent(new CustomEvent("shimaena:sfx", { detail: { name, delay: opts.delay ?? 0 } })); // 確かめ用（scripts/sound-check.cjs）
   } catch {
     /* 音で画面を壊さない */
   }

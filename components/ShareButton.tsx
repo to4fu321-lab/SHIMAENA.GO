@@ -2,6 +2,7 @@
 
 // 「結果をコピー」: 絵文字グリッドを共有（共有シートがあれば共有、なければコピー）。
 import { useState } from "react";
+import { play } from "@/lib/sound/engine";
 
 export default function ShareButton({ text }: { text: string }) {
   const [done, setDone] = useState<string | null>(null);
@@ -10,10 +11,12 @@ export default function ShareButton({ text }: { text: string }) {
     try {
       if (typeof navigator.share === "function") {
         await navigator.share({ text });
+        play("share");
         setDone("共有しました");
         return;
       }
       await navigator.clipboard.writeText(text);
+      play("share");
       setDone("コピーしました。LINE や X に貼れます");
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return; // 共有をやめた

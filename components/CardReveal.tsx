@@ -1,8 +1,12 @@
 "use client";
 // カード発行の演出（spec v1.8）: 下から上がる → 裏から表へめくれる → 光が走る → 消印のスタンプが「ドン」と押される → 番号が出る。
 // 動きを減らす設定の人には動かさず、消印つきの表をそのまま出す。押した後は「もう一度」で何度でも見られる。
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { STAMP_COLOR, type RevealCard } from "@/lib/cards/reveal";
+import { play, vibrate } from "@/lib/sound/engine";
+
+/** 鳴らしたカード演出（カードの id#回 → 時刻） */
+const recentlyPlayed = new Map<string, number>();
 
 function Stamp({ card }: { card: RevealCard }) {
   const { ink, paper } = STAMP_COLOR[card.style];
@@ -55,6 +59,26 @@ export default function CardReveal({ card, label = "カードを発行しまし�
     }
   });
   const [round, setRound] = useState(0);
+  // 音（spec v1.19）: globals.css の card-* の時刻に合わせて予約。静止表示のときは「ピン」だけ
+  // タブを開くときに部品が2回置かれることがあるので、同じカードの同じ回は3秒のあいだ鳴らし直さない
+  useEffect(() => {
+    const key = `${card.id}#${round}`;
+    const now = Date.now();
+    if (now - (recentlyPlayed.get(key) ?? 0) < 3000) return;
+    recentlyPlayed.set(key, now);
+    if (still) {
+      play("cardChime");
+      return;
+    }
+    play("cardRise");
+    play("cardFlip", { delay: 0.35 });
+    play("cardSparkle", { delay: 1.4 });
+    play("cardStamp", { delay: 1.9 });
+    play("cardChime", { delay: 2.3 });
+    if (card.style !== "kawaii") play("cardHolo", { delay: 2.4 }); // レアはホログラム風
+    const t = window.setTimeout(() => vibrate(30), 1900); // 消印の「ドン」で振動
+    return () => window.clearTimeout(t);
+  }, [round, still, card.id, card.style]);
   const serial = `No.${String(card.serial).padStart(3, "0")} / ${card.issuedCount}枚`;
   if (still) {
     return (

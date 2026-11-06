@@ -4,6 +4,7 @@
 import { useState, useTransition } from "react";
 import { cheerTownAction } from "@/app/public/actions";
 import { CHEER_GOAL, cheerPct } from "@/lib/public/cheer";
+import { play } from "@/lib/sound/engine";
 
 export default function CheerButton({ count: initial, already: initialAlready, compact = false }: { count: number; already: boolean; compact?: boolean }) {
   const [count, setCount] = useState(initial);
@@ -17,6 +18,7 @@ export default function CheerButton({ count: initial, already: initialAlready, c
       setCount(r.count);
       setAlready(true);
       setJustNow(r.ok);
+      if (r.ok) play("cheer");
     });
 
   return (

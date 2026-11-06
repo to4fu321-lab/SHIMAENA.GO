@@ -4,6 +4,7 @@
 import { useState, useTransition } from "react";
 import { fiveMinutesAction, joinAction, type ActionResult } from "@/app/map/actions";
 import type { ShortHouse } from "@/lib/morning/watch";
+import { play } from "@/lib/sound/engine";
 
 const SHOW = 2;
 
@@ -27,9 +28,12 @@ export default function RescueList({
   const run = (fn: () => Promise<ActionResult>) =>
     start(async () => {
       try {
-        setResult(await fn());
+        const r = await fn();
+        setResult(r);
+        play(r.ok ? "go" : "error");
       } catch (e) {
         setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
+        play("error");
       }
     });
 

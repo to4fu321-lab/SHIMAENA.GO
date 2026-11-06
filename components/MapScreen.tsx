@@ -11,7 +11,7 @@ import type { Destination } from "@/lib/nav";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { requestLabel } from "@/lib/request-note";
 import type { ShortHouse } from "@/lib/morning/watch";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GoBriefing from "./GoBriefing";
 import HazardIcon from "./HazardIcon";
 import MapSheet from "./MapSheet";
@@ -22,6 +22,7 @@ import ShareButton from "./ShareButton";
 import Bgm from "./Bgm";
 
 import type { RoadPin } from "./TownMap";
+import { play } from "@/lib/sound/engine";
 const TownMap = dynamic(() => import("./TownMap"), {
   ssr: false,
   loading: () => <div className="grid h-full place-items-center text-ink-soft">地図を読み込み中…</div>,
@@ -89,6 +90,19 @@ export default function MapScreen({
   const max = Math.max(1, ...Object.values(totals));
   const hp = snowHp(state);
   const prog = progress(state);
+  // 音（spec v1.19）: 人手不足（赤点滅）の家が増えたら「ピッピッ」を1回、全軒完了に変わったら勝利のファンファーレ
+  const shortCount = views.filter((v) => v.status === "short").length;
+  const prevShort = useRef<number | null>(null);
+  const prevDone = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (prevShort.current !== null && shortCount > prevShort.current) play("helpAlert");
+    prevShort.current = shortCount;
+  }, [shortCount]);
+  useEffect(() => {
+    const done = prog.allDone && prog.total > 0;
+    if (prevDone.current === false && done) play("bossDown");
+    prevDone.current = done;
+  }, [prog.allDone, prog.total]);
   const snow = snowTotal(state);
   const hpPct = hp.max > 0 ? (hp.current / hp.max) * 100 : 100;
   const viewerTeam = TEAMS.find((t) => t.id === viewer?.teamId);

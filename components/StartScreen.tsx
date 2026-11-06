@@ -11,6 +11,7 @@ import { linkCodeAction, registerAction } from "@/app/start/actions";
 import type { LatLng } from "@/lib/types";
 import LoginButton from "./LoginButton";
 import Mascot from "./Mascot";
+import { play } from "@/lib/sound/engine";
 
 const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
 
@@ -70,6 +71,7 @@ export default function StartScreen({ status, name, center, next }: { status: St
     setPhase("saving");
     const r = await registerAction({ role, location: place, q1, q2 }).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
     if (r.ok) {
+      play("welcome");
       if (role === "family") {
         setLinkCode("linkCode" in r ? r.linkCode : undefined);
         setPhase("done");
@@ -80,12 +82,17 @@ export default function StartScreen({ status, name, center, next }: { status: St
     }
     setMsg(r.text);
     setPhase("questions");
+    play("error");
   };
 
   const link = async (whoAmI: "self" | "family") => {
     setMsg(undefined);
     const r = await linkCodeAction(code, whoAmI).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
-    if (!r.ok) return setMsg(r.text);
+    if (!r.ok) {
+      play("error");
+      return setMsg(r.text);
+    }
+    play("welcome");
     setDoneText(r.text);
     setPhase("done");
     if (whoAmI === "self") setTimeout(() => router.replace("/"), 1500);

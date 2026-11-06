@@ -6,6 +6,7 @@
 // v1.11: 作る前に、2枚の写真のナンバー・表札・顔・家を AI でぼかす（ぼかす場所を聞くために写真をサーバーへ送るが、保存はしない）。
 import { useEffect, useState } from "react";
 import { blurNote, blurPrivate } from "./blur";
+import { play } from "@/lib/sound/engine";
 
 const W = 1080;
 const H = 1350; // Instagram の縦長（4:5）。X でもそのまま見られる
@@ -482,9 +483,11 @@ export default function BragShare({
       const both = cardFile ? [file, cardFile] : [file];
       if (typeof navigator.canShare === "function" && navigator.canShare({ files: both })) {
         await navigator.share({ files: both, text: `${text}\n${link}` });
+        play("share");
         setMsg(both.length > 1 ? "Before/After とカードの2枚を共有しました" : "共有しました");
       } else if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], text: `${text}\n${link}` });
+        play("share");
         setMsg("共有しました");
       } else {
         save();

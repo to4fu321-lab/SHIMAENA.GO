@@ -11,6 +11,7 @@ import ChatTools, { readSpeak, readTextSize, speak, TEXT_SIZE_PX, type TextSize 
 import Mascot from "./Mascot";
 import MicButton from "./MicButton";
 import { shrink } from "./shrink";
+import { play } from "@/lib/sound/engine";
 
 const POLL_SECONDS = 6;
 
@@ -78,14 +79,24 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
     const t = setInterval(async () => {
       if (pending) return;
       const r = await chatPollAction(viewerId).catch(() => undefined);
-      if (r?.ok && r.bubbles) setBubbles((cur) => (r.bubbles!.length !== cur.length || r.bubbles!.at(-1)?.id !== cur.at(-1)?.id ? r.bubbles! : cur));
+      if (r?.ok && r.bubbles)
+        setBubbles((cur) => {
+          const changed = r.bubbles!.length !== cur.length || r.bubbles!.at(-1)?.id !== cur.at(-1)?.id;
+          if (changed && r.bubbles!.at(-1)?.from === "captain" && cur.length > 0) play("message"); // 隊長から新しい文「ポロン」
+          return changed ? r.bubbles! : cur;
+        });
     }, POLL_SECONDS * 1000);
     return () => clearInterval(t);
   }, [viewerId, pending, readOnly]);
 
   const apply = (r: ChatResult) => {
-    if (!r.ok) setError(r.text ?? "うまくいきませんでした。もう一度どうぞ。");
-    else if (r.bubbles) setBubbles(r.bubbles);
+    if (!r.ok) {
+      setError(r.text ?? "うまくいきませんでした。もう一度どうぞ。");
+      play("error");
+    } else if (r.bubbles) {
+      setBubbles(r.bubbles);
+      if (r.bubbles.at(-1)?.from === "captain") play("message", { delay: 0.15 });
+    }
   };
   const optimistic = (text: string) => setBubbles((cur) => [...cur, { id: `tmp-${Date.now()}`, from: "me", at: new Date().toISOString(), text, buttons: [], quick: [] }]);
 
@@ -95,11 +106,14 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
     setError(undefined);
     setDraft("");
     optimistic(text);
+    play("send");
     start(async () => apply(await chatTextAction(viewerId, text).catch(() => ({ ok: false }))));
   };
   const press = (b: ChatButton) => {
     if (pending) return;
     setError(undefined);
+    // ありがとう点呼・応援のボタンは「ぽわん」、ほかは「シュッ」
+    if (b.kind !== "photo") play(/ありがとう|助かりました|お茶どうぞ|おつかれさま|あったかく|拍手/.test(b.label) ? "thanks" : "send");
     if (b.kind === "say") {
       optimistic(b.text);
       start(async () => apply(await chatTextAction(viewerId, b.text).catch(() => ({ ok: false }))));
@@ -113,6 +127,7 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
   const onPhoto = async (file: File | undefined) => {
     if (!file || pending) return;
     setError(undefined);
+    play("shutter");
     setBubbles((cur) => [...cur, { id: `tmp-${Date.now()}`, from: "me", at: new Date().toISOString(), photo: true, buttons: [], quick: [] }]);
     start(async () => {
       try {

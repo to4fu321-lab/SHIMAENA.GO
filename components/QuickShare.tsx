@@ -3,6 +3,7 @@
 // 完了画面の「みんなに知らせる」: X・LINE・Instagram（画像）を1回で開ける。自動では投稿しない。
 import { useState } from "react";
 import { cheerRequestMessage, lineShareUrl, xShareUrl } from "@/lib/share-links";
+import { play } from "@/lib/sound/engine";
 
 export default function QuickShare({ text, image, page }: { text: string; image: string; page?: string }) {
   const [msg, setMsg] = useState<string | null>(null);
@@ -20,6 +21,7 @@ export default function QuickShare({ text, image, page }: { text: string; image:
       const file = new File([await res.blob()], "shimaena-go.png", { type: "image/png" });
       if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], text });
+        play("share");
         setMsg("共有しました");
       } else {
         const url = URL.createObjectURL(file);

@@ -19,6 +19,7 @@
 - AI は Claude API（`ANTHROPIC_API_KEY`）。出力は JSON。採点表 `data/rubric.json` を毎回渡す。キーがない間はモック応答。
 - LINE は**ログインだけ**（LINE ログイン Web 版: `LINE_LOGIN_CHANNEL_ID` / `LINE_LOGIN_CHANNEL_SECRET`、署名の鍵 `AUTH_SECRET`）。点呼・お知らせ・相談はアプリ内の「隊長トーク」（`/chat`）と端末への通知（Web Push: `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `NEXT_PUBLIC_VAPID_PUBLIC_KEY`）。設定は `docs/login-setup.md`（spec v1.17）。
 - 地図は Leaflet ＋ OpenStreetMap。天気は Open-Meteo。
+- 音（spec v1.19）: BGM も効果音も音ファイルなし。`lib/sound/`（`sfx.ts` 効果音の一覧・`bgm.ts` 3曲の音符データ）で Web Audio 合成。ボタンのタップ音は `SoundProvider` が1本で拾う（`data-sound` で指定）。場面の音は `play("名前")`。確かめ方: `npm run build` のあと `node scripts/sound-check.cjs`。
 - 画面はスマホ表示が最優先。本文 18px 以上、ボタンは少なく大きく。
 - **基本1画面**: どの画面もスマホ（390×844）で縦スクロールなしに収める。入りきらないときは中身を減らすか、タブで分ける（`components/Pager.tsx`）。確かめ方: `npm run build` のあと `node scripts/fit.cjs "/そのページ"`（390×844 と 375×667 ではみ出しを測る）とスクショ。
 

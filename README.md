@@ -102,6 +102,7 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 - Claude API（Claude Opus 5.5 と Haiku 5.5、構造化出力、画像入力、プロンプトキャッシュ、安全判定で断られたときのサーバー側フォールバック）
 - LINE ログイン（Web 版 OAuth、本人の確認だけ）、Web Push（web-push、VAPID）＋ PWA（manifest・service worker）
 - Leaflet ＋ OpenStreetMap、Open-Meteo、resvg（SVG → PNG）、vitest（テスト 390 本）
+- 音（BGM 3曲と効果音 36 種）は音ファイルを持たず、Web Audio API で全部その場で合成（Claude が音符データで作曲。`lib/sound/`）
 
 ## デザイン「白銀の北海道に、家の灯りがともる。」
 - 配色は `app/globals.css` の CSS 変数で一元管理: 雪明かり `#F4F7FA`（背景）／冬の深い青 `#29445C`（文字・見出し・ナビ）／灯りオレンジ `#D9825B`（いちばん大事なボタンだけ）／氷の青 `#8FB8C9`（進捗）／雪椿ピンク `#C8A7B8`（達成の演出）／生成り `#F5EEE5`（やわらかい囲み）。赤は「人手不足」と注意だけ、緑は使わない。

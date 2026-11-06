@@ -4,6 +4,7 @@
 // X は投稿画面（intent）を開くだけ。Instagram など画像の SNS は、画像を保存するか OS の共有シートで渡す。
 import { useState } from "react";
 import { lineShareUrl, xShareUrl } from "@/lib/share-links";
+import { play } from "@/lib/sound/engine";
 
 export interface ShareOption {
   key: string;
@@ -68,6 +69,7 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
       const file = await fetchImage(opt.image, format, fileName(format));
       if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], text: `${text}\n${opt.page}` });
+        play("share");
         return "共有しました";
       }
       download(file);
@@ -83,6 +85,7 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
   const copy = () =>
     run(async () => {
       await navigator.clipboard.writeText(`${text}\n${opt.page}`);
+      play("share");
       return "文をコピーしました";
     });
 

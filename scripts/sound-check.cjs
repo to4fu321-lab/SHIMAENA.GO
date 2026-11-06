@@ -58,6 +58,12 @@ async function waitForServer(url, ms = 40000) {
       };
     });
     const counts = () => page.evaluate(() => ({ osc: window.__sound.osc, noise: window.__sound.noise, state: window.__sound.ctx?.state, bgm: document.documentElement.dataset.bgm ?? null }));
+    // 鳴った効果音の名前（engine が document に知らせる）
+    await page.addInitScript(() => {
+      window.__sfx = [];
+      document.addEventListener("shimaena:sfx", (e) => window.__sfx.push(e.detail.name + (e.detail.delay ? `@${e.detail.delay}` : "")));
+    });
+    const sfx = () => page.evaluate(() => window.__sfx.splice(0));
     const home = `http://localhost:${PORT}/?as=h1`;
 
     // 1. 開いただけでは鳴らない（スマホの決まり）。最初のタップで解放され、BGM「しらかばの朝」が始まる
@@ -85,7 +91,7 @@ async function waitForServer(url, ms = 40000) {
 
     // 3. 雪かき中の印 /badge は「出撃！」
     await page.goto(`http://localhost:${PORT}/badge?as=h1`, { waitUntil: "networkidle" });
-    await page.mouse.click(10, 10);
+    await page.keyboard.press("a"); // 人の操作（音の解放）。Shift などの修飾キーは操作に数えられない。画面の端を押すとリンクに当たる
     await page.waitForTimeout(1200);
     c = await counts();
     ok(c.bgm === "mission", `雪かき中の印は「出撃！」（${c.bgm}）`);
@@ -108,6 +114,86 @@ async function waitForServer(url, ms = 40000) {
     await page.getByRole("link", { name: "ホームへ戻る" }).click();
     await page.waitForTimeout(200);
     ok((await counts()).osc > b0, "白いボタンでタップ音");
+
+    // 6. 場面の効果音: ホームの隊長（ピヨッ＋パタパタ）
+    await page.goto(home, { waitUntil: "networkidle" });
+    await page.keyboard.press("a"); // 人の操作（音の解放）。Shift などの修飾キーは操作に数えられない。画面の端を押すとリンクに当たる
+    await sfx();
+    await page.getByRole("button", { name: /シマエナ隊長/ }).click();
+    await page.waitForTimeout(200);
+    let got = await sfx();
+    ok(got.includes("tap") && got.includes("chirp") && got.includes("flap@0.25"), `隊長をタップ: ${got.join(" ")}`);
+
+    // 7. 今週のチーム: ドロロロ → ピロリン（ホームのチームの札からアプリ内で移る。開き直し＝タップ前なら鳴らないのが正しい）
+    await sfx();
+    await page.getByRole("link", { name: /今週のあなたのチーム/ }).click();
+    await page.waitForURL(/\/team/);
+    await page.waitForTimeout(500);
+    got = await sfx();
+    ok(got.includes("drumroll") && got.includes("welcome@0.8"), `チーム発表: ${got.join(" ")}`);
+
+    // 8. 使い方の雪かき: ザクッ×4 → 最後はクリア！
+    await page.goto(`http://localhost:${PORT}/rules`, { waitUntil: "networkidle" });
+    await page.keyboard.press("a"); // 人の操作（音の解放）。Shift などの修飾キーは操作に数えられない。画面の端を押すとリンクに当たる
+    await page.getByRole("button", { name: /4ページ目/ }).click();
+    await page.waitForTimeout(900);
+    const field = page.getByRole("button", { name: /ひとすくい/ });
+    if (await field.count()) {
+      await sfx();
+      for (let i = 0; i < 5; i++) {
+        await field.click();
+        await page.waitForTimeout(120);
+      }
+      got = await sfx();
+      ok(got.filter((x) => x === "dig").length === 4 && got.includes("missionClear"), `雪かきの練習: ${got.join(" ")}`);
+    } else ok(false, "使い方の雪かきのページに行けなかった");
+
+    // 9. ソロ出動の一本道（自分の家の雪かき）: 出撃！ → ミッション中（BGM 出撃！）→ Before/After の写真（カシャッ）→ クリア！ → 灯り・数え上げ → カード演出の順
+    await page.goto(`http://localhost:${PORT}/solo?as=h1&focus=own_house`, { waitUntil: "networkidle" }); // focus で、そのカードを前に（ほかのカードは aria-hidden）
+    await page.keyboard.press("a"); // 人の操作（音の解放）。Shift などの修飾キーは操作に数えられない。画面の端を押すとリンクに当たる
+    await sfx();
+    const photo = await page.screenshot({ type: "jpeg", quality: 50 }); // 写真の代わり
+    if (process.env.SOUND_DEBUG) {
+      console.log("  debug:", await page.evaluate(() => `${location.href} h2: ${[...document.querySelectorAll("h2")].map((h) => h.textContent.trim()).join(" / ")}`));
+      await page.screenshot({ path: ".shots/sound-check-solo.png" });
+    }
+    await page.locator("article", { hasText: "自分の家の雪かき" }).locator("button", { hasText: "出撃する！" }).click();
+    await page.waitForTimeout(400);
+    got = await sfx();
+    ok(got.includes("confirm") && got.includes("missionStart@0.1"), `出撃！: ${got.join(" ")}`);
+    await page.waitForTimeout(1600);
+    c = await counts();
+    ok(c.bgm === "mission", `ミッション中の BGM は「出撃！」（${c.bgm}）`);
+    await page.evaluate(() => document.querySelectorAll("input[type=file]").forEach((i) => i.removeAttribute("capture"))); // headless ではカメラを開けないので、ふつうのファイル選択に
+    for (const which of ["Before", "After"]) {
+      if (process.env.SOUND_DEBUG) await page.screenshot({ path: `.shots/sound-check-${which}.png` });
+      await page.getByRole("button", { name: new RegExp(`${which} の写真を`) }).click({ force: true }); // どちらの写真かを決める（ready-pulse で動き続けるので force）
+      await page.locator("input[type=file]").first().setInputFiles({ name: `${which}.jpg`, mimeType: "image/jpeg", buffer: photo });
+      await page.waitForTimeout(1500);
+    }
+    got = await sfx();
+    ok(got.filter((x) => x === "shutter").length === 2, `写真2枚でカシャッ×2: ${got.filter((x) => x === "shutter").length}`);
+    await page.getByRole("button", { name: /報告してクリア！/ }).click({ force: true });
+    await page.waitForTimeout(800);
+    got = await sfx();
+    ok(got.includes("missionClear@0.1"), `クリア！: ${got.join(" ")}`);
+    await page.waitForTimeout(2600);
+    c = await counts();
+    got = await sfx();
+    ok(c.bgm === "clear", `完了画面の BGM は「灯りがともる」（${c.bgm}）`);
+    ok(got.includes("lamp@0.2") && got.filter((x) => x.startsWith("countTick")).length >= 3 && got.includes("countPop"), `灯りと数え上げ: ${got.slice(0, 6).join(" ")} …`);
+    const cardBtn = page.getByRole("button", { name: /カードを見る/ });
+    if (await cardBtn.count()) {
+      await cardBtn.click();
+      await page.waitForTimeout(500);
+      got = await sfx();
+      const order = ["cardRise", "cardFlip@0.35", "cardSparkle@1.4", "cardStamp@1.9", "cardChime@2.3"];
+      ok(order.every((n) => got.includes(n)), `カード演出（上がる→めくる→キラ〜ン→ドン→ピン）: ${got.join(" ")}`);
+    } else ok(false, "カードのボタンが出なかった");
+    await page.getByRole("button", { name: /地図へ戻る|戻る|閉じる/ }).first().click().catch(() => {});
+    await page.waitForTimeout(800);
+    c = await counts();
+    ok(c.bgm === "morning", `完了画面を閉じると「しらかばの朝」（${c.bgm}）`);
 
     await browser.close();
   } finally {

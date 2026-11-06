@@ -16,6 +16,7 @@ import { PagedList, type PagerTab } from "./Pager";
 import NakamaAfter from "./NakamaAfter";
 import { clearMessage } from "@/lib/share-links";
 import Bgm from "./Bgm";
+import { play } from "@/lib/sound/engine";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -43,6 +44,18 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
     const t = setTimeout(onClose, autoCloseMs);
     return () => clearTimeout(t);
   }, [autoCloseMs, onClose]);
+  // 音（spec v1.19）: 自分の完了はファンファーレ→灯り→雪 HP の減り。他の人の完了に気づいたときは「ピン」だけ
+  useEffect(() => {
+    if (autoCloseMs) {
+      play("toast");
+      return;
+    }
+    play("missionClear");
+    play("lamp", { delay: 0.9 });
+    play("hpDown", { delay: 1.2 });
+    // 置いたときに1回だけ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pct = (v: number) => (clear.hpMax > 0 ? Math.max(0, Math.min(100, (v / clear.hpMax) * 100)) : 0);
   const teams = TEAMS.filter((t) => clear.teamIds.includes(t.id));

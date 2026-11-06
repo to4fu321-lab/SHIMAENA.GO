@@ -1,10 +1,16 @@
 "use client";
 
 // ソロミッションの「開始！」「クリア！」の全画面演出（1.5秒ほどで消える）。
+import { useEffect } from "react";
+import { play } from "@/lib/sound/engine";
 const COLORS = ["#8fb8c9", "#c8a7b8", "#d9825b", "#f5eee5", "#ffffff", "#2f4a5f"];
 
 export default function MissionFlash({ kind, label }: { kind: "start" | "clear"; label: string }) {
   const start = kind === "start";
+  // 音: 「出撃！」はドーン、「クリア！」はファンファーレ（flash-stamp の 0.1s に合わせる）
+  useEffect(() => {
+    play(start ? "missionStart" : "missionClear", { delay: 0.1 });
+  }, [start]);
   return (
     <div
       className={`flash-bg fixed inset-0 z-[1300] grid place-items-center overflow-hidden ${start ? "bg-ink/90" : "bg-lamp/90"}`}

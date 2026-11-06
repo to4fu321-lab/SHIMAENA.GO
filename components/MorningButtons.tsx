@@ -5,6 +5,7 @@ import { useRef, useState, useTransition } from "react";
 import { finishAction, goAction, manualFinishAction, shortAction, type ActionResult } from "@/app/map/actions";
 import { openClear } from "./ClearWatcher";
 import { shrink } from "./shrink";
+import { play } from "@/lib/sound/engine";
 
 export default function MorningButtons({ viewerId, canAct, going, note }: { viewerId: string; canAct: boolean; going: boolean; note?: string }) {
   const [pending, start] = useTransition();
@@ -12,19 +13,23 @@ export default function MorningButtons({ viewerId, canAct, going, note }: { view
   const [confirmShort, setConfirmShort] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const run = (fn: () => Promise<ActionResult>) =>
+  const run = (fn: () => Promise<ActionResult>, okSound?: "go") =>
     start(async () => {
       try {
         const r = await fn();
         setResult(r);
-        if (r.clear) openClear(r.clear); // 雪かき完了の画面（閉じるまで残る）
+        if (r.clear) openClear(r.clear); // 雪かき完了の画面（閉じるまで残る）。ファンファーレはその画面で
+        else if (!r.ok) play("error");
+        else if (okSound) play(okSound);
       } catch (e) {
         setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
+        play("error");
       }
     });
 
   const onPhoto = async (file: File | undefined) => {
     if (!file) return;
+    play("shutter");
     run(async () => {
       const blob = await shrink(file);
       const fd = new FormData();
@@ -40,7 +45,7 @@ export default function MorningButtons({ viewerId, canAct, going, note }: { view
       {note && <p className="text-center text-sm text-ink-soft">{note}</p>}
       {/* 手袋でも押せるように: 高さ 64px 以上、濃い色に白い文字。いちばん大事な「終わりました」だけ灯りオレンジ */}
       <div className="grid grid-cols-[1fr_1.45fr_1fr] gap-2">
-        <button disabled={disabled || going} onClick={() => run(() => goAction(viewerId))} className="btn btn-ink btn-big px-1">
+        <button disabled={disabled || going} onClick={() => run(() => goAction(viewerId), "go")} className="btn btn-ink btn-big px-1">
           {going ? "行く ✓" : "行く"}
         </button>
         <button disabled={disabled} onClick={() => fileRef.current?.click()} className="btn btn-lamp btn-big px-1 text-base">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { SoloMission } from "@/lib/solo/missions";
 import { shrink } from "./shrink";
+import { play } from "@/lib/sound/engine";
 
 const HINT: Record<string, string> = {
   patrol: "例: 角の道が凍っていた",
@@ -62,9 +63,15 @@ export default function MissionRun({
   const goal = mission.minutes * 60;
   const pct = Math.min(100, (sec / goal) * 100);
   const reached = sec >= goal;
+  // 音: 目標の時間に届いた瞬間に「ピピピッ」（1回だけ。自宅の雪かきは時間が自由なので鳴らさない）
+  const ba = Boolean(mission.beforeAfter);
+  useEffect(() => {
+    if (reached && !ba && sec - goal < 2) play("timerGoal");
+    // 届いた瞬間だけ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reached]);
   const mmss = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
   const canPhoto = mission.photo === "optional";
-  const ba = Boolean(mission.beforeAfter);
   const ready = ba ? Boolean(before && file) : Boolean(file) || note.trim().length > 0;
 
   return (
@@ -196,6 +203,7 @@ export default function MissionRun({
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
+          if (f) play("shutter");
           if (f && ba && shotFor.current === "before") {
             setBusyShot(true);
             shrink(f)

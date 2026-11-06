@@ -8,6 +8,7 @@ import { inviteMessage, lineShareUrl } from "@/lib/share-links";
 import { TEAMS } from "@/lib/teams";
 import Mascot, { SnowTown } from "../Mascot";
 import LineChat, { type ChatMsg } from "./LineChat";
+import { play } from "@/lib/sound/engine";
 
 const STEPS = ["はじめに", "参加する", "雪かきに行く", "雪かきをする", "完了する", "仲間になる"] as const;
 const LAST = STEPS.length - 1;
@@ -219,9 +220,14 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
     report.push({ id: "d2", from: "bot", text: `${team.name}に +15 点。\nありがとうカードは後で届きます。` });
   }
   const takePhoto = () => {
+    play("shutter");
     setFlash((f) => f + 1);
     setPhoto(true);
   };
+  // 最後のページ（仲間になる）が出たら「ピロリン」
+  useEffect(() => {
+    if (index === LAST) play("welcome", { delay: 0.2 });
+  }, [index]);
 
   const slides: React.ReactNode[] = [
     /* 0 はじめに */
@@ -349,7 +355,9 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
       <button
         type="button"
         disabled={snow === 0}
+        data-sound="none"
         onClick={() => {
+          play(snow === 1 ? "missionClear" : "dig"); // 最後のひとすくいでクリア！
           setSnow((s) => Math.max(0, s - 1));
           setDigKey((k) => k + 1);
         }}

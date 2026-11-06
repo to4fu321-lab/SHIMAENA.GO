@@ -8,6 +8,7 @@ import { HAZARDS, type HazardId } from "@/lib/road/hazards";
 import { shrink } from "./shrink";
 import { blurNote, blurPrivate } from "./blur";
 import HazardIcon from "./HazardIcon";
+import { play } from "@/lib/sound/engine";
 
 // 地図（Leaflet）はブラウザでだけ読む
 const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
@@ -59,6 +60,7 @@ export default function RoadReportRun({
   const pickId = useRef(0);
   const pickPhoto = (f: File) => {
     const my = ++pickId.current; // 撮り直したら、前の写真のぼかしの結果は使わない
+    play("shutter");
     setFile(f);
     setPreview(URL.createObjectURL(f));
     setBlurred("wait");

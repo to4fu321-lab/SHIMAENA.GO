@@ -8,6 +8,7 @@ import { goAction, type ActionResult } from "@/app/map/actions";
 import type { Destination } from "@/lib/nav";
 import type { Team } from "@/lib/types";
 import Mascot from "./Mascot";
+import { play } from "@/lib/sound/engine";
 
 const GEAR: { key: string; label: string; icon: React.ReactNode }[] = [
   {
@@ -83,9 +84,12 @@ export default function GoBriefing({
   const go = () =>
     start(async () => {
       try {
-        setResult(await goAction(viewerId));
+        const r = await goAction(viewerId);
+        setResult(r);
+        play(r.ok ? "go" : "error");
       } catch (e) {
         setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
+        play("error");
       }
     });
 

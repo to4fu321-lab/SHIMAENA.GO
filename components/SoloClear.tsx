@@ -10,6 +10,7 @@ import CardReveal from "./CardReveal";
 import InviteDrafts from "./InviteDrafts";
 import ClearFrame, { ConnectPanel, FIT_CARD, FIT_IMG, Panel } from "./ClearFrame";
 import type { PagerTab } from "./Pager";
+import { play } from "@/lib/sound/engine";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -37,10 +38,21 @@ function CountUp({ to, delay = 300, ms = 900 }: { to: number; delay?: number; ms
   useEffect(() => {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
+    let lastTick = 0;
+    let popped = false;
     const t0 = performance.now() + delay;
     const tick = (t: number) => {
       const k = reduce ? 1 : Math.min(1, Math.max(0, (t - t0) / ms));
       setN(Math.round(to * (1 - (1 - k) ** 3)));
+      // 音: 数えている間は 90ms ごとに「カッ」、数え終わりに「ポン」
+      if (k > 0 && k < 1 && t - lastTick > 90) {
+        lastTick = t;
+        play("countTick", { gain: 0.6 + k * 0.6 });
+      }
+      if (k >= 1 && !popped && to > 0) {
+        popped = true;
+        play("countPop");
+      }
       if (k < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -72,6 +84,10 @@ export default function SoloClear({
 }) {
   const s = summary;
   const bonus = s.bonuses.reduce((a, b) => a + b.feathers, 0);
+  // 音: 家に灯り（ファンファーレは直前の「クリア！」の全画面で鳴っている）
+  useEffect(() => {
+    play("lamp", { delay: 0.2 });
+  }, []);
   const shareItems = share.filter((x): x is ReactNode => Boolean(x));
   const hasShare = shareItems.length > 0 || Boolean(s.invites && s.invites.length > 0);
   const tabs: PagerTab[] = [

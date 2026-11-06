@@ -2,6 +2,7 @@
 // いつも2つ出す（相手がいないときは「まだ0人」）。ホームの「📣 応援する」（いま自宅を雪かき中の人みんなへ）と「🍵 おつかれさま」（今日 自宅を終えた人みんなへ）。名前は出さない。
 import { useState, useTransition } from "react";
 import { sendCheerAction } from "@/app/home-actions";
+import { play } from "@/lib/sound/engine";
 
 export default function HomeCheerButtons({
   viewerId,
@@ -27,6 +28,7 @@ export default function HomeCheerButtons({
       fd.set("kind", kind);
       const r = await sendCheerAction(fd);
       setDone((d) => ({ ...d, [kind]: r.sent }));
+      play(kind === "cheer" ? "cheer" : "thanks");
     });
   const btn = "flex min-h-10 min-w-0 flex-1 basis-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 text-sm font-bold shadow-sm ring-1 ring-ink/15 disabled:cursor-default";
   return (

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Mascot from "@/components/Mascot";
 import { cheersSeenAction } from "@/app/home-actions";
 import type { TeamId } from "@/lib/types";
+import { play } from "@/lib/sound/engine";
 
 const TALK_MS = 7000;
 const FLY_MS = 2600;
@@ -32,6 +33,7 @@ export default function CaptainStage({
 
   useEffect(() => {
     if (arrived.length === 0) return;
+    play("chirp", { delay: 1.2 }); // 飛んできて「おーい！」
     const t = window.setTimeout(() => setArriving(false), 2200);
     if (viewerId) {
       const fd = new FormData();
@@ -47,6 +49,8 @@ export default function CaptainStage({
     if (flyingRef.current) return;
     flyingRef.current = true;
     setFlying(true);
+    play("chirp");
+    play("flap", { delay: 0.25 });
     window.setTimeout(() => {
       flyingRef.current = false;
       setFlying(false);

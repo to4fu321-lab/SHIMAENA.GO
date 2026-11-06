@@ -17,6 +17,7 @@ import { teamTerm, teamTheme } from "@/lib/team-theme";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import Bgm from "@/components/Bgm";
+import PlayOnMount from "@/components/PlayOnMount";
 
 export const metadata: Metadata = { title: "今週のチーム ・ シマエナGO" };
 
@@ -69,6 +70,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
           <p className="relative mx-auto inline-block rounded-full bg-white px-5 py-1 text-lg font-bold shadow-sm" style={{ color: mine.deep }}>
             🎉 今週のあなたのチーム 🎉
           </p>
+          <PlayOnMount sounds={[{ name: "drumroll" }, { name: "welcome", delay: 0.8 }]} />
           <Mascot team={mine.team.id} mood="happy" className="team-reveal relative mx-auto mt-2 h-auto min-h-0 w-auto max-h-40 flex-1 drop-shadow-lg" />
           <p className="relative text-xl font-bold">あなたは</p>
           <h1 className={`team-name relative font-bold leading-tight ${mine.team.name.length > 5 ? "whitespace-nowrap text-[2.6rem]" : "text-6xl tracking-wide"}`}>{mine.team.name}</h1>
