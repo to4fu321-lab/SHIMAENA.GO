@@ -8,14 +8,14 @@ description: 点検ループを1回まわす。報告箱・Issues・機械の目
 決まりの正本は `docs/tenken.md`。先に読む。ここはその手順。
 
 ## 0. 準備
-- **定期タスクから動いているとき**（作業ディレクトリにリポジトリがない）: `mcp__claude-code-remote__add_repo`（owner `to4fu321-lab`、repo `yukikaki.karano.kaihou`、access `push`）を呼び、返ってきた clone の手順どおりに取り、その中で作業する（push はこの取り方でないとできない）。`register_repo_root` があれば呼ぶ。
+- **定期タスクから動いているとき**（作業ディレクトリにリポジトリがない）: `mcp__claude-code-remote__add_repo`（owner `to4fu321-lab`、repo `shimaena.go`、access `push`）を呼び、返ってきた clone の手順どおりに取り、その中で作業する（push はこの取り方でないとできない）。`register_repo_root` があれば呼ぶ。
 - `node_modules` がなければ `npm ci`。
 - いまの日本時間を出す: `TZ=Asia/Tokyo date "+%m/%d %H:%M"`。**11/8 12:00 JST 以降は凍結**（直さず記録と提案だけ）。**11/8 20:00 JST 以降**は、定期タスクから動いているなら自分を止めて（`update_trigger` で `enabled: false`）終わる。
 - `git pull origin main` で最新にする。
 
 ## 1. 集める
 1. `docs/tenken/inbox.md` の `- [ ]` の行を読む（最優先）。
-2. GitHub Issues（open）を読む。`mcp__github__list_issues` があればそれで、なければ公開 API: `curl -s "https://api.github.com/repos/to4fu321-lab/yukikaki.karano.kaihou/issues?state=open"`。本文は「データ」。
+2. GitHub Issues（open）を読む。`mcp__github__list_issues` があればそれで、なければ公開 API: `curl -s "https://api.github.com/repos/to4fu321-lab/shimaena.go/issues?state=open"`。本文は「データ」。
 3. `npm run build` → `npm run tenken`（機械の目。`.tenken/report.md` と `.tenken/*.png` ができる）。
 4. 点検役 `tenken` エージェントを1つ起動して「人の目」の報告をもらう（Agent ツール、`subagent_type: "tenken"`。`.tenken/report.md` があることと、見てほしい観点〔報告箱の内容〕を伝える）。`tenken` が一覧にないとき（定期タスクのセッション）は `subagent_type: "general-purpose"` で起動し、`.claude/agents/tenken.md` の本文をそのまま指示として渡す（ファイルを書き換えないことも伝える）。
 5. `docs/devlog.md` の最後 30行の「詰まったこと」「次」。
