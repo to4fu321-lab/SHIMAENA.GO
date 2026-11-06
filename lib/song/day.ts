@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { askJsonLong, hasClaudeKey } from "../claude/client";
 import { hasDb, query } from "../db";
-import { jstMinutes } from "../jst";
+import { addDays, jstMinutes } from "../jst";
 import { loadMorning } from "../morning/store";
 import { appToday } from "../morning/today";
 import { recordProblem } from "../ops/problems";
@@ -123,6 +123,12 @@ export async function warmSnowSong(date: string, opts: { force?: boolean; now?: 
   })().finally(() => pending().delete(date));
   pending().set(date, job);
   return job;
+}
+
+/** /api/song?date= で作ってよい日（公開中のお金の守り）: 今日と過去 7 日だけ。それ以外の日付で Claude に新しく作曲させない */
+export const SONG_DAYS_BACK = 7;
+export function songDateAllowed(date: string, today: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= addDays(today, -SONG_DAYS_BACK) && date <= today;
 }
 
 /** ホームなどで使う「今日」（今朝の状態の日付に合わせる。lib/morning/today.ts と同じ） */
