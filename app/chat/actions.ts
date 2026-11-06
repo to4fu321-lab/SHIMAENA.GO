@@ -2,7 +2,9 @@
 
 // 隊長トーク（spec v1.17）の操作。画面の「自分」は trustedViewer で確かめる（cookie か、デモの架空の人）。
 import { revalidatePath } from "next/cache";
-import { sendToCaptain } from "@/lib/chat/send";
+import { takeChatQuota, type ChatKind } from "@/lib/chat/quota";
+import { sendToCaptain, type ChatInput } from "@/lib/chat/send";
+import { withMockClaude } from "@/lib/claude/client";
 import { sniffImageType } from "@/lib/image";
 import { inboxKeyOf } from "@/lib/inbox/key";
 import { listThread, markRead } from "@/lib/inbox/store";
@@ -22,6 +24,13 @@ async function me(viewerId: string) {
   return p && inboxKeyOf(p) ? p : undefined;
 }
 
+/** 文と写真は Claude を呼ぶので、1人1日の上限（lib/chat/quota.ts）を超えたらモック応答で答える（公開中のお金の守り） */
+async function sendWithQuota(p: NonNullable<Awaited<ReturnType<typeof me>>>, kind: ChatKind, input: ChatInput): Promise<void> {
+  const run = () => sendToCaptain(p, input);
+  if (await takeChatQuota(p.id, kind)) await run();
+  else await withMockClaude(run);
+}
+
 /** いまの流れを読み直す（返事が入ったあと） */
 async function refreshed(viewerId: string, key: string): Promise<ChatBubble[]> {
   const as = isDemoViewer(viewerId) ? viewerId : undefined;
@@ -32,7 +41,7 @@ async function refreshed(viewerId: string, key: string): Promise<ChatBubble[]> {
 export async function chatTextAction(viewerId: string, text: string): Promise<ChatResult> {
   const p = await me(viewerId);
   if (!p) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
-  await sendToCaptain(p, { kind: "text", text });
+  await sendWithQuota(p, "text", { kind: "text", text });
   revalidatePath("/chat");
   return { ok: true, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
 }
@@ -56,7 +65,7 @@ export async function chatPhotoAction(formData: FormData): Promise<ChatResult> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const mediaType = sniffImageType(bytes);
   if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
-  await sendToCaptain(p, { kind: "photo", bytes, mediaType });
+  await sendWithQuota(p, "photo", { kind: "photo", bytes, mediaType });
   revalidatePath("/chat");
   return { ok: true, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
 }

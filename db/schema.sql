@@ -113,6 +113,15 @@ create table if not exists line_events (
   received_at timestamptz not null default now()
 );
 
+-- 公開中のお金の守り（11/6 外部レビュー）: 隊長トークで Claude を呼んだ回数（1人1日。文 20・写真 5 を超えるとモック応答。7日で消す）
+create table if not exists chat_quota (
+  date text not null,
+  participant_id text not null,
+  kind text not null,
+  n integer not null default 0,
+  primary key (date, participant_id, kind)
+);
+
 -- 運用（11/4 精査 P0）: 今朝の状態を1つずつ書き換えるための鍵（期限つき）
 create table if not exists state_locks (
   key text primary key,

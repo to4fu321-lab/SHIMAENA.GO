@@ -22,6 +22,7 @@ describe("splitSql（schema.sql を1文ずつに分ける）", () => {
       "solo_logs",
       "town_cheers",
       "line_events",
+      "chat_quota",
       "state_locks",
       "road_reports",
       "road_alert_prefs",

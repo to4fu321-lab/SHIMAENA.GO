@@ -23,6 +23,7 @@ npm run dev
 - `/admin` には、保存や通知の失敗が赤い「問題」として出る。「声」タブに今週の声と改善の提案が出る。
 - 人手が足りない家の最後の連絡先（町内会役員役のサポーター）: `SUPPORTER_LINE_USER_IDS`（LINE のアカウント ID をカンマ区切り）。
 - カードの絵を描くモデルを上げたいとき: `CARD_ART_MODEL`（既定は Claude Opus 5.5）。
+- 隊長トークで Claude を呼ぶ回数の1人1日の上限（公開中のお金の守り）: `CHAT_TEXT_PER_DAY`（文。既定 20）・`CHAT_PHOTO_PER_DAY`（写真。既定 5）。超えた分は鍵がないときと同じモック応答になる。`/api/song?date=` で作れる歌は今日と過去7日だけ。
 
 ## 4. ログインと通知（spec v1.17: LINE はログインだけ）
 1. [`docs/login-setup.md`](login-setup.md) のとおり、Vercel の環境変数に `LINE_LOGIN_CHANNEL_ID`・`LINE_LOGIN_CHANNEL_SECRET`・`AUTH_SECRET`（ログインの印の署名）と、`VAPID_PUBLIC_KEY`・`VAPID_PRIVATE_KEY`・`NEXT_PUBLIC_VAPID_PUBLIC_KEY`（端末への通知。`npx web-push generate-vapid-keys` で作る）を入れる。

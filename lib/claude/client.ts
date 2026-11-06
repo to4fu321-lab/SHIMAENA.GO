@@ -1,6 +1,7 @@
 // Claude 呼び出しの共通部分。サーバー側でだけ使う（API キーを画面に出さない）。
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { z } from "zod";
 import rubric from "@/data/rubric.json";
 
@@ -8,9 +9,17 @@ export const CLAUDE_MODEL = "claude-opus-5-5";
 /** 短い文・簡単な言葉の仕事に使う安いモデル（spec v1.6、本人の了承済み） */
 export const CLAUDE_LIGHT_MODEL = "claude-haiku-5-5";
 
+/** withMockClaude の中にいるか（この中では鍵があってもモック応答にする） */
+const mockOnly = new AsyncLocalStorage<boolean>();
+
 /** キーがあれば本物の Claude、なければモック（T04 の計算）で同じ形の答えを返す */
 export function hasClaudeKey(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return !mockOnly.getStore() && Boolean(process.env.ANTHROPIC_API_KEY);
+}
+
+/** この中の処理は、鍵があってもモック応答にする（隊長トークの1人1日の上限を超えたとき。lib/chat/quota.ts） */
+export function withMockClaude<T>(fn: () => Promise<T>): Promise<T> {
+  return mockOnly.run(true, fn);
 }
 
 // 毎回同じ文面にして、キャッシュが効くようにする（日時や ID を入れない）
