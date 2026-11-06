@@ -7,7 +7,7 @@ import { z } from "zod";
 import { MAX_IMAGE_BYTES, type ImageType } from "../image";
 import type { Hazard, PathWidth, PhotoCheck, SnowType } from "../types";
 import { cleanPhotoDepth, SNOW_DENSITY, SNOW_LABEL } from "../snow-estimate";
-import { askJson, hasClaudeKey } from "./client";
+import { askJson, hasClaudeKey, isQuotaMock } from "./client";
 
 /** 雪質の名前と密度は lib/snow-estimate.ts の1か所で（排雪 kg の推定と同じ表） */
 export const SNOW_TYPE_LABEL: Record<SnowType, string> = SNOW_LABEL;
@@ -117,7 +117,7 @@ export function trimCare(s: string | undefined): string {
   return (s ?? "").replace(/\s+/g, " ").trim().slice(0, CARE_MAX);
 }
 
-export function mockPhotoCheck(): z.infer<typeof PhotoCheckSchema> {
+export function mockPhotoCheck(reason: "nokey" | "quota" = "nokey"): z.infer<typeof PhotoCheckSchema> {
   return {
     cleared: true,
     passable: true,
@@ -125,7 +125,10 @@ export function mockPhotoCheck(): z.infer<typeof PhotoCheckSchema> {
     uncertain: false,
     snowType: "unknown",
     care: "お疲れさまでした。あたたかくして、水分もどうぞ。",
-    comment: "写真を受け取りました。お疲れさまでした。（Claude のキーがないので、写真の中身の確認は省いています）",
+    comment:
+      reason === "quota"
+        ? "写真を受け取りました。お疲れさまでした。（今日はたくさん送ってくださったので、写真の中身の確認は省きました）"
+        : "写真を受け取りました。お疲れさまでした。（Claude のキーがないので、写真の中身の確認は省いています）",
     evidence: "",
     width: "unknown",
     hazards: [],
@@ -139,7 +142,7 @@ export function mockPhotoCheck(): z.infer<typeof PhotoCheckSchema> {
 }
 
 export async function checkPhoto(image: PhotoInput): Promise<PhotoCheck> {
-  if (!hasClaudeKey()) return mockPhotoCheck();
+  if (!hasClaudeKey()) return mockPhotoCheck(isQuotaMock() ? "quota" : "nokey");
   if (image.bytes.byteLength > MAX_IMAGE_BYTES) {
     return {
       cleared: false,

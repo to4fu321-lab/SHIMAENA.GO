@@ -22,6 +22,11 @@ export function withMockClaude<T>(fn: () => Promise<T>): Promise<T> {
   return mockOnly.run(true, fn);
 }
 
+/** 鍵はあるのに、上限を超えてモック応答になっているか（町の人への文を「鍵がない」と分けるため） */
+export function isQuotaMock(): boolean {
+  return Boolean(mockOnly.getStore()) && Boolean(process.env.ANTHROPIC_API_KEY);
+}
+
 // 毎回同じ文面にして、キャッシュが効くようにする（日時や ID を入れない）
 const SYSTEM = `あなたは札幌の町内会で使う雪かきゲーム「シマエナGO」の司令官「シマエナ隊長」です。
 雪の朝、ひとり暮らしの高齢者の家の雪かきを、町内の3チーム（サルビア・マリーゴールド・ルピナス）に割り振ります。
