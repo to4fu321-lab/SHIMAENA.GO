@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { finishRegistration, handleEvent } from "../line/handle";
 import type { LineEvent } from "../line/types";
+import { listThread } from "../inbox/store";
 import { memoryRepo } from "../repo";
 import type { Participant } from "../types";
 import { emptyMorning } from "./flow";
@@ -15,13 +16,14 @@ const helper: Participant = { id: "p-near", nickname: "近所", role: "helper", 
 const ev = (userId: string, rest: Record<string, unknown>): LineEvent => ({ replyToken: "rt", source: { type: "user", userId }, timestamp: 0, ...rest }) as LineEvent;
 const say = (userId: string, text: string) => handleEvent(ev(userId, { type: "message", message: { id: String(Math.random()), type: "text", text } }));
 
-let log: ReturnType<typeof vi.spyOn>;
-const out = () => log.mock.calls.map((c) => `${c[0]} ${c[1] ?? ""}`).join("\n");
-const pushesTo = (to: string) => log.mock.calls.filter((c) => String(c[0]).includes("/message/push") && String(c[1]).includes(`"to":"${to}"`)).length;
+/** 隊長トークに入った文面（全員ぶん） */
+const out = async () => (await Promise.all(["U-gp", "U-near"].map((k) => listThread(k)))).flat().filter((x) => x.dir === "out").map((x) => JSON.stringify(x.body)).join("\n");
+/** その人に届いた「助けてほしい家」の知らせの数（1回の知らせに「行く」ボタンが1つ） */
+const pushesTo = async (to: string) => (await listThread(to)).filter((x) => x.dir === "out" && JSON.stringify(x.body).includes("help:go=")).length;
 
 beforeEach(async () => {
-  for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive", "__shimaenaConcierge"]) delete (globalThis as Record<string, unknown>)[k];
-  log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+  for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive", "__shimaenaConcierge", "__shimaenaInbox"]) delete (globalThis as Record<string, unknown>)[k];
+  vi.spyOn(console, "log").mockImplementation(() => undefined);
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-11-04T10:00:00+09:00"));
   // 前の雪の日の記録が残っている（今日ではない）
@@ -42,25 +44,25 @@ describe("雪かきを頼む", () => {
     expect(s.morning.rollcall.status).toBe("planned");
     const m = s.morning.missions.find((x) => x.ask)!;
     expect(m.status).toBe("short");
-    expect(out()).toContain("雪かき待ち");
-    expect(pushesTo("U-near")).toBe(1);
+    expect(await out()).toContain("雪かき待ち");
+    expect(await pushesTo("U-near")).toBe(1);
     expect(s.askSends?.["p-near"]).toBe(1);
   });
 
   it("同じ家は1日1回。もう出ていれば「もう地図に出ています」", async () => {
     await say("U-gp", "雪かきを頼む");
     await say("U-gp", "雪かきを頼む");
-    expect(out()).toContain("もう地図に「雪かき待ち」で出ています");
+    expect(await out()).toContain("もう地図に「雪かき待ち」で出ています");
     expect((await loadMorning()).morning.missions.filter((x) => x.ask)).toHaveLength(1);
-    expect(pushesTo("U-near")).toBe(1);
+    expect(await pushesTo("U-near")).toBe(1);
   });
 
   it("手伝う側・夜は頼めない（決まった返事）", async () => {
     await say("U-near", "雪かきを頼む");
-    expect(out()).toContain("お願いする側として登録した家");
+    expect(await out()).toContain("お願いする側として登録した家");
     vi.setSystemTime(new Date("2026-11-04T20:00:00+09:00"));
     await say("U-gp", "雪かきを頼む");
-    expect(out()).toContain("明日の朝6時から頼めます");
+    expect(await out()).toContain("明日の朝6時から頼めます");
   });
 
   it("知らせを受けた人が「行く」→ 完了まで今までの流れで進む", async () => {

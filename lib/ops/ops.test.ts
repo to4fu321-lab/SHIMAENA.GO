@@ -7,46 +7,36 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("LINE の送信", () => {
-  it("LINE が失敗を返しても例外にせず false、問題として残る。次の人には送り続ける", async () => {
+describe("送り口（隊長トーク）", () => {
+  it("push は本人の流れに入り、失敗しても例外にせず false で、問題として残る。次の人には入れ続ける", async () => {
     vi.stubEnv("DATABASE_URL", "");
-    vi.stubEnv("LINE_CHANNEL_ACCESS_TOKEN", "test-token");
-    vi.stubEnv("LINE_DRY_RUN", "");
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const calls: string[] = [];
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (_url: string, init: RequestInit) => {
-        const to = JSON.parse(String(init.body)).to as string;
-        calls.push(to);
-        return to === "U-bad" ? new Response("月の上限です", { status: 429 }) : new Response("{}", { status: 200 });
-      }),
-    );
+    const store = await import("../inbox/store");
+    const real = store.appendOut;
+    vi.spyOn(store, "appendOut").mockImplementation(async (key, messages, now) => {
+      if (key === "U-bad") throw new Error("保存に失敗");
+      return real(key, messages, now);
+    });
     const { push } = await import("../line/client");
     const { listProblems } = await import("./problems");
     const results = [];
     for (const to of ["U-1", "U-bad", "U-3"]) results.push(await push(to, [{ type: "text", text: "おはよう" }]));
     expect(results).toEqual([true, false, true]);
-    expect(calls).toEqual(["U-1", "U-bad", "U-3"]);
-    expect((await listProblems())[0]).toMatchObject({ where: "line/message/push" });
-    expect((await listProblems())[0].message).toContain("429");
+    expect((await listProblems())[0]).toMatchObject({ where: "inbox/deliver" });
+    expect((await store.listThread("U-1")).map((x) => x.body)).toEqual([{ type: "text", text: "おはよう" }]);
+    expect(await store.listThread("U-bad")).toEqual([]);
   });
 
-  it("LINE_DRY_RUN=1 なら送らずに数えるだけ（検証で月の通数を使わない）", async () => {
+  it("multicast は同じ鍵に1回だけ入れ、LINE の API は呼ばない", async () => {
     vi.stubEnv("DATABASE_URL", "");
-    vi.stubEnv("LINE_CHANNEL_ACCESS_TOKEN", "test-token");
-    vi.stubEnv("LINE_DRY_RUN", "1");
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const { multicast } = await import("../line/client");
-    const { readLineUsage } = await import("./line-usage");
-    const before = await readLineUsage();
-    expect(await multicast(["U-1", "U-2", "U-3"], [{ type: "text", text: "点呼" }])).toBe(true);
+    const { listThread } = await import("../inbox/store");
+    expect(await multicast(["U-m1", "U-m2", "U-m1"], [{ type: "text", text: "点呼" }])).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
-    const after = await readLineUsage();
-    expect(after.dryRun - before.dryRun).toBe(3);
-    expect(after.sent).toBe(before.sent);
+    expect(await listThread("U-m1")).toHaveLength(1);
+    expect(await listThread("U-m2")).toHaveLength(1);
   });
 });
 

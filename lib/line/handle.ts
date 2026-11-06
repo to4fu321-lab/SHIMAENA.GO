@@ -31,7 +31,7 @@ import { repo } from "../repo";
 import { jstDate } from "../jst";
 import { teamTerm } from "../team-theme";
 import type { FamilyLink, Participant } from "../types";
-import { getMessageContent, getProfile, push, reply } from "./client";
+import { push, reply } from "./client";
 import { liffUrl } from "../url";
 import { answerMeetup } from "../nakama/ops";
 import { bindLogin, parseLoginText } from "../weblogin";
@@ -56,15 +56,15 @@ export function toInput(ev: LineEvent): RegInput | null {
   return null;
 }
 
-async function nickname(lineUserId: string): Promise<string> {
-  return (await getProfile(lineUserId))?.displayName ?? "参加者";
+async function nickname(): Promise<string> {
+  return "参加者"; // 表示名は登録の画面（/start）からもらう。トークの会話で登録したときだけこの仮の名前
 }
 
 /** 2問まで終わった登録を保存し、最後の文面を返す */
 export async function finishRegistration(lineUserId: string, reg: Registration, displayName?: string): Promise<LineMessage[]> {
   const r = repo();
   // 画面（/start）からの登録は、LIFF で取れた LINE の名前を使う（まだ友だちでないと Bot からは名前を取れないため）
-  const name = displayName?.trim() || (await nickname(lineUserId));
+  const name = displayName?.trim() || (await nickname());
 
   if (reg.role === "helper") {
     const existing = await r.findParticipantByLineUserId(lineUserId);
@@ -177,7 +177,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.replyToken && startsGame(ev)) {
     const storm = await stormStatus();
     if (storm.stopped) {
-      await reply(ev.replyToken, MSG.stormStop(stormHeadline(storm), STORM_LINES));
+      await reply(lineUserId, MSG.stormStop(stormHeadline(storm), STORM_LINES));
       return;
     }
   }
@@ -185,7 +185,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   // 点呼の答え（rc:ans=...）は登録の会話とは別に扱う
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("rc:")) {
     const messages = await answerRollcall(lineUserId, ev.postback.data);
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     await planIfDue();
     await escalateHelpIfDue();
     return;
@@ -196,12 +196,12 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     const p = await r.findParticipantByLineUserId(lineUserId);
     // 手伝える家がない日は、何分？を聞かずにコンシェルジュのおすすめへ（行き止まりにしない）
     const messages = p && !(await helpOpenFor(p.id)) ? await nothingNow(lineUserId) : MSG.nowAsk();
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
   // 雪かきを頼む（spec v1.10）: 6〜19時いつでも
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^(雪かきを頼む|雪かきをたのむ|雪かき頼む)$/.test(ev.message.text.trim())) {
-    if (ev.replyToken) await reply(ev.replyToken, await askForHelp(lineUserId));
+    if (ev.replyToken) await reply(lineUserId, await askForHelp(lineUserId));
     await planIfDue();
     return;
   }
@@ -210,7 +210,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     const kind = faqKind(ev.message.text);
     if (kind) {
       await clearConcierge(lineUserId);
-      if (ev.replyToken) await reply(ev.replyToken, await faqReply(lineUserId, kind));
+      if (ev.replyToken) await reply(lineUserId, await faqReply(lineUserId, kind));
       return;
     }
   }
@@ -225,7 +225,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
         : !(await helpOpenFor(p.id, minutes as NowMinutes))
           ? await nothingNow(lineUserId)
           : await offerTaskNow(p.id, minutes as NowMinutes);
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
@@ -238,7 +238,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     else if (data.startsWith("help:go=")) messages = await joinMission(p.id, data.slice("help:go=".length));
     else if (data.startsWith("knock:")) messages = MSG.knockThanks();
     else messages = MSG.helpDeclined();
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     await escalateHelpIfDue();
     return;
   }
@@ -246,14 +246,14 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   // ありがとう点呼（お願いした人の3択）
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("thanks:")) {
     const messages = await sendThanks(lineUserId, ev.postback.data);
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
   // 家族の応援スタンプ（その家に紐づいた家族だけ）
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("cheer:")) {
     const messages = await sendCheer(lineUserId, ev.postback.data);
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
@@ -261,7 +261,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("go:")) {
     const p = await r.findParticipantByLineUserId(lineUserId);
     const messages = p ? await setGoing(p.id, ev.postback.data === "go:yes") : MSG.notRegistered();
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
@@ -269,7 +269,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "postback" && "postback" in ev && ev.postback.data === "done:manual") {
     const p = await r.findParticipantByLineUserId(lineUserId);
     const messages = p ? (await completeManually(p.id)).messages : MSG.notRegistered();
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
@@ -279,14 +279,14 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     let messages: LineMessage[];
     if (!p) messages = MSG.notRegistered();
     else {
-      const content = await getMessageContent(ev.message.id);
+      const content = ev.message.content; // トークから送った写真（spec v1.17）。LINE から取りに行くことはなくなった
       const mediaType = content && sniffImageType(content.bytes);
       messages =
         content && mediaType
           ? (await completeWithPhoto(p.id, { bytes: content.bytes, mediaType })).messages
           : MSG.photoNotCleared("写真を受け取れませんでした。");
     }
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
@@ -298,7 +298,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       await setAlertPref(p.id, ev.postback.data === "road:on");
       messages = MSG.roadPref(ev.postback.data === "road:on");
     }
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
   // ブラウザでログイン（spec v1.16）: ブラウザに出た「ログイン ABC123」が送られたら、その人と結ぶ
@@ -311,12 +311,12 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
         ? "✅ ブラウザでログインしました。ブラウザの画面に戻ってください（数秒で切りかわります）。\n心当たりがないときは、そのブラウザの画面を閉じてください。"
         : "この合言葉は使えませんでした（10分で切れます）。ブラウザの画面で新しい合言葉を出してください。";
     }
-    if (ev.replyToken) await reply(ev.replyToken, p ? [lineText(text)] : [lineText(text), ...MSG.startInvite()]);
+    if (ev.replyToken) await reply(lineUserId, p ? [lineText(text)] : [lineText(text), ...MSG.startInvite()]);
     return;
   }
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^\s*道の?通知\s*$/.test(ev.message.text)) {
     const p = await r.findParticipantByLineUserId(lineUserId);
-    if (ev.replyToken) await reply(ev.replyToken, p ? MSG.roadAsk() : MSG.notRegistered());
+    if (ev.replyToken) await reply(lineUserId, p ? MSG.roadAsk() : MSG.notRegistered());
     return;
   }
 
@@ -330,20 +330,20 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       const place = a.matched ? (a.matched.baseNumber ? `地図の${a.matched.baseNumber}番の家で、10分だけ一緒にどうぞ。` : "それぞれの家の前で、同じ10分を。") : "";
       messages = MSG.nakamaAnswer(a.matched ? `🎉 ${a.matched.otherName}さんと${a.text}\n${place}\n${CHILD_NOTE}` : a.text, Boolean(a.matched));
     }
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
   // コンシェルジュの「今朝の点呼に答える」（spec v1.7）
   if (ev.type === "postback" && "postback" in ev && ev.postback.data === "cc:rollcall") {
-    if (ev.replyToken) await reply(ev.replyToken, await rollcallQuestion(lineUserId));
+    if (ev.replyToken) await reply(lineUserId, await rollcallQuestion(lineUserId));
     return;
   }
 
   // 今朝の先生（spec v1.6）: 「教える」「また今度」
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("tip:")) {
     const messages = await tipStart(lineUserId, ev.postback.data);
-    if (ev.replyToken) await reply(ev.replyToken, messages);
+    if (ev.replyToken) await reply(lineUserId, messages);
     return;
   }
 
@@ -352,7 +352,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && parseText(ev.message.text).kind === "text" && !(await r.getSession(lineUserId))) {
     const tip = await tipReceive(lineUserId, ev.message.text);
     if (tip) {
-      if (ev.replyToken) await reply(ev.replyToken, tip);
+      if (ev.replyToken) await reply(lineUserId, tip);
       return;
     }
     // AI参加コンシェルジュ（spec v1.7）: 会話の続き・相談らしい文は、点呼の答えより先にコンシェルジュへ
@@ -360,13 +360,13 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     if (consult) {
       const cc = await concierge(lineUserId, ev.message.text);
       if (cc) {
-        if (ev.replyToken) await reply(ev.replyToken, cc);
+        if (ev.replyToken) await reply(lineUserId, cc);
         return;
       }
     }
     const messages = await answerByWords(lineUserId, ev.message.text);
     if (messages) {
-      if (ev.replyToken) await reply(ev.replyToken, messages);
+      if (ev.replyToken) await reply(lineUserId, messages);
       await planIfDue();
       await escalateHelpIfDue();
       return;
@@ -374,21 +374,21 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     // 点呼の時間でなければ、登録した人の自由な文はコンシェルジュへ（「下のボタンから」で止めない）
     const cc = await concierge(lineUserId, ev.message.text);
     if (cc) {
-      if (ev.replyToken) await reply(ev.replyToken, cc);
+      if (ev.replyToken) await reply(lineUserId, cc);
       return;
     }
   }
 
   // スタンプ・音声・動画・ファイル: 読めないので文字かボタンをお願いする（返信なので通数は使わない。黙って無視しない）
   if (ev.type === "message" && "message" in ev && ["sticker", "audio", "video", "file"].includes(ev.message.type)) {
-    if (ev.replyToken) await reply(ev.replyToken, MSG.unsupported());
+    if (ev.replyToken) await reply(lineUserId, MSG.unsupported());
     return;
   }
 
   let input = toInput(ev);
   if (!input) return;
   if (input.kind === "code" && !(await r.findFamilyLinkByCode(input.code))) {
-    if (ev.replyToken) await reply(ev.replyToken, MSG.codeNotFound());
+    if (ev.replyToken) await reply(lineUserId, MSG.codeNotFound());
     return;
   }
   if (input.kind === "text") input = { kind: "text", text: input.text };
@@ -398,7 +398,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (out.done) messages.push(...(await finishRegistration(lineUserId, out.done)));
   if (out.link) messages.push(...(await applyLink(lineUserId, out.link.code, out.link.who)));
   await r.setSession(lineUserId, out.session);
-  if (ev.replyToken && messages.length > 0) await reply(ev.replyToken, messages);
+  if (ev.replyToken && messages.length > 0) await reply(lineUserId, messages);
   // 登録を終えた本人に、コンシェルジュが「近くの道の報告を受け取るか」を聞く（返信は5通までなので別に送る）
   if (out.done && !(out.done.role === "requester" && out.done.proxy)) await push(lineUserId, MSG.roadAsk());
 }

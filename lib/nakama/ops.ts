@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { batonStoryLine, meetupInviteLine } from "../claude/nakama";
 import { distanceM } from "../game/help";
 import { addDays } from "../jst";
+import { inboxKeyOf } from "../inbox/key";
 import { push } from "../line/client";
 import { MSG } from "../line/messages";
 import { loadMorning } from "../morning/store";
@@ -96,7 +97,7 @@ const toPerson = (p: Participant, newcomer: boolean): Person => ({
   home: p.location,
   role: p.role,
   newcomer,
-  reachable: Boolean(p.lineUserId),
+  reachable: Boolean(inboxKeyOf(p)),
 });
 
 /** 合流の場所: 2人の家の近くで、いま人を待っている家（地図の番号だけ。行き先は「10分だけ参加」で本人にだけ届く） */
@@ -284,7 +285,8 @@ export async function proposeMeetup(fromId: string, toId: string, window: string
   };
   await insertMeetup(m);
   // 相手には誘った人の呼び名だけ（誘った本人が同意している）。家の場所は出さない
-  const sent = b.lineUserId ? await push(b.lineUserId, MSG.nakamaInvite({ id: m.id, fromName: a.nickname, message, windowLabel: WINDOW_LABEL[win] })).catch(() => false) : false;
+  const bk = inboxKeyOf(b);
+  const sent = bk ? await push(bk, MSG.nakamaInvite({ id: m.id, fromName: a.nickname, message, windowLabel: WINDOW_LABEL[win] })).catch(() => false) : false;
   return { ok: true, sent, text: "誘いを送りました。相手が「一緒にやる」を押したら成立します。返事がなくても、いつもどおり参加できます。" };
 }
 
@@ -308,8 +310,9 @@ export async function answerMeetup(responderId: string, meetupId: string, accept
   const roster = await loadRoster();
   const from = roster.participants.find((p) => p.id === m.fromId);
   const to = roster.participants.find((p) => p.id === m.toId);
-  if (from?.lineUserId) {
-    await push(from.lineUserId, MSG.nakamaMatched({ otherName: to?.nickname ?? "仲間", windowLabel: WINDOW_LABEL[m.window], baseNumber: m.baseNumber })).catch(() => false);
+  const fk = inboxKeyOf(from);
+  if (fk) {
+    await push(fk, MSG.nakamaMatched({ otherName: to?.nickname ?? "仲間", windowLabel: WINDOW_LABEL[m.window], baseNumber: m.baseNumber })).catch(() => false);
   }
   return {
     ok: true,

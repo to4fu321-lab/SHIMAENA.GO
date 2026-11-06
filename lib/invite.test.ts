@@ -1,4 +1,5 @@
 // 仲間を増やす仕掛け（spec v1.8）: 相手別の3案・本当の出来事・招待の印・誘った結果を本人に返す
+import { listThread } from "./inbox/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { inviteOk, mockInvites } from "./claude/invite";
 import { actionsOf } from "./line/flex";
@@ -72,8 +73,7 @@ describe("誘う瞬間", () => {
   });
 
   it("「ありがとう」が届いたプッシュに「友だちを誘う」（同じ1回のプッシュ）", async () => {
-    const sent: unknown[] = [];
-    vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => void sent.push(a.join(" ")));
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     await ring();
     const s = await loadMorning();
@@ -85,9 +85,8 @@ describe("誘う瞬間", () => {
     const me = roster.participants.find((p) => p.id === going.participantId)!;
     await memoryRepo.upsertParticipant({ ...me, lineUserId: "U-helper" });
     await completeWithPhoto(going.participantId, { bytes: new Uint8Array([6, 6, 6]), mediaType: "image/jpeg" }, new Date(`${DEMO_DATE}T07:20:00+09:00`));
-    sent.length = 0;
     await applyThanks(going.missionId, "1");
-    const push = sent.map(String).find((x) => x.includes("/message/push") && x.includes("U-helper")) ?? "";
+    const push = (await listThread("U-helper")).filter((x) => x.dir === "out").map((x) => JSON.stringify(x.body)).join("\n");
     expect(push).toContain("友だちを誘う");
     expect(push).toContain(encodeURIComponent(`r=${inviteCode(going.participantId)}`).slice(0, 10));
   });
@@ -142,19 +141,19 @@ describe("誘っただけで羽、仲間になったら二人にカード（水�
   });
 
   it("ふだんの1枚は LINE に送らない（月の通数を使わない）。はじめての1枚は送る", async () => {
-    const logs: string[] = [];
-    vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => void logs.push(a.join(" ")));
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const roster = await loadRoster();
     const me = roster.participants.find((p) => p.id === "h6")!;
     await memoryRepo.upsertParticipant({ ...me, lineUserId: "U-h6" });
     const now = new Date("2026-11-03T03:00:00Z");
-    logs.length = 0;
+    const sentImages = async () => (await listThread("U-h6")).filter((x) => x.dir === "out" && (x.body as { type: string }).type === "image").length;
+    const before = await sentImages();
     await completeSolo("h6", "own_house", { now });
-    expect(logs.some((x) => x.includes("/message/push") && x.includes("U-h6"))).toBe(true); // はじめて
-    logs.length = 0;
+    const afterFirst = await sentImages();
+    expect(afterFirst).toBeGreaterThan(before); // はじめて
     await completeSolo("h6", "report_snow", { now });
-    expect(logs.some((x) => x.includes("/message/push") && x.includes("U-h6"))).toBe(false); // ふだんの1枚
+    expect(await sentImages()).toBe(afterFirst); // ふだんの1枚は送らない
   });
 });
 

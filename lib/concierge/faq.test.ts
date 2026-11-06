@@ -6,6 +6,7 @@ import type { LineEvent, LineMessage } from "../line/types";
 import { emptyMorning } from "../morning/flow";
 import { saveMorning } from "../morning/store";
 import { jstDate } from "../jst";
+import { listThread } from "../inbox/store";
 import { memoryRepo } from "../repo";
 import type { Participant } from "../types";
 import { faqKind, faqReply, snowLines } from "./faq";
@@ -14,7 +15,7 @@ const t = (ms: LineMessage[]) => ms.map(textOf).join("\n");
 const me: Participant = { id: "p-faq", nickname: "相談子", role: "helper", location: [43.0401, 141.3699], lineUserId: "U-faq", teamId: "lupinus", morningMinutes: 30, hasTools: true };
 
 beforeEach(() => {
-  for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive", "__shimaenaConcierge", "__shimaenaSoloScores"]) delete (globalThis as Record<string, unknown>)[k];
+  for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive", "__shimaenaConcierge", "__shimaenaSoloScores", "__shimaenaInbox"]) delete (globalThis as Record<string, unknown>)[k];
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -67,16 +68,16 @@ describe("答え", () => {
 
 describe("LINE の流れ", () => {
   const ev = (rest: Record<string, unknown>): LineEvent => ({ replyToken: "rt", source: { type: "user", userId: "U-faq" }, timestamp: 0, ...rest }) as LineEvent;
-  const said = (log: ReturnType<typeof vi.spyOn>) => log.mock.calls.map((c) => String(c[1] ?? "")).join("\n");
+  /** 隊長トークに入った返事（文面の JSON をつなげたもの） */
+  const said = async () => (await listThread("U-faq")).filter((x) => x.dir === "out").map((x) => JSON.stringify(x.body)).join("\n");
 
   it("「出動する」で手伝える家がない日は、何分？を聞かずに隊長のおすすめ（画像とボタン）", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-04T10:00:00+09:00"));
     await memoryRepo.upsertParticipant(me);
     await saveMorning(emptyMorning({ date: "2026-01-01", forecastCm: 0 }));
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     await handleEvent(ev({ type: "message", message: { id: "1", type: "text", text: "出動する" } }));
-    const out = said(log);
+    const out = await said();
     expect(out).toContain("今は近くに手伝える家はありません");
     expect(out).toContain("you.png");
     expect(out).not.toContain("何分動けますか");
@@ -87,16 +88,14 @@ describe("LINE の流れ", () => {
     vi.setSystemTime(new Date("2026-11-04T10:00:00+09:00"));
     await memoryRepo.upsertParticipant(me);
     await saveMorning(emptyMorning({ date: "2026-01-01", forecastCm: 0 }));
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     await handleEvent(ev({ type: "message", message: { id: "3", type: "text", text } }));
-    expect(said(log)).toContain("今は近くに手伝える家はありません");
+    expect(await said()).toContain("今は近くに手伝える家はありません");
   });
 
   it("「隊長に相談」でよくある質問のボタン", async () => {
     await memoryRepo.upsertParticipant(me);
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     await handleEvent(ev({ type: "message", message: { id: "2", type: "text", text: "隊長に相談" } }));
-    expect(said(log)).toContain("何をすればいい？");
+    expect(await said()).toContain("何をすればいい？");
     expect(t(await faqReply("U-faq", "guide"))).toContain("使い方");
   });
 });

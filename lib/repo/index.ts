@@ -1,6 +1,7 @@
 // 参加者・拠点・家族の紐づけ・LINE の登録途中経過の保存先。
 // DATABASE_URL があれば Neon、なければメモリ（開発用）。素の SQL だけ。
 import { hasDb, query } from "../db";
+import { demoParticipantId } from "../inbox/key";
 import type { RegSession } from "../line/registration";
 import { TOWN } from "../town";
 import type { Base, Card, FamilyLink, Participant, SoloLog, TeamId } from "../types";
@@ -68,6 +69,8 @@ const EMPTY_COUNTS = (): Record<TeamId, number> => ({ salvia: 0, marigold: 0, lu
 
 export const memoryRepo: Repo = {
   async findParticipantByLineUserId(lineUserId) {
+    const demo = demoParticipantId(lineUserId);
+    if (demo) return mem().participants.get(demo);
     return [...mem().participants.values()].find((p) => p.lineUserId === lineUserId);
   },
   async findParticipant(id) {
@@ -360,6 +363,8 @@ export const dbRepo: Repo = {
   ...dbCardMethods,
   ...dbSoloMethods,
   async findParticipantByLineUserId(lineUserId) {
+    const demo = demoParticipantId(lineUserId);
+    if (demo) return dbRepo.findParticipant(demo);
     const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants where line_user_id = $1`, [lineUserId]);
     return rows[0] ? rowToParticipant(rows[0]) : undefined;
   },

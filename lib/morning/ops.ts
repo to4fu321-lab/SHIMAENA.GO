@@ -23,6 +23,7 @@ import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstHourMinute, jstMinutes, jstIso } from "../jst";
+import { inboxKeyOf } from "../inbox/key";
 import { getProfileByAccessToken, multicast, push } from "../line/client";
 import { MSG } from "../line/messages";
 import type { LineMessage } from "../line/types";
@@ -265,8 +266,9 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
   const personal = new Map<string, LineMessage[]>();
   const add = (p: Participant | undefined, m: LineMessage[]) => {
-    if (!p?.lineUserId) return;
-    personal.set(p.lineUserId, [...(personal.get(p.lineUserId) ?? []), ...m]);
+    const k = inboxKeyOf(p);
+    if (!k) return;
+    personal.set(k, [...(personal.get(k) ?? []), ...m]);
   };
   for (const m of s.messages) add(byId.get(m.participantId), MSG.planForHelper(m.text));
   for (const m of s.morning.missions) {
@@ -283,11 +285,12 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   let sent = 0;
   let failed = 0;
   for (const p of roster.participants) {
-    if (!p.lineUserId) continue;
-    const mine = personal.get(p.lineUserId) ?? [];
+    const k = inboxKeyOf(p);
+    if (!k) continue;
+    const mine = personal.get(k) ?? [];
     const head = MSG.morningHello(...rcArgs(s));
     const body = p.role === "helper" ? [...MSG.housesToday(houses, mine.length === 0), ...mine] : mine;
-    if (await push(p.lineUserId, [...head, ...body])) sent++;
+    if (await push(k, [...head, ...body])) sent++;
     else failed++;
   }
   s.log.push(`作戦を LINE で ${sent} 人に送信${failed > 0 ? `（⚠ ${failed} 人に送れず。/admin の「問題」を見てください）` : ""}`);
@@ -340,7 +343,8 @@ async function noticeVisit(s: MorningRecord, roster: Roster, mission: Mission, t
   const label = `${team.colorName}の${team.name}チーム`;
   const password = passwordOf(jstDate(now));
   let sent = 0;
-  if (requester.lineUserId && (await push(requester.lineUserId, MSG.visitNotice(label, password, false)))) sent++;
+  const rk = inboxKeyOf(requester);
+  if (rk && (await push(rk, MSG.visitNotice(label, password, false)))) sent++;
   for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
     if (link.familyLineUserId === requester.lineUserId) continue;
     if (await push(link.familyLineUserId, MSG.visitNotice(label, password, true))) sent++;
@@ -511,7 +515,8 @@ async function finishMission(
   );
 
   // 依頼者へ（ありがとう点呼の3ボタン付き）、そして家族へ（spec 8）
-  if (requester?.lineUserId) await push(requester.lineUserId, MSG.requesterDoneNotice(names, mission.id));
+  const rk = inboxKeyOf(requester);
+  if (rk) await push(rk, MSG.requesterDoneNotice(names, mission.id));
   if (requester) {
     for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
       if (link.familyLineUserId !== requester.lineUserId) await push(link.familyLineUserId, MSG.familyDone(names, mission.id));
@@ -520,10 +525,8 @@ async function finishMission(
   // 一緒に行った仲間へ
   for (const x of sorties) {
     if (x.participantId === participantId) continue;
-    const p = byId.get(x.participantId);
-    if (p?.lineUserId) {
-      await push(p.lineUserId, MSG.doneByOther(number, me?.nickname ?? "仲間", getTeam(x.teamId).name, pointsOf(x.teamId)));
-    }
+    const k = inboxKeyOf(byId.get(x.participantId));
+    if (k) await push(k, MSG.doneByOther(number, me?.nickname ?? "仲間", getTeam(x.teamId).name, pointsOf(x.teamId)));
   }
   const myTeam = me?.teamId ? getTeam(me.teamId) : undefined;
   const notes: string[] = [];
@@ -610,10 +613,11 @@ export async function applyThanks(
   let sentTo = 0;
   for (const x of sorties) {
     const p = byId.get(x.participantId);
-    if (!p?.lineUserId) continue;
+    const k = inboxKeyOf(p);
+    if (!p || !k) continue;
     // 「ありがとう」がいちばんうれしい瞬間に、誘う文とボタンを添える（同じ1回のプッシュの中。v1.8）
     const draft = s.invites?.[p.id]?.[0] ?? mockInvites({ minutes: 10, firstTime: false, snowCm: s.morning.rollcall.forecastCm, thanks: label })[0];
-    if (await push(p.lineUserId, MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence, lineShareUrl(draft, inviteUrl(p.id))))) sentTo++;
+    if (await push(k, MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence, lineShareUrl(draft, inviteUrl(p.id))))) sentTo++;
   }
   const record: ThanksRecord = { choice, label, sentence, at: now.toISOString(), sentTo };
   s.thanks = { ...(s.thanks ?? {}), [m.id]: record };
@@ -658,9 +662,9 @@ export async function applyCheer(
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
   let sentTo = 0;
   for (const x of sorties) {
-    const p = byId.get(x.participantId);
-    if (!p?.lineUserId) continue;
-    if (await push(p.lineUserId, MSG.cheerToHelper(requester?.nickname ?? "お願いした人", label, base.number))) sentTo++;
+    const k = inboxKeyOf(byId.get(x.participantId));
+    if (!k) continue;
+    if (await push(k, MSG.cheerToHelper(requester?.nickname ?? "お願いした人", label, base.number))) sentTo++;
   }
   const record: CheerRecord = { choice, label, at: now.toISOString(), sentTo };
   s.cheers = { ...(s.cheers ?? {}), [m.id]: [...(s.cheers?.[m.id] ?? []), record] };
@@ -733,8 +737,9 @@ export async function notifyHelp(missionId: string, now = new Date()): Promise<{
   const tasks = m.subtasks.filter((t) => t.minutes === 10).map((t) => `${t.label}（10分）`);
   let sent = 0;
   for (const t of targets) {
-    if (!t.lineUserId) continue;
-    if (await push(t.lineUserId, MSG.helpRequest(m.id, number, missing, tasks.length ? tasks : ["偵察（10分）"]))) sent++;
+    const k = inboxKeyOf(t);
+    if (!k) continue;
+    if (await push(k, MSG.helpRequest(m.id, number, missing, tasks.length ? tasks : ["偵察（10分）"]))) sent++;
   }
   setHelpState(s, m.id, {
     ...state,
@@ -771,7 +776,10 @@ export async function notifyNoAnswer(missionId: string): Promise<void> {
   if (state.knockIds && state.knockIds.length > 0) return; // 一度だけ
   const number = baseNumberOf(roster, m.baseId);
   const targets = pickKnockTargets(s, roster, m);
-  for (const t of targets) if (t.lineUserId) await push(t.lineUserId, MSG.knockRequest(m.id, number));
+  for (const t of targets) {
+    const k = inboxKeyOf(t);
+    if (k) await push(k, MSG.knockRequest(m.id, number));
+  }
   const base = roster.bases.find((b) => b.id === m.baseId);
   let family = 0;
   if (base) {
@@ -891,14 +899,15 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
   let sent = 0;
   const titleOf = new Map(summary.titles.map((t) => [t.participantId, t]));
   for (const p of roster.participants) {
-    if (!p.lineUserId) continue;
+    const k = inboxKeyOf(p);
+    if (!k) continue;
     const msgs: LineMessage[] = MSG.weeklyToAll(text.commentary, text.nextWeek);
     const title = titleOf.get(p.id);
     if (title) msgs.push(...MSG.weeklyTitle(title.title, title.rareCard));
     if (nextTeams[p.id]) {
       msgs.push(...MSG.weeklyNewTeam(nextTeams[p.id], nextTeamTerm(today)));
     }
-    if (await push(p.lineUserId, msgs)) sent++;
+    if (await push(k, msgs)) sent++;
   }
   for (const [requesterId, count] of Object.entries(summary.helpedCount)) {
     const requester = roster.participants.find((p) => p.id === requesterId);
@@ -976,8 +985,9 @@ export async function askForHelp(lineUserId: string, now = new Date()): Promise<
   const tasks = m.subtasks.filter((t) => t.minutes === 10).map((t) => `${t.label}（10分）`);
   let sent = 0;
   for (const t of targets) {
-    if (!t.lineUserId) continue;
-    if (await push(t.lineUserId, MSG.helpRequest(m.id, base.number, missingPeople(s, m), tasks.length ? tasks : ["偵察（10分）"]))) {
+    const k = inboxKeyOf(t);
+    if (!k) continue;
+    if (await push(k, MSG.helpRequest(m.id, base.number, missingPeople(s, m), tasks.length ? tasks : ["偵察（10分）"]))) {
       sent++;
       s.askSends = { ...s.askSends, [t.id]: (s.askSends?.[t.id] ?? 0) + 1 };
     }

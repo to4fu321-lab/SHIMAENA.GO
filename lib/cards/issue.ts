@@ -5,6 +5,7 @@ import type { RevealCard } from "./reveal";
 import { randomBytes } from "node:crypto";
 import { cardText } from "../claude/card";
 import { jstMinutes } from "../jst";
+import { inboxKeyOf } from "../inbox/key";
 import { push } from "../line/client";
 import { MSG } from "../line/messages";
 import type { LineMessage } from "../line/types";
@@ -60,7 +61,7 @@ export async function issueCardsForMission(
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
   const members = sorties.flatMap((x) => {
     const p = byId.get(x.participantId);
-    return p ? [{ id: p.id, name: p.nickname, teamId: x.teamId, lineUserId: p.lineUserId }] : [];
+    return p ? [{ id: p.id, name: p.nickname, teamId: x.teamId, lineUserId: inboxKeyOf(p) }] : [];
   });
   if (members.length === 0) return { cards: [], sent: 0, firstFlightIds: [] };
   // 初出撃: まだ1枚もカードがない人（この朝の分を入れる前に調べる）
@@ -285,9 +286,10 @@ export async function issueSoloCard(
   const back = renderCardBackSvg(art, { thanks: opts.hitokoto, subtasks: [`${opts.missionLabel}（ソロ出動）`], firstFlight: opts.firstFlight });
   await repo().insertCard(card, svg, back);
   // LINE に送るのは特別な1枚だけ（はじめて・5日連続・仲間）。ふだんの1枚は画面で見せる（月の通数を使わないため。v1.8）
-  if (p.lineUserId && opts.variant !== "daily") {
+  const k = inboxKeyOf(p);
+  if (k && opts.variant !== "daily") {
     const head = opts.variant === "pair" && !opts.firstFlight ? MSG.pairJoined() : opts.firstFlight ? MSG.firstFlight(art.townName) : [];
-    await push(p.lineUserId, [...head, ...cardImageMessages(card.id)]);
+    await push(k, [...head, ...cardImageMessages(card.id)]);
   }
   return card;
 }

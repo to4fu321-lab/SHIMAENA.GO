@@ -1,4 +1,5 @@
 // ヘルプ通知と見守り（spec 4）の「判断」の部分。保存や LINE はしない純粋な関数。
+import { inboxKeyOf } from "../inbox/key";
 import { distanceM, helpTargets, HELP_RADII } from "../game/help";
 import { SUPPORT_TASKS, requiredPeople } from "../game/mission";
 import type { HelperAnswer, Mission, Participant, RequesterAnswer } from "../types";
@@ -52,7 +53,7 @@ export function pickHelpTargets(s: MorningRecord, roster: Roster, m: Mission, ri
 export function pickAskTargets(s: MorningRecord, roster: Roster, m: Mission, cap = 3, max = 5): Participant[] {
   const requesterId = roster.bases.find((b) => b.id === m.baseId)?.requesterId;
   return pickHelpTargets(s, roster, m, 0)
-    .filter((h) => h.lineUserId && h.id !== requesterId && (s.askSends?.[h.id] ?? 0) < cap)
+    .filter((h) => inboxKeyOf(h) && h.id !== requesterId && (s.askSends?.[h.id] ?? 0) < cap)
     .slice(0, max);
 }
 

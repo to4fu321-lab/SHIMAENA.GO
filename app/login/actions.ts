@@ -2,7 +2,6 @@
 
 // ブラウザでログイン（spec v1.16）: LINE アプリを使わずに参加する。lib/weblogin.ts
 import { cookies } from "next/headers";
-import { botBasicId } from "@/lib/line/client";
 import { repo } from "@/lib/repo";
 import { signViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { claimLogin, createLogin, newNonce, WEB_LOGIN_MINUTES } from "@/lib/weblogin";
@@ -17,7 +16,8 @@ export async function startWebLoginAction(): Promise<{ ok: boolean; code?: strin
     const nonce = newNonce();
     jar.set(NONCE_COOKIE, nonce, { ...cookieOpts, maxAge: WEB_LOGIN_MINUTES * 60 });
     const code = await createLogin(nonce);
-    const id = await botBasicId();
+    const raw = process.env.NEXT_PUBLIC_LINE_BOT_ID?.trim();
+    const id = raw ? (raw.startsWith("@") ? raw : `@${raw}`) : undefined;
     const sendUrl = id ? `https://line.me/R/oaMessage/${encodeURIComponent(id)}/?${encodeURIComponent(`ログイン ${code}`)}` : undefined;
     return { ok: true, code, sendUrl, minutes: WEB_LOGIN_MINUTES };
   } catch (e) {

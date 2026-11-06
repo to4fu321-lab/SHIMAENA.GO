@@ -1,3 +1,4 @@
+import { listThread } from "../inbox/store";
 import { describe, expect, it } from "vitest";
 import { memoryRepo } from "../repo";
 import type { LineMessage } from "../line/types";
@@ -27,7 +28,9 @@ describe("朝の本番の操作（メモリ保存・LINE には送らない）",
     const announced = await announce({ date: DEMO_DATE, forecastCm: 12 });
     expect(announced.morning.rollcall.status).toBe("announced");
     expect(announced.briefing).toContain("12cm");
-    expect(announced.log.at(-1)).toContain("予告を LINE で 1 人に送信");
+    expect(announced.log.at(-1)).toMatch(/予告を LINE で \d+ 人に送信/);
+    expect((await listThread("U-real")).filter((x) => x.dir === "out").length).toBeGreaterThan(0); // 本物の人の隊長トークに入った
+    expect((await listThread("demo:h3")).length).toBeGreaterThan(0); // 架空の人にも（デモ）
 
     // 点呼の前に答えても受け付けない
     expect(t((await answerRollcall("U-real", "rc:ans=30")))).toContain("点呼の時間ではありません");
@@ -36,7 +39,7 @@ describe("朝の本番の操作（メモリ保存・LINE には送らない）",
 
     const rung = await ring();
     expect(rung.record.morning.rollcall.status).toBe("open");
-    expect(rung.sent).toBe(1);
+    expect(rung.sent).toBeGreaterThanOrEqual(1); // 本物の人と、デモの架空の人
     expect((await ring()).sent).toBe(0); // 2回目は何もしない
 
     // おかしな値なら質問をもう一度
@@ -54,7 +57,7 @@ describe("朝の本番の操作（メモリ保存・LINE には送らない）",
     s = planned.record;
     expect(s.morning.rollcall.status).toBe("planned");
     expect(s.morning.missions.length).toBeGreaterThan(0);
-    expect(planned.sent).toBe(1); // LINE のある人にだけ
+    expect(planned.sent).toBeGreaterThanOrEqual(1); // 届け先のある人（本物の人とデモの架空の人）
     expect((await plan()).sent).toBe(0); // もう一度は走らない
   });
 

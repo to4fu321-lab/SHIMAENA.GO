@@ -5,8 +5,7 @@ export function baseUrl(): string {
   return "http://localhost:3000";
 }
 
-/** LIFF の ID があれば LINE の中で開く URL、なければふつうの URL */
+/** 画面を開く URL（絶対 URL）。名前は LIFF のころのまま（呼ぶ側を変えずに済むように）。spec v1.17 で LIFF はやめた */
 export function liffUrl(path: string): string {
-  const id = process.env.NEXT_PUBLIC_LIFF_ID;
-  return id ? `https://liff.line.me/${id}${path}` : `${baseUrl()}${path}`;
+  return `${baseUrl()}${path}`;
 }

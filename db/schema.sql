@@ -197,6 +197,17 @@ create table if not exists baton_reactions (
   primary key (baton_id, participant_id)
 );
 
+-- 隊長トーク（spec v1.17）: 隊長から届く文面（out）と本人が送った文・写真の印（in）。文面の形は LINE のときの JSON のまま。
+create table if not exists inbox_messages (
+  id text primary key,
+  inbox_key text not null,         -- LINE のアカウント ID（ログインの ID）、または demo:<参加者 ID>
+  direction text not null,         -- out / in
+  body jsonb not null,
+  at timestamptz not null default now(),
+  read_at timestamptz
+);
+create index if not exists inbox_messages_key on inbox_messages (inbox_key, at);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

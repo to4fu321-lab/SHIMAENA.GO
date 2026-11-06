@@ -1,125 +1,54 @@
-// LINE Messaging API を呼ぶ（返信・プッシュ・プロフィール）。サーバー側でだけ使う。
-// LINE_CHANNEL_ACCESS_TOKEN がない間・LINE_DRY_RUN=1 の間・/admin/settings で一時停止の間は送らずにログに出す（開発・検証用）。
-// 送信の失敗は例外にしない: 1人に届かなくても、残りの人への配信を止めない。失敗は /admin の「問題」に残る。
-import { lineDryRun } from "../env";
-import { countLinePush } from "../ops/line-usage";
-import { loadSettings } from "../ops/settings";
+// 送り口（spec v1.17）: 文面を本人の「隊長トーク」（lib/inbox/store.ts）に入れる。LINE の Messaging API には送らない。
+// 名前（push・multicast・reply）は LINE のときのまま: 呼ぶ側（朝の運用・カード・なかま・道の報告）を変えずに済むように。
+//   push(鍵, 文面)        … 1人へ。鍵は lib/inbox/key.ts の inboxKeyOf（本物の人は LINE のアカウント ID、架空の人は demo:<ID>）
+//   multicast(鍵[], 文面) … 何人かへ同じ文面
+//   reply(鍵, 文面)       … トークで本人が送った文・ボタンへの返事（鍵は本人の鍵。LINE の replyToken ではない）
+// 届けた印の通知（Web Push）は T81 でここから送る。保存の失敗は例外にせず、/admin の「問題」に残す（雪かきの流れを止めない）。
+import { appendOut } from "../inbox/store";
 import { recordProblem } from "../ops/problems";
-import { fitFive } from "./messages";
 import type { LineMessage } from "./types";
 
-const API = "https://api.line.me/v2/bot";
-
+/** LINE ログインの鍵（LINE はログインだけに使う。spec v1.17） */
 export function hasLineKeys(): boolean {
-  return Boolean(process.env.LINE_CHANNEL_SECRET && process.env.LINE_CHANNEL_ACCESS_TOKEN);
+  return Boolean(process.env.LINE_LOGIN_CHANNEL_ID && process.env.LINE_LOGIN_CHANNEL_SECRET);
 }
 
-function token(): string | undefined {
-  return process.env.LINE_CHANNEL_ACCESS_TOKEN;
-}
-
-/** 送る。成功（または送らない設定）で true、失敗で false。例外は投げない */
-async function post(pathname: string, body: unknown, pushRecipients = 0): Promise<boolean> {
-  const t = token();
-  const paused = Boolean(t) && !lineDryRun() && (await loadSettings()).linePaused; // /admin/settings の一時停止
-  if (!t || lineDryRun() || paused) {
-    console.log(`[line] (送信せず${t ? (paused ? "・管理画面で一時停止" : "・LINE_DRY_RUN") : ""}) POST ${pathname}`, JSON.stringify(body).slice(0, 2000));
-    if (t) await countLinePush(pushRecipients, true);
-    return true;
-  }
+/** 1人の隊長トークに文面を入れる。入れられたら true、失敗で false（例外は投げない） */
+export async function deliver(key: string, messages: LineMessage[]): Promise<boolean> {
+  if (!key || messages.length === 0) return true;
   try {
-    const res = await fetch(`${API}${pathname}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      await recordProblem(`line${pathname}`, `LINE API が ${res.status} を返しました: ${(await res.text()).slice(0, 200)}`);
-      return false;
-    }
-    await countLinePush(pushRecipients, false);
+    await appendOut(key, messages);
     return true;
   } catch (e) {
-    await recordProblem(`line${pathname}`, e);
+    await recordProblem("inbox/deliver", e);
     return false;
   }
 }
 
-/** 返信（無料。replyToken は1回・約1分だけ有効、5通まで） */
-export async function reply(replyToken: string, messages: LineMessage[]): Promise<boolean> {
-  if (messages.length === 0) return true;
-  return post("/message/reply", { replyToken, messages: fitFive(messages) });
-}
-
-/** プッシュ（無料プランは月 200 通までなので、予告・点呼・作戦など大事なものだけに使う）。届けられたら true */
+/** 1人へ */
 export async function push(to: string, messages: LineMessage[]): Promise<boolean> {
-  if (messages.length === 0) return true;
-  return post("/message/push", { to, messages: fitFive(messages) }, 1);
+  return deliver(to, messages);
 }
 
-/** 同じ文面を何人かに送る（500 人まで。通数は人数ぶん数える）。届けられたら true */
+/** 同じ文面を何人かへ（同じ鍵は1回だけ）。全員に入れられたら true */
 export async function multicast(to: string[], messages: LineMessage[]): Promise<boolean> {
-  if (to.length === 0 || messages.length === 0) return true;
-  const list = to.slice(0, 500);
-  return post("/message/multicast", { to: list, messages: fitFive(messages) }, list.length);
+  let ok = true;
+  for (const key of new Set(to)) ok = (await deliver(key, messages)) && ok;
+  return ok;
 }
 
-/** ユーザーが送ってきた画像などの中身を取る（完了写真） */
-export async function getMessageContent(messageId: string): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
-  const t = token();
-  if (!t) return undefined;
-  const res = await fetch(`https://api-data.line.me/v2/bot/message/${encodeURIComponent(messageId)}/content`, {
-    headers: { Authorization: `Bearer ${t}` },
-  });
-  if (!res.ok) return undefined;
-  return { bytes: new Uint8Array(await res.arrayBuffer()), contentType: res.headers.get("content-type") ?? "" };
+/** トークでの返事（鍵は本人の鍵） */
+export async function reply(key: string, messages: LineMessage[]): Promise<boolean> {
+  return deliver(key, messages);
 }
 
-/** LIFF のアクセストークンから、その人の LINE ユーザー ID を確かめる（画面側の申告を信じない） */
+/** LINE のアクセストークンから、その人の LINE のアカウント ID と表示名を確かめる（画面側の申告を信じない） */
 export async function getProfileByAccessToken(accessToken: string): Promise<{ userId: string; displayName: string } | undefined> {
   try {
-    const res = await fetch(`${API.replace("/bot", "")}/profile`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const res = await fetch("https://api.line.me/v2/profile", { headers: { Authorization: `Bearer ${accessToken}` } });
     if (!res.ok) return undefined;
     const json = (await res.json()) as { userId?: string; displayName?: string };
     return json.userId ? { userId: json.userId, displayName: json.displayName ?? "" } : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** 表示名を取る（呼び名に使う）。取れなければ undefined */
-export async function getProfile(userId: string): Promise<{ displayName: string } | undefined> {
-  const t = token();
-  if (!t) return undefined;
-  try {
-    const res = await fetch(`${API}/profile/${encodeURIComponent(userId)}`, {
-      headers: { Authorization: `Bearer ${t}` },
-    });
-    if (!res.ok) return undefined;
-    const json = (await res.json()) as { displayName?: string };
-    return json.displayName ? { displayName: json.displayName } : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-let basicIdCache: string | undefined;
-/**
- * 公式アカウントの ID（@ から始まる）。「LINE で送ってログイン」のリンク（line.me/R/oaMessage/…）に使う。
- * 環境変数 NEXT_PUBLIC_LINE_BOT_ID があればそれ、なければ Messaging API の /info から取る。取れなければ undefined
- */
-export async function botBasicId(): Promise<string | undefined> {
-  const env = process.env.NEXT_PUBLIC_LINE_BOT_ID?.trim();
-  if (env) return env.startsWith("@") ? env : `@${env}`;
-  if (basicIdCache) return basicIdCache;
-  const t = token();
-  if (!t) return undefined;
-  try {
-    const res = await fetch(`${API}/info`, { headers: { Authorization: `Bearer ${t}` } });
-    if (!res.ok) return undefined;
-    const json = (await res.json()) as { basicId?: string };
-    basicIdCache = json.basicId;
-    return basicIdCache;
   } catch {
     return undefined;
   }

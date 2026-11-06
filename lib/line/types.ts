@@ -64,7 +64,7 @@ export type LineEvent = LineEventMeta & (
       message:
         | { id: string; type: "text"; text: string }
         | { id: string; type: "location"; title?: string; address?: string; latitude: number; longitude: number }
-        | { id: string; type: "image" | "video" | "audio" | "file" | "sticker" };
+        | { id: string; type: "image" | "video" | "audio" | "file" | "sticker"; content?: { bytes: Uint8Array; mediaType: "image/jpeg" | "image/png" | "image/webp" } };
     }
   | { type: "postback"; replyToken: string; source: LineSource; timestamp: number; postback: { data: string } }
   | { type: string; replyToken?: string; source: LineSource; timestamp: number }
