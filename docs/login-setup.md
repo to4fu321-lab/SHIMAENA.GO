@@ -6,7 +6,7 @@ spec v1.17 から、LINE は **ログイン（本人の確認）だけ** に使�
 ## 1. LINE ログインの鍵（LINE Developers）
 1. https://developers.line.biz/console/ を開き、シマエナGO の **LINE ログイン チャネル**（LIFF があったほう）を選ぶ
 2. 「チャネル基本設定」の **チャネル ID** と **チャネルシークレット** を控える
-3. 「LINE ログイン設定」→ **コールバック URL** に `https://yukikaki-karano-kaihou.vercel.app/api/auth/line/callback` を入れて保存
+3. 「LINE ログイン設定」→ **コールバック URL** に `https://shimaena-go.vercel.app/api/auth/line/callback` を入れて保存
    - 手元で試すときは `http://localhost:3000/api/auth/line/callback` も足す
 4. チャネルが「開発中」なら「公開」にする（profile と openid のスコープだけなので審査は要らない）
 5. Vercel の環境変数に入れる

@@ -8,7 +8,7 @@
 札幌では、車がスタックすると知らない人が100%助けてくれます。でも、知らない家の雪かきはしない。**誰がどこで困っているかが見えないから**です。
 シマエナGO は、雪かきをお願いしたい家を「見える」ようにし、ご近所をチームにして、10分単位の仕事として届ける雪かきゲームです。家の人は一度登録するだけ。雪の朝に頼む必要はありません。Claude の「隊長」が家ごとの人数と担当を決め、写真1枚で完了を確かめます。**ただし「ありがとう」だけは AI に書かせず、家の人の声で届けます。** チームは毎週入れ替わるので、知り合いが増えていきます。
 
-- 公開中のアプリ: https://yukikaki-karano-kaihou.vercel.app/ （登録なしで見られる [町のページ](https://yukikaki-karano-kaihou.vercel.app/public/town)）
+- 公開中のアプリ: https://shimaena-go.vercel.app/ （登録なしで見られる [町のページ](https://shimaena-go.vercel.app/public/town)）
 - デモ動画（3分・日本語）: 提出時に URL を記入。台本は [`docs/demo.md`](docs/demo.md)
 - Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作品。**11月2日〜11月8日の期間中に、このリポジトリ上でゼロから制作**しています。
 
