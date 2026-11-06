@@ -171,20 +171,38 @@ export async function runTool(name: string, input: Record<string, unknown>, p: P
   }
 }
 
-/** 隊長トークの直近のやり取り（文だけ・6件まで）。体のことばを含む文は伏せる */
-async function recentTalk(p: Participant): Promise<string> {
+/**
+ * 隊長トークの直近のやり取り（文だけ・6件まで）。体のことばを含む文は伏せる。
+ * 本人の今回の文は先に流れへ入ってから届くので、末尾が今回の文と同じなら落とす（「本人の文」で別に渡すため2回にしない）
+ */
+export function talkLines(items: { dir: string; body: unknown }[], current: string): string {
+  const lines = items.flatMap((it) => {
+    const b = it.body as { text?: unknown; altText?: unknown };
+    const text = typeof b.text === "string" ? b.text : typeof b.altText === "string" ? b.altText : "";
+    return text ? [{ dir: it.dir, text }] : [];
+  });
+  const last = lines.at(-1);
+  if (last && last.dir === "in" && last.text.trim() === current.trim()) lines.pop();
+  return lines
+    .map((l) => `${l.dir === "in" ? "本人" : "隊長"}: ${BODY_WORDS.test(l.text) ? "（体のこと）" : l.text.slice(0, 80)}`)
+    .slice(-6)
+    .join("\n");
+}
+
+async function recentTalk(p: Participant, current: string): Promise<string> {
   const key = inboxKeyOf(p);
   if (!key) return "";
   const items = (await listThread(key, 20).catch(() => [])).slice(-8);
-  return items
-    .flatMap((it) => {
-      const b = it.body as { text?: unknown; type?: unknown; altText?: unknown };
-      const text = typeof b.text === "string" ? b.text : typeof b.altText === "string" ? b.altText : "";
-      if (!text) return [];
-      return [`${it.dir === "in" ? "本人" : "隊長"}: ${BODY_WORDS.test(text) ? "（体のこと）" : text.slice(0, 80)}`];
-    })
-    .slice(-6)
-    .join("\n");
+  return talkLines(items, current);
+}
+
+/** 指示の最初に書く「この人は誰か」（役割とチームの有無）。チームのない人には家の提案をさせない（ボタンが出ないため） */
+export function whoLine(p: Pick<Participant, "role" | "teamId">): string {
+  const role = p.role === "requester" ? "お願いする側（雪かきを頼む家の人）" : "手伝う側";
+  const team = p.teamId ? getTeam(p.teamId).name : undefined;
+  return team
+    ? `この人: ${role}・${team}チーム。`
+    : `この人: ${role}・チームなし。この人には join_house（よその家へ行く）を提案しません（押せるボタンが出ません）。`;
 }
 
 const TASK =
@@ -196,9 +214,9 @@ const TASK =
 /** 隊長エージェントで答える。失敗したら例外（呼ぶ側が今までのコンシェルジュに切りかえる） */
 export async function captainAgent(p: Participant, text: string, now = new Date()): Promise<AgentResult> {
   const client = getClaudeClient();
-  const history = await recentTalk(p);
+  const history = await recentTalk(p, text);
   const messages: Anthropic.Beta.BetaMessageParam[] = [
-    { role: "user", content: `${TASK}\n\n直近のやり取り:\n${history || "（なし）"}\n\n本人の文: ${text.slice(0, 300)}` },
+    { role: "user", content: `${whoLine(p)}\n${TASK}\n\n直近のやり取り:\n${history || "（なし）"}\n\n本人の文: ${text.slice(0, 300)}` },
   ];
   const used: string[] = [];
   let answer: Answer | undefined;
