@@ -120,9 +120,9 @@ const NAMES: Record<CardStyle, [string, string, string][]> = {
 
 /** キーなしの名前（v1.23）: 話題があれば「話題 ＋ その時の事実」で組む。家とその時ごとに変わる */
 const MOCK_FORMS: ((topic: string, n: number, hm: string, prop: string) => [string, string])[] = [
-  (t, n, hm) => [`${t}、${hm}の${n}羽`, `${n} Birds at ${hm}`],
+  (t, n, hm) => [`${t}、${hm}の${n}羽`, `${n} Bird${n === 1 ? "" : "s"} at ${hm}`],
   (t, _n, hm, p) => [`${hm}、${t}の${p}`, `${t} at ${hm}`],
-  (t, n, hm) => [`${hm}にひらく${t}`, `Opened by ${n} Birds at ${hm}`],
+  (t, n, hm) => [`${hm}にひらく${t}`, `Opened by ${n} Bird${n === 1 ? "" : "s"} at ${hm}`],
   (t, _n, hm, p) => [`${p}と${t}の${hm}`, `A ${hm} Morning Path`],
 ];
 
