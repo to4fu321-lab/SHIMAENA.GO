@@ -9,7 +9,7 @@
 シマエナGO は、雪かきをお願いしたい家を「見える」ようにし、ご近所をチームにして、10分単位の仕事として届ける雪かきゲームです。家の人は一度登録するだけ。雪の朝に頼む必要はありません。Claude の「隊長」が家ごとの人数と担当を決め、写真1枚で完了を確かめます。**ただし「ありがとう」だけは AI に書かせず、家の人の声で届けます。** チームは毎週入れ替わるので、知り合いが増えていきます。
 
 - 公開中のアプリ: https://shimaena-go.vercel.app/ （登録なしで見られる [町のページ](https://shimaena-go.vercel.app/public/town)）
-- デモ動画（3分・日本語）: 提出時に URL を記入。台本は [`docs/demo.md`](docs/demo.md)。`docs/video/demo3min.mp4` は**作り置きで古い流れ**（点呼に答える版）のため提出動画ではありません（[`docs/video/README.md`](docs/video/README.md)）
+- デモ動画（3分・日本語）: 提出時に URL を記入。台本は [`docs/demo.md`](docs/demo.md)。`docs/video/demo3min.mp4` は**作り置きで古い流れ**（点呼に答える版）のため提出動画ではありません。最初の構想の記念として残しています（[`docs/video/README.md`](docs/video/README.md)）
 - Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作品。**11月2日〜11月8日の期間中に、このリポジトリ上でゼロから制作**しています。
 
 <p>
