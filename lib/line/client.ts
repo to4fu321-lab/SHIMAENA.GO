@@ -6,7 +6,8 @@
 // 入れたあと、許可した人の端末へ通知（Web Push、lib/push/send.ts）。保存の失敗は例外にせず、/admin の「問題」に残す（雪かきの流れを止めない）。
 import { appendOut } from "../inbox/store";
 import { recordProblem } from "../ops/problems";
-import { pushPayload, sendPush } from "../push/send";
+import { buildNotice } from "../push/notice";
+import { sendPush } from "../push/send";
 import type { LineMessage } from "./types";
 
 /** LINE ログインの鍵（LINE はログインだけに使う。spec v1.17） */
@@ -15,7 +16,7 @@ export function hasLineKeys(): boolean {
 }
 
 /** 1人の隊長トークに文面を入れる。入れられたら true、失敗で false（例外は投げない） */
-export async function deliver(key: string, messages: LineMessage[]): Promise<boolean> {
+export async function deliver(key: string, messages: LineMessage[], notify = true): Promise<boolean> {
   if (!key || messages.length === 0) return true;
   try {
     await appendOut(key, messages);
@@ -23,7 +24,10 @@ export async function deliver(key: string, messages: LineMessage[]): Promise<boo
     await recordProblem("inbox/deliver", e);
     return false;
   }
-  await sendPush(key, pushPayload(messages)).catch((e) => recordProblem("push/send", e)); // 通知は「おまけ」。失敗しても届けた扱い
+  if (!notify) return true;
+  // 通知は「おまけ」。失敗しても届けた扱い。種類ごとに題名・開く画面・急ぎ具合・有効期限を変える（lib/push/notice.ts）
+  const n = buildNotice(messages);
+  await sendPush(key, n.payload, n).catch((e) => recordProblem("push/send", e));
   return true;
 }
 
@@ -32,14 +36,21 @@ export async function push(to: string, messages: LineMessage[]): Promise<boolean
   return deliver(to, messages);
 }
 
+/** 一度に送る人数（点呼などで大勢に送るとき、1人ずつ待たずに少しずつ並べて送る） */
+const PARALLEL = 8;
+
 /** 同じ文面を何人かへ（同じ鍵は1回だけ）。全員に入れられたら true */
 export async function multicast(to: string[], messages: LineMessage[]): Promise<boolean> {
+  const keys = [...new Set(to)];
   let ok = true;
-  for (const key of new Set(to)) ok = (await deliver(key, messages)) && ok;
+  for (let i = 0; i < keys.length; i += PARALLEL) {
+    const r = await Promise.all(keys.slice(i, i + PARALLEL).map((k) => deliver(k, messages)));
+    ok = r.every(Boolean) && ok;
+  }
   return ok;
 }
 
-/** トークでの返事（鍵は本人の鍵） */
+/** トークでの返事（鍵は本人の鍵）。本人がいまトークで操作した返事なので、端末の通知は鳴らさない */
 export async function reply(key: string, messages: LineMessage[]): Promise<boolean> {
-  return deliver(key, messages);
+  return deliver(key, messages, false);
 }

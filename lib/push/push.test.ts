@@ -12,10 +12,10 @@ afterEach(() => vi.unstubAllEnvs());
 const sub = (endpoint: string) => ({ endpoint, keys: { p256dh: "p", auth: "a" } });
 
 describe("端末への通知", () => {
-  it("通知の中身は最初の吹き出しの文。画像だけなら「カードが届きました」。押すと隊長トーク", () => {
-    const p = pushPayload(MSG.rollcallHelper(12, "わた雪"));
-    expect(p.title).toBe("シマエナ隊長");
-    expect(p.body.length).toBeGreaterThan(0);
+  it("通知の中身: 点呼は題名「今朝の点呼」で本文は質問（あいさつは飛ばす）。画像だけなら「カードが届きました」", () => {
+    const p = pushPayload(MSG.rollcallHelper(12, "わた雪"), new Date("2026-12-14T06:30:00+09:00"));
+    expect(p.title).toContain("今朝の点呼");
+    expect(p.body.startsWith("今日、いつ手伝えそうですか？")).toBe(true);
     expect(p.url).toBe("/chat");
     expect(pushPayload([{ type: "image", originalContentUrl: "x", previewImageUrl: "x" }]).body).toBe("カードが届きました");
     expect(pushPayload([{ type: "text", text: "a".repeat(300) }]).body.length).toBeLessThanOrEqual(130);

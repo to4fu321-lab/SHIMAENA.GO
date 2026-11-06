@@ -16,7 +16,8 @@ self.addEventListener("push", (e) => {
       badge: "/api/icon/96.png?mono=1",
       data: { url: d.url || "/chat" },
       tag: d.tag,
-      renotify: Boolean(d.tag),
+      renotify: Boolean(d.tag) && !d.silent,
+      silent: Boolean(d.silent), // 夜の急がない知らせは音と振動なし
     }),
   );
 });
