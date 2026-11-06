@@ -482,4 +482,7 @@
 - T78 やったこと: `lib/inbox/`（鍵 `inboxKeyOf`・保存 `inbox_messages`・未読）。`lib/line/client.ts` の push／multicast／reply は LINE の API ではなく本人の隊長トークに入れる（名前は呼ぶ側を変えずに済むようそのまま）。返事の宛先は replyToken ではなく本人の鍵に。トークから送った写真はイベントに付けて受け取る。架空の人（h3 など）も `demo:h3` で届くので、デモの点呼・作戦がトークに並ぶ。テスト 6 ファイルを LINE の API のログではなく inbox から読む形に。
 - T78 詰まったこと: 架空の住民に lineUserId を持たせると「点呼のランダム回答」が止まるので、鍵は別（`demo:` 接頭）にした。
 - T78 次: T79 隊長トーク `/chat`（流れの表示・入力・ボタン・写真）。
+- T79 やったこと: 隊長トーク `/chat`（`lib/inbox/view.ts` で LINE の形の文面を吹き出しに直す・`lib/chat/send.ts` で本人の文／ボタン／写真を今までの Webhook と同じ処理へ・`components/ChatScreen.tsx`）。下のタブに「隊長」（未読の数）。会話の上限 3往復→30（60分）、道の通知 3回→6回。スクショ `.shots/chat.png`（390×844・375×667 とも1画面）。テスト 7 件。
+- T79 詰まったこと: TabBar がソロ・なかまのクライアント部品からも使われていて、未読の数を server component で出せなかった → server action で取る小さな部品に。Turbopack のビルドが一度 panic した → `.next` を消して通った。
+- T79 次: T80 LINE ログイン（Web）と画面の登録。
 

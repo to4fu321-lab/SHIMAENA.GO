@@ -42,7 +42,8 @@ export interface RoadReport {
 
 /** 近くの人に知らせる範囲（m）・1人1日の上限・同じ報告とみなす距離と時間 */
 export const ALERT_RADIUS_M = 300;
-export const ALERT_DAILY_CAP = 3;
+/** 1人1日に知らせる上限（spec v1.17: 3回 → 6回） */
+export const ALERT_DAILY_CAP = 6;
 export const SAME_SPOT_M = 50;
 export const SAME_SPOT_MS = 2 * 60 * 60 * 1000;
 /** 地図に出す時間 */

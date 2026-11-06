@@ -10,7 +10,8 @@ export interface ConciergeSession {
   at: string; // ISO
 }
 
-export const SESSION_TTL_MS = 10 * 60 * 1000;
+/** 1回の相談の長さ（spec v1.17: 10分 → 60分） */
+export const SESSION_TTL_MS = 60 * 60 * 1000;
 const key = (lineUserId: string) => `concierge:${lineUserId}`;
 const g = globalThis as { __shimaenaConcierge?: Map<string, ConciergeSession> };
 const mem = () => (g.__shimaenaConcierge ??= new Map());

@@ -7,8 +7,14 @@ import { BODY_WORDS, DANGER_WORDS, type ConciergeOption, type OptionId } from ".
 import { CAPTION_MAX, cleanCaption, SKIES, type Sky } from "../line/you-image";
 import { askJson, hasClaudeKey } from "./client";
 
-export const MAX_TURNS = 3;
+/** 会話の往復の上限（spec v1.17: 上限なしに。コストの保険で 30。最後の往復は必ず1つ選ぶ） */
+export const MAX_TURNS = 30;
 export const REPLY_MAX = 90;
+
+/** この往復では必ず1つすすめるか（3往復に1回と、上限の往復。聞き返すだけで終わらないように） */
+export function mustPick(turn: number): boolean {
+  return turn >= MAX_TURNS || (turn > 0 && turn % 3 === 0);
+}
 
 export const ConciergeSchema = z.object({
   /** 隊長の返事（2文まで） */
@@ -74,7 +80,7 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
   else if (/応援/.test(t)) pick = want("cheer", "online");
   else if (/手伝いたい|行ける|行きます|やりたい|助けたい|動ける/.test(t)) pick = want("my_mission", "join", "rollcall", "own_house", "patrol");
   else if (/分からない|わからない|何から|なにから|初めて|はじめて|どうすれば|何をすれば|なにをすれば|迷/.test(t)) pick = want("my_mission", "rollcall", "own_house", "patrol", "online", "tip");
-  if (!pick && input.turn >= MAX_TURNS) pick = input.options[0]?.id ?? null;
+  if (!pick && mustPick(input.turn)) pick = input.options[0]?.id ?? null;
   if (!pick) {
     return {
       reply: polite(input.role, "教えてくれてありがとうえな〜！", "教えてくださって、ありがとうございます。"),
@@ -98,7 +104,7 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
 /** Claude の答えを、そのまま使ってよい形にそろえる（候補の外・長すぎ・体の話・3往復目の未選択を直す） */
 export function tidyConcierge(a: ConciergeAnswer, input: ConciergeInput, options: ConciergeOption[]): ConciergeResult {
   let option = options.find((o) => o.id === a.pick) ?? null;
-  if (!option && input.turn >= MAX_TURNS) option = options[0] ?? null; // 3往復目は必ず1つ選んで終える
+  if (!option && mustPick(input.turn)) option = options[0] ?? null; // 3往復に1回と最後の往復は、必ず1つすすめる
   let reply = (a.reply ?? "").replace(/\s+/g, " ").trim();
   const sentences = reply.match(/[^。！？!?]+[。！？!?]?/g) ?? [reply];
   reply = sentences.slice(0, 2).join("").slice(0, REPLY_MAX);
@@ -129,7 +135,7 @@ export async function askConcierge(input: ConciergeInput, options: ConciergeOpti
     const res = await askJson({
       task:
         "あなたは参加コンシェルジュとしてのシマエナ隊長です。LINE に届いた文を読み、採点表 concierge の規則で、その人に合う参加の方法を options の中から1つ選んでください。" +
-        `いまは ${MAX_TURNS} 往復のうち ${input.turn} 往復目です。何をしたいか分からないときだけ、pick を null にして question で1つだけ聞いてください（${MAX_TURNS} 往復目は必ず選ぶ）。` +
+        `いまは ${input.turn} 往復目です（上限 ${MAX_TURNS}）。何をしたいか分からないときは、pick を null にして question で1つだけ聞いてください。相談が雑談でもよい。ただし 3往復に1回は何か1つすすめる（${MAX_TURNS} 往復目は必ず選ぶ）。` +
         "reply は2文まで。input の数字（分・点）だけを使う。caption は画像に入れるその人へのひとこと（14字まで、名前は書かない）。sky は時刻と雪に合わせる。",
       input,
       schema: ConciergeSchema,
