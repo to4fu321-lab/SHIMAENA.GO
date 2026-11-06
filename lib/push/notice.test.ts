@@ -12,7 +12,7 @@ describe("通知の種類（ボタンの中身から見分ける）", () => {
     expect(noticeKind(MSG.helpRequest("m1", 3, 1, ["偵察（10分）"])).kind).toBe("help");
     expect(noticeKind(MSG.knockRequest("m1", 3)).kind).toBe("knock");
     expect(noticeKind(MSG.nakamaInvite({ id: "n1", fromName: "ゆき", message: "一緒に", windowLabel: "今から10分" })).kind).toBe("nakama");
-    const road = noticeKind(MSG.roadAlert({ id: "ice", emoji: "🧊", label: "凍って転びやすい", sentence: "凍って", distance: 120, ago: "3分前", photoUrl: "https://p", reportId: "r1" }));
+    const road = noticeKind(MSG.roadAlert({ emoji: "🧊", label: "凍って転びやすい", sentence: "凍って", distance: 120, ago: "3分前", photoUrl: "https://p", reportId: "r1" }));
     expect(road).toEqual({ kind: "road", url: "/map?road=r1" });
     expect(noticeKind(MSG.requesterDoneNotice(["ゆき"], "m1")).kind).toBe("done");
     expect(noticeKind(MSG.familyDone(["ゆき"], "m1")).kind).toBe("done");
@@ -24,7 +24,7 @@ describe("通知の種類（ボタンの中身から見分ける）", () => {
 
 describe("通知の中身", () => {
   it("道の報告は、押すとその報告の地図を開く。同じ種類は1つにまとまる", () => {
-    const n = buildNotice(MSG.roadAlert({ id: "ice", emoji: "🧊", label: "凍って転びやすい", sentence: "凍って", distance: 120, ago: "3分前", photoUrl: "https://p", reportId: "r1" }), morning);
+    const n = buildNotice(MSG.roadAlert({ emoji: "🧊", label: "凍って転びやすい", sentence: "凍って", distance: 120, ago: "3分前", photoUrl: "https://p", reportId: "r1" }), morning);
     expect(n.payload.url).toBe("/map?road=r1");
     expect(n.payload.tag).toBe("road");
     expect(n.payload.body).toContain("約120m");
