@@ -28,6 +28,7 @@ import {
   runWeekly,
   startEmptyMorning,
   thanksDemo,
+  writeImprovementsNow,
   writeRecapNow,
   writeShareTextsNow,
 } from "./actions";
@@ -38,6 +39,10 @@ import { demoEnabled } from "@/lib/env";
 import { countOutSince } from "@/lib/inbox/store";
 import { monthStartIso } from "@/lib/jst";
 import { listProblems } from "@/lib/ops/problems";
+import { MOTIVE_LABEL } from "@/lib/concierge/profile";
+import { weekStart } from "@/lib/game/week";
+import { appToday } from "@/lib/morning/today";
+import { countByCategory, listVoicesBetween, loadLatestImprovement, VOICE_LABEL } from "@/lib/voice/store";
 import { loginAction, logoutAction } from "./auth-actions";
 import Pager, { Screen } from "@/components/Pager";
 import PagedNodes from "./PagedNodes";
@@ -115,6 +120,10 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
     return <Login failed={login === "failed"} unconfigured={gate === "unconfigured"} />;
   }
   const [s, db, roster, problems, notices] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), countOutSince(monthStartIso()).catch(() => 0)]);
+  // 声と改善（spec v1.17）: 今週の声の数と、いちばん新しい提案
+  const today = appToday(s);
+  const [voices, improvement] = await Promise.all([listVoicesBetween(weekStart(today), today).catch(() => []), loadLatestImprovement().catch(() => undefined)]);
+  const voiceCounts = countByCategory(voices);
   const names = makeNameMasker(roster.participants);
   const m = s.morning;
   const totals = teamTotals(m);
@@ -254,8 +263,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           { key: "flow", label: "流れ" },
           { key: "more", label: "ほか" },
           { key: "view", label: "様子" },
-          { key: "houses", label: "家ごと" },
+          { key: "houses", label: "家" },
           { key: "ops", label: "運営", badge: problems.length + (db.kind !== "none" && db.kind !== "ready" ? 1 : 0) },
+          { key: "voice", label: "声", badge: voices.length },
         ]}
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -368,6 +378,45 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
               </form>
             )}
           </div>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <section className={`${card} space-y-1`} aria-label="今週の声">
+            <h2 className="font-bold">今週の声（{voices.length} 件）</h2>
+            <p className="text-sm">
+              {(Object.keys(VOICE_LABEL) as (keyof typeof VOICE_LABEL)[]).map((k) => `${VOICE_LABEL[k]} ${voiceCounts[k]}`).join(" ・ ")}
+            </p>
+            <p className="text-sm text-ink-soft">相談から Claude が読み取った「求められていること」の要約だけ（原文・名前は残しません）。</p>
+          </section>
+          <PagedNodes
+            nodes={[...voices].reverse().map((v) => (
+              <p key={v.id} className="rounded-2xl bg-card px-3 py-2 text-sm ring-1 ring-ink/10">
+                <b>{VOICE_LABEL[v.category]}</b> {v.summary}
+                {v.motives.length > 0 && <span className="text-ink-soft">（{v.motives.map((m) => MOTIVE_LABEL[m]).join("・")}）</span>}
+              </p>
+            ))}
+            per={3}
+            label="声"
+            empty={<p className="text-sm text-ink-soft">今週はまだ声がありません。隊長トークで相談があると、ここにたまります。</p>}
+          />
+          <section className={`${card} space-y-1`} aria-label="改善の提案">
+            <h2 className="font-bold">
+              改善の提案{improvement ? `（${improvement.from}〜${improvement.to}・${improvement.byClaude ? "Claude" : "定型"}）` : ""}
+            </h2>
+            {improvement && improvement.proposals.length > 0 ? (
+              <ol className="list-decimal space-y-1 pl-5 text-sm">
+                {improvement.proposals.slice(0, 3).map((p, i) => (
+                  <li key={i}>
+                    <b>{p.title}</b>（{p.voices} 件・{p.priority}）: {p.change} <span className="text-ink-soft">→ {p.where}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-sm text-ink-soft">まだありません。日曜の夜に自動で書きます（下のボタンでも）。採用は本人が決めます。</p>
+            )}
+            <form action={writeImprovementsNow}>
+              <button className={link}>今週の提案を書く（Claude）</button>
+            </form>
+          </section>
         </div>
       </Pager>
     </Screen>

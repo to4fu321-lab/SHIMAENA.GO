@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { BODY_WORDS, DANGER_WORDS, type ConciergeOption, type OptionId } from "../concierge/options";
 import { MOTIVES, motivesFromText, SUMMARY_MAX, tidyMotives, type Motive } from "../concierge/profile";
+import { isVoiceCategory, VOICE_CATEGORIES, VOICE_LABEL, type VoiceCategory } from "../voice/store";
 import { CAPTION_MAX, cleanCaption, SKIES, type Sky } from "../line/you-image";
 import { askJson, hasClaudeKey } from "./client";
 
@@ -34,6 +35,8 @@ export const ConciergeSchema = z.object({
   why: z.string().nullable(),
   /** その人が求めていることの要約（40字まで。名前・体のこと・住所は書かない）。読み取れなければ空 */
   summary: z.string(),
+  /** この文に「求められていること」があれば1件（spec v1.17 声を貯める）。category: feature=機能の要望・confusion=分からない所・trouble=困りごと・praise=うれしい声・none=なし。text は要約40字（原文を写さない） */
+  voice: z.object({ category: z.enum([...VOICE_CATEGORIES, "none"]), text: z.string() }),
 });
 export type ConciergeAnswer = z.infer<typeof ConciergeSchema>;
 
@@ -72,6 +75,8 @@ export interface ConciergeResult {
   why?: string;
   /** 求めていることの要約（空なら前のまま） */
   summary: string;
+  /** 貯める声（なければ undefined） */
+  voice?: { category: VoiceCategory; text: string };
 }
 
 const polite = (role: ConciergeInput["role"], helper: string, requester: string) => (role === "helper" ? helper : requester);
@@ -112,6 +117,7 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
       motives,
       why: null,
       summary: "",
+      voice: mockVoice(input.text),
     };
   }
   const o = input.options.find((x) => x.id === pick)!;
@@ -126,7 +132,23 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
     motives,
     why,
     summary: "",
+    voice: mockVoice(input.text),
   };
+}
+
+/** 言葉の一覧で「声」の種類を読む。要約は原文を写さず、種類の名前だけ */
+export function mockVoice(text: string): ConciergeAnswer["voice"] {
+  const t = text.replace(/\s+/g, "");
+  const category: VoiceCategory | "none" = /ほしい|欲しい|あったら|できたら|してほしい|追加|機能/.test(t)
+    ? "feature"
+    : /分からない|わからない|どこ|どうやって|やり方|何をすれば|なにをすれば|何から|使い方/.test(t)
+      ? "confusion"
+      : /できない|困|失敗|うまくいかない|動かない|押せない|届かない|出ない|にならない|されない|こない|消えた|止まった/.test(t)
+        ? "trouble"
+        : /ありがとう|楽しい|たのしい|うれしい|嬉しい|助かった|よかった/.test(t)
+          ? "praise"
+          : "none";
+  return { category, text: category === "none" ? "" : `${VOICE_LABEL[category]}（言葉の一覧で分類）` };
 }
 
 const MOTIVE_WHY: Record<Motive, string> = { connect: "人とつながりたい気持ち", exercise: "体を動かしたい気持ち", community: "町の役に立ちたい気持ち", game: "ゲームとして楽しみたい気持ち" };
@@ -147,7 +169,9 @@ export function tidyConcierge(a: ConciergeAnswer, input: ConciergeInput, options
   if (BODY_WORDS.test(why)) why = "";
   let summary = (a.summary ?? "").replace(/\s+/g, " ").trim().slice(0, SUMMARY_MAX);
   if (BODY_WORDS.test(summary)) summary = ""; // 体のことは残さない
-  return { reply, option, question, caption, sky, motives, ...(why ? { why } : {}), summary };
+  const vt = (a.voice?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
+  const voice = a.voice && isVoiceCategory(a.voice.category) && vt && !BODY_WORDS.test(vt) ? { category: a.voice.category, text: vt } : undefined;
+  return { reply, option, question, caption, sky, motives, ...(why ? { why } : {}), summary, ...(voice ? { voice } : {}) };
 }
 
 /** 体・危ない作業のことばには、Claude を呼ばずに決まった返事（体調は判断しない） */
@@ -170,6 +194,7 @@ export async function askConcierge(input: ConciergeInput, options: ConciergeOpti
     const res = await askJson({
       task:
         "あなたは参加コンシェルジュとしてのシマエナ隊長です。隊長トークに届いた文を読み、採点表 concierge の規則で、その人に合う参加の方法を options の中から1つ選んでください。" +
+        "voice: この文に「求められていること」（機能の要望・分からない所・困りごと・うれしい声）があれば category と要約 text（40字、原文を写さない）。なければ none。" +
         "まず、その人が何を求めているか（motives: connect=つながり・exercise=運動・community=地域貢献・game=ゲーム。複数可、読み取れなければ空）を読み取り、profile（これまでの方向と要約）も合わせて、options の motives が合うものを選びます。why はすすめる理由を1文（40字）。summary は求めていることの要約（40字。名前・体のこと・住所は書かない）。" +
         `いまは ${input.turn} 往復目です（上限 ${MAX_TURNS}）。何をしたいか分からないときは、pick を null にして question で1つだけ聞いてください。相談が雑談でもよい。ただし 3往復に1回は何か1つすすめる（${MAX_TURNS} 往復目は必ず選ぶ）。` +
         "reply は2文まで。input の数字（分・点）だけを使う。caption は画像に入れるその人へのひとこと（14字まで、名前は書かない）。sky は時刻と雪に合わせる。",

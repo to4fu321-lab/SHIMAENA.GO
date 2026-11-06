@@ -16,6 +16,7 @@ import type { Participant } from "../types";
 import { baseUrl } from "../url";
 import { conciergeAsk, conciergePick } from "./messages";
 import { BODY_WORDS, buildOptions, type ConciergeContext } from "./options";
+import { addVoice } from "../voice/store";
 import { loadProfile, updateProfile } from "./profile";
 import { clearSession, loadSession, saveSession } from "./session";
 
@@ -59,6 +60,7 @@ export async function concierge(lineUserId: string, text: string, now = new Date
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p || (p.role !== "helper" && p.role !== "requester")) return null;
   const record = await loadMorning();
+  const today = appToday(record, now);
   const ctx = await conciergeContext(p, record, now);
   const options = buildOptions(ctx);
   const session = await loadSession(lineUserId, now);
@@ -80,6 +82,8 @@ export async function concierge(lineUserId: string, text: string, now = new Date
   const res = await askConcierge(input, options);
   // その人の方向と要約を残す（spec v1.17。新しく読み取れたときだけ入れ替える。体のことばの文からは残さない）
   if (!res.guarded && (res.motives.length > 0 || res.summary)) await updateProfile(p.id, { motives: res.motives, summary: res.summary }, now).catch(() => undefined);
+  // 声を貯める（spec v1.17）: 求められていることが読み取れたときだけ1件（原文は残さない）
+  if (!res.guarded && res.voice) await addVoice({ participantId: p.id, date: today, category: res.voice.category, summary: res.voice.text, motives: res.motives, ...(res.option ? { picked: res.option.id } : {}) }, now).catch(() => undefined);
 
   if (res.option) {
     await clearSession(lineUserId);

@@ -104,14 +104,15 @@ describe("選び方（キーなしの言葉の一覧）と点検", () => {
     const c = ctx();
     const opts = buildOptions(c);
     const r = tidyConcierge(
-      { reply: "屋根に上りましょう。とても大事です。三文目です。", pick: "roof", question: null, caption: "<b>がんばれ</b>12345", sky: "dawn", motives: [], why: null, summary: "" },
+      { reply: "屋根に上りましょう。とても大事です。三文目です。", pick: "roof", question: null, caption: "<b>がんばれ</b>12345", sky: "dawn", motives: [], why: null, summary: "", voice: { category: "none", text: "" } },
       input("何すれば", c),
       opts,
     );
     expect(r.option).toBeNull();
     expect(r.reply).toBe("屋根に上りましょう。とても大事です。");
     expect(r.caption).not.toMatch(/[<>]|\d{3}/);
-    const body = tidyConcierge({ reply: "腰が痛いなら休みましょう。", pick: "online", question: null, caption: "x", sky: "dawn", motives: ["exercise", "bad" as never], why: "腰のため", summary: "腰が痛い人" }, input("a", c), opts);
+    const body = tidyConcierge({ reply: "腰が痛いなら休みましょう。", pick: "online", question: null, caption: "x", sky: "dawn", motives: ["exercise", "bad" as never], why: "腰のため", summary: "腰が痛い人", voice: { category: "trouble", text: "腰が痛くてできない" } }, input("a", c), opts);
+    expect(body.voice).toBeUndefined(); // 体のことの声は貯めない
     expect(body.motives).toEqual(["exercise"]);
     expect(body.why).toBeUndefined(); // 体のことばの理由は出さない
     expect(body.summary).toBe(""); // 体のことは残さない

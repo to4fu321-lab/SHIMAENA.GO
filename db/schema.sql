@@ -227,6 +227,19 @@ create table if not exists participant_profiles (
   updated_at timestamptz not null default now()
 );
 
+-- 声（spec v1.17）: 相談から読み取った「求められていること」。種類・要約40字・方向だけ（原文は残さない）
+create table if not exists voice_logs (
+  id text primary key,
+  participant_id text not null,
+  date text not null,
+  category text not null,          -- feature / confusion / trouble / praise
+  summary text not null,
+  motives jsonb not null default '[]'::jsonb,
+  picked text,
+  created_at timestamptz not null default now()
+);
+create index if not exists voice_logs_date on voice_logs (date);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

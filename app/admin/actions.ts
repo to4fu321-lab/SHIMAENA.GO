@@ -30,6 +30,7 @@ import { progress } from "@/lib/morning/view";
 import { appToday } from "@/lib/morning/today";
 import { recordHouseFeathers } from "@/lib/solo/ops";
 import { refreshShareTexts } from "@/lib/sns/refresh";
+import { writeImprovements } from "@/lib/voice/improve";
 
 /** 管理の操作の入口: 合言葉のログインを確かめ、今朝の状態の鍵を取ってから動かす */
 async function guarded<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -238,6 +239,19 @@ export async function prepareDatabase() {
     await update((s) => {
       s.log.push(`DB を準備しました（SQL ${statements} 文・参加者 ${seeded.participants} 人・拠点 ${seeded.bases} 軒）`);
     });
+  });
+}
+
+/** 1週間の声から、改善の提案を書く（spec v1.17。日曜の自動と同じ） */
+export async function writeImprovementsNow() {
+  return guarded("writeImprovements", async () => {
+    try {
+      const imp = await writeImprovements();
+      await update((s) => void s.log.push(`改善の提案を書きました（声 ${imp.total} 件 → 提案 ${imp.proposals.length} 件${imp.byClaude ? "・Claude" : "・定型"}）`));
+    } catch (e) {
+      await update((s) => void s.log.push(`改善の提案に失敗: ${e instanceof Error ? e.message : String(e)}`));
+    }
+    revalidatePath("/admin");
   });
 }
 

@@ -52,6 +52,7 @@ import { emojiGrid } from "../share";
 import { listSoloScores } from "../solo/team-points";
 import { recordHouseFeathers } from "../solo/ops";
 import { refreshShareTextsLater } from "../sns/refresh";
+import { writeImprovements } from "../voice/improve";
 import { appToday } from "./today";
 import {
   applyLateAnswer,
@@ -91,7 +92,10 @@ const ok =   await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowNa
 /** 前夜 21:00 の cron: Open-Meteo を見て、基準を超えていたら予告する */
 export async function checkForecastAndAnnounce(now = new Date()): Promise<{ forecastCm: number; announced: boolean; date: string }> {
   // 日曜の夜は、先に「今週の群れ」のまとめ（実況・称号・シャッフル）
-  if (new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay() === 0) await weeklyRecap(now);
+  if (new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay() === 0) {
+    await weeklyRecap(now);
+    await writeImprovements(now).catch((e) => recordProblem("voice/improve", e)); // 1週間の声 → 改善の提案（spec v1.17）
+  }
   const f = await forecastSnowUntilMorning(TOWN.center, now);
   const threshold = (await loadSettings()).snowThresholdCm; // 既定 SNOW_THRESHOLD_CM。/admin/settings で変えられる
   if (f.snowfallCm < threshold) {
