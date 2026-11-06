@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TOWN } from "../town";
 import type { HelperAnswer, RequesterAnswer } from "../types";
-import { AnnounceSchema, mockAnnounce, mockSnowName, SNOW_NAME_MAX, trimSnowName } from "./announce";
+import { AnnounceSchema, mockAnnounce, mockSnowName, SNOW_NAME_MAX, SNOW_NAMES, snowNameHints, trimSnowName } from "./announce";
 import { type CommanderInput, mockPlan, PlanSchema, REASON_MAX, sanitizePlan } from "./commander";
 import { judgeLevel, LevelResultSchema, mockLevel } from "./level";
 
@@ -52,6 +52,18 @@ describe("前夜の予告と雪の名前（モック）", () => {
   it("降雪量で名前が変わり、長すぎる名前は切り詰める", () => {
     expect(mockSnowName(3)).not.toBe(mockSnowName(12));
     expect(mockSnowName(12)).not.toBe(mockSnowName(30));
+    // v1.30: 白いもので、毎朝ちがう名前。どれも10字まで、「◯◯雪の」の形は使わない
+    for (const n of Object.values(SNOW_NAMES).flat()) {
+      expect(n.length).toBeLessThanOrEqual(SNOW_NAME_MAX);
+      expect(n).not.toMatch(/雪の/);
+    }
+    const week = new Set(["2026-12-14", "2026-12-15", "2026-12-16", "2026-12-17", "2026-12-18", "2026-12-19", "2026-12-20"].map((d) => mockSnowName(12, d)));
+    expect(week.size).toBeGreaterThanOrEqual(4);
+    expect(SNOW_NAMES.medium).toContain(mockSnowName(12, "2026-12-14"));
+    expect(SNOW_NAMES.huge).toContain(mockSnowName(40, "2026-12-14"));
+    const hints = snowNameHints(12, "2026-12-14");
+    expect(hints).toHaveLength(6);
+    expect(hints.slice(0, 4).every((h) => SNOW_NAMES.medium.includes(h))).toBe(true);
     expect(trimSnowName("『とてもながいなまえのゆきぼす』", 12)).toHaveLength(SNOW_NAME_MAX);
     expect(trimSnowName("", 12)).toBe(mockSnowName(12));
   });

@@ -21,7 +21,7 @@ describe("絵文字グリッド（spec v1.1）", () => {
   it("先頭に町内名と日付と雪、最後に軒数とタグ。氏名は入らない", () => {
     const text = emojiGrid(cells(), DEMO_MORNING);
     const lines = text.split("\n");
-    expect(lines[0]).toBe("シマエナGO しらかば町内 12/14 雪12cm『ぼた雪のドンブリ』");
+    expect(lines[0]).toBe("シマエナGO しらかば町内 12/14 雪12cm『もっちり大福』");
     expect(lines.at(-1)).toBe("#シマエナGO");
     expect(lines.at(-2)).toBe("3/7軒 あと4軒 ・ 混成1");
     const squares = lines.slice(1, -2).join("");

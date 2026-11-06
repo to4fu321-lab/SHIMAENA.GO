@@ -5,7 +5,7 @@ describe("今朝の雪の歌の保存（キーなし・メモリ）", () => {
   it("今朝の状態から材料を集め、1日1曲を残す（作り直しもできる）", async () => {
     const f = await songFacts("2026-12-14");
     expect(f.snowCm).toBe(12); // 見本の朝（予報 12cm）
-    expect(f.snowName).toBe("ぼた雪のドンブリ");
+    expect(f.snowName).toBe("もっちり大福");
     expect(await loadSnowSong("2026-12-14")).toBeUndefined();
     const a = await warmSnowSong("2026-12-14");
     expect(a.by).toBe("program");

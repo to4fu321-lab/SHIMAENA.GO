@@ -80,7 +80,7 @@ async function archiveIfReal(current: MorningRecord, nextDate: string): Promise<
 export async function announce(opts: { date: string; forecastCm: number; tempMinC?: number; windMaxMs?: number; depthCm?: number }): Promise<MorningRecord> {
   const current = await loadMorning();
   await archiveIfReal(current, opts.date);
-  const a = await announceText({ date: opts.date, forecastCm: opts.forecastCm });
+  const a = await announceText({ date: opts.date, forecastCm: opts.forecastCm, seed: `${opts.date}|${Date.now()}` }); // 同じ日の練習でも毎回ちがう名前に（v1.30）
   const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
   const ids = lineIds(roster.participants);

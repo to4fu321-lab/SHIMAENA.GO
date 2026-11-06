@@ -191,7 +191,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
 
   /* --- 隊長トークの会話（押したボタンから組み立てる。spec v1.20: 10cm 積もった朝 6:30 に自動で届く） --- */
   const rollcall: ChatMsg[] = [
-    { id: "h1", from: "bot", text: "おはようだしま〜！☃️\n今朝は雪12cm、相手は『ぼた雪のドンブリ』です。" },
+    { id: "h1", from: "bot", text: "おはようだしま〜！☃️\n今朝は雪12cm、相手は『もっちり大福』です。" },
     { id: "h2", from: "bot", text: "助けてほしい家が 3軒 あります。\n6時〜19時なら、いつでも10分から。" },
   ];
   if (when !== null) {
