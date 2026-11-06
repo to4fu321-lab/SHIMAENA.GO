@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>撮影ステージ</title>
+<!--
+  デモ動画の撮影用: 仮想スマホを横に並べて、画面収録で1度に撮る。
+  使い方: このファイルをパソコンの Chrome で開く（ダブルクリック）。各スマホの上のボタンで画面を切りかえる。
+  ?as=h1 のような架空の人の画面なので、ログインは要らない（公開版は DEMO_MODE が on のとき）。
+-->
+<style>
+  :root { --bg: #29445C; --ink: #F4F7FA; --lamp: #D9825B; --card: #F5EEE5; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1b2d3d; } }
+  :root[data-theme="dark"] { --bg: #1b2d3d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; }
+  header h1 { font-size: 18px; margin: 0; }
+  header input { width: 320px; max-width: 100%; font-size: 14px; padding: 4px 8px; border-radius: 6px; border: 0; }
+  header label { font-size: 14px; }
+  .hide-ui header, .hide-ui .bar { display: none; }
+  .stage { display: flex; gap: 20px; justify-content: center; align-items: flex-start; padding: 8px 16px 16px; flex-wrap: wrap; }
+  .phone { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .name { font-size: 18px; font-weight: bold; }
+  .bar { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 390px; }
+  .bar button { font-size: 13px; padding: 4px 8px; border-radius: 999px; border: 0; background: var(--card); color: #29445C; cursor: pointer; }
+  .bar button.on { background: var(--lamp); color: #fff; }
+  .frame { box-sizing: content-box; width: calc(390px * var(--s)); height: calc(844px * var(--s)); border-radius: calc(36px * var(--s)); overflow: hidden; border: 6px solid #0d1620; background: #fff; }
+  iframe { width: 390px; height: 844px; border: 0; transform: scale(var(--s)); transform-origin: 0 0; }
+</style>
+</head>
+<body style="--s: 0.9">
+<header>
+  <h1>🎬 撮影ステージ</h1>
+  <label>アプリの URL <input id="base" value="https://yukikaki-karano-kaihou.vercel.app"></label>
+  <label>大きさ <input id="scale" type="range" min="0.6" max="1" step="0.05" value="0.9" style="width:120px"></label>
+  <button id="hide">ボタンを隠す（撮影用。Esc で戻す）</button>
+</header>
+<div class="stage" id="stage"></div>
+<script>
+  // 4台: A・B は別のチームの手伝う人、C はお願いする家の人、右端は町の地図
+  const PHONES = [
+    { name: "A 田中さん（手伝う・サルビア）", as: "h1", start: "/chat" },
+    { name: "B そうたさん（手伝う・マリーゴールド）", as: "h11", start: "/chat" },
+    { name: "C 佐藤さん（お願いする家）", as: "r1", start: "/chat" },
+    { name: "町の地図", as: "h1", start: "/map" },
+  ];
+  const PAGES = [["隊長トーク", "/chat"], ["地図", "/map"], ["ホーム", "/"], ["お願いする", "/ask"], ["声のありがとう", "/thanks/m1"], ["カード", "/cards"], ["つなぐ", "/connect"]];
+  const stage = document.getElementById("stage");
+  const base = () => document.getElementById("base").value.replace(/\/$/, "");
+  const url = (p, path) => `${base()}${path}${path.includes("?") ? "&" : "?"}as=${p.as}`;
+  PHONES.forEach((p) => {
+    const el = document.createElement("div");
+    el.className = "phone";
+    el.innerHTML = `<div class="name">${p.name}</div><div class="bar"></div><div class="frame"><iframe allow="microphone; camera; autoplay; clipboard-write"></iframe></div>`;
+    const frame = el.querySelector("iframe");
+    const bar = el.querySelector(".bar");
+    const go = (path) => {
+      frame.src = url(p, path);
+      bar.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.path === path));
+    };
+    PAGES.forEach(([label, path]) => {
+      const b = document.createElement("button");
+      b.textContent = label;
+      b.dataset.path = path;
+      b.onclick = () => go(path);
+      bar.append(b);
+    });
+    p.go = go;
+    go(p.start);
+    stage.append(el);
+  });
+  document.getElementById("base").addEventListener("change", () => PHONES.forEach((p) => p.go(p.start)));
+  document.getElementById("scale").addEventListener("input", (e) => document.body.style.setProperty("--s", e.target.value));
+  document.getElementById("hide").onclick = () => document.body.classList.add("hide-ui");
+  addEventListener("keydown", (e) => e.key === "Escape" && document.body.classList.remove("hide-ui"));
+</script>
+</body>
+</html>
