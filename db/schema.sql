@@ -208,6 +208,17 @@ create table if not exists inbox_messages (
 );
 create index if not exists inbox_messages_key on inbox_messages (inbox_key, at);
 
+-- 端末への通知（Web Push、spec v1.17）の購読。1つの端末＝1行。鍵は inbox_messages と同じ
+create table if not exists push_subscriptions (
+  endpoint text primary key,
+  inbox_key text not null,
+  p256dh text not null,
+  auth text not null,
+  user_agent text,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_key on push_subscriptions (inbox_key);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

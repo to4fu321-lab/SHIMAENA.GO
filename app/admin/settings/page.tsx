@@ -10,6 +10,7 @@ import { demoEnabled } from "@/lib/env";
 import { countOutSince } from "@/lib/inbox/store";
 import { hasLoginKeys } from "@/lib/auth/line-login";
 import { hasPushKeys } from "@/lib/push/keys";
+import { countSubscriptions } from "@/lib/push/store";
 import { monthStartIso } from "@/lib/jst";
 import { THRESHOLD_RANGE, loadSettings } from "@/lib/ops/settings";
 import { manualStop, stormStatus } from "@/lib/storm";
@@ -83,7 +84,7 @@ async function SettingsTab() {
 }
 
 async function StatusTab() {
-  const [db, notices] = await Promise.all([dbStatus(), countOutSince(monthStartIso()).catch(() => 0)]);
+  const [db, notices, subs] = await Promise.all([dbStatus(), countOutSince(monthStartIso()).catch(() => 0), countSubscriptions().catch(() => ({ devices: 0, people: 0 }))]);
   return (
     <>
       <section className={box}>
@@ -93,7 +94,7 @@ async function StatusTab() {
             LINE ログイン: <b>{hasLoginKeys() ? "設定済み" : "未設定（docs/login-setup.md）"}</b>
           </li>
           <li>
-            端末への通知（Web Push）: <b>{hasPushKeys() ? "設定済み" : "未設定（隊長トークにたまるだけ）"}</b>
+            端末への通知（Web Push）: <b>{hasPushKeys() ? "設定済み" : "未設定（隊長トークにたまるだけ）"}</b> ・ オンにした人 <b className="tabular-nums">{subs.people}</b> 人（{subs.devices} 台）
           </li>
           <li>
             今月、隊長トークに届けた文面: <b className="tabular-nums">{notices}</b> 件（上限なし）

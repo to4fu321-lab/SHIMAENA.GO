@@ -259,7 +259,7 @@ export default function StartScreen({ status, name, center, next }: { status: St
                 <p className="text-lg leading-snug">連携コード</p>
                 <p className="rounded-2xl bg-card py-3 text-center text-4xl font-bold tracking-widest ring-2 ring-lamp">{linkCode}</p>
                 <p className="text-base leading-snug">ご本人がこのアプリに LINE でログインして、この6桁を入れると、ご本人にも点呼が届きます。ほかのご家族も同じ番号で知らせを受け取れます。番号は控えておいてください。</p>
-                <p className="text-base leading-snug">雪かきが終わると、あなたにも知らせが届きます（隊長トーク）。</p>
+                <p className="text-base leading-snug">雪かきが終わると、あなたにも知らせが届きます（隊長トークと通知。次の画面で「通知を受け取る」を押してください）。</p>
               </>
             ) : (
               <p className="text-xl font-bold leading-snug">{doneText ?? "できました。"}</p>

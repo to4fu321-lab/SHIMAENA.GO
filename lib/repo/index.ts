@@ -19,6 +19,8 @@ export interface Repo {
   addFamilyLink(link: FamilyLink): Promise<void>;
   findFamilyLinkByCode(code: string): Promise<FamilyLink | undefined>;
   listFamilyLinksByRequester(requesterId: string): Promise<FamilyLink[]>;
+  /** その家族（LINE のアカウント ID）が受け取る家の紐づけ */
+  listFamilyLinksByFamily(familyLineUserId: string): Promise<FamilyLink[]>;
   getSession(lineUserId: string): Promise<RegSession | undefined>;
   setSession(lineUserId: string, session: RegSession | null): Promise<void>;
   // カード（表面・裏面の SVG を持つ）
@@ -110,6 +112,9 @@ export const memoryRepo: Repo = {
   },
   async listFamilyLinksByRequester(requesterId) {
     return mem().links.filter((l) => l.requesterId === requesterId);
+  },
+  async listFamilyLinksByFamily(familyLineUserId) {
+    return mem().links.filter((l) => l.familyLineUserId === familyLineUserId);
   },
   async getSession(lineUserId) {
     return mem().sessions.get(lineUserId);
@@ -453,6 +458,13 @@ export const dbRepo: Repo = {
     const rows = await query<{ family_line_user_id: string; requester_id: string; link_code: string }>(
       "select family_line_user_id, requester_id, link_code from family_links where requester_id = $1",
       [requesterId],
+    );
+    return rows.map((r) => ({ familyLineUserId: r.family_line_user_id, requesterId: r.requester_id, linkCode: r.link_code }));
+  },
+  async listFamilyLinksByFamily(familyLineUserId) {
+    const rows = await query<{ family_line_user_id: string; requester_id: string; link_code: string }>(
+      "select family_line_user_id, requester_id, link_code from family_links where family_line_user_id = $1",
+      [familyLineUserId],
     );
     return rows.map((r) => ({ familyLineUserId: r.family_line_user_id, requesterId: r.requester_id, linkCode: r.link_code }));
   },

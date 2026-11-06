@@ -1,0 +1,16 @@
+{
+  "name": "シマエナGO",
+  "short_name": "シマエナGO",
+  "description": "寒い冬は、くっついて乗り切る。雪の朝に点呼が届き、町内の3チームでひとり暮らしの家の雪をどける雪かきゲーム。",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F4F7FA",
+  "theme_color": "#D9825B",
+  "icons": [
+    { "src": "/api/icon/192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/api/icon/512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/api/icon/512.png?maskable=1", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -8,7 +8,11 @@ import Mascot from "@/components/Mascot";
 import { Screen } from "@/components/Pager";
 import StormBanner from "@/components/StormBanner";
 import TabBar from "@/components/TabBar";
+import { PENDING_COOKIE, readPending } from "@/lib/auth/pending";
+import PushSetup from "@/components/PushSetup";
 import { inboxKeyOf } from "@/lib/inbox/key";
+import { publicVapidKey } from "@/lib/push/keys";
+import { repo } from "@/lib/repo";
 import { listThread, markRead } from "@/lib/inbox/store";
 import { toBubbles } from "@/lib/inbox/view";
 import { onTeam } from "@/lib/member";
@@ -29,7 +33,10 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
-  const key = inboxKeyOf(me);
+  // 家族の代わりに登録した人は参加者ではないが、「終わりました」などが届く（読むだけ。文は送れない）
+  const pending = !me ? readPending(cookieStore.get(PENDING_COOKIE)?.value) : undefined;
+  const family = pending && (await repo().listFamilyLinksByFamily(pending.lineUserId).catch(() => [])).length > 0 ? pending.lineUserId : undefined;
+  const key = inboxKeyOf(me) ?? family;
   const q = demoAs ? `?as=${demoAs}` : "";
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
 
@@ -45,7 +52,7 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
     </header>
   );
 
-  if (!me || !key) {
+  if (!key) {
     return (
       <Screen header={header} footer={<TabBar active="chat" q={q} />}>
         <section className="m-4 space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
@@ -65,9 +72,15 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
   const items = await listThread(key);
   await markRead(key);
   const bubbles = toBubbles(items, demoAs);
+  const viewer = me?.id ?? "";
   return (
     <Screen header={<><StormBanner />{header}</>} footer={<TabBar active="chat" q={q} />}>
-      <ChatScreen viewerId={me.id} initial={bubbles} teamId={myTeam?.team.id} />
+      {!demoAs && (
+        <div className="shrink-0 px-3 pt-2">
+          <PushSetup viewerId={viewer} publicKey={publicVapidKey()} />
+        </div>
+      )}
+      <ChatScreen viewerId={viewer} initial={bubbles} teamId={myTeam?.team.id} readOnly={!me} />
     </Screen>
   );
 }

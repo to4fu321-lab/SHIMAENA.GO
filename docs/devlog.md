@@ -488,4 +488,7 @@
 - T80 やったこと: 「LINE でログイン」（Web の OAuth: `/api/auth/line/start` → LINE の許可画面 → `/api/auth/line/callback`。id_token は LINE に確かめてもらう）。`/login`。`/start` は LIFF なしの画面の登録（手伝う／手伝ってほしい／家族の代わりに → 家の場所 → 2問）、連携コードも画面で。登録前の印（署名つき cookie）。署名の鍵は `AUTH_SECRET`（`lib/auth/secret.ts`）。LIFF・LiffBridge・LineLoginButton・「LINE で送ってログイン」・Webhook・リッチメニュー・`@line/liff`・LINE の通数を外した。/admin/settings は「設定／状態」の2タブ。`docs/login-setup.md`。スクショ `.shots/login.png`・`start-*.png`（2サイズとも1画面）。
 - T80 詰まったこと: 「家族の代わりに登録」した家族本人は参加者ではないので、隊長トークは開けない（T81 で、家族の鍵で読めるようにする）。
 - T80 次: T81 通知（Web Push と PWA）。
+- T81 やったこと: `web-push`（鍵 VAPID_*）。`public/manifest.webmanifest`・`public/sw.js`（通知を受けて隊長トークを開く）・アイコンは `/api/icon/<size>.png`（シマエナガの絵から作る）。表 `push_subscriptions`、送り口（`lib/line/client.ts`）が隊長トークに入れたあと `lib/push/send.ts` で端末へ（鍵なし・一時停止・購読なしは送らない。届かない端末は消す）。`components/PushSetup.tsx`: なぜ要るかの1枚 → 許可、iPhone は「ホーム画面に追加」の3ステップ、「あとで」は3日出さない。家族の代わりに登録した人も隊長トークを読める（読むだけ）。/admin/settings に通知をオンにした人数。テスト3件。
+- T81 詰まったこと: Playwright で navigator.serviceWorker を消して iPhone の Safari をまねたら、登録部品が例外で画面ごと落ちた → serviceWorker がない端末でも壊れないよう守った（実機の iPhone でも同じ守りが効く）。
+- T81 次: T82 自由な相談とマッチング（4つの方向）。
 

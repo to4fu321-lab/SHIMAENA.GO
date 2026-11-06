@@ -3,9 +3,10 @@
 //   push(鍵, 文面)        … 1人へ。鍵は lib/inbox/key.ts の inboxKeyOf（本物の人は LINE のアカウント ID、架空の人は demo:<ID>）
 //   multicast(鍵[], 文面) … 何人かへ同じ文面
 //   reply(鍵, 文面)       … トークで本人が送った文・ボタンへの返事（鍵は本人の鍵。LINE の replyToken ではない）
-// 届けた印の通知（Web Push）は T81 でここから送る。保存の失敗は例外にせず、/admin の「問題」に残す（雪かきの流れを止めない）。
+// 入れたあと、許可した人の端末へ通知（Web Push、lib/push/send.ts）。保存の失敗は例外にせず、/admin の「問題」に残す（雪かきの流れを止めない）。
 import { appendOut } from "../inbox/store";
 import { recordProblem } from "../ops/problems";
+import { pushPayload, sendPush } from "../push/send";
 import type { LineMessage } from "./types";
 
 /** LINE ログインの鍵（LINE はログインだけに使う。spec v1.17） */
@@ -18,11 +19,12 @@ export async function deliver(key: string, messages: LineMessage[]): Promise<boo
   if (!key || messages.length === 0) return true;
   try {
     await appendOut(key, messages);
-    return true;
   } catch (e) {
     await recordProblem("inbox/deliver", e);
     return false;
   }
+  await sendPush(key, pushPayload(messages)).catch((e) => recordProblem("push/send", e)); // 通知は「おまけ」。失敗しても届けた扱い
+  return true;
 }
 
 /** 1人へ */

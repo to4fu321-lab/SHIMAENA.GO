@@ -26,7 +26,8 @@ function Avatar({ team }: { team?: TeamId }) {
   );
 }
 
-export default function ChatScreen({ viewerId, initial, teamId }: { viewerId: string; initial: ChatBubble[]; teamId?: TeamId }) {
+/** readOnly: 家族の代わりに登録した人（参加者ではない）。届いたものを読むだけで、文やボタンは送れない */
+export default function ChatScreen({ viewerId, initial, teamId, readOnly = false }: { viewerId: string; initial: ChatBubble[]; teamId?: TeamId; readOnly?: boolean }) {
   const [bubbles, setBubbles] = useState<ChatBubble[]>(initial);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
@@ -44,13 +45,14 @@ export default function ChatScreen({ viewerId, initial, teamId }: { viewerId: st
 
   // 数秒ごとに、届いた文面（点呼・作戦・なかまの誘い…）を取りに行く
   useEffect(() => {
+    if (readOnly) return;
     const t = setInterval(async () => {
       if (pending) return;
       const r = await chatPollAction(viewerId).catch(() => undefined);
       if (r?.ok && r.bubbles) setBubbles((cur) => (r.bubbles!.length !== cur.length || r.bubbles!.at(-1)?.id !== cur.at(-1)?.id ? r.bubbles! : cur));
     }, POLL_SECONDS * 1000);
     return () => clearInterval(t);
-  }, [viewerId, pending]);
+  }, [viewerId, pending, readOnly]);
 
   const apply = (r: ChatResult) => {
     if (!r.ok) setError(r.text ?? "うまくいきませんでした。もう一度どうぞ。");
@@ -179,7 +181,7 @@ export default function ChatScreen({ viewerId, initial, teamId }: { viewerId: st
         )}
       </div>
       {/* 小さなボタン（いちばん新しい隊長の吹き出しのもの） */}
-      {quick.length > 0 && (
+      {!readOnly && quick.length > 0 && (
         <div className="flex shrink-0 gap-2 overflow-x-auto border-t border-ink/10 bg-card px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {quick.map((b, i) => (
             <Button key={i} b={b} big={false} />
@@ -188,6 +190,9 @@ export default function ChatScreen({ viewerId, initial, teamId }: { viewerId: st
       )}
       {error && <p className="shrink-0 bg-alert-soft px-4 py-1 text-center text-sm text-alert">{error}</p>}
       {/* 入力欄 */}
+      {readOnly ? (
+        <p className="shrink-0 border-t border-ink/10 bg-card px-4 py-3 text-center text-sm text-ink-soft">ご家族の家の知らせが、ここに届きます。</p>
+      ) : (
       <form
         className="flex shrink-0 items-center gap-2 border-t border-ink/10 bg-card px-2 py-2 pb-[max(8px,env(safe-area-inset-bottom))]"
         onSubmit={(e) => {
@@ -212,6 +217,7 @@ export default function ChatScreen({ viewerId, initial, teamId }: { viewerId: st
         <input ref={fileCamera} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void onPhoto(e.target.files?.[0])} />
         <input ref={fileRoll} type="file" accept="image/*" className="hidden" onChange={(e) => void onPhoto(e.target.files?.[0])} />
       </form>
+      )}
     </div>
   );
 }
