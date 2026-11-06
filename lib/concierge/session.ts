@@ -8,6 +8,8 @@ export interface ConciergeSession {
   turn: number;
   history: ConciergeTurn[];
   at: string; // ISO
+  /** 直近の往復で見せた候補の id（同じボタンばかりにならないように） */
+  shown?: string[];
 }
 
 /** 1回の相談の長さ（spec v1.17: 10分 → 60分） */

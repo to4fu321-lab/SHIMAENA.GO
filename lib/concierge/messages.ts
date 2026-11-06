@@ -39,7 +39,8 @@ export function conciergePick(reply: string, o: ConciergeOption, imageUrl: strin
   return [card];
 }
 
+/** 聞き返し。ボタンは suggest（Claude が選んだ 2〜3 つ。毎回ちがう）。11/6 本人の指摘「何を話しても同じ2つになる」 */
 export function conciergeAsk(reply: string, question: string, options: ConciergeOption[]): LineMessage[] {
-  const choices: Choice[] = options.slice(0, 2).map((o) => ({ label: o.button, action: optionAction(o), tone: "line" }));
+  const choices: Choice[] = options.slice(0, 3).map((o) => ({ label: o.button, action: optionAction(o), tone: "line" }));
   return [choiceCard(`${reply}\n${question}`, choices)];
 }

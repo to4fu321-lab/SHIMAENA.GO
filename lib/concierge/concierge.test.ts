@@ -1,6 +1,6 @@
 // AI参加コンシェルジュ（spec v1.7）: 自由な文から、その人に開いている参加の方法へ。3往復まで。画像は Claude が場面を選び、プログラムが描く
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { guardedAnswer, mockConcierge, tidyConcierge, type ConciergeInput } from "../claude/concierge";
+import { guardedAnswer, mockConcierge, pickSuggest, tidyConcierge, topicsFor, type ConciergeInput } from "../claude/concierge";
 import { actionsOf, textOf } from "../line/flex";
 import type { FlexMessage, LineMessage } from "../line/types";
 import { renderYouSvg, youImagePath, youParams } from "../line/you-image";
@@ -104,14 +104,14 @@ describe("選び方（キーなしの言葉の一覧）と点検", () => {
     const c = ctx();
     const opts = buildOptions(c);
     const r = tidyConcierge(
-      { reply: "屋根に上りましょう。とても大事です。三文目です。四文目です。", pick: "roof", question: null, caption: "<b>がんばれ</b>12345", sky: "dawn", motives: [], why: null, summary: "", voice: { category: "none", text: "" } },
+      { reply: "屋根に上りましょう。とても大事です。三文目です。四文目です。", pick: "roof", question: null, caption: "<b>がんばれ</b>12345", sky: "dawn", motives: [], why: null, summary: "", voice: { category: "none", text: "" }, suggest: [] },
       input("何すれば", c),
       opts,
     );
     expect(r.option).toBeNull();
     expect(r.reply).toBe("屋根に上りましょう。とても大事です。三文目です。");
     expect(r.caption).not.toMatch(/[<>]|\d{3}/);
-    const body = tidyConcierge({ reply: "腰が痛いなら休みましょう。", pick: "online", question: null, caption: "x", sky: "dawn", motives: ["exercise", "bad" as never], why: "腰のため", summary: "腰が痛い人", voice: { category: "trouble", text: "腰が痛くてできない" } }, input("a", c), opts);
+    const body = tidyConcierge({ reply: "腰が痛いなら休みましょう。", pick: "online", question: null, caption: "x", sky: "dawn", motives: ["exercise", "bad" as never], why: "腰のため", summary: "腰が痛い人", voice: { category: "trouble", text: "腰が痛くてできない" }, suggest: [] }, input("a", c), opts);
     expect(body.voice).toBeUndefined(); // 体のことの声は貯めない
     expect(body.motives).toEqual(["exercise"]);
     expect(body.why).toBeUndefined(); // 体のことばの理由は出さない
@@ -196,5 +196,28 @@ describe("LINE の流れ（キーなし）", () => {
     // 人手が足りない家があれば地図、なければ自分の家の前
     expect(uri).toMatch(/\/map|focus=own_house|focus=patrol/);
     vi.restoreAllMocks();
+  });
+});
+
+describe("返事のバラエティ（11/6 本人の指摘「何を話しても同じになる」）", () => {
+  it("小さなボタンは往復ごとに変わり、直前に見せたものは避ける", () => {
+    const opts = buildOptions(ctx());
+    const a = pickSuggest(opts, 1).map((o) => o.id);
+    const b = pickSuggest(opts, 2, a).map((o) => o.id);
+    expect(a).toHaveLength(3);
+    expect(b).toHaveLength(3);
+    expect(a.filter((id) => b.includes(id))).toEqual([]);
+  });
+  it("雑談は話題のたねで毎回ちがう文になり、質問も決まり文句ではない", () => {
+    const c = ctx();
+    const t1 = mockConcierge({ ...input("何か話して", c, 1), topics: topicsFor(new Date("2026-12-01"), 1) });
+    const t2 = mockConcierge({ ...input("何か話して", c, 2), topics: topicsFor(new Date("2026-12-01"), 2) });
+    expect(t1.pick).toBeNull();
+    expect(t1.reply).not.toBe(t2.reply);
+    expect(t1.question).not.toContain("外に出られそう");
+    expect(t1.suggest.length).toBeGreaterThanOrEqual(2);
+  });
+  it("日がちがえば話題のたねもちがう", () => {
+    expect(topicsFor(new Date("2026-12-01"), 1)).not.toEqual(topicsFor(new Date("2026-12-02"), 1));
   });
 });

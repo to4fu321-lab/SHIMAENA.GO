@@ -37,6 +37,8 @@ export const ConciergeSchema = z.object({
   summary: z.string(),
   /** この文に「求められていること」があれば1件（spec v1.17 声を貯める）。category: feature=機能の要望・confusion=分からない所・trouble=困りごと・praise=うれしい声・none=なし。text は要約40字（原文を写さない） */
   voice: z.object({ category: z.enum([...VOICE_CATEGORIES, "none"]), text: z.string() }),
+  /** まだ選ばないとき、返事の下に出す小さなボタンの候補（options の id を 2〜3 つ。その人の文と方向に合うもの。recent にあるものは避けて、毎回ちがえる）。選んだときは空 */
+  suggest: z.array(z.string()),
 });
 export type ConciergeAnswer = z.infer<typeof ConciergeSchema>;
 
@@ -61,6 +63,10 @@ export interface ConciergeInput {
   weather?: { now: "雪" | "くもり" | "晴れ" | "不明"; tempC?: number; snowNext24hCm?: number; depthCm?: number };
   /** これまでに分かっている方向と要約（spec v1.17）。なければ空 */
   profile: { motives: Motive[]; summary: string };
+  /** 直前の往復で見せた候補の id（同じボタンばかりにならないように避ける） */
+  recent?: string[];
+  /** 雑談のときの話題のたね（日と往復で回る。毎回ちがう話になる） */
+  topics?: string[];
 }
 
 export interface ConciergeResult {
@@ -79,6 +85,56 @@ export interface ConciergeResult {
   summary: string;
   /** 貯める声（なければ undefined） */
   voice?: { category: VoiceCategory; text: string };
+  /** まだ選ばないときの小さなボタン（2〜3つ。毎回ちがう） */
+  suggest: ConciergeOption[];
+}
+
+/**
+ * 雑談の話題のたね（11/6 本人の指摘「何を話しても同じになる」）。日と往復で回して、毎回ちがう話題を Claude に渡す。
+ * 体調・医療の話題は入れない。
+ */
+export const SMALLTALK_TOPICS: { topic: string; line: string; question: string }[] = [
+  { topic: "シマエナガの豆知識", line: "シマエナガは北海道にしかいない小鳥で、寒い日ほど羽をふくらませて丸くなるんだしま〜。", question: "見かけたこと、ありますか？" },
+  { topic: "雪の名前（ぼた雪・粉雪・ざらめ雪）", line: "雪には名前があって、ふわふわの粉雪、重たいぼた雪、春のざらめ雪で、雪かきの大変さもぜんぜんちがうんだしま〜。", question: "どの雪がいちばん好きですか？" },
+  { topic: "雪かきのコツ", line: "雪かきのコツは、雪を捨てる場所を先に決めて、少しずつすくうこと。ひざを使うと腰がらくだしま〜。", question: "スコップとスノーダンプ、どっち派ですか？" },
+  { topic: "子どものころの雪の思い出を聞く", line: "雪の日って、子どものころはうれしかったしま〜。かまくらや雪だるま、よく作りましたか？", question: "いちばんの雪の思い出を教えてください。" },
+  { topic: "寒い日のあったかい食べもの・飲みもの", line: "寒い日は、雪かきのあとのあったかい飲みものが最高だしま〜。", question: "あなたのあったまる一品は何ですか？" },
+  { topic: "雪の朝の静かさ・きれいさ", line: "雪が積もった朝って、音が吸われて町がしんと静かになるんだしま〜。あの空気、好きです。", question: "朝の雪景色、見ますか？" },
+  { topic: "ご近所のあいさつ・顔見知りが増える話", line: "雪かきのいいところは、ご近所と自然に「おはよう」が増えることだしま〜。", question: "最近、ご近所と話しましたか？" },
+  { topic: "雪国の知恵（滑り止め・玄関前の砂）", line: "雪国の知恵で、玄関の前に砂をまいておくと、朝の凍った段差で転びにくくなるんだしま〜。", question: "家のまわりで、つるつるの所はありますか？" },
+  { topic: "冬の星空・朝焼け", line: "冬は空気がすんでいて、星も朝焼けもきれいだしま〜。雪かきの前にちょっと空を見るのがおすすめです。", question: "朝型ですか、夜型ですか？" },
+  { topic: "10分の雪かきの運動量", line: "雪かき10分は、けっこうな運動になるんだしま〜。冬の運動不足にちょうどいいです。", question: "冬は体を動かしていますか？" },
+  { topic: "カードやチームのゲームの話", line: "シマエナGOでは、雪かきのたびにその時だけのカードが1枚届くんだしま〜。同じ絵は二度と出ません。", question: "集めるの、好きですか？" },
+  { topic: "冬の鳥（ヒヨドリ・アカゲラ・カラ類）", line: "冬の町には、シマエナガのほかにもアカゲラやシジュウカラが来るんだしま〜。雪の上の足あとも楽しいです。", question: "庭や公園で鳥を見ますか？" },
+  { topic: "雪どけの季節の楽しみ", line: "長い冬も、雪どけのころには福寿草が顔を出すんだしま〜。それまでみんなで乗り切りましょう。", question: "春になったら、まず何をしたいですか？" },
+  { topic: "雪だるま・かまくら", line: "雪かきでできた雪の山で、小さな雪だるまを作るのが隊長の楽しみだしま〜。", question: "最後に雪だるまを作ったのは、いつですか？" },
+  { topic: "除雪車と雪捨て場", line: "除雪車が通ったあと、玄関前に固い雪の壁ができるのが雪国あるあるだしま〜。あれは早めに崩すのがコツです。", question: "お宅の前にも、できますか？" },
+  { topic: "町のいまの天気から今夜・明日の話", line: "いまの空から、今夜と明日の話をしましょうしま〜。", question: "明日の予定は、ありますか？" },
+];
+
+/** 今日・この往復の話題のたねを3つ（日と往復で回る） */
+export function topicsFor(now: Date, turn: number): string[] {
+  const day = Math.floor(now.getTime() / 86400000);
+  const n = SMALLTALK_TOPICS.length;
+  const start = (day * 5 + turn * 3) % n;
+  return [0, 1, 2].map((i) => SMALLTALK_TOPICS[(start + i) % n].topic);
+}
+
+/** 雑談らしい文（質問でも相談でもない、話しかけ） */
+export const SMALLTALK_WORDS = /話して|はなして|話そう|こんにちは|こんばんは|おはよう|おやすみ|ひま|暇|雑談|元気|げんき|つかれた|疲れた|きれい|楽しい|たのしい|ありがとう|おつかれ|好き|すき|何してる|なにしてる/;
+
+/**
+ * 小さなボタンの候補を選ぶ（Claude が選ばなかったとき・キーがないとき）。
+ * 直前に見せたものは後ろに回し、往復ごとに始まりをずらして、同じ2つにならないようにする
+ */
+export function pickSuggest(options: ConciergeOption[], turn: number, recent: string[] = [], count = 3): ConciergeOption[] {
+  if (options.length === 0) return [];
+  const fresh = options.filter((o) => !recent.includes(o.id));
+  const pool = fresh.length >= 2 ? fresh : options;
+  const start = ((turn - 1) * count) % pool.length;
+  const out: ConciergeOption[] = [];
+  for (let i = 0; i < Math.min(count, pool.length); i++) out.push(pool[(start + i) % pool.length]);
+  return out;
 }
 
 const polite = (role: ConciergeInput["role"], helper: string, requester: string) => (role === "helper" ? helper : requester);
@@ -110,16 +166,26 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
   else if (/分からない|わからない|何から|なにから|初めて|はじめて|どうすれば|何をすれば|なにをすれば|迷/.test(t)) pick = want("my_mission", "rollcall", "own_house", "patrol", "online", "tip");
   if (!pick && mustPick(input.turn)) pick = input.options[0]?.id ?? null;
   if (!pick) {
+    // 雑談には、話題のたね（日と往復で回る）から1つ。相談らしい文には聞き返し
+    const topic = SMALLTALK_WORDS.test(t) ? SMALLTALK_TOPICS.find((x) => x.topic === (input.topics ?? topicsFor(new Date(), input.turn))[0]) : undefined;
+    const w = input.weather;
+    const weatherLine = w && w.now !== "不明" ? `いまは${w.now}${w.tempC !== undefined ? `で${w.tempC}度` : ""}${w.snowNext24hCm !== undefined ? `、この先24時間の雪は${w.snowNext24hCm}cmの見こみ` : ""}です。` : "";
+    const reply = topic
+      ? input.role === "helper"
+        ? topic.line
+        : topic.line.replace(/だしま〜/g, "です").replace(/しま〜/g, "")
+      : polite(input.role, "教えてくれてありがとうえな〜！", "教えてくださって、ありがとうございます。");
     return {
-      reply: polite(input.role, "教えてくれてありがとうえな〜！", "教えてくださって、ありがとうございます。"),
+      reply: (topic && topic.topic.startsWith("町のいまの天気") && weatherLine ? `${weatherLine}${reply}` : reply).slice(0, REPLY_MAX),
       pick: null,
-      question: polite(input.role, "今日は外に出られそうですか？", "今日は、外に出られそうですか？"),
+      question: topic ? topic.question : polite(input.role, "今日は外に出られそうですか？", "今日は、外に出られそうですか？"),
       caption: "あなたの出番を一緒に",
       sky,
       motives,
       why: null,
       summary: "",
       voice: mockVoice(input.text),
+      suggest: pickSuggest(input.options as ConciergeOption[], input.turn, input.recent).map((o) => o.id),
     };
   }
   const o = input.options.find((x) => x.id === pick)!;
@@ -135,6 +201,7 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
     why,
     summary: "",
     voice: mockVoice(input.text),
+    suggest: [],
   };
 }
 
@@ -173,7 +240,19 @@ export function tidyConcierge(a: ConciergeAnswer, input: ConciergeInput, options
   if (BODY_WORDS.test(summary)) summary = ""; // 体のことは残さない
   const vt = (a.voice?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
   const voice = a.voice && isVoiceCategory(a.voice.category) && vt && !BODY_WORDS.test(vt) ? { category: a.voice.category, text: vt } : undefined;
-  return { reply, option, question, caption, sky, motives, ...(why ? { why } : {}), summary, ...(voice ? { voice } : {}) };
+  // 小さなボタン: Claude が選んだ候補のうち options にあるもの（重複なし・3つまで）。足りなければ回して足す
+  let suggest: ConciergeOption[] = [];
+  if (!option) {
+    const ids = [...new Set(a.suggest ?? [])];
+    suggest = ids.map((id) => options.find((o) => o.id === id)).filter((o): o is ConciergeOption => Boolean(o)).slice(0, 3);
+    if (suggest.length < 2) {
+      for (const o of pickSuggest(options, input.turn, [...(input.recent ?? []), ...suggest.map((x) => x.id)])) {
+        if (suggest.length >= 3) break;
+        if (!suggest.includes(o)) suggest.push(o);
+      }
+    }
+  }
+  return { reply, option, question, caption, sky, motives, ...(why ? { why } : {}), summary, ...(voice ? { voice } : {}), suggest };
 }
 
 /** 体・危ない作業のことばには、Claude を呼ばずに決まった返事（体調は判断しない） */
@@ -185,7 +264,7 @@ export function guardedAnswer(input: ConciergeInput, options: ConciergeOption[])
   const reply = danger
     ? "屋根の雪下ろしや脚立・除雪機の作業は、シマエナGO ではお願いしていません。無理をせず、できることから一緒にやりましょう。"
     : "無理はしないでくださいね。体のことは、ご家族やかかりつけの方に相談してください。";
-  return { reply, option: pick, question: null, caption: "できることから一緒に", sky: skyFor(input.hour, input.snowCm), guarded: danger ? "danger" : "body", motives: [], summary: "" };
+  return { reply, option: pick, question: null, caption: "できることから一緒に", sky: skyFor(input.hour, input.snowCm), guarded: danger ? "danger" : "body", motives: [], summary: "", suggest: [] };
 }
 
 export async function askConcierge(input: ConciergeInput, options: ConciergeOption[]): Promise<ConciergeResult> {
@@ -199,6 +278,8 @@ export async function askConcierge(input: ConciergeInput, options: ConciergeOpti
         "いちばん大事なこと: reply では、まずその人の文そのものに答えてください（質問には答える・雑談には返す・気持ちは受け止める。決まり文句で質問を返さない）。" +
         "天気・雪の質問には weather（いまの天気・気温・この先24時間の降雪 snowNext24hCm・積雪 depthCm）の数字だけで答える（ないものは「分からない」と言う。作らない）。snowCm は今朝の点呼の予報で、0 は点呼なしの意味。" +
         "雪のない日は、家の中や近所でできること（コツを教える・応援・カード・見回り・なかま）をすすめる。そのうえで、その人に合う参加の方法を options の中から1つ選んでください。" +
+        "雑談（「何か話して」「ひま」「こんにちは」など）には、topics の中から1つ（なるべく最初のもの）を使って、毎回ちがう話題で具体的に話し、最後に軽い質問を1つ。前の往復（history）と同じ話題・同じ言い回しは使わない。" +
+        "pick を null にするときは suggest に、その人の文と方向に合う候補の id を 2〜3 つ（recent にあるものは避け、毎回ちがえる）。" +
         "voice: この文に「求められていること」（機能の要望・分からない所・困りごと・うれしい声）があれば category と要約 text（40字、原文を写さない）。なければ none。" +
         "まず、その人が何を求めているか（motives: connect=つながり・exercise=運動・community=地域貢献・game=ゲーム。複数可、読み取れなければ空）を読み取り、profile（これまでの方向と要約）も合わせて、options の motives が合うものを選びます。why はすすめる理由を1文（40字）。summary は求めていることの要約（40字。名前・体のこと・住所は書かない）。" +
         `いまは ${input.turn} 往復目です（上限 ${MAX_TURNS}）。何をしたいか分からないときは、pick を null にして question で1つだけ聞いてください。相談が雑談でもよい。ただし 3往復に1回は何か1つすすめる（${MAX_TURNS} 往復目は必ず選ぶ）。` +

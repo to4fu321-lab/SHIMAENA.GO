@@ -2,7 +2,7 @@
 // → その人用の画像つきのカードで、アプリの活動へ誘う。返信（reply）だけで完結するので、LINE の月の通数は使わない。
 import { isNight } from "../night";
 import { onTeam } from "../member";
-import { askConcierge, MAX_TURNS, type ConciergeInput } from "../claude/concierge";
+import { askConcierge, MAX_TURNS, topicsFor, type ConciergeInput } from "../claude/concierge";
 import { jstHourMinute } from "../jst";
 import { youImagePath } from "../line/you-image";
 import type { LineMessage } from "../line/types";
@@ -100,6 +100,8 @@ export async function concierge(lineUserId: string, text: string, now = new Date
     text: text.slice(0, 200),
     ...(weather ? { weather } : {}),
     profile: { motives: ctx.motives ?? [], summary: (await loadProfile(p.id).catch(() => undefined))?.summary ?? "" },
+    recent: session?.shown ?? [],
+    topics: topicsFor(now, turn),
   };
   const res = await askConcierge(input, options);
   // その人の方向と要約を残す（spec v1.17。新しく読み取れたときだけ入れ替える。体のことばの文からは残さない）
@@ -127,8 +129,9 @@ export async function concierge(lineUserId: string, text: string, now = new Date
     turn,
     history: [...(session?.history ?? []), { user: BODY_WORDS.test(text) ? "（体のこと）" : text.slice(0, 100), captain: `${res.reply} ${res.question ?? ""}`.trim() }].slice(-MAX_TURNS),
     at: now.toISOString(),
+    shown: res.suggest.map((o) => o.id),
   });
-  return conciergeAsk(res.reply, res.question ?? "今日は、外に出られそうですか？", options);
+  return conciergeAsk(res.reply, res.question ?? "今日は、外に出られそうですか？", res.suggest.length > 0 ? res.suggest : options);
 }
 
 /** コンシェルジュの続きの会話があるか（あれば自由な文は先にコンシェルジュへ） */
