@@ -180,3 +180,13 @@
 - [x] **T75 ゆるく合流** — `/nakama` の今日のスタイル・候補・誘う・答える（画面と LINE）、両方の同意で成立、夜とお休みの日は止める、AI の誘いの一文（採点表 nakama）。
 - [x] **T76 雪かきバトン** — 完了画面の「次の人へバトン」、地域（約250m）のバトンの一覧・ありがとう／続きをやります・今日の参加人数、AI のつながりの一文。
 
+## 第19段: LINE はログインだけ・やり取りはアプリへ（11/6 本人の決定、spec v1.17）
+- [ ] **T77 仕様と計画** — spec v1.17（LINE はログインだけ／隊長トーク／通知／上限／自由な相談とマッチング／声を貯めて改善）、この段のタスク、devlog。
+- [ ] **T78 お知らせの土台（送り口を1つに）** — `lib/inbox/`（表 `inbox_messages`、1人ぶんの流れの読み書き、未読）。`lib/line/client.ts` の push／multicast／reply を LINE API ではなく inbox に入れる形に（LINE_CHANNEL_ACCESS_TOKEN・DRY_RUN・通数は使わない）。デモの架空の人も `demo:<id>` で受け取れる。テスト。
+- [ ] **T79 隊長トーク `/chat`** — 流れの表示（文・大きなボタン・行き先カード・隊長カード・画像）、文の入力、ボタン（postback→今までの処理／画面を開く／文を送る／写真を撮る）、写真で完了、未読。下のタブに「隊長」。コンシェルジュの上限を上げる（30往復・60分）。道の通知 6回。
+- [ ] **T80 LINE でログイン（Web）と画面の登録** — `/login` → LINE ログイン（OAuth）→ `/api/auth/line/callback` → cookie。`/start` を LIFF なしに（ログイン済みで未登録の人の画面。家族の代わりに登録・連携コードも画面で）。LIFF・LiffBridge・LineLoginButton・weblogin・Webhook・リッチメニュー・`@line/liff` を外す。「LINE で参加」は `/start` へ。`docs/login-setup.md`。
+- [ ] **T81 通知（Web Push と PWA）** — `web-push`、manifest・service worker・アイコン、表 `push_subscriptions`、「通知を受け取る」（事前の1枚・iPhone の3ステップ）、inbox から送る、/admin の「通知の数」。鍵がなければトークにたまるだけ。
+- [ ] **T82 自由な相談とマッチング** — 4つの方向（つながり・運動・地域貢献・ゲーム）の読み取りと `participant_profiles`、方向ごとの候補（なかま・運動・地域貢献・ゲーム）、採点表 concierge の更新、理由の1文。テスト。
+- [ ] **T83 声を貯めて改善** — 表 `voice_logs`、1往復ごとの「求められていること」、日曜の「改善の提案」（Claude、採点表 improve）、/admin の「声」タブ（件数・よくある声・提案・手で作るボタン）。
+- [ ] **T84 掃除** — 画面・文面・README・使い方・チュートリアルの「LINE で届く」を「隊長トーク・通知」に。LINE Bot の残り（messages の LINE 固有の部分・hero の名前）は壊さない範囲で整理。全ページを 390×844・375×667 で確認。
+
