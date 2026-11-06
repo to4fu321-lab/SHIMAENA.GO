@@ -8,6 +8,7 @@ import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
+import { okVoiceMime, saveThanksVoice, VOICE_MAX_BYTES, VOICE_MAX_SECONDS } from "../thanks/voice";
 import { planMorning } from "../claude/commander";
 import { checkPhoto, decidePhoto, hazardLines, SNOW_TYPE_LABEL, WIDTH_LABEL, type PhotoInput } from "../claude/photo";
 import { photoFingerprint, photoSeen, rememberPhoto } from "../ops/photo-seen";
@@ -668,7 +669,55 @@ export async function applyThanks(
   } catch (e) {
     console.error("[thanks] 裏面を作り直せませんでした:", e instanceof Error ? e.message : e);
   }
-  return { ok: true, messages: MSG.thanksSent(label, sorties.length), record };
+  return { ok: true, messages: MSG.thanksSent(label, sorties.length, m.id), record };
+}
+
+// ---- 声のありがとう（spec v1.29） ----
+
+/** 声を吹き込める家か（終わったミッションの、その家の人だけ）。吹き込む画面と保存で使う */
+export async function voiceThanksTarget(
+  missionId: string,
+  requesterId: string,
+): Promise<{ baseNumber: number | string; helperIds: string[] } | undefined> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  const base = m && roster.bases.find((b) => b.id === m.baseId);
+  if (!m || !base || m.status !== "done" || base.requesterId !== requesterId) return undefined;
+  const helperIds = [...new Set(s.morning.sorties.filter((x) => x.missionId === m.id).map((x) => x.participantId))];
+  return { baseNumber: base.number, helperIds };
+}
+
+/** 家の人の声を保存して、手伝った人の隊長トークに「▶ 声を聞く」を届ける。声は文字にしない・AI に渡さない */
+export async function applyVoiceThanks(
+  missionId: string,
+  requesterId: string,
+  audio: { bytes: Uint8Array; mime: string; seconds: number },
+  now = new Date(),
+): Promise<{ ok: boolean; text: string; sentTo?: number }> {
+  const target = await voiceThanksTarget(missionId, requesterId);
+  if (!target) return { ok: false, text: "今朝の雪かきの記録が見つかりませんでした。" };
+  if (!okVoiceMime(audio.mime)) return { ok: false, text: "この録音の形は受け取れませんでした。" };
+  if (audio.bytes.length === 0 || audio.bytes.length > VOICE_MAX_BYTES) return { ok: false, text: "録音が空か、長すぎます（30秒まで）。" };
+  const seconds = Math.min(VOICE_MAX_SECONDS, Math.max(0, Math.round(audio.seconds)));
+  await saveThanksVoice(
+    { missionId, requesterId, helperIds: target.helperIds, mime: audio.mime, seconds, at: now.toISOString() },
+    audio.bytes,
+    now,
+  );
+  const roster = await loadRoster();
+  const requester = roster.participants.find((p) => p.id === requesterId);
+  const byId = new Map(roster.participants.map((p) => [p.id, p]));
+  let sentTo = 0;
+  for (const id of target.helperIds) {
+    const k = inboxKeyOf(byId.get(id));
+    if (k && (await push(k, MSG.voiceToHelper(requester?.nickname ?? "お願いした人", target.baseNumber, missionId)))) sentTo++;
+  }
+  const s = await loadMorning();
+  s.thanksVoice = { ...(s.thanksVoice ?? {}), [missionId]: { at: now.toISOString(), seconds, sentTo } };
+  s.log.push(`拠点${target.baseNumber}: 声のありがとう（${seconds}秒）→ ${target.helperIds.length} 人（トーク ${sentTo} 人）`);
+  await saveMorning(s);
+  return { ok: true, text: target.helperIds.length > 0 ? `来てくれた${target.helperIds.length}人に、声を届けました。` : "声を受け取りました。", sentTo };
 }
 
 // ---- 家族の応援スタンプ（spec v1.2） ----

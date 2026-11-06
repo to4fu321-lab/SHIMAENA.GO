@@ -5,7 +5,9 @@ import type { LineMessage } from "../line/types";
 import { actionsOf, textOf } from "../line/flex";
 import { memoryRepo } from "../repo";
 import { DEMO_DATE, fillAnswers } from "./flow";
-import { announce, applyThanks, completeWithPhoto, plan, ring, sendThanks } from "./ops";
+import { announce, applyThanks, applyVoiceThanks, completeWithPhoto, plan, ring, sendThanks, voiceThanksTarget } from "./ops";
+import { canListen, findThanksVoice, readThanksVoice, resetThanksVoices } from "../thanks/voice";
+import { thanksSentence } from "../claude/thanks";
 import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 
@@ -29,7 +31,10 @@ async function morningWithOneDone() {
 
 describe("ありがとう点呼（spec v1.1）", () => {
   it("完了の通知に3つのボタンが付く", () => {
-    const m = MSG.requesterDoneNotice(["田中"], "m-x").at(-1)!; // ボタンは最後の吹き出しに付く
+    const all = MSG.requesterDoneNotice(["田中"], "m-x");
+    const m = all.find((x) => actionsOf(x).length === 3)!; // 3択の吹き出し
+    // 最後の吹き出しは「🎤 声でありがとう」（v1.29）
+    expect(actionsOf(all.at(-1)!).map((a) => a.label)).toEqual(["🎤 声でありがとう"]);
     expect(actionsOf(m).map((a) => a.label)).toEqual(["ありがとう", "助かりました", "お茶どうぞ"]);
     expect(actionsOf(m).map((a) => (a as { data?: string }).data)).toEqual(["thanks:m-x=1", "thanks:m-x=2", "thanks:m-x=3"]);
     expect(MSG.requesterDoneNotice(["田中"]).some((x) => actionsOf(x).length > 0)).toBe(false);
@@ -83,5 +88,52 @@ describe("ありがとう点呼（spec v1.1）", () => {
     expect(t((await sendThanks("U-req", `thanks:${open.id}=1`)))).toContain("見つかりません");
     expect(t((await sendThanks("U-req", `thanks:${missionId}=1`)))).toContain("ありがとう");
     expect((await loadMorning()).thanks?.[missionId]?.label).toBe("ありがとう");
+  });
+});
+
+describe("ありがとうは声で（spec v1.29）", () => {
+  const audio = { bytes: new Uint8Array([26, 69, 223, 163, 1, 2, 3]), mime: "audio/webm;codecs=opus", seconds: 8 };
+
+  it("3択は AI で書き直さず、押したことばをそのまま「」に入れる", async () => {
+    const base = { completedAtJst: "07:25", memberCount: 2, teamNames: ["サルビア"], forecastCm: 12 };
+    expect(await thanksSentence({ ...base, label: "お茶どうぞ" })).toBe("「お茶どうぞ」");
+  });
+
+  it("家の人の声を保存すると、手伝った人に「▶ 声を聞く」が届き、家の人と手伝った人だけが聞ける", async () => {
+    resetThanksVoices();
+    const { missionId, participantId } = await morningWithOneDone();
+    const roster = await loadRoster();
+    const s = await loadMorning();
+    const base = roster.bases.find((b) => b.id === s.morning.missions.find((m) => m.id === missionId)!.baseId)!;
+    const target = await voiceThanksTarget(missionId, base.requesterId);
+    expect(target?.helperIds).toContain(participantId);
+
+    const r = await applyVoiceThanks(missionId, base.requesterId, audio);
+    expect(r.ok).toBe(true);
+    const v = await findThanksVoice(missionId);
+    expect(v).toMatchObject({ requesterId: base.requesterId, seconds: 8 });
+    expect(canListen(v!, participantId)).toBe(true);
+    expect(canListen(v!, base.requesterId)).toBe(true);
+    const stranger = roster.participants.find((p) => p.id !== base.requesterId && !v!.helperIds.includes(p.id))!;
+    expect(canListen(v!, stranger.id)).toBe(false);
+    expect(await readThanksVoice(missionId, stranger.id)).toBeUndefined();
+    expect((await readThanksVoice(missionId, participantId))?.audio).toEqual(audio.bytes);
+    expect((await loadMorning()).thanksVoice?.[missionId]?.seconds).toBe(8);
+    expect(t(MSG.voiceToHelper("田中", 3, missionId))).toContain("声のありがとう");
+  });
+
+  it("ほかの家の人・音でないもの・空の録音・7日より古い声は受け付けない", async () => {
+    resetThanksVoices();
+    const { missionId } = await morningWithOneDone();
+    const roster = await loadRoster();
+    const s = await loadMorning();
+    const base = roster.bases.find((b) => b.id === s.morning.missions.find((m) => m.id === missionId)!.baseId)!;
+    const other = roster.participants.find((p) => p.role === "requester" && p.id !== base.requesterId)!;
+    expect((await applyVoiceThanks(missionId, other.id, audio)).ok).toBe(false);
+    expect((await applyVoiceThanks(missionId, base.requesterId, { ...audio, mime: "text/html" })).ok).toBe(false);
+    expect((await applyVoiceThanks(missionId, base.requesterId, { ...audio, bytes: new Uint8Array() })).ok).toBe(false);
+    const old = new Date(Date.now() - 8 * 86400_000);
+    expect((await applyVoiceThanks(missionId, base.requesterId, audio, old)).ok).toBe(true);
+    expect(await findThanksVoice(missionId)).toBeUndefined();
   });
 });

@@ -1,6 +1,6 @@
-// ありがとう点呼（spec v1.1）: お願いした人の3択を、カード裏面の一文に整える。点は付けない。
+// ありがとう点呼（spec v1.1・v1.29）: お願いした人の3択を、そのままカード裏面に入れる。点は付けない。
+// v1.29 から Claude は使わない（ThanksSchema と mockThanks は前の版の記録とテストのために残す）。
 import { z } from "zod";
-import { askJson, hasClaudeKey } from "./client";
 
 export type ThanksChoice = "1" | "2" | "3";
 
@@ -42,17 +42,10 @@ export function mockThanks(i: ThanksInput): string {
   return trimThanks(`${when}${who}、${tail}`);
 }
 
+/**
+ * カード裏面に入れる文（spec v1.29）: 家の人が押したことばを、そのまま「」に入れる。
+ * 気持ちを伝えるところは AI に書かせない（本人の決定）。気持ちを足したいときは「声のありがとう」で。
+ */
 export async function thanksSentence(input: ThanksInput): Promise<string> {
-  if (!hasClaudeKey()) return mockThanks(input);
-  const res = await askJson({
-    task:
-      "雪かきをお願いした人が、終わったあとに3択（ありがとう／助かりました／お茶どうぞ）から1つ押しました。" +
-      "その気持ちと、その朝の状況（時刻・来た人数・雪の量）を合わせて、ありがとうカードの裏面に載せる一文（40字まで、やさしい日本語、話し言葉）にしてください。" +
-      "お宅の名前や人の名前は入れません。体調の話はしません。",
-    input,
-    schema: ThanksSchema,
-    effort: "low",
-    model: "light", // 短い文なので安いモデル（spec v1.6）
-  });
-  return trimThanks(res.sentence) || mockThanks(input);
+  return trimThanks(`「${input.label}」`);
 }

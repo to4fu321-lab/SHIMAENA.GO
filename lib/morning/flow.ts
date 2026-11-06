@@ -39,6 +39,8 @@ export interface MorningRecord {
   recap?: { text: string; at: string; allDone: boolean };
   /** ありがとう点呼（v1.1）: ミッション ID ごとに、お願いした人の3択と、Claude が整えた一文 */
   thanks?: Record<string, ThanksRecord>;
+  /** 声のありがとう（v1.29）: ミッション ID ごと。音そのものは lib/thanks/voice.ts */
+  thanksVoice?: Record<string, { at: string; seconds: number; sentTo: number }>;
   /** 今朝が初出撃だった人（最初のカードを受け取った人、v1.1） */
   firstFlights?: string[];
   /** 家族の応援スタンプ（v1.2）: ミッション ID ごと（家族が複数いれば複数） */

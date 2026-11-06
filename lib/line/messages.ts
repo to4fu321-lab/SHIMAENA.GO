@@ -128,7 +128,9 @@ function placeNote(r?: RequestNote): string {
   return parts.length > 0 ? `${parts.join("。")}。足元に気をつけて。` : "10分でも助かります。足元に気をつけて。";
 }
 
-const names = (ns: string[]) => ns.map((n) => `${n}さん`).join("、");
+/** 「さん」を付ける（デモの名前のように、もう付いていれば足さない） */
+export const san = (n: string) => (/(さん|様|さま|ちゃん|くん)$/.test(n) ? n : `${n}さん`);
+const names = (ns: string[]) => ns.map(san).join("、");
 
 export const MSG = {
   // ---- 登録（spec 1） ----
@@ -329,20 +331,27 @@ export const MSG = {
     if (!missionId) return bubbles(lines);
     return [
       ...bubbles(lines),
-      ask("ひとこと返しませんか？（1回押すだけで届きます）", [
+      ask("ひとこと返しませんか？（押したことばが、そのまま届きます）", [
         { label: "ありがとう", data: `thanks:${missionId}=1` },
         { label: "助かりました", data: `thanks:${missionId}=2` },
         { label: "お茶どうぞ", data: `thanks:${missionId}=3` },
       ]),
+      ...bubbles(["声でも「ありがとう」を届けられます（30秒まで）。"], [open("🎤 声でありがとう", `/thanks/${missionId}`)]),
     ];
   },
   thanksToHelper: (fromName: string, label: string, baseNumber: number | string, sentence: string, inviteShareUrl?: string) =>
     bubbles(
-      [`${fromName}さん（拠点${baseNumber}）から「${label}」が届きました。💌`, sentence, "カードの裏にも入りました。", inviteShareUrl && "このうれしさ、友だちにも分けませんか？"],
+      [`${san(fromName)}（拠点${baseNumber}）から${sentence}が届きました。💌`, "カードの裏にも入りました。", inviteShareUrl && "このうれしさ、友だちにも分けませんか？"],
       [B.card, ...(inviteShareUrl ? [{ type: "uri", label: "友だちを誘う", uri: inviteShareUrl } as Button] : [])],
     ),
-  thanksSent: (label: string, count: number) =>
-    bubbles([count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。カードの裏に入ります。`]),
+  thanksSent: (label: string, count: number, missionId?: string) =>
+    bubbles(
+      [count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。カードの裏に入ります。`, missionId && "声でも届けられます。"],
+      missionId ? [open("🎤 声でありがとう", `/thanks/${missionId}`)] : undefined,
+    ),
+  /** 声のありがとう（v1.29）: 手伝った人へ */
+  voiceToHelper: (fromName: string, baseNumber: number | string, missionId: string) =>
+    bubbles([`${san(fromName)}（拠点${baseNumber}）から、声のありがとうが届きました。🎤`], [open("▶ 声を聞く", `/thanks/${missionId}`)]),
   thanksNotFound: () => bubbles(["今朝の雪かきの記録が見つかりませんでした。", "少し時間をおいて、もう一度押してみてください。"]),
   /** 仲間が増えた（誘った人へ。名前は出さない。仲間カードと同じプッシュで。v1.8） */
   pairJoined: () => bubbles(["あなたの招待で、新しい仲間が初出動しました！🎉", "ふたりに「ふたりの群れ」カードが届きました。羽も +20。"]),
