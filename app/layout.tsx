@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import PwaRegister from "@/components/PwaRegister";
+import SoundProvider from "@/components/SoundProvider";
 import { baseUrl } from "@/lib/url";
 import "./globals.css";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ja" className={`${notoSansJP.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <PwaRegister />
+        <SoundProvider />
         {children}
       </body>
     </html>

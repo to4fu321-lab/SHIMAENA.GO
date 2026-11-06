@@ -24,6 +24,7 @@ import { soloStatus } from "@/lib/solo/ops";
 import { jstMinutes } from "@/lib/jst";
 import { currentWeather, parseSkyParam, timeOfDay, weatherOf } from "@/lib/sky";
 import HomeCheerButtons from "@/components/HomeCheerButtons";
+import SoundToggle from "@/components/SoundToggle";
 import { cheerButtons, myCheerNews } from "@/lib/solo/cheer-ops";
 import { arrivalLines } from "@/lib/solo/home-cheer";
 import { restLine } from "@/lib/claude/rest";
@@ -158,6 +159,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           </h1>
           {!myTeam && <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">10分の雪かきで、町が変わる。</p>}
         </div>
+        {/* BGM のオン・オフ（spec v1.19）。効果音は設定の「音」で */}
+        <SoundToggle compact />
         <Link href={`/today${q}`} className="relative flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="くわしく（今朝のようす）">
           <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z" />

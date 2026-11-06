@@ -523,3 +523,9 @@
 - T86 詰まったこと: lint が「effect の中で直接 setState」を禁じる → 端末の値はあとから読む小さな hook（`useClientValue`）に。
 - 次: 本人の実機確認（iPhone の Safari でマイクの許可と読み上げの声が出るか。読み上げは最初に「読み上げ」ボタンを押す必要がある）。
 
+
+## 11/6 音（BGM と効果音、spec v1.19・T87）
+- これから: T87a 音の土台 — `lib/sound/`（設定・音の入れ物・効果音の部品）、全画面のタップ音を1本の listener で、設定に「音」タブ、ホームに 🔊。音ファイルは使わず全部 Web Audio で合成する（本人の決定: 新しく作曲・BGM は最初からオン・Android の振動あり）。
+- T87a やったこと: `lib/sound/prefs.ts`（効果音・BGM のオン／オフ、localStorage `shimaena-sound`、初期値は両方オン）、`synth.ts`（tone／noise／bell／epiano／bass／lead／kick／snare／hat／clap／pad／wind の部品）、`sfx.ts`（効果音 36 種を「いつ・どんな音か」の一覧で）、`engine.ts`（AudioContext 1つ・master／効果音／BGM の音量・最初のタップで解放・振動）、`components/SoundProvider.tsx`（layout に1つ。document の pointerdown 1本でボタンの種類を見てポッ／ピポッ／プッ／カチッ。data-sound で指定もできる）、`SoundToggle.tsx`（設定の「音」タブ＝切りかえ2つ＋ためしに鳴らす、ホームの 🔊）。spec v1.19・tasks 第21段。テスト 6 件。
+- T87a 詰まったこと: 人の操作より前に予約した音が、最初のタップで一斉に鳴るおそれ → 一度でも操作があるまでは効果音を捨てるようにした。
+- T87a 次: T87b BGM（3曲の作曲と `<Bgm track>`）。

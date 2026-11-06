@@ -1,5 +1,6 @@
 // 設定: 登録の確認と、やり直し・連携コード・お知らせの説明（spec v1.17: 画面で）。
-// 1画面（11/5 本人の指示）: タブ「あなたの登録／やり直す／お知らせ」を横スワイプ。縦にはスクロールしない。
+// 1画面（11/5 本人の指示）: タブ「あなたの登録／やり直す／お知らせ／音」を横スワイプ。縦にはスクロールしない。
+// 「音」（spec v1.19）: 効果音と BGM のオン・オフ（端末に保存）。
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -10,6 +11,7 @@ import LoginButton from "@/components/LoginButton";
 import Pager, { Screen } from "@/components/Pager";
 import NudgeSwitch from "@/components/NudgeSwitch";
 import RedoRegistration from "@/components/RedoRegistration";
+import SoundToggle from "@/components/SoundToggle";
 import { loadNudge } from "@/lib/nudge/store";
 import { loadRoster } from "@/lib/morning/roster";
 import { TEAMS } from "@/lib/teams";
@@ -64,7 +66,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       </nav>
       }
     >
-      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "notice", label: "お知らせ" }]}>
+      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "notice", label: "お知らせ" }, { key: "sound", label: "音" }]}>
 
       {me ? (
         <section className="rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="あなたの登録">
@@ -121,6 +123,8 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
         {me && nudgeOn !== undefined && <NudgeSwitch viewerId={me.id} initial={nudgeOn} />}
         <p className="text-sm text-ink-soft">お知らせを止めたいときは、スマホの通知をオフにしてください。いつでも戻せます。</p>
       </section>
+
+      <SoundToggle />
 
       </Pager>
     </Screen>
