@@ -286,7 +286,7 @@ export default function SoloScreen({
         {m.kind === "report_snow" ? (
           // 5つの危険を、警告標識のアイコンで先に見せる（11/6 本人の指示「分かりやすい UI」）
           <>
-            <p className="text-[15px] leading-snug short:hidden">見つけた危険を、写真と場所で近所に知らせる。</p>
+            <p className="text-base leading-snug short:hidden">見つけた危険を、写真と場所で近所に知らせる。</p>
             <ul className="grid grid-cols-5 gap-1" aria-label="知らせられる危険">
               {HAZARDS.map((h) => (
                 <li key={h.id} className="flex flex-col items-center text-center text-xs font-bold leading-tight">
@@ -297,7 +297,7 @@ export default function SoloScreen({
             </ul>
           </>
         ) : (
-          <p className="text-[15px] leading-snug">{m.description}</p>
+          <p className="text-base leading-snug">{m.description}</p>
         )}
         <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-1.5 text-center text-xs font-bold">
           <p><span className="block text-xl tabular-nums">{m.timeLabel ?? `${m.minutes}分`}</span>時間</p>
@@ -307,6 +307,7 @@ export default function SoloScreen({
             {tp !== null ? `チーム+${tp}点` : "ごほうび"}
           </p>
         </div>
+        <p className="text-center text-sm font-bold text-ink-soft short:hidden">羽＝あなたの点（チームの点とは別）</p>
         {m.kind === "report_snow" && (
           // 近くの道の報告を LINE で受け取る（11/4 本人の指示。コンシェルジュが登録のあとにも聞く）
           <div className="flex items-center gap-2 rounded-2xl bg-ice-soft px-3 py-1.5">
@@ -356,12 +357,13 @@ export default function SoloScreen({
           <span className="ml-auto text-sm font-bold tabular-nums text-ink-soft">{i + 1}/{slides.length}</span>
         </div>
         <h2 className="text-2xl font-bold leading-tight">{house.label}</h2>
-        <p className="text-[15px] leading-snug">{house.description}</p>
+        <p className="text-base leading-snug">{house.description}</p>
         <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-1.5 text-center text-xs font-bold">
           <p><span className="block text-xl tabular-nums">10分〜</span>時間</p>
           <p><span className="block text-xl text-lamp">{DIFF[house.difficulty]}</span>むずかしさ</p>
           <p><span className="block text-xl tabular-nums text-camellia-deep">+{house.feathers}羽</span>写真で完了</p>
         </div>
+        <p className="text-center text-sm font-bold text-ink-soft short:hidden">羽＝あなたの点（チームの点とは別）</p>
         {helpText && (
           <p className="rounded-2xl bg-ice-soft px-3 py-2 text-sm" role="status">
             {helpText}

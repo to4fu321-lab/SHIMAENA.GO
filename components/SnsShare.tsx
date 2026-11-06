@@ -129,7 +129,7 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
       {msg}
     </p>
   );
-  const note = <p className="text-sm text-ink-soft">自動では投稿しません。名前や家の場所は画像に入りません。</p>;
+  const note = <p className="text-base text-ink-soft">自動では投稿しません。名前や家の場所は画像に入りません。</p>;
   if (compact) {
     const cb = `${btn} min-h-12 px-1 leading-tight`;
     return (
@@ -215,7 +215,7 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
           <span className="text-ink/30" aria-hidden="true">・</span>
           <button disabled={busy} onClick={copy} className={link}>文をコピー</button>
         </div>
-        <p className="shrink-0 text-center text-xs leading-snug text-ink-soft" role="status">
+        <p className="shrink-0 text-center text-base leading-snug text-ink-soft" role="status">
           {msg ?? "自動では投稿しません。名前や家の場所は画像に入りません。"}
         </p>
       </section>

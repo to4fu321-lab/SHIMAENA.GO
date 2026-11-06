@@ -101,7 +101,7 @@ function InvitePanel({ inviteLine }: { inviteLine?: string }) {
           🐦 {msg ?? inviteLine}
         </p>
       )}
-      <p className="text-center text-xs text-ink-soft">自分で相手を選んで送ります。自動では送りません。応援や招待の数で得点はつきません。</p>
+      <p className="text-center text-base text-ink-soft">自分で相手を選んで送ります。自動では送りません。応援や招待の数で得点はつきません。</p>
     </div>
   );
 }

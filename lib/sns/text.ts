@@ -45,7 +45,7 @@ export function mockShareText(kind: ShareKind, st: PublicStats, me?: MeStats): s
     case "me": {
       const m = me ?? { todayFeathers: 0, streak: 0, todayActs: 0 };
       return clampShareText(
-        `今日は10分だけ出動。\n羽${m.todayFeathers}枚、連続${m.streak}日。\n小さな一歩で町が変わる。\n${HASHTAGS.join(" ")}`,
+        `今日は10分だけ出動。\n羽 ${m.todayFeathers}、連続${m.streak}日。\n小さな一歩で町が変わる。\n${HASHTAGS.join(" ")}`,
       );
     }
   }
