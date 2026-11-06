@@ -7,7 +7,8 @@ import { openClear } from "./ClearWatcher";
 import { shrink } from "./shrink";
 import { play } from "@/lib/sound/engine";
 
-export default function MorningButtons({ viewerId, canAct, going, note }: { viewerId: string; canAct: boolean; going: boolean; note?: string }) {
+// done: 自分の雪かきが終わったら、3つのボタンは畳んで「完了しました」の帯だけにする（11/6 本人の了承）
+export default function MorningButtons({ viewerId, canAct, going, done = false, note }: { viewerId: string; canAct: boolean; going: boolean; done?: boolean; note?: string }) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const [confirmShort, setConfirmShort] = useState(false);
@@ -40,6 +41,13 @@ export default function MorningButtons({ viewerId, canAct, going, note }: { view
   };
 
   const disabled = pending || !canAct;
+  if (done) {
+    return (
+      <p className="rounded-2xl bg-ice-soft px-3 py-2 text-center text-base font-bold ring-1 ring-ice" role="status">
+        {note ?? "✓ 今朝の雪かきは完了しました。おつかれさまでした。"}
+      </p>
+    );
+  }
   return (
     <div className="space-y-2">
       {note && <p className="text-center text-sm text-ink-soft">{note}</p>}

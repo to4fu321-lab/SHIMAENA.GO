@@ -258,6 +258,7 @@ export default function MapScreen({
             viewerId={state.viewerId}
             canAct={Boolean(mySortie && mySortie.status === "going")}
             going={Boolean(mySortie?.confirmedAt)}
+            done={mySortie?.status === "done"}
             note={mySortie?.status === "done" ? "✓ 今朝の雪かきは完了しました。おつかれさまでした。" : mySortie ? undefined : "今朝の割り当てが届くと、ここのボタンが押せるようになります。"}
           />
         }
@@ -285,7 +286,7 @@ export default function MapScreen({
                   <b>{viewerTeam.name}</b>チーム ・{" "}
                 </>
               )}
-              いま {myView.goingPeople}人 / 必要 {myView.requiredPeople}人 ・ 7:00 開始
+              いま {myView.goingPeople}人 / 必要 {myView.requiredPeople}人 ・ 6〜19時のあいだに
             </p>
             {destinations.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">

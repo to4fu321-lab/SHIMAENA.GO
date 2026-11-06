@@ -157,7 +157,7 @@ export default function GoBriefing({
                   {team.name}・
                 </>
               )}
-              {goingPeople}/{requiredPeople}人・7:00〜
+              {goingPeople}/{requiredPeople}人・6〜19時
             </p>
           </div>
           {destination && (
