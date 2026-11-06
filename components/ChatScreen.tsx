@@ -86,7 +86,7 @@ export default function ChatScreen({
     }
     if (speakOn && last && last.from === "captain" && last.id !== spoken.current) {
       const fresh = bubbles.slice(bubbles.findIndex((b) => b.id === spoken.current) + 1).filter((b) => b.from === "captain");
-      speak(fresh.map((b) => b.text ?? b.lines?.map((l) => l.text).join("。") ?? "").join("。"));
+      speak(fresh.map((b) => b.text ?? b.lines?.filter((l) => !l.steps).map((l) => l.text).join("。") ?? "").join("。")); // 「隊長が調べた」札（絵文字の並び）は読まない
     }
     spoken.current = last?.id ?? "";
     // eslint-disable-next-line react-hooks/exhaustive-deps
