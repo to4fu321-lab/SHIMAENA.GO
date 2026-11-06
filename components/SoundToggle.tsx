@@ -13,7 +13,7 @@ function Switch({ on, label, note, onChange }: { on: boolean; label: string; not
       aria-checked={on}
       data-sound={on ? "toggleOff" : "toggleOn"}
       onClick={() => onChange(!on)}
-      className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-paper px-4 py-2 text-left ring-1 ring-ink/10"
+      className="relative flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl bg-paper px-4 py-2 text-left ring-1 ring-ink/10"
     >
       <span className="min-w-0">
         <span className="block text-lg font-bold">{label}</span>
