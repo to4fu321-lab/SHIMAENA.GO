@@ -81,7 +81,7 @@ export default function Pager({
             role="tab"
             aria-selected={i === active}
             onClick={() => goTo(i)}
-            className={`relative min-h-12 rounded-xl px-1 text-base font-bold leading-tight ${i === active ? "bg-card text-ink shadow" : "text-ink-soft"}`}
+            className={`relative min-h-12 whitespace-nowrap rounded-xl px-1 text-base font-bold leading-tight ${tabs.length >= 4 ? "max-[400px]:px-0.5 max-[400px]:text-sm" : ""} ${i === active ? "bg-card text-ink shadow" : "text-ink-soft"}`}
           >
             {t.label}
             {t.badge ? (

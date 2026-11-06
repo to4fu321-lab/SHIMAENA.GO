@@ -76,10 +76,10 @@ export default function NakamaScreen({ viewerId, view, q, initialTab }: { viewer
                   disabled={pending}
                   aria-pressed={on}
                   onClick={() => pickMode(m.id)}
-                  className={`rounded-3xl px-3 text-left ring-2 ${on ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}
+                  className={`min-h-0 overflow-hidden rounded-3xl px-3 py-1 text-left ring-2 ${on ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}
                 >
-                  <span className="block text-xl font-bold leading-tight">{m.label}</span>
-                  <span className={`block text-base ${on ? "text-white/90" : "text-ink-soft"}`}>{m.sub}</span>
+                  <span className="block text-xl font-bold leading-tight max-[400px]:text-lg">{m.label}</span>
+                  <span className={`block text-base leading-snug max-[400px]:text-sm ${on ? "text-white/90" : "text-ink-soft"}`}>{m.sub}</span>
                 </button>
               );
             })}

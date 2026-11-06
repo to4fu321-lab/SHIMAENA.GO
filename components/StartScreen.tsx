@@ -12,6 +12,8 @@ import type { LatLng } from "@/lib/types";
 import LoginButton from "./LoginButton";
 import Mascot from "./Mascot";
 import { play } from "@/lib/sound/engine";
+import SnowScene from "./SnowScene";
+import WelcomeOpening from "./WelcomeOpening";
 
 const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
 
@@ -32,8 +34,12 @@ const Q: Record<"helper" | "requester", { q1: { title: string; options: [string,
   },
 };
 
-export default function StartScreen({ status, name, center, next }: { status: StartStatus; name: string; center: LatLng; next: string }) {
+export default function StartScreen({ status, name, center, next, opening = false }: { status: StartStatus; name: string; center: LatLng; next: string; opening?: boolean }) {
   const router = useRouter();
+  // はじめてログインした人（pending）には、登録の前にオープニングを1回見せる。opening = デモ撮影用に誰でも見られる（?opening=1）
+  const [showOpening, setShowOpening] = useState(status === "pending" || opening);
+  // 登録できた瞬間の「入隊！」スタンプ
+  const [joined, setJoined] = useState(false);
   const [phase, setPhase] = useState<Phase>("role");
   const [role, setRole] = useState<Role>();
   const [place, setPlace] = useState<LatLng>();
@@ -73,12 +79,15 @@ export default function StartScreen({ status, name, center, next }: { status: St
     const r = await registerAction({ role, location: place, q1, q2 }).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
     if (r.ok) {
       play("welcome");
+      play("cardStamp", { delay: 0.35 });
       if (role === "family") {
         setLinkCode("linkCode" in r ? r.linkCode : undefined);
         setPhase("done");
         return;
       }
-      router.replace(status === "redo" ? "/settings" : next === "/" ? "/solo?welcome=1" : next);
+      setJoined(true);
+      const to = status === "redo" ? "/settings" : next === "/" ? "/solo?welcome=1" : next;
+      setTimeout(() => router.replace(to), 1400);
       return;
     }
     setMsg(r.text);
@@ -103,8 +112,59 @@ export default function StartScreen({ status, name, center, next }: { status: St
   const qRole = role === "helper" ? "helper" : "requester";
   const registering = status === "pending" || status === "redo";
 
+  if (status === "guest") {
+    // ログイン前: 雪の夜の町を背景に、このゲームの約束を3つ。下に「LINE でログイン」
+    return (
+      <div className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-[6dvh] text-center text-white">
+        {showOpening && <WelcomeOpening name={name} onDone={() => setShowOpening(false)} />}
+        <SnowScene />
+        <div className="relative flex min-h-0 flex-1 flex-col items-center">
+          <Mascot size={96} className="captain-idle drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] short:size-20" />
+          <h1 className="opening-logo mt-1 whitespace-nowrap text-5xl font-black max-[380px]:text-4xl">
+            シマエナ<span className="text-[#ffb98a]">GO</span>
+          </h1>
+          <p className="opening-rise mt-1 text-lg font-bold text-white/90 [text-shadow:0_1px_6px_rgba(12,28,46,0.9)]" style={{ animationDelay: "0.4s" }}>
+            寒い冬は、くっついて乗り切る。
+          </p>
+          <ul className="mt-[4dvh] w-full space-y-2 text-left text-ink short:mt-3">
+            {[
+              ["❄️", "雪の朝、点呼が届く"],
+              ["👥", "町内ランダム3チーム"],
+              ["🏠", "ひとり暮らしの家を救う"],
+            ].map(([icon, text], i) => (
+              <li key={text} className="opening-pillar flex items-center gap-3 rounded-2xl bg-white/90 px-4 py-2 text-lg font-bold shadow-md short:py-1.5" style={{ animationDelay: `${0.6 + i * 0.25}s` }}>
+                <span className="text-2xl" aria-hidden="true">{icon}</span>
+                {text}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-auto w-full space-y-2 rounded-3xl bg-white/95 p-3 text-ink shadow-xl">
+            <p className="text-base font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
+            <LoginButton next="/start" />
+            <Link href="/?as=h3" className="btn btn-white min-h-12 w-full text-lg">
+              デモを見る（登録なし）
+            </Link>
+            <p className="text-sm text-ink-soft">LINE は本人の確認にだけ使います</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper px-4 pb-4 pt-5 text-ink">
+      {showOpening && <WelcomeOpening name={name} onDone={() => setShowOpening(false)} />}
+      {joined && (
+        // 登録できた: 「入隊！」のスタンプ（このあとソロ出動へ）
+        <div className="fixed inset-0 z-50 mx-auto grid max-w-md place-items-center overflow-hidden bg-ink/85 text-white" role="status">
+          <span className="flash-rays absolute left-1/2 top-1/2 size-[180vmax]" aria-hidden="true" />
+          <div className="relative text-center">
+            <Mascot size={120} mood="happy" className="team-reveal mx-auto" />
+            <p className="flash-stamp mt-2 inline-block rounded-2xl border-4 border-[#ffd27a] px-6 py-1 text-5xl font-black text-[#ffd27a]">入隊！</p>
+            <p className="flash-sub mt-3 text-xl font-bold">{name ? `${name}隊員、` : ""}よろしくね</p>
+          </div>
+        </div>
+      )}
       {picking && (
         <PinAdjust
           start={picking}
@@ -123,7 +183,7 @@ export default function StartScreen({ status, name, center, next }: { status: St
           <p className="text-sm font-bold">
             シマエナ<span className="text-lamp-deep">GO</span>
           </p>
-          <h1 className="text-2xl font-bold leading-tight">{name ? `${name}さん、ようこそ` : "はじめる"}</h1>
+          <h1 className="text-2xl font-bold leading-tight max-[400px]:text-xl">{name ? `${name}さん、ようこそ` : "はじめる"}</h1>
         </div>
       </header>
       {registering && ["role", "place", "questions", "saving"].includes(phase) && (
@@ -134,19 +194,8 @@ export default function StartScreen({ status, name, center, next }: { status: St
         </ol>
       )}
 
-      <main className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
+      <main key={phase} className="step-in mt-4 flex min-h-0 flex-1 flex-col gap-3">
         {msg && <p className="shrink-0 rounded-2xl bg-warm px-3 py-2 text-base">{msg}</p>}
-
-        {status === "guest" && (
-          <>
-            <p className="text-xl font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
-            <p className="text-lg leading-snug">LINE は本人の確認にだけ使います。雪の朝のお知らせは、このアプリに届きます。</p>
-            <LoginButton next="/start" className="mt-auto" />
-            <Link href="/?as=h3" className="btn btn-white text-lg">
-              デモを見る（登録なし）
-            </Link>
-          </>
-        )}
 
         {status === "member" && (
           <>
@@ -163,15 +212,15 @@ export default function StartScreen({ status, name, center, next }: { status: St
         {registering && phase === "role" && (
           <>
             <h2 className="text-xl font-bold">{status === "redo" ? "もう一度、どちらですか？" : "あなたはどちらですか？"}</h2>
-            <button onClick={() => (setRole("helper"), setPhase("place"))} className={`${big} bg-card ring-ink/15`}>
+            <button onClick={() => (setRole("helper"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.1s` }}>
               🧤 手伝う
               <span className="block text-base font-normal text-ink-soft">近所の雪かきを10分から</span>
             </button>
-            <button onClick={() => (setRole("requester"), setPhase("place"))} className={`${big} bg-card ring-ink/15`}>
+            <button onClick={() => (setRole("requester"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.22s` }}>
               🏠 手伝ってほしい
               <span className="block text-base font-normal text-ink-soft">10cm 積もった朝、近所に応援が届く（自分も手伝えます）</span>
             </button>
-            <button onClick={() => (setRole("family"), setPhase("place"))} className={`${big} bg-card ring-ink/15`}>
+            <button onClick={() => (setRole("family"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.33999999999999997s` }}>
               👪 家族の代わりに登録
               <span className="block text-base font-normal text-ink-soft">離れて住む親の家を登録。終わると知らせが届きます</span>
             </button>

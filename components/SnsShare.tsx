@@ -178,21 +178,24 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
                 role="tab"
                 aria-selected={o.key === opt.key}
                 onClick={() => setKey(o.key)}
-                className={`min-h-10 whitespace-nowrap rounded-xl px-0.5 text-[13px] font-bold ${o.key === opt.key ? "bg-ink text-white" : "text-ink"}`}
+                className={`min-h-10 whitespace-nowrap rounded-xl px-0.5 text-[13px] font-bold max-[380px]:tracking-tighter ${o.key === opt.key ? "bg-ink text-white" : "text-ink"}`}
               >
                 {o.label}
               </button>
             ))}
           </div>
         )}
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={opt.key}
-            src={`${opt.image}${opt.image.includes("?") ? "&" : "?"}format=square`}
-            alt={`${opt.label}のシェア画像`}
-            className="aspect-square max-h-[30dvh] w-auto max-w-full rounded-2xl shadow-lg ring-1 ring-ink/10"
-          />
+        <div className="flex min-h-0 flex-1 flex-col items-center gap-2">
+          {/* 画像は残りの高さに合わせて縮む（小さい画面で上のタブや下の欄に重ならないように） */}
+          <div className="flex min-h-0 w-full flex-1 justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              key={opt.key}
+              src={`${opt.image}${opt.image.includes("?") ? "&" : "?"}format=square`}
+              alt={`${opt.label}のシェア画像`}
+              className="aspect-square h-full max-h-[30dvh] w-auto max-w-full rounded-2xl shadow-lg ring-1 ring-ink/10"
+            />
+          </div>
           <label className="block w-full shrink-0 text-xs font-bold text-ink-soft">
             投稿文（直してから投稿できます）
             <textarea
@@ -204,9 +207,9 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
           </label>
         </div>
         <div className="grid shrink-0 grid-cols-3 gap-2">
-          <button onClick={postX} className={`${btn} min-h-12 bg-black px-1 text-white shadow-md`}>X に投稿</button>
-          <button onClick={postLine} className={`${btn} min-h-12 bg-[#06C755] px-1 text-white shadow-md`}>LINE で送る</button>
-          <button disabled={busy} onClick={() => shareImage("square")} className={`${btn} min-h-12 bg-ink px-1 text-white shadow-md`}>画像で共有</button>
+          <button onClick={postX} className={`${btn} min-h-12 whitespace-nowrap bg-black px-1 text-white shadow-md max-[380px]:text-base`}>X に投稿</button>
+          <button onClick={postLine} className={`${btn} min-h-12 whitespace-nowrap bg-[#06C755] px-1 text-white shadow-md max-[380px]:text-base`}>LINE で送る</button>
+          <button disabled={busy} onClick={() => shareImage("square")} className={`${btn} min-h-12 whitespace-nowrap bg-ink px-1 text-white shadow-md max-[380px]:text-base`}>画像で共有</button>
         </div>
         <div className="flex shrink-0 items-center justify-center gap-1">
           <button disabled={busy} onClick={() => save("square")} className={link}>画像を保存</button>

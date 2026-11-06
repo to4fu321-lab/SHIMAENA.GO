@@ -162,7 +162,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           <Mascot size={40} team={myTeam?.team.id} />
         </span>
         <div className="min-w-0 flex-1 leading-tight">
-          <h1 className="text-2xl font-bold">
+          <h1 className="whitespace-nowrap text-2xl font-bold max-[400px]:text-xl">
             シマエナ<span className="text-lamp-deep">GO</span>
           </h1>
           {!myTeam && <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">10分の雪かきで、町が変わる。</p>}

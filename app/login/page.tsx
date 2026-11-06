@@ -10,6 +10,7 @@ import { repo } from "@/lib/repo";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { logoutAction } from "./actions";
 import Bgm from "@/components/Bgm";
+import SnowScene from "@/components/SnowScene";
 
 export const metadata: Metadata = { title: "ログイン ・ シマエナGO" };
 
@@ -28,17 +29,19 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
   const me = viewerId ? await repo().findParticipant(viewerId) : undefined;
   const to = safeNext(next);
   return (
-    <main className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper px-4 pb-6 pt-6 text-ink">
-      <header className="flex items-center gap-3">
-        <Mascot size={64} />
-        <div>
-          <p className="text-sm font-bold">
-            シマエナ<span className="text-lamp-deep">GO</span>
-          </p>
-          <h1 className="text-2xl font-bold leading-tight">ログイン</h1>
-        </div>
+    <main className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden px-4 pb-6 pt-[6dvh] text-ink">
+      {/* 雪の夜の町（はじめての人をわくわくさせる背景。/start と同じ） */}
+      <SnowScene />
+      <header className="relative flex flex-col items-center text-center text-white">
+        <Mascot size={92} className="captain-idle drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] short:size-20" />
+        <p className="opening-logo mt-1 whitespace-nowrap text-5xl font-black max-[380px]:text-4xl">
+          シマエナ<span className="text-[#ffb98a]">GO</span>
+        </p>
+        <h1 className="opening-rise mt-1 text-xl font-bold text-white/90 [text-shadow:0_1px_6px_rgba(12,28,46,0.9)]" style={{ animationDelay: "0.4s" }}>
+          ログイン
+        </h1>
       </header>
-      <section className="mt-5 space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
+      <section className="opening-rise relative mt-5 space-y-3 rounded-3xl bg-card/95 p-5 shadow-xl" style={{ animationDelay: "0.6s" }}>
         {me ? (
           <>
             <p className="text-lg font-bold">{me.nickname}さんとしてログインしています。</p>
@@ -59,7 +62,7 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
           </>
         )}
       </section>
-      <p className="mt-auto text-center text-sm text-ink-soft">
+      <p className="relative mt-auto rounded-full bg-white/85 px-3 py-1 text-center text-sm text-ink">
         デモ: <Link href="/?as=h3" className="underline">架空の手伝う側として見る</Link>
       </p>
     </main>

@@ -59,7 +59,8 @@ export default function MapSheet({ peek, children, footer, startClosed = false }
         aria-hidden={!open}
         inert={!open}
       >
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-3">{children}</div>
+        {/* 下の端をうすくして「まだ続く」と分かるように（下の帯に文字が半分隠れて見えないように） */}
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-6 [mask-image:linear-gradient(to_bottom,black_calc(100%-28px),transparent)]">{children}</div>
         {footer && <div className="shrink-0 border-t border-ink/10 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2">{footer}</div>}
       </div>
       {!open && <div className="h-[max(8px,env(safe-area-inset-bottom))]" />}

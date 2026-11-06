@@ -332,7 +332,7 @@ export default function SoloScreen({
             {NIGHT_TEXT.why}
           </p>
         ) : done && m.kind !== "report_snow" ? (
-          <button tabIndex={i === active ? 0 : -1} onClick={() => goTo(Math.min(i + 1, slides.length - 1))} className="btn mt-auto rounded-full bg-ice-soft text-lg">
+          <button tabIndex={i === active ? 0 : -1} onClick={() => goTo(Math.min(i + 1, slides.length - 1))} className="btn sticky bottom-0 mt-auto rounded-full bg-ice-soft text-lg shadow-md">
             ✓ クリア済み　次へ ›
           </button>
         ) : (
@@ -340,7 +340,7 @@ export default function SoloScreen({
             tabIndex={i === active ? 0 : -1}
             disabled={pending || Boolean(flash)}
             onClick={() => beginOrSwitch(m)}
-            className="btn btn-lamp mt-auto whitespace-nowrap rounded-full text-xl"
+            className="btn btn-lamp sticky bottom-0 mt-auto whitespace-nowrap rounded-full text-xl shadow-md"
           >
             {done ? "▶ もう1件 知らせる" : "▶ 出撃する！"}
           </button>

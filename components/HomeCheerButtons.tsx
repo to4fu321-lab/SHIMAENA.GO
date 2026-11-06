@@ -30,7 +30,7 @@ export default function HomeCheerButtons({
       setDone((d) => ({ ...d, [kind]: r.sent }));
       play(kind === "cheer" ? "cheer" : "thanks");
     });
-  const btn = "flex min-h-10 min-w-0 flex-1 basis-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 text-sm font-bold shadow-sm ring-1 ring-ink/15 disabled:cursor-default";
+  const btn = "flex min-h-10 min-w-0 flex-1 basis-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 text-sm font-bold shadow-sm ring-1 ring-ink/15 disabled:cursor-default max-[380px]:gap-0.5 max-[380px]:px-1 max-[380px]:text-xs";
   return (
     <div className="mt-1.5 flex gap-2 short:mt-1" aria-label="自宅の雪かきへの応援">
       <button

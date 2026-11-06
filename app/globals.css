@@ -484,3 +484,67 @@ body {
   .book-noprint { display: none !important; }
   .book-sheet { break-after: page; }
 }
+
+/* はじめての演出（components/SnowScene.tsx・WelcomeOpening.tsx）: 雪の夜 → タップで夜明け・灯りがともる・隊長が飛んでくる */
+.opening-flake { animation: opening-fall linear infinite; }
+@keyframes opening-fall {
+  from { transform: translate3d(0, -10px, 0); }
+  to { transform: translate3d(var(--drift, 12px), 105dvh, 0); }
+}
+.opening-dawn { animation: opening-dawn 2.4s 0.2s ease-out both; }
+@keyframes opening-dawn { from { opacity: 0; } to { opacity: 1; } }
+.opening-fade-out { animation: opening-fade 1.2s ease-out both !important; }
+@keyframes opening-fade { to { opacity: 0; } }
+.opening-sun { animation: opening-sun 2.8s 0.2s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes opening-sun {
+  from { transform: translateY(140px) scale(0.7); opacity: 0; }
+  to { transform: translateY(0) scale(1.15); opacity: 1; }
+}
+.opening-window { fill: #24384d; animation: opening-window 0.5s ease-out both; }
+@keyframes opening-window {
+  0% { fill: #24384d; }
+  60% { fill: #fff3c4; filter: drop-shadow(0 0 8px #ffd27a); }
+  100% { fill: #ffd27a; filter: drop-shadow(0 0 5px #ffd27a); }
+}
+.opening-logo { animation: opening-logo 1s cubic-bezier(0.34, 1.56, 0.64, 1) both, opening-glow 2.6s 1s ease-in-out infinite; }
+@keyframes opening-logo {
+  from { opacity: 0; transform: scale(0.6) translateY(16px); letter-spacing: 0.3em; }
+  to { opacity: 1; transform: none; }
+}
+@keyframes opening-glow {
+  0%, 100% { text-shadow: 0 0 12px rgba(255, 255, 255, 0.35), 0 0 30px rgba(143, 184, 201, 0.4); }
+  50% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 46px rgba(255, 210, 122, 0.6); }
+}
+.opening-rise { animation: opening-rise 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes opening-rise { from { opacity: 0; transform: translateY(14px); } }
+.opening-tap { animation: opening-rise 0.7s 1.3s both, opening-tap 1.3s 2s ease-in-out infinite; }
+@keyframes opening-tap {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.opening-flash { animation: opening-flash 0.9s ease-out both; }
+@keyframes opening-flash { from { opacity: 0.95; } to { opacity: 0; visibility: hidden; } }
+.opening-char { animation: opening-char 0.6s cubic-bezier(0.34, 1.8, 0.64, 1) both; }
+@keyframes opening-char {
+  from { opacity: 0; transform: translateY(-40px) scale(0.3) rotate(-20deg); }
+  to { opacity: 1; transform: none; }
+}
+.opening-name { animation: opening-name 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes opening-name { from { opacity: 0; transform: scale(2.2) rotate(-6deg); } to { opacity: 1; transform: rotate(-2deg); } }
+.opening-burst { left: 50%; top: 50%; opacity: 0; animation: opening-burst 1.3s cubic-bezier(0.1, 0.8, 0.3, 1) both; }
+@keyframes opening-burst {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(220deg) scale(1); }
+}
+.opening-pillar { animation: opening-pillar 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+@keyframes opening-pillar { from { opacity: 0; transform: translateX(-60px) scale(0.9); } }
+.opening-cta { animation: opening-rise 0.6s 2.8s both, ready-pulse 1.4s 3.4s ease-in-out infinite; }
+/* 登録の画面が順に出る・登録できたときのスタンプ */
+.step-in { animation: step-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes step-in { from { opacity: 0; transform: translateX(40px); } }
+@media (prefers-reduced-motion: reduce) {
+  .opening-flake, .opening-logo, .opening-rise, .opening-tap, .opening-char, .opening-name, .opening-burst, .opening-pillar, .opening-cta, .step-in { animation: none; }
+  .opening-burst { display: none; }
+  .opening-dawn, .opening-sun, .opening-flash, .opening-window { animation-duration: 0.01s; animation-delay: 0s !important; }
+}

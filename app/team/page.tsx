@@ -67,7 +67,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
               />
             ))}
           </div>
-          <p className="relative mx-auto inline-block rounded-full bg-white px-5 py-1 text-lg font-bold shadow-sm" style={{ color: mine.deep }}>
+          <p className="relative mx-auto inline-block whitespace-nowrap rounded-full bg-white px-5 py-1 text-lg font-bold shadow-sm max-[380px]:px-3 max-[380px]:text-base" style={{ color: mine.deep }}>
             🎉 今週のあなたのチーム 🎉
           </p>
           <PlayOnMount sounds={[{ name: "drumroll" }, { name: "welcome", delay: 0.8 }]} />
