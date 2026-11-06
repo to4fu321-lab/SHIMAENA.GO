@@ -82,6 +82,43 @@ async function waitForServer(url, ms = 40000) {
     c = await counts();
     ok(c.osc > before + 10, `BGM が先読みで予約され続ける（3.2秒で +${c.osc - before} 音）`);
 
+    // 1b. 別のアプリに移って戻る（11/6 本人の指摘「別のアプリに移動してから再度開くと音が出なくなる」）:
+    //     裏に回ると止まり、戻ると続きから鳴る。戻ったのに時計が進まない（iPhone の症状）ときは、次のタップで AudioContext を作り直して鳴り続ける
+    const setHidden = (hidden) =>
+      page.evaluate((h) => {
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => h });
+        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (h ? "hidden" : "visible") });
+        document.dispatchEvent(new Event("visibilitychange"));
+      }, hidden);
+    await setHidden(true);
+    await page.waitForTimeout(400);
+    c = await counts();
+    ok(c.state === "suspended", `裏に回ると止まる（${c.state}）`);
+    await setHidden(false);
+    await page.waitForTimeout(1200);
+    const b1 = (await counts()).osc;
+    await page.waitForTimeout(3200);
+    c = await counts();
+    ok(c.state === "running" && c.osc > b1 + 10 && c.bgm === "morning", `戻ると続きから鳴る（${c.state}・3.2秒で +${c.osc - b1} 音・${c.bgm}）`);
+    // 時計が止まったまま戻ったふり → 次のタップで新しい AudioContext になり、BGM が続く
+    await page.evaluate(() => {
+      const ctx = window.__sound.ctx;
+      const frozen = ctx.currentTime;
+      Object.defineProperty(ctx, "currentTime", { configurable: true, get: () => frozen });
+      window.__oldCtx = ctx;
+    });
+    await setHidden(true);
+    await page.waitForTimeout(300);
+    await setHidden(false);
+    await page.waitForTimeout(1200);
+    await page.keyboard.press("a"); // 人の操作
+    await page.waitForTimeout(1500);
+    const b2 = (await counts()).osc;
+    await page.waitForTimeout(3200);
+    c = await counts();
+    const rebuilt = await page.evaluate(() => window.__sound.ctx !== window.__oldCtx && window.__oldCtx.state === "closed");
+    ok(rebuilt && c.state === "running" && c.osc > b2 + 10 && c.bgm === "morning", `時計が止まっていたら作り直して鳴り続ける（作り直し ${rebuilt}・${c.state}・+${c.osc - b2} 音・${c.bgm}）`);
+
     // 2. 下のタブで地図へ: 同じ「しらかばの朝」のまま（出発前）
     await page.getByRole("link", { name: "地図" }).click();
     await page.waitForURL(/\/map/);

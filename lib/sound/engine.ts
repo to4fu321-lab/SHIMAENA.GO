@@ -19,6 +19,16 @@ interface Engine {
 let engine: Engine | null = null;
 /** 一度でも人の操作があったか（それより前に予約した音は、最初のタップで一斉に鳴ってしまうので捨てる） */
 let gestureSeen = false;
+/** 一度でも音が動いたか（動いたあとに止まっている＝裏から戻った直後など。その間の効果音は捨てる） */
+let wasRunning = false;
+/** 画面が裏にいるか */
+let hiddenNow = false;
+/**
+ * 戻ったのに音が動かない（iPhone で別のアプリから戻ると、AudioContext が「動いている」と言いながら時計が止まったまま鳴らないことがある）
+ * → 次のタップで AudioContext を作り直す（11/6 本人の指摘「別のアプリに移動してから再度開くと音が出なくなる」）
+ */
+let needsRebuild = false;
+let healthTimer: number | undefined;
 let prefs: SoundPrefs | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -76,9 +86,9 @@ export function getEngine(): Engine | null {
   }
 }
 
-/** 最初のタップで呼ぶ: 止まっている AudioContext を動かす。動いたら true */
+/** 最初のタップで呼ぶ: 止まっている AudioContext を動かす。壊れていれば作り直す。動いたら true */
 export async function unlock(): Promise<boolean> {
-  const e = getEngine();
+  let e = needsRebuild ? rebuild() : getEngine();
   if (!e) return false;
   gestureSeen = true;
   try {
@@ -86,13 +96,65 @@ export async function unlock(): Promise<boolean> {
   } catch {
     /* 解放できなければ次のタップでもう一度 */
   }
+  // タップの中でも動かなかった（iPhone の割り込みのあと など）: 1回だけ作り直して、もう一度
+  if (e.ctx.state !== "running" && wasRunning) {
+    e = rebuild();
+    if (!e) return false;
+    try {
+      await e.ctx.resume();
+    } catch {
+      /* 次のタップでもう一度 */
+    }
+  }
   const ok = e.ctx.state === "running";
-  if (ok) unlockedHooks.forEach((h) => h());
+  if (ok) {
+    wasRunning = true;
+    unlockedHooks.forEach((h) => h());
+    healthCheck(e);
+  }
   return ok;
 }
 
 export function isUnlocked(): boolean {
   return engine?.ctx.state === "running";
+}
+
+/** AudioContext を作り直す（古いものは閉じる）。BGM 側は onRebuild で知って、曲を新しい入れ物で鳴らし直す */
+function rebuild(): Engine | null {
+  const old = engine;
+  engine = null;
+  needsRebuild = false;
+  try {
+    void old?.ctx.close();
+  } catch {
+    /* 閉じられなくても新しいものを使う */
+  }
+  const e = getEngine();
+  rebuildHooks.forEach((h) => h());
+  return e;
+}
+
+const rebuildHooks = new Set<() => void>();
+/** AudioContext を作り直したとき（BGM を鳴らし直す など） */
+export function onRebuild(h: () => void): () => void {
+  rebuildHooks.add(h);
+  return () => void rebuildHooks.delete(h);
+}
+
+/** 動いているはずなのに時計が進まなければ「壊れた」とみなし、次のタップで作り直す */
+function healthCheck(e: Engine): void {
+  if (typeof window === "undefined") return;
+  window.clearTimeout(healthTimer);
+  const t0 = e.ctx.currentTime;
+  healthTimer = window.setTimeout(() => {
+    if (engine !== e || hiddenNow) return;
+    if (e.ctx.state !== "running" || e.ctx.currentTime <= t0) needsRebuild = true;
+  }, 700);
+}
+
+/** 確かめ用: 作り直しが要る状態か */
+export function soundNeedsRebuild(): boolean {
+  return needsRebuild;
 }
 
 const unlockedHooks = new Set<() => void>();
@@ -107,7 +169,9 @@ export function onUnlocked(h: () => void): () => void {
 export function play(name: SfxName, opts: { delay?: number; gain?: number } = {}): void {
   if (!soundPrefs().sfx) return;
   const e = getEngine();
-  if (!e || !gestureSeen || e.ctx.state === "closed") return;
+  if (!e || !gestureSeen || e.ctx.state === "closed" || hiddenNow) return;
+  // 一度動いたあとに止まっている（裏から戻った直後・割り込みのあと）: 予約すると次のタップで一斉に鳴るので捨てる
+  if (e.ctx.state !== "running" && wasRunning) return;
   try {
     let out: AudioNode = e.sfx;
     if (opts.gain !== undefined && opts.gain !== 1) {
@@ -149,12 +213,19 @@ export function onVisibility(h: (hidden: boolean) => void): () => void {
   return () => void visibilityHooks.delete(h);
 }
 export function notifyVisibility(hidden: boolean): void {
+  hiddenNow = hidden;
   visibilityHooks.forEach((h) => h(hidden));
   const e = engine;
   if (!e) return;
   try {
-    if (hidden) void e.ctx.suspend();
-    else void e.ctx.resume();
+    if (hidden) {
+      window.clearTimeout(healthTimer);
+      void e.ctx.suspend();
+      return;
+    }
+    // 戻った: 動かしてみる。タップなしでは動かせない端末もあるので、動かなければ次のタップ（unlock）で作り直す
+    const p = e.ctx.state !== "running" ? e.ctx.resume() : Promise.resolve();
+    void p.catch(() => undefined).then(() => healthCheck(e));
   } catch {
     /* どちらでも画面は動く */
   }

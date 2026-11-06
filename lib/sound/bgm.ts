@@ -3,7 +3,7 @@
 // 「しらかばの朝」lo-fi chill（82bpm・D）／「出撃！」citypop drive（120bpm・F）／「灯りがともる」warm celebration（100bpm・C）。
 // 鳴らし方は Web Audio の定番「2つの時計」: setInterval（25ms）で、少し先（0.15秒）までの小節を予約していく。
 // 曲の切りかえは 0.6 秒のクロスフェード。同じ曲ならタブを移っても頭に戻らない。
-import { getEngine, isUnlocked, onSoundPrefs, onUnlocked, setBgmLevel, soundPrefs } from "./engine";
+import { getEngine, isUnlocked, onRebuild, onSoundPrefs, onUnlocked, setBgmLevel, soundPrefs } from "./engine";
 import { bass, bell, clap, crunch, epiano, hat, kick, lead, pad, snare, wind } from "./synth";
 
 export type BgmTrack = "morning" | "mission" | "clear";
@@ -213,6 +213,8 @@ class Player {
   private tick(): void {
     const beat = 60 / this.song.bpm;
     const barSec = beat * 4;
+    // 裏から戻って時計が大きく進んでいたら、過ぎた小節をまとめて鳴らさず、いまから続きを予約する
+    if (this.nextTime < this.ctx.currentTime - barSec) this.nextTime = this.ctx.currentTime + 0.05;
     let guard = 0;
     while (this.nextTime < this.ctx.currentTime + LOOKAHEAD && guard++ < 4) {
       try {
@@ -227,11 +229,15 @@ class Player {
   stop(): void {
     if (this.timer !== undefined) window.clearInterval(this.timer);
     this.timer = undefined;
-    const now = this.ctx.currentTime;
-    this.gain.gain.cancelScheduledValues(now);
-    this.gain.gain.setValueAtTime(this.gain.gain.value, now);
-    this.gain.gain.linearRampToValueAtTime(0, now + FADE);
-    window.setTimeout(() => this.gain.disconnect(), (FADE + 0.2) * 1000);
+    try {
+      const now = this.ctx.currentTime;
+      this.gain.gain.cancelScheduledValues(now);
+      this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+      this.gain.gain.linearRampToValueAtTime(0, now + FADE);
+      window.setTimeout(() => this.gain.disconnect(), (FADE + 0.2) * 1000);
+    } catch {
+      /* 閉じた AudioContext（作り直したあと）では何もしない */
+    }
   }
 }
 
@@ -273,6 +279,12 @@ function scheduleApply(): void {
     hooked = true;
     onUnlocked(scheduleApply);
     onSoundPrefs(scheduleApply);
+    // AudioContext を作り直したら、鳴っていた曲を新しい入れ物で鳴らし直す（解放されたら onUnlocked が apply を呼ぶ）
+    onRebuild(() => {
+      current?.player.stop();
+      current = null;
+      delete document.documentElement.dataset.bgm;
+    });
   }
   if (applyTimer !== undefined) return;
   applyTimer = window.setTimeout(apply, 0); // 画面の入れかわり（消える→出る）を1回にまとめる
