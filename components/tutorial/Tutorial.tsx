@@ -10,13 +10,12 @@ import Mascot, { SnowTown } from "../Mascot";
 import LineChat, { type ChatMsg } from "./LineChat";
 import { play } from "@/lib/sound/engine";
 
-const STEPS = ["はじめに", "参加する", "雪かきに行く", "雪かきをする", "完了する", "仲間になる"] as const;
+const STEPS = ["はじめに", "お知らせ", "雪かきに行く", "雪かきをする", "完了する", "仲間になる"] as const;
 const LAST = STEPS.length - 1;
-/** 点呼の答え（本物の隊長トークと同じ。spec v1.8: いつ手伝えそうか） */
+/** 積もった朝のお知らせへの答え（spec v1.20: 毎朝の質問はなく、10cm 積もった朝に「助けてほしい家」が届く） */
 const WHEN = [
-  ["am", "朝（〜9時）"],
-  ["noon", "お昼（〜13時）"],
-  ["pm", "夕方（〜19時）"],
+  ["map", "地図で見る"],
+  ["later", "あとで見る"],
 ] as const;
 const SNOW = 5; // 雪の山（ひとすくい × 5）
 
@@ -190,10 +189,10 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
   const team = TEAMS[0];
   const practiced = [when !== null, going, snow === 0, photo];
 
-  /* --- 隊長トークの会話（押したボタンから組み立てる） --- */
+  /* --- 隊長トークの会話（押したボタンから組み立てる。spec v1.20: 10cm 積もった朝 6:30 に自動で届く） --- */
   const rollcall: ChatMsg[] = [
     { id: "h1", from: "bot", text: "おはようだしま〜！☃️\n今朝は雪12cm、相手は『ぼた雪のドンブリ』です。" },
-    { id: "h2", from: "bot", text: "今日、いつ手伝えそうですか？\n（6時〜19時なら、いつでも10分から）" },
+    { id: "h2", from: "bot", text: "助けてほしい家が 3軒 あります。\n6時〜19時なら、いつでも10分から。" },
   ];
   if (when !== null) {
     rollcall.push({ id: "a", from: "me", text: when === "0" ? "今日は休む" : (WHEN.find(([k]) => k === when)?.[1] ?? "") });
@@ -203,15 +202,13 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
       text:
         when === "0"
           ? "わかりました。今日はゆっくり休んでください。\nまたの雪の日に、よろしくしま〜！"
-          : when === "noon"
-            ? "ありがとうしま〜！\n11:30 ごろ、まだ待っている家をお知らせします。"
-            : when === "pm"
-              ? "ありがとうしま〜！\n16:30 ごろ、まだ待っている家をお知らせします。"
-              : "ありがとうしま〜！\n6:40 に、行き先をお知らせします。",
+          : when === "later"
+            ? "了解しま〜！\nお昼 11:30 と夕方 16:30 にも、まだ待っている家をお知らせします。"
+            : "地図のオレンジのピンを押して「行く」で出発です。\n10分だけでも大歓迎しま〜！",
     });
   }
   const report: ChatMsg[] = [
-    { id: "g", from: "bot", text: "了解だしま〜！🙌\n拠点3へ 7:00 に集合です！" },
+    { id: "g", from: "bot", text: "了解だしま〜！🙌\n拠点3をお願いします。合言葉は「こなゆき」です。" },
     { id: "p", from: "bot", text: "終わったら、玄関の前から道路の方を写した写真を1枚送ってください。" },
   ];
   if (photo) {
@@ -261,10 +258,10 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
       </button>
     </>,
 
-    /* 1 参加する: 点呼に答える */
+    /* 1 お知らせ: 10cm 積もった朝に届く（spec v1.20） */
     <>
-      <Title id="tut-h-1" sub="雪の朝 6:30、隊長トークにこの1問が届きます。下のボタンを押してみよう。">
-        今日、いつ手伝えそうですか？
+      <Title id="tut-h-1" sub="10cm 以上積もった朝 6:30、隊長トークに自動で届きます。下のボタンを押してみよう。">
+        雪の朝、お知らせが届く
       </Title>
       <div className="relative flex min-h-0 flex-1 flex-col">
         <LineChat
@@ -278,13 +275,13 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
         />
       </div>
       <Hint>
-        <b>10分だけでも大歓迎！</b> 朝に間に合わなくても、19時まで自分の時間で。体調がすぐれない日は「今日は休む」で大丈夫です。
+        <b>毎朝の質問はありません。</b> 積もった朝だけ届きます。朝に間に合わなくても 19時まで自分の時間で。無理な日は「今日は休む」で大丈夫です。
       </Hint>
     </>,
 
     /* 2 雪かきに行く: 地図で家を選んで「行く」 */
     <>
-      <Title id="tut-h-2" sub="6:40、行き先が届きます。地図のオレンジのピンを押してみよう。">
+      <Title id="tut-h-2" sub="お知らせの「地図で見る」で開きます。オレンジのピンを押してみよう。">
         近くの雪かきを見つけよう！
       </Title>
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-3xl ring-1 ring-ink/15">
@@ -319,7 +316,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
               <p className="leading-tight">
                 <b className="text-xl">拠点3</b>
                 <span className="ml-2 text-base font-bold text-alert">あと1人</span>
-                <span className="block text-base">雪かきが必要です ・ 7:00 開始</span>
+                <span className="block text-base">おまかせ（家の人は雪かきできない）・玄関前</span>
               </p>
               <div className="grid grid-cols-[1.4fr_1fr] gap-2">
                 <button type="button" onClick={() => setGoing(true)} className="btn btn-lamp">
@@ -336,7 +333,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
               <p className="text-base leading-snug">
                 <b>了解だしま〜！🙌</b>
                 <br />
-                拠点3へお願いします。7:00 開始です。
+                拠点3へお願いします。いつでも10分から。
               </p>
             </div>
           )}
@@ -452,17 +449,22 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
         </div>
       </div>
       <ul className="flex shrink-0 justify-center gap-1.5 text-sm font-bold" aria-label="練習したこと">
-        {["答える", "行く", "雪かき", "写真"].map((t, i) => (
+        {["お知らせ", "行く", "雪かき", "写真"].map((t, i) => (
           <li key={t} className={`rounded-full px-2.5 py-0.5 ring-1 ${practiced[i] ? "bg-ink text-white ring-ink" : "bg-card text-ink-soft ring-ink/20"}`}>
             {practiced[i] ? "✓ " : ""}
             {t}
           </li>
         ))}
       </ul>
-      <button type="button" onClick={() => setRulesOpen(true)} className="btn btn-white shrink-0 justify-between rounded-2xl px-4 text-lg">
-        <span>⭐ 大切なルール</span>
-        <span aria-hidden="true">⌄</span>
-      </button>
+      <div className="grid shrink-0 grid-cols-2 gap-2">
+        <button type="button" onClick={() => setRulesOpen(true)} className="btn btn-white justify-between gap-1 whitespace-nowrap rounded-2xl px-2.5 text-sm">
+          <span>⭐ 大切なルール</span>
+          <span aria-hidden="true">⌄</span>
+        </button>
+        <Link href="/ask" className="btn btn-white whitespace-nowrap rounded-2xl px-2 text-sm">
+          🏠 雪かきをお願いする
+        </Link>
+      </div>
       <a href={joinUrl ?? "/start"} className="btn btn-big shrink-0 gap-2 rounded-full bg-lamp text-white shadow-md">
         はじめる（LINE でログイン → 30秒で登録）
       </a>
