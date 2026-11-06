@@ -7,7 +7,9 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { chatPhotoAction, chatPollAction, chatPostbackAction, chatTextAction, type ChatResult } from "@/app/chat/actions";
 import type { ChatBubble, ChatButton } from "@/lib/inbox/view";
 import type { TeamId } from "@/lib/types";
+import ChatTools, { readSpeak, readTextSize, speak, TEXT_SIZE_PX, type TextSize } from "./ChatTools";
 import Mascot from "./Mascot";
+import MicButton from "./MicButton";
 import { shrink } from "./shrink";
 
 const POLL_SECONDS = 6;
@@ -30,6 +32,22 @@ function Avatar({ team }: { team?: TeamId }) {
 export default function ChatScreen({ viewerId, initial, teamId, readOnly = false }: { viewerId: string; initial: ChatBubble[]; teamId?: TeamId; readOnly?: boolean }) {
   const [bubbles, setBubbles] = useState<ChatBubble[]>(initial);
   const [draft, setDraft] = useState("");
+  const [size, setSize] = useState<TextSize>("m");
+  const [speakOn, setSpeakOn] = useState(false);
+  const [listening, setListening] = useState(false);
+  const spoken = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    // 端末に覚えた設定は、画面が出たあとに読む
+    let alive = true;
+    void Promise.resolve().then(() => {
+      if (!alive) return;
+      setSize(readTextSize());
+      setSpeakOn(readSpeak());
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
   const list = useRef<HTMLDivElement>(null);
@@ -37,10 +55,21 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
   const fileRoll = useRef<HTMLInputElement>(null);
   const lastId = bubbles.at(-1)?.id;
 
-  // 新しい吹き出しが増えたら、いちばん下へ
+  // 新しい吹き出しが増えたら、いちばん下へ。読み上げがオンなら、隊長の新しい吹き出しを読む（開いたときの分は読まない）
   useEffect(() => {
     const el = list.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    const last = bubbles.at(-1);
+    if (spoken.current === undefined) {
+      spoken.current = last?.id ?? "";
+      return;
+    }
+    if (speakOn && last && last.from === "captain" && last.id !== spoken.current) {
+      const fresh = bubbles.slice(bubbles.findIndex((b) => b.id === spoken.current) + 1).filter((b) => b.from === "captain");
+      speak(fresh.map((b) => b.text ?? b.lines?.map((l) => l.text).join("。") ?? "").join("。"));
+    }
+    spoken.current = last?.id ?? "";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastId]);
 
   // 数秒ごとに、届いた文面（点呼・作戦・なかまの誘い…）を取りに行く
@@ -99,7 +128,7 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
   };
 
   const Button = ({ b, big }: { b: ChatButton; big: boolean }) => {
-    const cls = `${big ? "btn min-h-14 w-full text-lg" : "flex min-h-11 shrink-0 items-center rounded-full px-4 text-base font-bold active:scale-95"} ${TONE[b.tone]}`;
+    const cls = `${big ? "btn min-h-14 w-full text-[1.05em]" : "flex min-h-11 shrink-0 items-center rounded-full px-4 text-[0.95em] font-bold active:scale-95"} ${TONE[b.tone]}`;
     if (b.kind === "link") {
       return b.external ? (
         <a href={b.href} target="_blank" rel="noopener" className={cls}>
@@ -122,7 +151,12 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
   const quick = [...bubbles].reverse().find((x) => x.quick.length > 0)?.quick ?? [];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col" style={{ fontSize: TEXT_SIZE_PX[size] }}>
+      {!readOnly && (
+        <div className="flex shrink-0 items-center justify-end gap-2 px-3 py-1">
+          <ChatTools size={size} onSize={setSize} speakOn={speakOn} onSpeak={setSpeakOn} />
+        </div>
+      )}
       {/* 流れ（この中だけがスクロールする） */}
       <div ref={list} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label="隊長とのやりとり">
         {bubbles.length === 0 && (
@@ -136,14 +170,14 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
               {b.photo ? (
                 <p className="rounded-2xl rounded-br-md bg-[#b8e994] px-3 py-1.5 text-base font-bold shadow-sm">📷 写真を送りました</p>
               ) : (
-                <p className="max-w-[80%] whitespace-pre-line rounded-2xl rounded-br-md bg-[#b8e994] px-3 py-1.5 text-base font-bold leading-snug text-ink shadow-sm">{b.text}</p>
+                <p className="max-w-[80%] whitespace-pre-line rounded-2xl rounded-br-md bg-[#b8e994] px-3 py-1.5 text-[1em] font-bold leading-snug text-ink shadow-sm">{b.text}</p>
               )}
             </div>
           ) : (
             <div key={b.id} className="flex items-end gap-1.5">
               <Avatar team={teamId} />
               {b.text !== undefined ? (
-                <p className="max-w-[82%] whitespace-pre-line rounded-2xl rounded-bl-md bg-card px-3 py-2 text-base leading-snug shadow-sm">{b.text}</p>
+                <p className="max-w-[82%] whitespace-pre-line rounded-2xl rounded-bl-md bg-card px-3 py-2 text-[1em] leading-snug shadow-sm">{b.text}</p>
               ) : (
                 <div className="max-w-[88%] min-w-[60%] overflow-hidden rounded-2xl rounded-bl-md bg-card shadow-sm">
                   {b.image &&
@@ -159,7 +193,7 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
                   {(b.lines?.length || b.buttons.length) ? (
                     <div className="space-y-2 p-3">
                       {b.lines?.map((l, i) => (
-                        <p key={i} className={`whitespace-pre-line leading-snug ${l.strong ? "text-lg font-bold" : l.accent ? "text-sm text-lamp-deep" : "text-base"}`}>
+                        <p key={i} className={`whitespace-pre-line leading-snug ${l.strong ? "text-[1.1em] font-bold" : l.accent ? "text-[0.85em] text-lamp-deep" : "text-[1em]"}`}>
                           {l.text}
                         </p>
                       ))}
@@ -203,10 +237,17 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
         <button type="button" aria-label="写真を撮る" onClick={() => fileCamera.current?.click()} disabled={pending} className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-2xl">
           📷
         </button>
+        <MicButton
+          disabled={pending}
+          onText={(text, final) => {
+            setDraft(text);
+            setListening(!final);
+          }}
+        />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="隊長に話す（例: 何からすればいい？）"
+          placeholder={listening ? "聞いています…" : "隊長に話す（例: 何からすればいい？）"}
           maxLength={300}
           enterKeyHint="send"
           className="min-h-12 min-w-0 flex-1 rounded-full bg-paper px-4 text-base ring-1 ring-ink/15 focus:outline-none focus:ring-2 focus:ring-lamp"
