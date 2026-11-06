@@ -356,7 +356,7 @@ export default function MapScreen({
               <li className="col-span-2 text-ink-soft">マスは 50m 四方。どの家かは、割り当てられた人の隊長トークにだけ届きます。</li>
             </ul>
             {shareText && prog.total > 0 && <ShareButton text={shareText} />}
-            <Link href={`/today${q}#share`} className="btn btn-white w-full text-base">
+            <Link href={`/share${q}`} className="btn btn-white w-full text-base">
               画像つきで SNS に投稿する（X・Instagram）
             </Link>
           </div>

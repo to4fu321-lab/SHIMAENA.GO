@@ -36,7 +36,7 @@ function download(file: File) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-/** compact: 完了画面のタブの中など、1画面に収める置き方（画像は小さく横に、ボタンは3列）。fill: パネルの残りの高さを埋める置き方（/today）。11/5 本人の指示「基本1画面」 */
+/** compact: 完了画面のタブの中など、1画面に収める置き方（画像は小さく横に、ボタンは3列）。fill: パネルの残りの高さを埋める置き方（/share）。11/5 本人の指示「基本1画面」 */
 export default function SnsShare({ options, title = "SNS に投稿する", compact = false, fill = false }: { options: ShareOption[]; title?: string; compact?: boolean; fill?: boolean }) {
   const [key, setKey] = useState(options[0]?.key);
   const opt = options.find((o) => o.key === key) ?? options[0];

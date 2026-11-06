@@ -5,7 +5,7 @@ const path = require("path");
 const root = process.cwd();
 const { chromium } = require("playwright");
 const PORT = Number(process.env.PORT || 3125), U = `http://localhost:${PORT}`;
-const pages = (process.argv[2] || "/?as=h3,/map?as=h3,/solo?as=h3,/nakama?as=h3,/cards?as=h3,/cards/book?as=h3,/team?as=h3,/today?as=h3,/badge?as=h3,/settings?as=h3,/rules,/public/town,/public/diagnosis").split(",");
+const pages = (process.argv[2] || "/?as=h3,/map?as=h3,/solo?as=h3,/nakama?as=h3,/cards?as=h3,/cards/book?as=h3,/team?as=h3,/share?as=h3,/badge?as=h3,/settings?as=h3,/rules,/public/town,/public/diagnosis").split(",");
 (async () => {
   const server = spawn(path.join(root, "node_modules/.bin/next"), ["start", "-p", String(PORT)], { cwd: root, stdio: "ignore", detached: true });
   try {

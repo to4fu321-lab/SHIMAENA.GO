@@ -41,7 +41,7 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 /**
  * ホーム = 今朝の出撃画面（spec v1.1 10.6）。スクロールしない1画面:
  * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 雪かきGO！／ソロ活動をする → 下のタブ。
- * チームの得点・実況・応援・カード・SNS は「くわしく」（/today）へ。
+ * 右上は設定。SNS・友だちを誘うは活動カードの「広める」（/share）へ。
  */
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
@@ -162,15 +162,10 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         </div>
         {/* BGM のオン・オフ（spec v1.19）。効果音は設定の「音」で */}
         <SoundToggle compact />
-        <Link href={`/today${q}`} className="relative flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="くわしく（今朝のようす）">
-          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z" />
-            <path d="M10 20a2 2 0 0 0 4 0" />
-          </svg>
-          くわしく
-          {shorts.length > 0 && (
-            <span className="absolute -right-1 top-0 grid size-5 place-items-center rounded-full bg-lamp text-xs text-white">{shorts.length}</span>
-          )}
+        {/* 設定（11/6: 「くわしく」をやめて、中身は地図・チーム・活動カードの「広める」へ） */}
+        <Link href={`/settings${q}`} className="flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="設定">
+          <Icon name="settings" size={28} accent="var(--ice)" />
+          設定
         </Link>
         {/* 今週のあなたのチーム（1行まるごと。チーム名を大きな札に） */}
         {myTeam && (

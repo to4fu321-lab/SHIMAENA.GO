@@ -68,10 +68,19 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           ‹ ホーム
         </Link>
         <h1 className="text-center text-xl font-bold">活動カード</h1>
-        <Link href={`/cards/book${q}`} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs font-bold">
-          <Icon name="guide" size={28} accent="var(--ice)" />
-          図鑑
-        </Link>
+        <div className="flex">
+          <Link href={`/share${q}`} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs font-bold">
+            <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3v12M7 8l5-5 5 5" />
+              <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+            </svg>
+            広める
+          </Link>
+          <Link href={`/cards/book${q}`} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs font-bold">
+            <Icon name="guide" size={28} accent="var(--ice)" />
+            図鑑
+          </Link>
+        </div>
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pt-2">
@@ -110,7 +119,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           </div>
         )}
 
-        <section aria-label="最近の活動" className="min-h-0">
+        <section aria-label="最近の活動" className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-baseline justify-between">
             <h2 className="text-lg font-bold">最近の活動</h2>
             <Link href={`/cards/book${q}`} className="text-sm font-bold underline">
@@ -118,9 +127,10 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
             </Link>
           </div>
           {recent.length > 0 ? (
-            <ul className="mt-1 space-y-2">
+            // 入りきらない行は丸ごと右へ折り返して見えなくする（下の町の絵と文字が重ならないように。11/6 本人の指摘）
+            <ul className="mt-1 flex min-h-0 flex-1 flex-col flex-wrap content-start gap-2 overflow-hidden">
               {recent.map((l) => (
-                <li key={l.id} className="flex items-center gap-3 rounded-2xl bg-card px-3 py-1.5 shadow-sm ring-1 ring-ink/10">
+                <li key={l.id} className="flex w-full items-center gap-3 rounded-2xl bg-card px-3 py-1.5 shadow-sm ring-1 ring-ink/10">
                   <Icon name="house" size={34} accent="var(--lamp)" className="shrink-0 text-ink" />
                   <span className="min-w-0 flex-1 leading-tight">
                     <span className="block text-xs">{when(l.at)}</span>
@@ -140,7 +150,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           )}
         </section>
 
-        <SnowTown className="-mx-4 mt-auto h-16 min-h-0 w-[calc(100%+2rem)] shrink" />
+        <SnowTown className="-mx-4 h-16 w-[calc(100%+2rem)] shrink-0 short:h-12" />
       </main>
 
       <TabBar active="card" q={q} />
