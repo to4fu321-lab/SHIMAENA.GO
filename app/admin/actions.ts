@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-auth";
 import { demoEnabled } from "@/lib/env";
+import { insertRoadReport } from "@/lib/road/store";
+import { TOWN } from "@/lib/town";
+import { jstDate } from "@/lib/jst";
 import { withStateLock } from "@/lib/ops/lock";
 import { clearProblems } from "@/lib/ops/problems";
 import { applySchema, seedTown } from "@/lib/db";
@@ -274,5 +277,33 @@ export async function clearProblemsAction() {
   return guarded("clearProblems", async () => {
     await clearProblems();
     revalidatePath("/admin");
+  });
+}
+
+/** デモ用: 道の報告（滑る・細い）を町の中に2件入れる（写真なし。道の報告の地図の確認用） */
+export async function seedRoadReportsDemo() {
+  return guarded("seedRoadReportsDemo", async () => {
+    const now = new Date();
+    const [lat, lng] = TOWN.center;
+    const items = [
+      { hazard: "ice" as const, dLat: 0.0012, dLng: -0.0015, note: "交差点の角がつるつる", minAgo: 25 },
+      { hazard: "narrow" as const, dLat: -0.0009, dLng: 0.0013, note: "", minAgo: 140 },
+    ];
+    for (const it of items) {
+      const at = new Date(now.getTime() - it.minAgo * 60000);
+      await insertRoadReport({
+        id: `demo-road-${it.hazard}-${now.getTime()}`,
+        participantId: "h2",
+        hazard: it.hazard,
+        location: [lat + it.dLat, lng + it.dLng],
+        ...(it.note ? { note: it.note } : {}),
+        at: at.toISOString(),
+        date: jstDate(at),
+        notifiedAt: at.toISOString(),
+      });
+    }
+    await update((s) => void s.log.push("デモの道の報告を2件入れました（つるつる・道が細い）"));
+    revalidatePath("/admin");
+    revalidatePath("/map");
   });
 }

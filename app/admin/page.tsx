@@ -29,6 +29,7 @@ import {
   startEmptyMorning,
   thanksDemo,
   nudgeNow,
+  seedRoadReportsDemo,
   writeImprovementsNow,
   writeRecapNow,
   writeShareTextsNow,
@@ -328,6 +329,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
               <button className={link}>7:10 の見本の状態に戻す</button>
             </form>
           )}
+          <form action={seedRoadReportsDemo}>
+            <button className={link}>道の報告をデモで2件入れる（つるつる・道が細い）</button>
+          </form>
         </div>
         <PagedNodes nodes={views} label="様子" />
         <PagedNodes nodes={missions} per={2} label="ミッション" empty={<p className="text-lg">まだミッションはありません（「流れ」の 3 で作戦を立てると出ます）。</p>} />

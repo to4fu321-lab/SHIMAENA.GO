@@ -107,13 +107,13 @@ const O = {
   }),
   online: (): ConciergeOption => ({
     id: "online",
-    button: "地図で道の報告を見る",
-    title: "町の雪を確認する",
+    button: "道の報告の地図を見る",
+    title: "道の報告を見る",
     minutes: 3,
     points: 0,
-    about: "外に出られない・時間がない人向け。家の中で、地図の道の危険と雪解けの進みを見る",
+    about: "外に出られない・時間がない人向け。家の中で、近所の人が知らせた 滑る所・細い道・除雪まだ を地図で見る（11/6 本人の指摘: 道の報告の地図へ）",
     prop: "phone",
-    action: { kind: "uri", path: "/map" },
+    action: { kind: "uri", path: "/map?view=road" },
     motives: ["game"],
   }),
   tip: (): ConciergeOption => ({

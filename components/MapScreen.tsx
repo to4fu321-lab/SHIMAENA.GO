@@ -55,7 +55,10 @@ export default function MapScreen({
   solo = [],
   road = [],
   focusRoad,
+  view,
 }: {
+  /** road: 道の報告（滑る所・細い道・除雪まだ）を見る地図（隊長トークの「道の報告の地図を見る」から。11/6 本人の指摘） */
+  view?: "road";
   state: MorningState;
   /** ソロ出動の足あと（今日） */
   solo?: SoloCell[];
@@ -117,6 +120,10 @@ export default function MapScreen({
   // 雪かきGO（出発前）: 割り当てがあって、まだ「行く」を押していないとき。「あとで」で閉じられる
   const [later, setLater] = useState(false);
   const briefing = Boolean(myBase && myView && mySortie?.status === "going" && !mySortie.confirmedAt && !later && !prog.allDone);
+  // 道の報告の地図: 札を押すとその報告に寄って写真が開く
+  const roadView = view === "road";
+  const [focus, setFocus] = useState<string | undefined>(focusRoad);
+  const roadHref = `/solo?pick=10&focus=report_snow${q ? `&as=${state.viewerId}` : ""}`;
 
   const peekNode = (
     <div aria-label="今朝の雪のこり">
@@ -153,10 +160,8 @@ export default function MapScreen({
           ‹ ホーム
         </Link>
         <h1 className="text-center text-xl font-bold leading-tight">
-          {briefing ? "雪かきGO" : "町の地図"}
-          <span className="block text-xs font-normal">
-            {month}月{day}日の朝
-          </span>
+          {roadView ? "道の報告の地図" : briefing ? "雪かきGO" : "町の地図"}
+          <span className="block text-xs font-normal">{roadView ? "滑る・細い・除雪まだ（24時間）" : `${month}月${day}日の朝`}</span>
         </h1>
         <span className="w-[76px]" aria-hidden="true" />
       </header>
@@ -164,9 +169,37 @@ export default function MapScreen({
       {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と救助待ちの札を浮かべる */}
       <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
         <div className="absolute inset-0 isolate">
-          <TownMap cells={cells} home={home} destinations={destinations} solo={solo} road={road} focusRoad={focusRoad} />
+          <TownMap cells={cells} home={home} destinations={destinations} solo={solo} road={road} focusRoad={focus} fitRoad={roadView} />
         </div>
-        <div className="pointer-events-none absolute inset-x-2 top-2 z-[500] flex gap-1.5">
+        {roadView && (
+          <div className="absolute inset-x-2 top-2 z-[500] space-y-1.5" aria-label="道の報告の一覧">
+            {road.length === 0 ? (
+              <p className="rounded-2xl bg-card/95 px-3 py-2 text-base font-bold shadow-md">いま、道の報告はありません。見つけたら写真で知らせてください。</p>
+            ) : (
+              <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {road.map((rp) => (
+                  <button
+                    key={rp.id}
+                    type="button"
+                    onClick={() => setFocus(rp.id)}
+                    aria-pressed={focus === rp.id}
+                    className={`flex min-h-12 shrink-0 items-center gap-1.5 rounded-2xl px-2.5 py-1 text-left shadow-md ring-2 ${focus === rp.id ? "bg-ink text-white ring-ink" : "bg-card/95 ring-transparent"}`}
+                  >
+                    <HazardIcon id={rp.hazard} size={28} />
+                    <span className="leading-tight">
+                      <span className="block text-sm font-bold">{rp.label}</span>
+                      <span className={`block text-xs ${focus === rp.id ? "text-white/80" : "text-ink-soft"}`}>{rp.ago}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <Link href={roadHref} className="btn btn-lamp min-h-12 w-full text-base shadow-md">
+              📷 道の危険を知らせる（10分・写真1枚）
+            </Link>
+          </div>
+        )}
+        {!roadView && <div className="pointer-events-none absolute inset-x-2 top-2 z-[500] flex gap-1.5">
           <p className="flex items-center gap-1.5 rounded-2xl bg-card/95 px-2.5 py-1 shadow-md">
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" fill="none" stroke="#29445c" strokeWidth="2" strokeLinecap="round">
               <path d="M12 2 V22 M3.3 7 L20.7 17 M3.3 17 L20.7 7 M9 3.5 L12 6 L15 3.5 M9 20.5 L12 18 L15 20.5" />
@@ -201,7 +234,7 @@ export default function MapScreen({
               <span className="text-sm font-bold">人</span>
             </span>
           </p>
-        </div>
+        </div>}
 
       {briefing && myBase && myView && (
         <GoBriefing
@@ -217,7 +250,7 @@ export default function MapScreen({
       )}
       {/* 下のシート: つまみをスライドで畳める（畳むと地図が大きくなる） */}
       {!briefing && <MapSheet
-        startClosed={Boolean(focusRoad)}
+        startClosed={Boolean(focusRoad) || roadView}
         peek={peekNode}
         footer={
           <MorningButtons

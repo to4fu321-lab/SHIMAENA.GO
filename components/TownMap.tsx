@@ -88,9 +88,12 @@ export default function TownMap({
   solo = [],
   road = [],
   focusRoad,
+  fitRoad = false,
 }: {
   road?: RoadPin[];
   focusRoad?: string;
+  /** 道の報告の地図: 最初に報告のピンが全部入るように寄せる（1回だけ） */
+  fitRoad?: boolean;
   cells: CellView[];
   /** ソロ出動の足あと（今日、そのマスで活動した件数） */
   solo?: SoloCell[];
@@ -226,6 +229,11 @@ export default function TownMap({
         L.circleMarker(d.location, { radius: 7, color: RED, weight: 3, fillColor: "#fff", fillOpacity: 1, interactive: false }).addTo(layer!);
         if (home) L.polyline([home, d.location], { color: INK, weight: 3, dashArray: "6 8", opacity: 0.8, interactive: false }).addTo(layer!);
       }
+      // 道の報告の地図: 報告のピンが全部入るように（1回だけ。札で寄ったあとは動かさない）
+      if (fitRoad && road.length > 0 && !focusRoad && fitted.current !== "road") {
+        fitted.current = "road";
+        map.fitBounds(L.latLngBounds(road.map((rp) => rp.location)).pad(0.3), { maxZoom: 17, paddingTopLeft: [16, 140], paddingBottomRight: [16, 80] });
+      }
       // 行き先に合わせるのは、行き先が変わったときだけ（自分で動かした地図を戻さない）
       const destKey = JSON.stringify(destinations.map((d) => d.location));
       if (destinations.length > 0 && fitted.current !== destKey) {
@@ -240,7 +248,7 @@ export default function TownMap({
       cancelled = true;
       layer?.remove();
     };
-  }, [ready, dataKey, focusRoad]);
+  }, [ready, dataKey, focusRoad, fitRoad]);
 
   // 現在地（GPS）: 許可があれば青い点を動かす。許可がなければ何も出さない
   useEffect(() => {
