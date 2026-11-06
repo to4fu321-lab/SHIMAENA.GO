@@ -48,7 +48,7 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <h1 className="text-xl font-bold">隊長トーク</h1>
-        <p className="truncate text-sm text-ink-soft">点呼・作戦・お知らせと、なんでも相談</p>
+        <p className="truncate text-sm text-ink-soft">雪の朝のお知らせと、なんでも相談</p>
       </div>
     </header>
   );
@@ -58,7 +58,7 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
       <Screen header={header} footer={<TabBar active="chat" q={q} />}>
         <section className="m-4 space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">隊長トークは、登録した人の画面です。</p>
-          <p className="text-base">雪の朝の点呼や、来てくれる人のお知らせがここに届きます。文で相談もできます。</p>
+          <p className="text-base">雪の朝のお知らせや、来てくれる人のお知らせがここに届きます。文で相談もできます。</p>
           <Link href="/start" className="btn btn-lamp btn-big w-full">
             はじめる（30秒で登録）
           </Link>

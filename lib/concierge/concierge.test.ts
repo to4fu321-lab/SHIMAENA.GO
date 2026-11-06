@@ -44,15 +44,15 @@ describe("候補はプログラムが絞る", () => {
     expect(buildOptions(ctx()).map((o) => o.id)).toEqual(["own_house", "patrol", "online", "cheer", "nakama", "baton"]);
     expect(buildOptions(ctx({ soloDoneToday: ["own_house"] })).map((o) => o.id)).toEqual(["patrol", "online", "cheer", "nakama", "baton", "team"]);
   });
-  it("方向（spec v1.17）: つながりの人には なかま が前に、ゲームの人には チーム・図鑑 が前に。点呼はいつも先頭。夜は合流に誘わない", () => {
+  it("方向（spec v1.17）: つながりの人には なかま が前に、ゲームの人には チーム・図鑑 が前に。点呼の候補は出さない（spec v1.20）。夜は合流に誘わない", () => {
     expect(buildOptions(ctx({ motives: ["connect"] })).map((o) => o.id).slice(0, 2)).toEqual(["nakama", "baton"]);
     expect(buildOptions(ctx({ motives: ["game"] })).map((o) => o.id).slice(0, 3)).toEqual(["own_house", "online", "team"]);
-    expect(buildOptions(ctx({ motives: ["connect"], rollcall: "open" }))[0].id).toBe("rollcall");
+    expect(buildOptions(ctx({ motives: ["connect"], rollcall: "open" })).map((o) => o.id)).not.toContain("rollcall");
     expect(buildOptions(ctx({ motives: ["connect"], night: true })).map((o) => o.id)).not.toContain("nakama");
     expect(buildOptions(ctx({ role: "requester", hasTeam: false })).map((o) => o.id)).not.toContain("nakama");
   });
-  it("点呼の時間で答えていなければ、点呼が先。作戦中で人手不足なら、その家へ。向かっている人には行き先", () => {
-    expect(buildOptions(ctx({ rollcall: "open" }))[0].id).toBe("rollcall");
+  it("点呼の候補は出さない（spec v1.20）。作戦中で人手不足なら、その家へ。向かっている人には行き先", () => {
+    expect(buildOptions(ctx({ rollcall: "open" })).map((o) => o.id)).not.toContain("rollcall");
     expect(buildOptions(ctx({ rollcall: "planned", answered: true, shortHouses: 2 }))[0].id).toBe("join");
     expect(buildOptions(ctx({ rollcall: "planned", answered: true, going: true }))[0].id).toBe("my_mission");
   });
@@ -73,9 +73,9 @@ describe("選び方（キーなしの言葉の一覧）と点検", () => {
     expect(mockConcierge(input("何からすればいいか分からない", c)).pick).toBe("own_house");
     expect(mockConcierge(input("はじめてです", c)).reply).toContain("はじめて");
   });
-  it("「仕事で行けない」→ 家の中でできること。点呼中なら点呼（休むも答え）", () => {
+  it("「仕事で行けない」→ 家の中でできること（雪の朝も）", () => {
     expect(mockConcierge(input("今日は仕事で行けない", ctx())).pick).toBe("online");
-    expect(mockConcierge(input("今日は仕事で行けない", ctx({ rollcall: "open" }))).pick).toBe("rollcall");
+    expect(mockConcierge(input("今日は仕事で行けない", ctx({ rollcall: "open" }))).pick).toBe("online");
   });
   it("「手伝いたい」→ 人手不足の家があればそこ", () => {
     expect(mockConcierge(input("何か手伝いたい", ctx({ rollcall: "planned", answered: true, shortHouses: 1 }))).pick).toBe("join");

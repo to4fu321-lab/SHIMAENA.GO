@@ -4,7 +4,7 @@ import type { CommanderInput, Plan } from "../claude/commander";
 import { decompose } from "../game/mission";
 import { scoreMission } from "../game/score";
 import { clockText, jstIso } from "../jst";
-import type { HelperAnswer, Mission, Participant, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
+import type { HelperAnswer, HelpStyle, Mission, Participant, RequesterAnswer, RollcallAnswer, Sortie, TeamId } from "../types";
 import type { CheerRecord } from "./cheer";
 import type { CaptainState } from "../captain";
 import type { Roster } from "./roster";
@@ -119,7 +119,7 @@ export function requestDay(opts: { date: string; viewerId?: string }): MorningRe
 export function ringRollcall(s: MorningRecord): void {
   s.morning.rollcall.status = "open";
   s.clockMin = 6 * 60 + 30;
-  s.log.push("6:30 エナガ点呼を送りました");
+  s.log.push("6:30 雪かき応援のお知らせを始めました");
 }
 
 /**
@@ -131,15 +131,28 @@ export function isProxyHome(p: Participant): boolean {
   return p.role === "requester" && !p.lineUserId && Boolean(p.registeredByFamilyId);
 }
 
-/** 代理登録の家の点呼の答えを「一緒なら」で入れる（本人の答えはない） */
-export function autoAnswerProxyHomes(s: MorningRecord, roster: Roster, answeredAt: string): number {
+/** 手伝う人に見せる「一緒にやる家」のひとこと（20字まで） */
+export const TOGETHER_NOTE = "家の人も一緒に雪かきします";
+
+/** その家の頼み方（spec v1.20）。登録がない前の版の家は、代理の家は一緒に・本人の家はおまかせ */
+export function styleOf(p: Participant): HelpStyle {
+  return p.helpStyle ?? (isProxyHome(p) ? "together" : "omakase");
+}
+
+/**
+ * 10cm 以上積もった朝（spec v1.20）: 頼む家として登録した家を、毎朝の質問なしで「雪かき待ち」にする。
+ * おまかせ → 来てほしい（no）、一緒に → 一緒なら（together、必要な人数が1人へる）。もう答え・お願いがある家はそのまま
+ */
+export function autoAnswerHomes(s: MorningRecord, roster: Roster, answeredAt: string): number {
   let n = 0;
   for (const p of roster.participants) {
-    if (!isProxyHome(p)) continue;
-    putAnswer(s, p.id, "together", answeredAt);
+    if (p.role !== "requester" || !roster.bases.some((b) => b.requesterId === p.id)) continue;
+    if (s.answers.some((a) => a.participantId === p.id)) continue;
+    const together = styleOf(p) === "together";
+    putAnswer(s, p.id, together ? "together" : "no", answeredAt);
+    if (together) s.answers[s.answers.length - 1].request = { note: TOGETHER_NOTE };
     n++;
   }
-  if (n > 0) s.log.push(`代理登録の家 ${n} 軒は、点呼なしで「一緒なら」として扱いました（声かけの見守りつき）`);
   return n;
 }
 

@@ -17,6 +17,9 @@ export interface Team {
 // ---- 参加者 ----
 export type Role = "requester" | "helper";
 
+/** 雪かき応援の頼み方（spec v1.20） */
+export type HelpStyle = "omakase" | "together";
+
 /** 依頼者: 一人だといつも何分かかるか */
 export type SoloMinutes = 15 | 30 | 60 | "unknown";
 /** 依頼者: どこまで雪かきが必要か */
@@ -38,6 +41,11 @@ export interface Participant {
   // 手伝う側の登録2問
   morningMinutes?: MorningMinutes;
   hasTools?: boolean;
+  /**
+   * 雪かき応援の頼み方（spec v1.20）。omakase = おまかせ（家の人は雪かきできない）、together = 家の人も一緒にやる。
+   * 頼む家として登録した人だけ。ない人（前の版の登録）は、代理の家は一緒に・本人の家はおまかせとして扱う
+   */
+  helpStyle?: HelpStyle;
   /** 家族が代わりに登録した場合、その家族の参加者 ID */
   registeredByFamilyId?: string;
 }

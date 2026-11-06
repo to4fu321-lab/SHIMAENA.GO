@@ -52,7 +52,7 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
         ) : (
           <>
             <p className="text-lg font-bold leading-snug">LINE のアカウントで、あなたを確かめます。</p>
-            <p className="text-base leading-snug">LINE は本人の確認にだけ使います。点呼やお知らせは、このアプリの「隊長トーク」と通知で届きます。</p>
+            <p className="text-base leading-snug">LINE は本人の確認にだけ使います。雪の朝のお知らせは、このアプリの「隊長トーク」と通知で届きます。</p>
             {error && ERRORS[error] && <p className="rounded-2xl bg-warm px-3 py-2 text-base">{ERRORS[error]}</p>}
             <LoginButton next={to} />
             {!hasLoginKeys() && <p className="text-sm text-ink-soft">（鍵がない間は、ログインの代わりにデモの架空の人で見られます）</p>}

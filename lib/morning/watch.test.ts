@@ -124,7 +124,15 @@ describe("ヘルプ通知の流れ（メモリ保存・LINE には送らない�
     });
     await memoryRepo.upsertBase({ id: "base-p-req", number: 99, requesterId: "p-req" });
     await memoryRepo.addFamilyLink({ familyLineUserId: "U-family", requesterId: "p-req", linkCode: "999999" });
-    const s = await setup(9);
+    // 前の版の「返事なし」の家（spec v1.20 では登録の頼み方で自動の答えが入るので、ここでは消して確かめる）
+    await announce({ date: DEMO_DATE, forecastCm: 12 });
+    await ring();
+    const s0 = await loadMorning();
+    fillAnswers(s0, await loadRoster(), 9);
+    s0.answers = s0.answers.filter((a) => a.participantId !== "p-req");
+    await saveMorning(s0);
+    await plan();
+    const s = await loadMorning();
     const going = s.morning.sorties.find((x) => x.status === "going")!;
     const before = (await loadMorning()).help?.[going.missionId]?.stage ?? 0;
     await reportShort(going.participantId);

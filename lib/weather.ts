@@ -2,8 +2,8 @@
 import { jstDate, jstHourMinute, addDays } from "./jst";
 import type { LatLng } from "./types";
 
-/** 点呼をする基準（翌朝 6:00 までに 5cm 以上） */
-export const SNOW_THRESHOLD_CM = 5;
+/** 雪かき応援を自動で知らせる基準（spec v1.20: きのう 6:00 から今朝 6:00 までに 10cm 以上積もったら） */
+export const SNOW_THRESHOLD_CM = 10;
 
 export interface HourlySnow {
   time: string[]; // "2026-12-13T21:00" のような JST の時刻
@@ -31,7 +31,7 @@ export function sumSnowfall(hourly: HourlySnow, from: string, until: string): nu
   return Math.round(sum * 10) / 10;
 }
 
-export async function fetchHourlySnow(center: LatLng, fetchFn: typeof fetch = fetch): Promise<HourlySnow> {
+export async function fetchHourlySnow(center: LatLng, fetchFn: typeof fetch = fetch, opts: { pastDays?: number } = {}): Promise<HourlySnow> {
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(center[0]));
   url.searchParams.set("longitude", String(center[1]));
@@ -39,6 +39,7 @@ export async function fetchHourlySnow(center: LatLng, fetchFn: typeof fetch = fe
   url.searchParams.set("wind_speed_unit", "ms");
   url.searchParams.set("timezone", "Asia/Tokyo");
   url.searchParams.set("forecast_days", "2");
+  if (opts.pastDays) url.searchParams.set("past_days", String(opts.pastDays)); // 積もった量（きのう6時から今朝6時まで）を見るとき
   const res = await fetchFn(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Open-Meteo が ${res.status} を返しました`);
   const json = (await res.json()) as { hourly?: HourlySnow };

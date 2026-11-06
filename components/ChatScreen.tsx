@@ -176,7 +176,7 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
       <div ref={list} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label="隊長とのやりとり">
         {bubbles.length === 0 && (
           <p className="mx-auto max-w-xs rounded-2xl bg-card/80 px-4 py-3 text-center text-base text-ink-soft">
-            まだ何も届いていません。雪の朝の点呼や作戦はここに届きます。下の欄から、隊長に何でも聞けます。
+            まだ何も届いていません。雪の朝のお知らせや作戦はここに届きます。下の欄から、隊長に何でも聞けます。
           </p>
         )}
         {bubbles.map((b) =>

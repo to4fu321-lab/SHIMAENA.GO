@@ -1,6 +1,6 @@
 // 登録の会話（spec 1）。役割 → 自宅の位置 → 2問。家族の代理登録もここ。
 // 保存先や LINE に関係なく使えるよう、いまの途中経過と入力から「次の途中経過と返す文面」を決めるだけの関数にしている。
-import type { ClearArea, LatLng, MorningMinutes, Role, SoloMinutes } from "../types";
+import type { ClearArea, HelpStyle, LatLng, MorningMinutes, Role, SoloMinutes } from "../types";
 import { MSG } from "./messages";
 import type { LineMessage } from "./types";
 
@@ -27,7 +27,7 @@ export type RegInput =
   | { kind: "text"; text: string };
 
 export type Registration =
-  | { role: "requester"; proxy: boolean; location: LatLng; soloMinutes: SoloMinutes; clearArea: ClearArea }
+  | { role: "requester"; proxy: boolean; location: LatLng; soloMinutes: SoloMinutes; clearArea: ClearArea; helpStyle?: HelpStyle }
   | { role: "helper"; location: LatLng; morningMinutes: MorningMinutes; hasTools: boolean };
 
 export interface RegOutcome {

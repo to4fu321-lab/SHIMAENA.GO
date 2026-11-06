@@ -40,16 +40,17 @@ describe("はじめる（/start の登録）", () => {
   });
 
   it("お願いする側: 家のレベルと地図の番号ができ、チームにも入る（お互いさま）", async () => {
-    const r = await registerAction({ role: "requester", location: [43.04, 141.37], q1: "60", q2: "road" });
+    const r = await registerAction({ role: "requester", location: [43.04, 141.37], q1: "omakase", q2: "road" });
     expect(r.ok).toBe(true);
     const p = (await memoryRepo.findParticipantByLineUserId("U-new"))!;
+    expect(p.helpStyle).toBe("omakase"); // 頼み方（spec v1.20）
     expect(p.level).toBeGreaterThanOrEqual(1);
     expect(await memoryRepo.findBaseByRequester(p.id)).toBeTruthy();
     expect(p.teamId).toBeTruthy();
   });
 
   it("家族の代わり: 本人の家が登録され、連携コードが出る。本人がコードを入れると本人の LINE が紐づく", async () => {
-    const r = await registerAction({ role: "family", location: [43.04, 141.37], q1: "30", q2: "entrance" });
+    const r = await registerAction({ role: "family", location: [43.04, 141.37], q1: "together", q2: "entrance" });
     expect(r.ok).toBe(true);
     expect(r.linkCode).toMatch(/^\d{6}$/);
     expect(await memoryRepo.findParticipantByLineUserId("U-new")).toBeUndefined(); // 家族本人は参加者ではない

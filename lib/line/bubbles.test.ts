@@ -54,7 +54,7 @@ describe("Bot の吹き出し", () => {
   });
 
   it("お願いする側が「出動する」を押しても、責めずに案内する", () => {
-    expect(texts(MSG.nowForRequester()).join("")).toContain("点呼に答えるだけで大丈夫");
+    expect(texts(MSG.nowForRequester()).join("")).toContain("自動でお願いが出ます");
   });
 
   it("行き先カード: 大きな画像（時刻と拠点だけ）・地図・ルートのボタン。画像を押すと道順", () => {

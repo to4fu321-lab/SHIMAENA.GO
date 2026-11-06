@@ -112,7 +112,7 @@ export default function PushSetup({ viewerId, publicKey, compact = false }: { vi
   if (state === "ios-install") {
     return (
       <section className={box} aria-label="ホーム画面に追加">
-        <p className="text-base font-bold">雪の朝の点呼を届けるには、ホーム画面に追加してください</p>
+        <p className="text-base font-bold">雪の朝のお知らせを届けるには、ホーム画面に追加してください</p>
         <ol className="list-decimal space-y-1 pl-5 text-base leading-snug">
           <li>
             下の <span className="rounded bg-card px-1">共有</span>（□に↑）を押す
@@ -138,7 +138,7 @@ export default function PushSetup({ viewerId, publicKey, compact = false }: { vi
   }
   return (
     <section className={box} aria-label="通知を受け取る">
-      <p className="text-base font-bold leading-snug">雪の朝の点呼と、来てくれる人のお知らせを、この端末に届けます。</p>
+      <p className="text-base font-bold leading-snug">雪の朝の雪かき応援と、来てくれる人のお知らせを、この端末に届けます。</p>
       <p className="text-sm text-ink-soft">次の画面で「許可」を押してください。雪のない日は何も届きません。</p>
       {msg && <p className="text-sm text-alert">{msg}</p>}
       <div className="flex gap-2">

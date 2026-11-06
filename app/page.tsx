@@ -224,7 +224,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <p className="text-lg font-bold">
                   {asks > 0 ? `雪かきのお願い ${asks}軒` : rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
                   <span className="block text-sm">
-                    {asks > 0 ? "地図の赤い家へ。10分だけでも大歓迎" : rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "朝6:40に、手伝ってほしい家が地図に出ます"}
+                    {asks > 0 ? "地図の待っている家へ。10分だけでも大歓迎" : rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "10cm 積もったら、朝6:30に近所へお知らせ"}
                   </span>
                 </p>
               )}
@@ -329,6 +329,12 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             </Link>
           </div>
         )}
+        {/* 雪かきを頼む（spec v1.20 お互いさま）: 手伝う人も頼む人も同じアプリで */}
+        <Link href={`/ask${q}`} className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-card text-base font-bold ring-1 ring-ink/15 short:min-h-10">
+          <span aria-hidden="true">🏠</span>
+          {me?.role === "requester" ? "うちの雪かきを頼む" : "うちの雪かきも頼める家にする"}
+          <span aria-hidden="true">›</span>
+        </Link>
       </main>
 
       <TabBar active="home" q={q} />

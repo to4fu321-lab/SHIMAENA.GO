@@ -26,7 +26,8 @@ const Q: Record<"helper" | "requester", { q1: { title: string; options: [string,
     q2: { title: "スコップなどの道具はありますか？", options: [["yes", "ある"], ["no", "ない"]] },
   },
   requester: {
-    q1: { title: "ひとりだと、いつも何分かかりますか？", options: [["15", "15分くらい"], ["30", "30分くらい"], ["60", "60分以上"], ["unknown", "わからない"]] },
+    // spec v1.20: 頼み方を登録で分ける（おまかせ／一緒にやる）。毎朝の質問はしない
+    q1: { title: "家の人も一緒に雪かきしますか？", options: [["omakase", "おまかせしたい"], ["together", "一緒にやる"]] },
     q2: { title: "どこまで雪かきが要りますか？", options: [["entrance", "玄関前まで"], ["garage", "車庫前まで"], ["road", "道路まで"]] },
   },
 };
@@ -139,7 +140,7 @@ export default function StartScreen({ status, name, center, next }: { status: St
         {status === "guest" && (
           <>
             <p className="text-xl font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
-            <p className="text-lg leading-snug">LINE は本人の確認にだけ使います。点呼やお知らせは、このアプリに届きます。</p>
+            <p className="text-lg leading-snug">LINE は本人の確認にだけ使います。雪の朝のお知らせは、このアプリに届きます。</p>
             <LoginButton next="/start" className="mt-auto" />
             <Link href="/?as=h3" className="btn btn-white text-lg">
               デモを見る（登録なし）
@@ -168,7 +169,7 @@ export default function StartScreen({ status, name, center, next }: { status: St
             </button>
             <button onClick={() => (setRole("requester"), setPhase("place"))} className={`${big} bg-card ring-ink/15`}>
               🏠 手伝ってほしい
-              <span className="block text-base font-normal text-ink-soft">自分の家の雪かきを頼みたい（自分も参加できます）</span>
+              <span className="block text-base font-normal text-ink-soft">10cm 積もった朝、近所に応援が届く（自分も手伝えます）</span>
             </button>
             <button onClick={() => (setRole("family"), setPhase("place"))} className={`${big} bg-card ring-ink/15`}>
               👪 家族の代わりに登録
@@ -206,7 +207,7 @@ export default function StartScreen({ status, name, center, next }: { status: St
               const set = k === "q1" ? setQ1 : setQ2;
               return (
                 <section key={k} className="shrink-0 space-y-2">
-                  <h2 className="text-lg font-bold leading-snug">{role === "family" ? q.title.replace("ひとりだと", "ご本人はひとりだと") : q.title}</h2>
+                  <h2 className="text-lg font-bold leading-snug">{role === "family" ? q.title.replace("家の人も", "ご本人も") : q.title}</h2>
                   <div className={`grid gap-2 ${q.options.length === 4 ? "grid-cols-2" : q.options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
                     {q.options.map(([v, label]) => (
                       <button

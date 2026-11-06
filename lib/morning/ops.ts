@@ -22,7 +22,7 @@ import { lineShareUrl } from "../share-links";
 import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
-import { jstDate, jstHourMinute, jstMinutes, jstIso } from "../jst";
+import { addDays, jstDate, jstHourMinute, jstMinutes, jstIso } from "../jst";
 import { inboxKeyOf } from "../inbox/key";
 import { multicast, push } from "../line/client";
 import { MSG } from "../line/messages";
@@ -33,13 +33,13 @@ import { getTeam } from "../teams";
 import { nextTeamTerm } from "../team-theme";
 import { TOWN } from "../town";
 import type { NowMinutes } from "./watch";
-import type { HelperAnswer, HelperWhen, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Role, Sortie, TeamId } from "../types";
+import type { HelperAnswer, HelperWhen, HelpStyle, Mission, Participant, PhotoCheck, RequestNote, RequesterAnswer, Sortie, TeamId } from "../types";
 import { loadSettings } from "../ops/settings";
 import { fetchHourlySnow, forecastSnowUntilMorning, sumSnowfall } from "../weather";
 import { activeHelpers, MAX_ROUNDS, reopenDone } from "./rounds";
 import { decompose, importance, requiredPeople } from "../game/mission";
 import { recordProblem } from "../ops/problems";
-import { applyPlan, autoAnswerProxyHomes, commanderInput, DEMO_DATE, emptyMorning, putAnswer, requestDay, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
+import { applyPlan, autoAnswerHomes, commanderInput, DEMO_DATE, styleOf, TOGETHER_NOTE, emptyMorning, putAnswer, requestDay, ringRollcall, type MorningRecord, type ThanksRecord } from "./flow";
 import { lineIds, loadRoster, type Roster } from "./roster";
 import { archiveMorning, claimPlanning, listMornings, loadMorning, saveMorning } from "./store";
 import { recapText } from "../claude/recap";
@@ -108,12 +108,16 @@ export async function checkForecastAndAnnounce(now = new Date()): Promise<{ fore
   return { forecastCm: f.snowfallCm, announced: true, date: f.morningDate };
 }
 
-/** 6:30 の点呼: 役割ごとの1問を LINE のある全員に送る */
+/**
+ * 6:30 の雪かき応援（spec v1.20）: 毎朝の質問はしない。頼む家として登録した家を、頼み方（おまかせ／一緒に）のとおり
+ * 「雪かき待ち」の答えにする。作戦（plan）は 6:30 の cron（morningAuto）がすぐ続けて行い、
+ * その配信で近所の人に「助けてほしい家が○軒」が届く（足りない家は 300m の人へも）。
+ */
 export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
   const s = await loadMorning();
   if (s.morning.rollcall.status !== "announced") return { record: s, sent: 0 };
   ringRollcall(s);
-  // 隊長のひとこと（状態ごと）をこの朝に1回だけ書く。失敗しても点呼は止めない（定型が出る）
+  // 隊長のひとこと（状態ごと）をこの朝に1回だけ書く。失敗しても止めない（定型が出る）
   try {
     const rc = s.morning.rollcall;
     s.captainLines = await captainLines({ snowCm: rc.forecastCm, snowName: rc.snowName, safety: Boolean(rcArgs(s)[2]) });
@@ -121,17 +125,43 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
     console.error("[captain] 隊長のひとことを書けませんでした（定型を使います）:", e instanceof Error ? e.message : e);
   }
   const roster = await loadRoster();
-  autoAnswerProxyHomes(s, roster, new Date().toISOString());
-  const of = (role: Role) => lineIds(roster.participants.filter((p) => p.role === role));
-  const requesters = of("requester");
-  const helpers = of("helper");
-  const okR = await multicast(requesters, MSG.rollcallRequester(...rcArgs(s)));
-  const okH = await multicast(helpers, MSG.rollcallHelper(...rcArgs(s)));
-  const sent = (okR ? requesters.length : 0) + (okH ? helpers.length : 0);
-  if (!okR || !okH) s.log.push("⚠ 点呼の一部を隊長トークに入れられませんでした（/admin の「問題」を見てください）");
-  s.log.push(`点呼を隊長トークで ${sent} 人に`);
+  const n = autoAnswerHomes(s, roster, new Date().toISOString());
+  s.log.push(`登録した家 ${n} 軒を、頼み方のとおり雪かき待ちに（毎朝の質問なし）`);
   await saveMorning(s);
-  return { record: s, sent };
+  return { record: s, sent: 0 };
+}
+
+/**
+ * 6:30 の cron（spec v1.20）: きのう 6:00 から今朝 6:00 までに積もった雪（Open-Meteo）が基準（既定 10cm）以上なら、
+ * 雪かき応援を自動で始める。前夜の予告がなくても（予報より積もった朝も）始める。基準に届かなければ何も送らない。
+ */
+export async function morningAuto(now = new Date()): Promise<{ snowCm: number; started: boolean; sent: number }> {
+  const today = jstDate(now);
+  const threshold = (await loadSettings()).snowThresholdCm;
+  const hourly = await fetchHourlySnow(TOWN.center, fetch, { pastDays: 1 });
+  const snowCm = Math.round(sumSnowfall(hourly, `${addDays(today, -1)}T06:00`, `${today}T06:00`));
+  let s = await loadMorning();
+  const announced = s.morning.rollcall.date === today && s.morning.rollcall.status === "announced";
+  if (snowCm < threshold) {
+    if (announced) s.morning.rollcall.status = "closed";
+    s.log.push(`6:30 積もった雪 ${snowCm}cm（きのう6時から）→ 基準 ${threshold}cm 未満なので、お知らせなし`);
+    await saveMorning(s);
+    return { snowCm, started: false, sent: 0 };
+  }
+  if (!announced) {
+    if (s.morning.rollcall.date === today && s.morning.rollcall.status !== "closed") return { snowCm, started: false, sent: 0 }; // もう始まっている
+    await archiveIfReal(s, today);
+    const a = await announceText({ date: today, forecastCm: snowCm }).catch(() => undefined);
+    s = emptyMorning({ date: today, forecastCm: snowCm, viewerId: s.morning.viewerId, announcement: a?.text, snowName: a?.snowName });
+    s.log = [`6:30 積もった雪 ${snowCm}cm（予告なし）→ 雪かき応援を始めます`];
+  } else {
+    s.morning.rollcall.forecastCm = snowCm; // 予報ではなく、積もった量に
+    s.log.push(`6:30 積もった雪 ${snowCm}cm → 雪かき応援を始めます`);
+  }
+  await saveMorning(s);
+  await ring();
+  const r = await plan(); // 質問を待たずに、すぐ地図に出して近所へ知らせる
+  return { snowCm, started: true, sent: r.sent };
 }
 
 const REQUESTER_ANSWERS: Record<string, RequesterAnswer> = { yes: "yes", no: "no", together: "together" };
@@ -292,7 +322,10 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
     if (!k) continue;
     const mine = personal.get(k) ?? [];
     const head = MSG.morningHello(...rcArgs(s));
-    const body = p.role === "helper" ? [...MSG.housesToday(houses, mine.length === 0), ...mine] : mine;
+    // 手伝う側と、チームに入っている頼む家の人（お互いさま。spec v1.20）に、近所の待っている家の数
+    const assigned = s.messages.some((m) => m.participantId === p.id);
+    const others = houses - (p.role === "requester" && roster.bases.some((b) => b.requesterId === p.id) ? 1 : 0);
+    const body = p.role === "helper" || onTeam(p) ? [...MSG.housesToday(others, !assigned), ...mine] : mine;
     if (await push(k, [...head, ...body])) sent++;
     else failed++;
   }
@@ -936,10 +969,20 @@ export const ASK_MAX_RECIPIENTS = 5;
  * お願いする側の「雪かきを頼む」: その人の家を今日の雪かき待ちにして地図に出し、300m 以内の手伝える人へ LINE で知らせる。
  * 雪の朝でない日は、その日の記録を新しく始める（出動・写真・完了・カードの流れはそのまま使える）。
  */
-export async function askForHelp(lineUserId: string, now = new Date()): Promise<LineMessage[]> {
-  if (isNight(now)) return MSG.askNight();
+export async function askForHelp(lineUserId: string, now = new Date(), style?: HelpStyle): Promise<LineMessage[]> {
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.lineUserId === lineUserId);
+  return askForHelpOf(p, roster, now, style);
+}
+
+/** 画面（/ask）から: 参加者 ID で頼む。style がなければ登録した頼み方（spec v1.20） */
+export async function askForHelpById(participantId: string, now = new Date(), style?: HelpStyle): Promise<LineMessage[]> {
+  const roster = await loadRoster();
+  return askForHelpOf(roster.participants.find((x) => x.id === participantId), roster, now, style);
+}
+
+async function askForHelpOf(p: Participant | undefined, roster: Roster, now: Date, style?: HelpStyle): Promise<LineMessage[]> {
+  if (isNight(now)) return MSG.askNight();
   if (!p) return MSG.notRegistered();
   if (p.role !== "requester") return MSG.askHelperOnly();
   const base = roster.bases.find((b) => b.requesterId === p.id);
@@ -954,9 +997,14 @@ export async function askForHelp(lineUserId: string, now = new Date()): Promise<
   }
   const at = now.toISOString();
   const rc = s.morning.rollcall;
-  // 雪の朝の点呼の最中（作戦の前）: 点呼の答えとして受け付け、作戦で人を決める
+  // 頼み方（spec v1.20）: おまかせ → 来てほしい、一緒に → 一緒なら（必要な人数が1人へり、手伝う人に「家の人も一緒に」）
+  const together = (style ?? styleOf(p)) === "together";
+  const answer: RequesterAnswer = together ? "together" : "no";
+  const note: RequestNote | undefined = together ? { note: TOGETHER_NOTE } : undefined;
+  // 雪の朝の作戦の前: 答えとして受け付け、作戦で人を決める
   if (rc.status === "announced" || rc.status === "open") {
-    putAnswer(s, p.id, "no", at);
+    putAnswer(s, p.id, answer, at);
+    if (note) s.answers[s.answers.length - 1].request = note;
     s.log.push(`拠点${base.number}: 「雪かきを頼む」を点呼の答えとして受け付け`);
     await saveMorning(s);
     return MSG.askQueued();
@@ -970,17 +1018,18 @@ export async function askForHelp(lineUserId: string, now = new Date()): Promise<
     id: round === 1 ? `m-${base.id}` : `m-${base.id}-r${round}`,
     rollcallId: rc.id,
     baseId: base.id,
-    importance: importance(level, "no"),
-    requiredPeople: requiredPeople(level, "no"),
+    importance: importance(level, answer),
+    requiredPeople: requiredPeople(level, answer),
     subtasks: decompose(p.clearArea ?? "entrance", level),
     status: "short",
     startAt: at,
     reason: "お願いがありました",
     round,
     ask: true,
+    ...(note ? { request: note } : {}),
   };
   s.morning.missions.push(m);
-  putAnswer(s, p.id, "no", at);
+  putAnswer(s, p.id, answer, at);
   s.asked = { ...s.asked, [base.id]: at };
 
   // 300m 以内の手伝える人へ（1人1日3回まで・1回で5人まで）
@@ -1078,8 +1127,8 @@ export async function laterShift(when: "noon" | "pm", now = new Date()): Promise
   if (houses === 0) return { reopened, sent: 0 };
   const roster = await loadRoster();
   const busy = new Set(s.morning.sorties.filter((x) => x.status === "going").map((x) => x.participantId));
-  const ids = s.answers.filter((a) => a.when === when && !busy.has(a.participantId)).map((a) => a.participantId);
-  const to = lineIds(roster.participants.filter((p) => ids.includes(p.id)));
+  // spec v1.20: 朝の質問をやめたので、チームに入っている人（手伝う側・頼む家の人）で、いま雪かき中でない人へ
+  const to = lineIds(roster.participants.filter((p) => (p.role === "helper" || onTeam(p)) && !busy.has(p.id)));
   if (to.length === 0) return { reopened, sent: 0 };
   const ok = await multicast(to, MSG.laterNudge(when, houses, activeHelpers(s.morning)));
   s.log.push(`${when === "noon" ? "お昼" : "夕方"}の出番を隊長トークで ${ok ? to.length : 0} 人に（待っている家 ${houses} 軒）`);

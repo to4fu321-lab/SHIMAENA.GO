@@ -118,7 +118,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
         <h2 className="text-lg font-bold">お知らせの届き方</h2>
         <ul className="list-disc space-y-1 pl-5 text-base">
           <li>雪が降りそうな前の夜に「明日の朝」のお知らせ。</li>
-          <li>雪の朝 6:30 に、1問だけの点呼。ボタンを1回押すだけです。</li>
+          <li>10cm 以上積もった朝 6:30 に、近所の雪かき応援のお知らせが届きます。答える必要はありません。</li>
           <li>どれも下のタブ「隊長」（隊長トーク）に届きます。LINE は本人の確認（ログイン）にだけ使います。</li>
         </ul>
         {me && nudgeOn !== undefined && <NudgeSwitch viewerId={me.id} initial={nudgeOn} />}

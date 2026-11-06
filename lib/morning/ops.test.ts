@@ -39,14 +39,16 @@ describe("朝の本番の操作（メモリ保存・LINE には送らない）",
 
     const rung = await ring();
     expect(rung.record.morning.rollcall.status).toBe("open");
-    expect(rung.sent).toBeGreaterThanOrEqual(1); // 本物の人と、デモの架空の人
-    expect((await ring()).sent).toBe(0); // 2回目は何もしない
+    expect(rung.sent).toBe(0); // spec v1.20: 毎朝の質問は送らない（頼む家は登録の頼み方で自動）
+    expect((await ring()).record.morning.rollcall.status).toBe("open"); // 2回目は何もしない
 
     // おかしな値なら質問をもう一度
     expect(actionsOf((await answerRollcall("U-real", "rc:ans=99")).at(-1)!).length).toBeGreaterThan(0);
     expect(t((await answerRollcall("U-real", "rc:ans=30")))).toContain("6:40");
     let s = await loadMorning();
-    expect(s.answers).toEqual([expect.objectContaining({ participantId: "p-real", answer: 30 })]);
+    expect(s.answers).toContainEqual(expect.objectContaining({ participantId: "p-real", answer: 30 }));
+    // 頼む家は、質問なしで登録の頼み方の答えが入っている（spec v1.20）
+    expect(s.answers.some((a) => a.answer === "no" || a.answer === "together")).toBe(true);
 
     // 架空の住民の答えを足しても、本物の人の答えは残る
     fillAnswers(s, { participants: [...TOWN_ROSTER.participants, (await memoryRepo.findParticipant("p-real"))!], bases: TOWN_ROSTER.bases }, 7);

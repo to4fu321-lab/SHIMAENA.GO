@@ -96,6 +96,10 @@ export async function finishRegistration(lineUserId: string, reg: Registration, 
     soloMinutes: reg.soloMinutes,
     clearArea: reg.clearArea,
     level: level.level,
+    ...(reg.helpStyle ? { helpStyle: reg.helpStyle } : {}),
+    // 手伝う側から「うちも頼める家」にしたとき（spec v1.20 お互いさま）: 手伝う側の答えはそのまま残す
+    ...(existing?.morningMinutes ? { morningMinutes: existing.morningMinutes } : {}),
+    ...(existing?.hasTools !== undefined ? { hasTools: existing.hasTools } : {}),
   };
   if (!reg.proxy) p.lineUserId = lineUserId;
   else p.registeredByFamilyId = lineUserId;

@@ -8,13 +8,13 @@ import { applyLink, finishRegistration } from "@/lib/line/handle";
 import { textOf } from "@/lib/line/flex";
 import type { Registration } from "@/lib/line/registration";
 import { repo } from "@/lib/repo";
-import type { ClearArea, LatLng, MorningMinutes, SoloMinutes } from "@/lib/types";
+import type { ClearArea, HelpStyle, LatLng, MorningMinutes, SoloMinutes } from "@/lib/types";
 import { readViewer, signViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export interface StartForm {
   role: "helper" | "requester" | "family";
   location: LatLng;
-  /** 手伝う側: 朝は何分動ける？（15/30/60）。お願いする側・家族: ひとりだと何分？（15/30/60/unknown） */
+  /** 手伝う側: 朝は何分動ける？（15/30/60）。お願いする側・家族: 頼み方（omakase=おまかせ／together=一緒にやる。spec v1.20） */
   q1: string;
   /** 手伝う側: 道具はある？（yes/no）。お願いする側・家族: どこまで？（entrance/garage/road） */
   q2: string;
@@ -52,10 +52,12 @@ export async function registerAction(f: StartForm): Promise<StartResult> {
       if (!mm || !["yes", "no"].includes(f.q2)) return { ok: false, text: "2つの質問に答えてください。" };
       reg = { role: "helper", location: [lat, lng], morningMinutes: mm, hasTools: f.q2 === "yes" };
     } else if (f.role === "requester" || f.role === "family") {
-      const sm = ({ "15": 15, "30": 30, "60": 60, unknown: "unknown" } as Record<string, SoloMinutes>)[f.q1];
+      const style = (["omakase", "together"] as HelpStyle[]).find((x) => x === f.q1);
       const area = (["entrance", "garage", "road"] as ClearArea[]).find((a) => a === f.q2);
-      if (!sm || !area) return { ok: false, text: "2つの質問に答えてください。" };
-      reg = { role: "requester", proxy: f.role === "family", location: [lat, lng], soloMinutes: sm, clearArea: area };
+      if (!style || !area) return { ok: false, text: "2つの質問に答えてください。" };
+      // おまかせ = ひとりではできない家として、一緒に = ひとりで 30分くらいの家としてレベルを決める
+      const sm: SoloMinutes = style === "omakase" ? "unknown" : 30;
+      reg = { role: "requester", proxy: f.role === "family", location: [lat, lng], soloMinutes: sm, clearArea: area, helpStyle: style };
     } else {
       return { ok: false, text: "手伝う側か、お願いする側かを選んでください。" };
     }

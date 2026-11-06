@@ -192,8 +192,7 @@ const O = {
 export function buildOptions(ctx: ConciergeContext): ConciergeOption[] {
   const list: ConciergeOption[] = [];
   const open = (id: string) => !ctx.soloDoneToday.includes(id);
-  const rollcallOpen = ctx.rollcall === "open" || (ctx.rollcall === "planned" && ctx.role === "requester");
-  if (rollcallOpen && !ctx.answered) list.push(O.rollcall(ctx));
+  // spec v1.20: 毎朝の質問（点呼）はやめた。頼む家は登録の頼み方で自動。点呼に答える候補は出さない
   if (ctx.role === "helper") {
     if (ctx.going) list.push(O.my_mission());
     else if (ctx.rollcall === "planned" && ctx.shortHouses > 0) list.push(O.join(ctx));

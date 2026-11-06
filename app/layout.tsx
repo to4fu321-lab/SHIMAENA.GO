@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(baseUrl()),
   title: "シマエナGO ・ 寒い冬は、くっついて乗り切る。",
   description:
-    "雪の朝に点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲーム。1人でもソロ出動で10分から。Built with Claude: Japan 2026 提出作品。",
+    "10cm 積もった朝に近所へ雪かき応援が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲーム。1人でもソロ出動で10分から。Built with Claude: Japan 2026 提出作品。",
   // ホーム画面に追加（PWA、spec v1.17）。アイコンは画像ファイルを持たず /api/icon で作る
   manifest: "/manifest.webmanifest",
   icons: { icon: "/api/icon/192.png", apple: "/api/icon/180.png" },
