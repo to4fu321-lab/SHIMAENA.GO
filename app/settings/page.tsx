@@ -8,7 +8,9 @@ import { Suspense } from "react";
 import Icon from "@/components/Icon";
 import LoginButton from "@/components/LoginButton";
 import Pager, { Screen } from "@/components/Pager";
+import NudgeSwitch from "@/components/NudgeSwitch";
 import RedoRegistration from "@/components/RedoRegistration";
+import { loadNudge } from "@/lib/nudge/store";
 import { loadRoster } from "@/lib/morning/roster";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
@@ -36,6 +38,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
   const q = demoAs ? `?as=${demoAs}` : "";
   const team = TEAMS.find((t) => t.id === me?.teamId);
+  const nudgeOn = me?.role === "helper" ? !(await loadNudge(me.id).catch(() => undefined))?.off : undefined;
 
   return (
     <Screen
@@ -115,6 +118,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
           <li>雪の朝 6:30 に、1問だけの点呼。ボタンを1回押すだけです。</li>
           <li>どれも下のタブ「隊長」（隊長トーク）に届きます。LINE は本人の確認（ログイン）にだけ使います。</li>
         </ul>
+        {me && nudgeOn !== undefined && <NudgeSwitch viewerId={me.id} initial={nudgeOn} />}
         <p className="text-sm text-ink-soft">お知らせを止めたいときは、スマホの通知をオフにしてください。いつでも戻せます。</p>
       </section>
 

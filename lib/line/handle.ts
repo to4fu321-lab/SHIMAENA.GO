@@ -36,6 +36,8 @@ import { liffUrl } from "../url";
 import { answerMeetup } from "../nakama/ops";
 import { CHILD_NOTE } from "../nakama/rules";
 import { ensureTeam } from "../member";
+import { QUIET_WORDS, quietUntil } from "../nudge/rules";
+import { loadNudge, saveNudge } from "../nudge/store";
 import { MSG } from "./messages";
 import { STORM_LINES, stormHeadline, stormStatus } from "../storm";
 import { parseText, step, type RegInput, type Registration } from "./registration";
@@ -340,6 +342,16 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     if (tip) {
       if (ev.replyToken) await reply(lineUserId, tip);
       return;
+    }
+    // 隊長の声かけ（spec v1.18）への「休む」「いらない」: 1週間黙る（声かけから3日以内のときだけ。点呼の「休む」は点呼の答えとして今までどおり）
+    if (QUIET_WORDS.test(ev.message.text.trim())) {
+      const p = await r.findParticipantByLineUserId(lineUserId);
+      const st = p ? await loadNudge(p.id).catch(() => undefined) : undefined;
+      if (p && st?.lastAt && Date.now() - Date.parse(st.lastAt) < 3 * 86400000 && !(await answerByWords(lineUserId, ev.message.text))) {
+        await saveNudge(p.id, { ...st, skipUntil: quietUntil(new Date()) });
+        await reply(lineUserId, MSG.nudgeQuiet());
+        return;
+      }
     }
     // AI参加コンシェルジュ（spec v1.7）: 会話の続き・相談らしい文は、点呼の答えより先にコンシェルジュへ
     const consult = CONSULT_WORDS.test(ev.message.text) || (await inConversation(lineUserId));

@@ -7,6 +7,7 @@
 import { checkForecastAndAnnounce, laterShift, plan, ring, weeklyRecap } from "@/lib/morning/ops";
 import { withStateLock } from "@/lib/ops/lock";
 import { recordProblem } from "@/lib/ops/problems";
+import { nudgeInactive } from "@/lib/nudge/ops";
 import { flushRoadAlerts } from "@/lib/road/notify";
 import { firstStormNotice, STORM_LINES, stormHeadline, stormStatus } from "@/lib/storm";
 import { loadRoster, lineIds } from "@/lib/morning/roster";
@@ -61,7 +62,9 @@ async function run(job: string): Promise<Response> {
       case "noon":
       case "pm": {
         const r = await laterShift(job);
-        return Response.json({ ok: true, job, ...r });
+        // 夕方の処理に乗せて、しばらく活動のない人へ隊長の声かけ（spec v1.18）。失敗しても出番の処理は返す
+        const nudged = job === "pm" ? await nudgeInactive().catch(async (e) => (await recordProblem("cron/nudge", e), { checked: 0, sent: 0, names: [] })) : undefined;
+        return Response.json({ ok: true, job, ...r, ...(nudged ? { nudged: nudged.sent } : {}) });
       }
       case "weekly": {
         const r = await weeklyRecap();

@@ -28,6 +28,7 @@ import {
   runWeekly,
   startEmptyMorning,
   thanksDemo,
+  nudgeNow,
   writeImprovementsNow,
   writeRecapNow,
   writeShareTextsNow,
@@ -318,6 +319,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           </form>
           <form action={writeShareTextsNow}>
             <button className={link}>SNS の投稿文を書く（Claude）</button>
+          </form>
+          <form action={nudgeNow}>
+            <button className={link}>隊長の声かけ（しばらく来ていない人へ）</button>
           </form>
           {demoEnabled() && (
             <form action={backToSample}>

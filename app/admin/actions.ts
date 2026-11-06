@@ -31,6 +31,7 @@ import { appToday } from "@/lib/morning/today";
 import { recordHouseFeathers } from "@/lib/solo/ops";
 import { refreshShareTexts } from "@/lib/sns/refresh";
 import { writeImprovements } from "@/lib/voice/improve";
+import { nudgeInactive } from "@/lib/nudge/ops";
 
 /** 管理の操作の入口: 合言葉のログインを確かめ、今朝の状態の鍵を取ってから動かす */
 async function guarded<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -239,6 +240,19 @@ export async function prepareDatabase() {
     await update((s) => {
       s.log.push(`DB を準備しました（SQL ${statements} 文・参加者 ${seeded.participants} 人・拠点 ${seeded.bases} 軒）`);
     });
+  });
+}
+
+/** しばらく活動のない人へ、隊長の声かけ（spec v1.18。16:30 の自動と同じ） */
+export async function nudgeNow() {
+  return guarded("nudgeNow", async () => {
+    try {
+      const r = await nudgeInactive();
+      await update((s) => void s.log.push(`隊長の声かけ: ${r.checked} 人を見て ${r.sent} 人に${r.names.length ? `（${r.names.join("・")}）` : ""}`));
+    } catch (e) {
+      await update((s) => void s.log.push(`隊長の声かけに失敗: ${e instanceof Error ? e.message : String(e)}`));
+    }
+    revalidatePath("/admin");
   });
 }
 
