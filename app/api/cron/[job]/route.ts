@@ -15,6 +15,7 @@ import { multicast } from "@/lib/line/client";
 import { MSG } from "@/lib/line/messages";
 import { jstDate } from "@/lib/jst";
 import { warmDayTopic } from "@/lib/topic/day";
+import { warmSnowSong } from "@/lib/song/day";
 
 /** 警報で止める仕事（週のまとめは止めない） */
 const STORM_JOBS = new Set(["announce", "rollcall", "plan", "noon", "pm"]);
@@ -56,7 +57,9 @@ async function run(job: string): Promise<Response> {
         const r = await morningAuto();
         // 今日の話題（spec v1.23）を朝のうちに調べておく（カードを作る時に待たせない）。失敗しても暦の話題で描ける
         const topic = await warmDayTopic(jstDate()).then((t) => t.by, async (e) => (await recordProblem("cron/topic", e), "calendar"));
-        return Response.json({ ok: true, job, ...r, road, topic });
+        // 今朝の雪の歌（spec v1.28）: 話題のあとで作曲しておく。失敗してもプログラムの曲になる
+        const song = await warmSnowSong(jstDate()).then((s) => s.by, async (e) => (await recordProblem("cron/song", e), "none"));
+        return Response.json({ ok: true, job, ...r, road, topic, song });
       }
       case "plan": {
         const r = await plan();
