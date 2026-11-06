@@ -1,9 +1,11 @@
 // 隊長トークで Claude を呼ぶ回数の、1人1日の上限（公開中のお金の守り。11/6 外部レビュー）。
 // DEMO_MODE のあいだは架空の人（?as=h1 など）として誰でも送れるので、回数に上限がないと Claude の費用が青天井になる。
+// 上限は架空の人だけ。LINE でログインした本人は上限なし（11/6 本人の決定）。
 // 超えた分は断らず、鍵がないときと同じモック応答で答える（画面は止まらない）。DB があれば chat_quota 表、なければメモリで数える。
 import { hasDb, query } from "../db";
 import { jstDate } from "../jst";
 import { recordProblem } from "../ops/problems";
+import { isDemoViewer } from "../viewer";
 
 export type ChatKind = "text" | "photo";
 
@@ -44,8 +46,17 @@ async function countInDb(date: string, participantId: string, kind: ChatKind): P
   return Number(rows[0]?.n ?? 1);
 }
 
+/**
+ * 上限をかけるのは架空の人（?as=h1 などで誰でも使える）だけ。LINE でログインした本人は上限なし（11/6 本人の決定）。
+ * 架空の人を誰でも呼べるのが心配の元なので、そこだけを守る。
+ */
+export function quotaApplies(participantId: string): boolean {
+  return isDemoViewer(participantId);
+}
+
 /** 1回ぶん数えて、まだ Claude を呼んでよければ true。上限を超えていれば false（モック応答にする）。日付は本当の日本時間 */
 export async function takeChatQuota(participantId: string, kind: ChatKind, now = new Date()): Promise<boolean> {
+  if (!quotaApplies(participantId)) return true;
   const date = jstDate(now);
   let n: number;
   if (hasDb()) {
