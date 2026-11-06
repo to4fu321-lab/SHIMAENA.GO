@@ -57,6 +57,12 @@ async function Ask({ searchParams }: { searchParams: Promise<{ as?: string }> })
           />
         )}
       </main>
+      {house && (
+        // 雪の聞き書き（spec v1.26）: 頼む家の人が、隊長に雪の思い出を話す
+        <Link href={`/kikigaki${q}`} className="mx-4 mb-2 flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-warm text-base font-bold ring-1 ring-ink/15">
+          📖 雪の思い出を隊長に話す（聞き書き）
+        </Link>
+      )}
       <TabBar active="home" q={q} />
     </div>
   );

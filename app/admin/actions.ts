@@ -35,6 +35,7 @@ import { recordHouseFeathers } from "@/lib/solo/ops";
 import { refreshShareTexts } from "@/lib/sns/refresh";
 import { writeImprovements } from "@/lib/voice/improve";
 import { nudgeInactive } from "@/lib/nudge/ops";
+import { seedDemoStory } from "@/lib/kikigaki/ops";
 
 /** 管理の操作の入口: 合言葉のログインを確かめ、今朝の状態の鍵を取ってから動かす */
 async function guarded<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -305,5 +306,18 @@ export async function seedRoadReportsDemo() {
     await update((s) => void s.log.push("デモの道の報告を2件入れました（つるつる・道が細い）"));
     revalidatePath("/admin");
     revalidatePath("/map");
+  });
+}
+
+/** デモ用（spec v1.26）: 次に完了しそうな家の人の「雪の聞き書き」を1件入れる（届ける、を選んだ状態）。その家が終わると、来た人の隊長トークに届く */
+export async function seedKikigakiDemo() {
+  return guarded("seedKikigakiDemo", async () => {
+    const s = await loadMorning();
+    const roster = await loadRoster();
+    const next = s.morning.missions.filter((m) => m.status !== "done").sort((a, b) => b.importance - a.importance)[0];
+    const base = roster.bases.find((b) => b.id === next?.baseId) ?? roster.bases[0];
+    if (!base) return;
+    const story = await seedDemoStory(base.requesterId);
+    await update((x) => void x.log.push(`デモの雪の聞き書き「${story.title}」を拠点${base.number}の家に入れました（${base.requesterId}・届ける）`));
   });
 }

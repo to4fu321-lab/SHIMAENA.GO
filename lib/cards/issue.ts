@@ -16,6 +16,7 @@ import { TOWN } from "../town";
 import { baseUrl } from "../url";
 import type { Card, Mission, Participant, SnowType, Sortie } from "../types";
 import { decideRarity } from "./rarity";
+import { deliverStory, storyForMission } from "../kikigaki/ops";
 import { dayTopic, type TopicItem } from "../topic/day";
 import { drawLater, willDraw } from "./drawn";
 import type { ArtInput } from "../claude/art";
@@ -96,6 +97,8 @@ export async function issueCardsForMission(
   const completedAt = sorties[0].completedAt ?? new Date().toISOString();
   const base = roster.bases.find((b) => b.id === mission.baseId);
   const requester = base && byId.get(base.requesterId);
+  // v1.26: この家の人が「届ける」を選んだ雪の思い出（聞き書き）があれば、カードの裏に1行・カードのあとに隊長トークへ
+  const story = await storyForMission(requester?.id, mission.id).catch(() => undefined);
   const rarity = decideRarity({
     completedAt,
     forecastCm: s.morning.rollcall.forecastCm,
@@ -170,6 +173,7 @@ export async function issueCardsForMission(
       thanks: opts.thanks ?? "今朝はありがとうございました。おかげで玄関から出られます。",
       subtasks: mission.subtasks.map((t) => `${t.label}（${t.minutes}分）`),
       firstFlight,
+      ...(story ? { story: story.title } : {}),
     });
     await r.insertCard(card, svg, back);
     cards.push(card);
@@ -179,6 +183,10 @@ export async function issueCardsForMission(
       await push(m.lineUserId, [...(firstFlight ? MSG.firstFlight(art.townName) : []), ...cardImageMessages(card.id)]);
       sent++;
     }
+  }
+  if (story) {
+    const n = await deliverStory(story, mission.id, members.map((m) => m.lineUserId)).catch((e) => (console.error("[kikigaki] 届けられませんでした:", e), 0));
+    s.log.push(`拠点${base?.number ?? "?"}の雪の思い出「${story.title}」を ${n} 人に届けました`);
   }
   // v1.24: 返事のあとで、Claude がこの家の絵をゼロから描いて差しかえる
   drawLater(
@@ -354,7 +362,7 @@ export async function rerenderBacks(missionId: string, back: { date: string; tha
     const old = await r.getCard(card.id);
     const extras = old ? backExtras(old.backSvg) : {};
     const art: CardArt = { ...artFromCard(card, back.date), snowKgBasis: extras.basis, scene: extras.scene as CardArt["scene"] }; // 話題の行（v1.23）も残る
-    const svg = renderCardBackSvg(art, { thanks: back.thanks, subtasks: back.subtasks, firstFlight });
+    const svg = renderCardBackSvg(art, { thanks: back.thanks, subtasks: back.subtasks, firstFlight, ...(extras.story ? { story: extras.story } : {}) });
     await r.updateCardBack(card.id, svg);
   }
   return cards.length;
