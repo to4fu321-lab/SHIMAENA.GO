@@ -68,16 +68,16 @@ export default function ChatTools({ size, onSize, speakOn, onSpeak }: { size: Te
             aria-checked={size === s}
             aria-label={s === "m" ? "標準" : s === "l" ? "大" : "特大"}
             onClick={() => pick(s)}
-            className={`min-h-10 min-w-10 px-1 font-bold leading-none ${size === s ? "bg-ink text-white" : "text-ink"}`}
-            style={{ fontSize: s === "m" ? 14 : s === "l" ? 17 : 20 }}
+            className={`min-h-9 min-w-9 px-0.5 font-bold leading-none ${size === s ? "bg-ink text-white" : "text-ink"}`}
+            style={{ fontSize: s === "m" ? 13 : s === "l" ? 16 : 19 }}
           >
             あ
           </button>
         ))}
       </div>
       {ok && (
-        <button onClick={toggle} aria-pressed={speakOn} aria-label="読み上げ" className={`min-h-10 rounded-full px-2.5 text-sm font-bold ring-1 ring-ink/20 ${speakOn ? "bg-lamp text-white" : "bg-card text-ink"}`}>
-          🔊 {speakOn ? "読み上げ中" : "読み上げ"}
+        <button onClick={toggle} aria-pressed={speakOn} aria-label={speakOn ? "読み上げ中（押すと止める）" : "読み上げ"} className={`grid size-9 place-items-center rounded-full text-base ring-1 ring-ink/20 ${speakOn ? "bg-lamp text-white" : "bg-card text-ink"}`}>
+          {speakOn ? "🔊" : "🔈"}
         </button>
       )}
     </div>

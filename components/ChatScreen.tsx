@@ -12,6 +12,7 @@ import Mascot from "./Mascot";
 import MicButton from "./MicButton";
 import { shrink } from "./shrink";
 import { play } from "@/lib/sound/engine";
+import type { ReactNode } from "react";
 
 const POLL_SECONDS = 6;
 
@@ -30,7 +31,25 @@ function Avatar({ team }: { team?: TeamId }) {
 }
 
 /** readOnly: 家族の代わりに登録した人（参加者ではない）。届いたものを読むだけで、文やボタンは送れない */
-export default function ChatScreen({ viewerId, initial, teamId, readOnly = false }: { viewerId: string; initial: ChatBubble[]; teamId?: TeamId; readOnly?: boolean }) {
+/**
+ * headerBg: 題名の帯の色（チームの淡い色）。extra: 題名の帯の右に置く小さいもの（🔔 通知オン など）。
+ * 上段は1行だけ（11/6 本人の指摘「メインのチャット部分を大きく、最上段をコンパクトに」）。
+ */
+export default function ChatScreen({
+  viewerId,
+  initial,
+  teamId,
+  readOnly = false,
+  headerBg,
+  extra,
+}: {
+  viewerId: string;
+  initial: ChatBubble[];
+  teamId?: TeamId;
+  readOnly?: boolean;
+  headerBg?: string;
+  extra?: ReactNode;
+}) {
   const [bubbles, setBubbles] = useState<ChatBubble[]>(initial);
   const [draft, setDraft] = useState("");
   const [size, setSize] = useState<TextSize>("m");
@@ -167,11 +186,17 @@ export default function ChatScreen({ viewerId, initial, teamId, readOnly = false
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ fontSize: TEXT_SIZE_PX[size] }}>
-      {!readOnly && (
-        <div className="flex shrink-0 items-center justify-end gap-2 px-3 py-1">
-          <ChatTools size={size} onSize={setSize} speakOn={speakOn} onSpeak={setSpeakOn} />
-        </div>
-      )}
+      {/* 上段は1行: 隊長・題名・（通知オン）・文字の大きさ・読み上げ。流れをできるだけ大きく */}
+      <header className="flex shrink-0 items-center gap-1.5 bg-ice-soft py-1 pl-3 pr-2" style={headerBg ? { background: headerBg } : undefined}>
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-card shadow-sm">
+          <Mascot size={30} team={teamId} />
+        </span>
+        <h1 className="min-w-0 flex-1 truncate text-lg font-bold leading-tight" title="雪の朝のお知らせと、なんでも相談">
+          隊長トーク
+        </h1>
+        {extra}
+        {!readOnly && <ChatTools size={size} onSize={setSize} speakOn={speakOn} onSpeak={setSpeakOn} />}
+      </header>
       {/* 流れ（この中だけがスクロールする） */}
       <div ref={list} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label="隊長とのやりとり">
         {bubbles.length === 0 && (

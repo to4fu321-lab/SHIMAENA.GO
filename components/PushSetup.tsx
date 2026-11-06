@@ -33,9 +33,14 @@ function rememberLater(): void {
 }
 const standalone = () => window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
 
+/**
+ * compact: 上段の1行に収める（隊長トーク）。小さな札「🔔 通知を受け取る／通知オン」だけを出し、
+ * 押すと下から案内のシートが出る（流れの場所を取らない。11/6 本人の指摘「チャット部分を大きく」）。
+ */
 export default function PushSetup({ viewerId, publicKey, compact = false }: { viewerId: string; publicKey?: string; compact?: boolean }) {
   const [state, setState] = useState<State>("hidden");
   const [msg, setMsg] = useState<string>();
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!publicKey) return;
@@ -94,12 +99,8 @@ export default function PushSetup({ viewerId, publicKey, compact = false }: { vi
   };
 
   if (state === "hidden") return null;
-  if (state === "on") {
-    return compact ? (
-      <button onClick={turnOff} className="text-sm text-ink-soft underline">
-        🔔 通知オン
-      </button>
-    ) : (
+  if (state === "on" && !compact) {
+    return (
       <p className="flex items-center justify-between rounded-2xl bg-ice-soft px-3 py-2 text-base">
         <span>🔔 この端末に通知が届きます</span>
         <button onClick={turnOff} className="text-sm underline">
@@ -108,6 +109,52 @@ export default function PushSetup({ viewerId, publicKey, compact = false }: { vi
       </p>
     );
   }
+  const body = state === "on" ? (
+    <section className="space-y-2 rounded-2xl bg-ice-soft px-3 py-3">
+      <p className="text-base font-bold">🔔 この端末に通知が届きます</p>
+      <p className="text-sm text-ink-soft">雪の朝の雪かき応援と、来てくれる人のお知らせ。雪のない日は何も届きません。</p>
+      <button
+        onClick={() => {
+          void turnOff();
+          setOpen(false);
+        }}
+        className="text-sm underline"
+      >
+        この端末への通知を止める
+      </button>
+    </section>
+  ) : (
+    <PushBox state={state} msg={msg} turnOn={turnOn} later={later} />
+  );
+  if (compact) {
+    return (
+      <>
+        <button
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-label={state === "on" ? "通知オン（押すと設定）" : "通知を受け取る"}
+          className={`flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-full px-2 text-xs font-bold ring-1 ${state === "on" ? "bg-card text-ink-soft ring-ink/15" : "bg-warm text-ink ring-lamp/60"}`}
+        >
+          🔔{state === "on" ? "" : " 通知"}
+        </button>
+        {open && (
+          <div className="fixed inset-0 z-[1300] flex items-end justify-center bg-ink/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="通知の設定" onClick={() => setOpen(false)}>
+            <div className="w-full max-w-md space-y-2 rounded-t-3xl bg-paper p-4 pb-[max(16px,env(safe-area-inset-bottom))] text-ink shadow-2xl" style={{ fontSize: 18 }} onClick={(e) => e.stopPropagation()}>
+              {body}
+              <button onClick={() => setOpen(false)} className="btn btn-white min-h-11 w-full text-base">
+                閉じる
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+  return body;
+}
+
+/** 案内の箱（ホーム画面に追加の3ステップ／許可しないになっている／通知を受け取る） */
+function PushBox({ state, msg, turnOn, later }: { state: State; msg?: string; turnOn: () => void; later: () => void }) {
   const box = "space-y-2 rounded-2xl bg-warm px-3 py-3 ring-1 ring-lamp/40";
   if (state === "ios-install") {
     return (

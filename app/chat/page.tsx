@@ -41,10 +41,11 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
   const q = demoAs ? `?as=${demoAs}` : "";
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
 
+  // 登録していない人の画面の題名（本物のトークの上段は ChatScreen が1行で描く）
   const header = (
     <header className="flex items-center gap-2 bg-ice-soft px-4 py-2" style={myTeam ? { background: myTeam.soft } : undefined}>
-      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-card shadow-sm">
-        <Mascot size={36} team={myTeam?.team.id} />
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-card shadow-sm">
+        <Mascot size={32} team={myTeam?.team.id} />
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <h1 className="text-xl font-bold">隊長トーク</h1>
@@ -75,13 +76,16 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
   const bubbles = toBubbles(items, demoAs);
   const viewer = me?.id ?? "";
   return (
-    <Screen header={<><StormBanner />{header}</>} footer={<TabBar active="chat" q={q} />}>
-      {!demoAs && (
-        <div className="shrink-0 px-3 pt-2">
-          <PushSetup viewerId={viewer} publicKey={publicVapidKey()} />
-        </div>
-      )}
-      <ChatScreen viewerId={viewer} initial={bubbles} teamId={myTeam?.team.id} readOnly={!me} />
+    <Screen header={<StormBanner />} footer={<TabBar active="chat" q={q} />}>
+      {/* 通知の案内（まだ許可していない人にだけ出る）。許可ずみなら上段に小さく「🔔 通知オン」 */}
+      <ChatScreen
+        viewerId={viewer}
+        initial={bubbles}
+        teamId={myTeam?.team.id}
+        readOnly={!me}
+        headerBg={myTeam?.soft}
+        extra={!demoAs ? <PushSetup viewerId={viewer} publicKey={publicVapidKey()} compact /> : undefined}
+      />
     </Screen>
   );
 }
