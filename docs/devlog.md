@@ -654,3 +654,4 @@
 
 ## 11/7 点検ループ（自動・2回目）
 - 点検ループ: 直した 3件（写真の上限超えの文・見本の「いいえ」・入力欄の例の切れ）・積んだ 1件（T107 「7:00」の知らせ）・提案 7件（`docs/tenken/log.md`）。
+- 古い URL（yukikaki-karano-kaihou.vercel.app）を開いたら新しい URL に飛ぶように（vercel.json の redirects）。

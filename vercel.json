@@ -3,5 +3,13 @@
   "crons": [
     { "path": "/api/cron/announce", "schedule": "0 12 * * *" },
     { "path": "/api/cron/rollcall", "schedule": "30 21 * * *" }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "yukikaki-karano-kaihou.vercel.app" }],
+      "destination": "https://shimaena-go.vercel.app/:path*",
+      "permanent": false
+    }
   ]
 }
