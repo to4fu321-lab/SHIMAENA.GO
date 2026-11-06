@@ -232,11 +232,22 @@ export default function ChatScreen({
                     ))}
                   {(b.lines?.length || b.buttons.length) ? (
                     <div className="space-y-2 p-3">
-                      {b.lines?.map((l, i) => (
+                      {b.lines?.map((l, i) =>
+                        l.steps ? (
+                          <div key={i} className="flex flex-wrap items-center gap-1" aria-label={l.text}>
+                            <span className="text-[0.75em] text-ink-soft">隊長が調べた</span>
+                            {l.steps.map((s, j) => (
+                              <span key={j} className="agent-step rounded-full bg-ice-soft px-2 py-0.5 text-[0.75em] font-bold text-ink" style={{ animationDelay: `${j * 0.25}s` }}>
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
                         <p key={i} className={`whitespace-pre-line leading-snug ${l.strong ? "text-[1.1em] font-bold" : l.accent ? "text-[0.85em] text-lamp-deep" : "text-[1em]"}`}>
                           {l.text}
                         </p>
-                      ))}
+                        ),
+                      )}
                       {b.buttons.map((x, i) => (
                         <Button key={i} b={x} big />
                       ))}

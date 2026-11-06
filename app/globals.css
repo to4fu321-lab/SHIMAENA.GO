@@ -459,3 +459,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hz-fresh .hz-halo, .toast-in { animation: none; }
 }
+
+/* v1.25 隊長エージェントの「調べた」札: ひとつずつ順に出る */
+@keyframes agent-step-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+.agent-step { animation: agent-step-in 0.35s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .agent-step { animation: none; } }

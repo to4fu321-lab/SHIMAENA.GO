@@ -20,6 +20,8 @@ export interface ChatLine {
   strong?: boolean;
   /** 注意の色（安全のひとこと など） */
   accent?: boolean;
+  /** v1.25: 隊長エージェントが調べた道具（小さな札で並べる） */
+  steps?: string[];
 }
 
 export interface ChatBubble {
@@ -116,6 +118,11 @@ export function toBubble(item: InboxItem, as?: string): ChatBubble {
     if (o.type === "text" && typeof o.text === "string") {
       const size = String(o.size ?? "");
       const color = String(o.color ?? "").toUpperCase();
+      const trace = /^隊長が調べたこと: (.+)$/.exec(o.text);
+      if (trace) {
+        lines.push({ text: o.text, steps: trace[1].split(" ・ ") });
+        return;
+      }
       lines.push({ text: o.text, strong: o.weight === "bold" && (size === "xl" || size === "lg"), accent: color === COLORS.lamp.toUpperCase() });
       return;
     }

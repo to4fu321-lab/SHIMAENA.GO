@@ -143,3 +143,8 @@ export async function askJson<S extends z.ZodType>(opts: AskJsonOptions<S>): Pro
   }
   return res.parsed_output as z.infer<S>;
 }
+
+/** 道具を使う会話（隊長エージェント、spec v1.25）で、自分でやり取りを回すための入口 */
+export const getClaudeClient = (): Anthropic => getClient();
+/** 毎回同じ前置き（採点表つき）。キャッシュが効くよう、そのまま使う */
+export const SYSTEM_PROMPT = SYSTEM;

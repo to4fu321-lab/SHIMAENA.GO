@@ -24,6 +24,7 @@ import {
 } from "../morning/ops";
 import { NOW_MINUTES, type NowMinutes } from "../morning/watch";
 import { concierge, CONSULT_WORDS, inConversation } from "../concierge/run";
+import { captainReply } from "../agent/captain";
 import { faqKind, faqReply } from "../concierge/faq";
 import { clearSession as clearConcierge } from "../concierge/session";
 import { setAlertPref } from "../road/store";
@@ -360,7 +361,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     // AI参加コンシェルジュ（spec v1.7）: 会話の続き・相談らしい文は、点呼の答えより先にコンシェルジュへ
     const consult = CONSULT_WORDS.test(ev.message.text) || (await inConversation(lineUserId));
     if (consult) {
-      const cc = await concierge(lineUserId, ev.message.text);
+      const cc = await captainReply(lineUserId, ev.message.text, (id, t) => concierge(id, t)); // v1.25: キーがあれば隊長エージェント
       if (cc) {
         if (ev.replyToken) await reply(lineUserId, cc);
         return;
@@ -373,8 +374,8 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       await escalateHelpIfDue();
       return;
     }
-    // 点呼の時間でなければ、登録した人の自由な文はコンシェルジュへ（「下のボタンから」で止めない）
-    const cc = await concierge(lineUserId, ev.message.text);
+    // 点呼の時間でなければ、登録した人の自由な文はコンシェルジュへ（「下のボタンから」で止めない）。v1.25: キーがあれば隊長エージェント
+    const cc = await captainReply(lineUserId, ev.message.text, (id, t) => concierge(id, t));
     if (cc) {
       if (ev.replyToken) await reply(lineUserId, cc);
       return;
