@@ -30,6 +30,9 @@ export interface CardScene extends SceneFacts {
   why: string;
   /** この時だけの設計図の番号（4桁の16進） */
   code: string;
+  /** v1.23: 今日の話題（時事）と、それから描いた挿絵（ステッカー）。前の版のカードにはない */
+  topic?: string;
+  motif?: import("./motif").Motif;
 }
 
 export const WHY_MAX = 40;

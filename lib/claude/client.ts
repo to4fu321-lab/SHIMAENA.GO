@@ -45,6 +45,40 @@ export interface AskJsonOptions<S extends z.ZodType> {
   images?: { mediaType: "image/jpeg" | "image/png" | "image/webp"; base64: string }[];
 }
 
+/**
+ * Web 検索つきで、文で答えてもらう（spec v1.23 今日の話題）。検索は Anthropic のサーバーで動く（web_search）。
+ * 長い検索で止まった（pause_turn）ときは、2回まで続きを頼む。答えの文だけを返す
+ */
+export async function askWithWebSearch(task: string, opts: { maxUses?: number } = {}): Promise<string> {
+  const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: task }];
+  for (let turn = 0; turn < 3; turn++) {
+    const res = await getClient().beta.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 16000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+      output_config: { effort: "low" },
+      tools: [
+        {
+          type: "web_search_20260209",
+          name: "web_search",
+          max_uses: opts.maxUses ?? 3,
+          user_location: { type: "approximate", city: "Sapporo", region: "Hokkaido", country: "JP", timezone: "Asia/Tokyo" },
+        },
+      ],
+      messages,
+    });
+    if (res.stop_reason === "refusal") throw new ClaudeRefusalError("Claude がこの依頼を断りました");
+    if (res.stop_reason === "pause_turn") {
+      messages.push({ role: "assistant", content: res.content });
+      continue;
+    }
+    return res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("").trim();
+  }
+  throw new Error("Web 検索が終わりませんでした");
+}
+
 /** Claude に JSON で答えてもらう。形は schema で保証される */
 export async function askJson<S extends z.ZodType>(opts: AskJsonOptions<S>): Promise<z.infer<S>> {
   const light = opts.model === "light";

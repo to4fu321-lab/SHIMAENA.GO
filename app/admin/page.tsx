@@ -329,6 +329,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
               <button className={link}>7:10 の見本の状態に戻す</button>
             </form>
           )}
+          <form action="/api/cards/try" method="get">
+            <button className={link}>カードの試し描き（今日の話題・Claude の挿絵）</button>
+          </form>
           <form action={seedRoadReportsDemo}>
             <button className={link}>道の報告をデモで2件入れる（つるつる・道が細い）</button>
           </form>

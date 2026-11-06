@@ -17,6 +17,7 @@ import { TOWN } from "../town";
 import { baseUrl } from "../url";
 import type { Card, Mission, Participant, SnowType, Sortie } from "../types";
 import { decideRarity } from "./rarity";
+import { dayTopic } from "../topic/day";
 import { backExtras, renderCardBackSvg, renderCardSvg, type CardArt } from "./svg";
 
 export { baseUrl };
@@ -91,7 +92,8 @@ export async function issueCardsForMission(
     modelDepthCm: s.morning.rollcall.depthCm,
     thanks: Boolean(s.thanks?.[mission.id]),
     mixed: new Set(members.map((m) => m.teamId)).size >= 2,
-    seed: `${s.morning.rollcall.id}|${mission.id}`,
+    seed: `${s.morning.rollcall.id}|${mission.id}|${completedAt}`,
+    topics: (await dayTopic(s.morning.rollcall.date)).items,
   });
   mission.snowKg = text.snowKg; // 町内の「どけた雪の合計」に使う
   const issuedCount = s.morning.sorties.length;
@@ -241,6 +243,7 @@ export async function issueSoloCard(
       photoDepth: opts.weather?.photoDepth,
       modelDepthCm: opts.weather?.depthCm,
       seed: `solo|${opts.logId}`,
+      topics: (await dayTopic(opts.date)).items,
     });
     named = opts.variant === "daily" ? { designName: t.designName, designNameEn: t.designNameEn, flavor: t.flavor, scene: t.scene } : { ...named, scene: t.scene };
   } catch (e) {
@@ -308,7 +311,7 @@ export async function rerenderBacks(missionId: string, back: { date: string; tha
     // 前の裏面にあった「設計図」と「推定の元」は残す（v1.8）
     const old = await r.getCard(card.id);
     const extras = old ? backExtras(old.backSvg) : {};
-    const art: CardArt = { ...artFromCard(card, back.date), snowKgBasis: extras.basis, scene: extras.scene as CardArt["scene"] };
+    const art: CardArt = { ...artFromCard(card, back.date), snowKgBasis: extras.basis, scene: extras.scene as CardArt["scene"] }; // 話題の行（v1.23）も残る
     const svg = renderCardBackSvg(art, { thanks: back.thanks, subtasks: back.subtasks, firstFlight });
     await r.updateCardBack(card.id, svg);
   }

@@ -52,6 +52,9 @@ const say = (m: LineMessage[]) => {
   return t.length > 90 ? `${t.slice(0, 90)}…` : t;
 };
 
+const codeOf = (svg: string) => /data-scene="([0-9a-f]{4})"/.exec(svg)?.[1] ?? "";
+const topicOf = (back: string) => /今日の話題「([^<]*)」/.exec(back)?.[1] ?? "なし";
+
 /** テストの朝の時刻（JST）。夜は「よその家に行かない」決まりがあるので、朝の時刻で押す */
 const atJst = (hm: string) => new Date(`${DEMO_DATE}T${hm}:00+09:00`);
 
@@ -176,6 +179,9 @@ export async function runSimulation(): Promise<SimReport> {
     { name: "カードの表・裏の絵（SVG）がある", ok: cards.every((c) => c.svg.startsWith("<svg") && c.backSvg.startsWith("<svg")), detail: `${cards.filter((c) => c.svg.startsWith("<svg")).length} 枚に表、${cards.filter((c) => c.backSvg.startsWith("<svg")).length} 枚に裏` },
     { name: "通し番号が重ならない（No.1 から順に）", ok: new Set(serials).size === serials.length && serials.every((n, i) => n === i + 1), detail: `No.${serials[0]} 〜 No.${serials.at(-1)}` },
     { name: "同じ家のカードは同じ絵の名前", ok: s.morning.missions.every((m) => new Set(cards.filter((c) => c.card.missionId === m.id).map((c) => c.card.designName)).size === 1), detail: `${new Set(cards.map((c) => c.card.designName)).size} 種類の名前` },
+    { name: "1枚ずつ設計図の番号がちがう（同じ家の仲間どうしは同じ）", ok: new Set(s.morning.missions.map((m) => codeOf(cards.find((c) => c.card.missionId === m.id)?.svg ?? ""))).size === s.morning.missions.length, detail: `${new Set(cards.map((c) => codeOf(c.svg))).size} 種類の設計図` },
+    { name: "どの家のカードにも、今日の話題の挿絵が貼られた", ok: cards.every((c) => c.svg.includes("data-motif=")), detail: `${cards.filter((c) => c.svg.includes("data-motif=")).length} 枚（話題: ${[...new Set(cards.map((c) => topicOf(c.backSvg)))].join("・")}）` },
+    { name: "家ごとにカードの名前がちがう", ok: new Set(cards.map((c) => c.card.designName)).size === s.morning.missions.length, detail: `${new Set(cards.map((c) => c.card.designName)).size} 種類 / ${s.morning.missions.length} 軒` },
     { name: "カードがその人の隊長トークに届いた", ok: cards.every((c) => c.delivered), detail: `${cards.filter((c) => c.delivered).length} / ${cards.length} 枚` },
     { name: "急用の人は外れ、駆けつけで埋まった", ok: !s.morning.sorties.some((x) => persona.get(x.participantId) === "busy"), detail: `急用 ${helpers.filter((h) => h.persona === "busy").length} 人・駆けつけ ${steps.filter((x) => x.what.includes("駆けつけ")).length} 件` },
     { name: "初出撃（はじめての1枚）が記録された", ok: (s.firstFlights ?? []).length === workers.size, detail: `${(s.firstFlights ?? []).length} 人` },

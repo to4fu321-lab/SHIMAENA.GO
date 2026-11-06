@@ -2,6 +2,7 @@
 // 基本は「パステル×ネオン×メンフィス柄のかわいいシティポップ」。レアでタッチが変わる。
 // 並ぶシマエナガの数＝来た人数、耳あての色＝その人のチーム色。右上に消印。お宅の名前は載せない。
 import { sceneLayer, type CardScene } from "./scene";
+import { stickerSvg } from "./motif";
 import { TEAMS } from "../teams";
 import type { CardStyle, TeamId } from "../types";
 
@@ -472,7 +473,13 @@ const STYLES: Record<CardStyle, (art: CardArt) => string> = { kawaii, retrowave,
 
 /** 表面 */
 export function renderCardSvg(art: CardArt): string {
-  const body = STYLES[art.style](art);
+  let body = STYLES[art.style](art);
+  // v1.23: その時だけの挿絵（ステッカー）。消印より下に貼る
+  if (art.scene?.motif) {
+    const sticker = stickerSvg(art.style, art.scene.motif, art.scene.code);
+    const at = body.indexOf(STAMP_START);
+    body = at >= 0 ? body.slice(0, at) + sticker + body.slice(at) : body + sticker;
+  }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CARD_W} ${CARD_H}" width="${CARD_W}" height="${CARD_H}">${body}\n</svg>`;
 }
 
@@ -504,6 +511,7 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
   ${thanks}
   <text x="80" y="395" font-family="${JP}" font-size="14" fill="#8a7bb5" letter-spacing="2">このときにやったこと</text>
   ${lines}
+  ${art.scene?.topic ? `<text x="300" y="612" font-family="${JP}" font-size="13" fill="#8a7bb5" text-anchor="middle">今日の話題「${escapeXml(art.scene.topic)}」から描いた挿絵</text>` : ""}
   ${art.scene ? `<text x="300" y="634" font-family="${JP}" font-size="13" fill="#8a7bb5" text-anchor="middle">この時だけの設計図 #${escapeXml(art.scene.code)} ・ ${escapeXml(art.scene.why)}</text>` : ""}
   <rect x="60" y="650" width="480" height="110" rx="20" fill="#f1ecff"/>
   <text x="300" y="692" font-family="${JP}" font-size="16" fill="#6b4fcf" text-anchor="middle">${art.snowKg > 0 ? "どけた雪 およそ" : "ひとりで、町のために"}</text>
@@ -517,12 +525,13 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
  * 前の裏面から「設計図」と「推定の元」の行を読み戻す（ありがとう点呼で裏面を描き直しても消さないため。表は表に描いてある）。
  * 表に XML の記号は出ないので、エスケープを戻すだけでよい。
  */
-export function backExtras(backSvg: string): { scene?: Pick<CardScene, "code" | "why">; basis?: string } {
+export function backExtras(backSvg: string): { scene?: Pick<CardScene, "code" | "why" | "topic">; basis?: string } {
   const un = (t: string) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
   const sc = /この時だけの設計図 #([0-9a-f]{4}) ・ ([^<]*)</.exec(backSvg);
   const basis = /推定: ([^<]*)</.exec(backSvg);
+  const topic = /今日の話題「([^<]*)」から描いた挿絵</.exec(backSvg);
   return {
-    ...(sc ? { scene: { code: sc[1], why: un(sc[2]) } } : {}),
+    ...(sc ? { scene: { code: sc[1], why: un(sc[2]), ...(topic ? { topic: un(topic[1]) } : {}) } } : {}),
     ...(basis ? { basis: un(basis[1]) } : {}),
   };
 }
