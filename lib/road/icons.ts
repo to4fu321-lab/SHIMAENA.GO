@@ -47,12 +47,20 @@ const PICTO: Record<HazardId, string> = {
     <path d="M52 40 L53.5 36 L55 40 L59 41.5 L55 43 L53.5 47 L52 43 L48 41.5 Z" fill="${SNOW}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>`,
 };
 
-/** 黄色い警告の板（角の丸い四角）＋大きな絵。size は px */
-export function hazardSvg(id: HazardId, size = 48): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true"><rect x="1.5" y="1.5" width="61" height="61" rx="12" fill="${HAZARD_AMBER}" stroke="${INK}" stroke-width="3"/><svg x="0" y="0" width="64" height="64" viewBox="0 0 64 64"><clipPath id="hzc-${id}"><rect x="3" y="3" width="58" height="58" rx="10.5"/></clipPath><g clip-path="url(#hzc-${id})">${PICTO[id]}</g></svg></svg>`;
+/** 黄色い板と絵（外側の <svg> なし）。clip の id は呼ぶ側ごとに分ける */
+function board(id: HazardId, key: string): string {
+  return `<rect x="1.5" y="1.5" width="61" height="61" rx="12" fill="${HAZARD_AMBER}" stroke="${INK}" stroke-width="3"/><clipPath id="hzc-${key}"><rect x="3" y="3" width="58" height="58" rx="10.5"/></clipPath><g clip-path="url(#hzc-${key})">${PICTO[id]}</g>`;
 }
 
-/** 地図のピン（しずく形のオレンジ＋中に黄色い板のアイコン）。fresh なら足もとに脈打つ輪 */
+/** 黄色い警告の板（角の丸い四角）＋大きな絵。size は px */
+export function hazardSvg(id: HazardId, size = 48): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">${board(id, `${id}-${size}`)}</svg>`;
+}
+
+/**
+ * 地図のピン（しずく形のオレンジの中に、黄色い板のアイコン）。fresh なら足もとに脈打つ輪。
+ * アイコンはしずくと同じ1枚の SVG の中に描く（Leaflet が地図の中の SVG に重なり順を付けるので、別の SVG だと隠れる）。
+ */
 export function hazardPinHtml(id: HazardId, label: string, fresh: boolean): string {
-  return `<div class="hz-pin${fresh ? " hz-fresh" : ""}" aria-label="${label}"><span class="hz-halo"></span><svg viewBox="0 0 48 60" width="48" height="60" aria-hidden="true"><path d="M24 58 C24 58 3 37 3 22 A21 21 0 0 1 45 22 C45 37 24 58 24 58 Z" fill="${HAZARD_PIN}" stroke="#fff" stroke-width="3"/></svg><span class="hz-in">${hazardSvg(id, 30)}</span></div>`;
+  return `<div class="hz-pin${fresh ? " hz-fresh" : ""}" aria-label="${label}"><span class="hz-halo"></span><svg viewBox="0 0 48 60" width="48" height="60" aria-hidden="true"><path d="M24 58 C24 58 3 37 3 22 A21 21 0 0 1 45 22 C45 37 24 58 24 58 Z" fill="${HAZARD_PIN}" stroke="#fff" stroke-width="3"/><svg x="9" y="7" width="30" height="30" viewBox="0 0 64 64">${board(id, `${id}-pin`)}</svg></svg></div>`;
 }
