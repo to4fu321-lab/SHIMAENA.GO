@@ -314,7 +314,7 @@ export function completeNext(s: MorningRecord, roster: Roster, skip?: (missionId
  *   v1.20 から手伝う側には朝の質問がないので、答えていない人も動ける。その家にまだいないチームの人を先に（2チームの合流）、
  *   次に自分の家を終えた人（駆けつけボーナス）
  */
-export function rescueShort(s: MorningRecord, roster: Roster, targetId?: string): string | null {
+export function rescueShort(s: MorningRecord, roster: Roster, targetId?: string, exclude?: ReadonlySet<string>): string | null {
   const going = s.morning.sorties.filter((x) => x.status === "going");
   const shorts = s.morning.missions.filter((x) => x.status === "short" && (!targetId || x.id === targetId));
   const m = shorts.find((x) => going.some((g) => g.missionId === x.id)) ?? shorts[0];
@@ -323,7 +323,7 @@ export function rescueShort(s: MorningRecord, roster: Roster, targetId?: string)
   const canMove = (id: string) => s.answers.find((a) => a.participantId === id)?.answer !== 0;
   const teamsThere = new Set(s.morning.sorties.filter((x) => x.missionId === m.id).map((x) => x.teamId));
   const finished = (id: string) => s.morning.sorties.some((x) => x.participantId === id && x.status === "done");
-  const candidates = roster.participants.filter((p) => p.role === "helper" && p.teamId && !p.lineUserId && !busy.has(p.id) && canMove(p.id));
+  const candidates = roster.participants.filter((p) => p.role === "helper" && p.teamId && !p.lineUserId && !exclude?.has(p.id) && !busy.has(p.id) && canMove(p.id));
   const rank = (p: (typeof candidates)[number]) => (teamsThere.has(p.teamId!) ? 0 : 2) + (finished(p.id) ? 1 : 0);
   const helper = candidates.reduce<(typeof candidates)[number] | undefined>((best, p) => (!best || rank(p) > rank(best) ? p : best), undefined);
   if (!helper) return null;
@@ -348,11 +348,11 @@ export function rescueShort(s: MorningRecord, roster: Roster, targetId?: string)
  * /admin の「1軒、完了にする」（デモ）: v1.20 は手伝う側に朝の質問がないので、作戦のあとも人手不足の家ばかりになる。
  * 終わらせる家がなければ、人手不足の家（skip の家を除く・大事な順）に架空の人を駆けつけさせてそろえてから、1軒終わらせる。
  */
-export function completeNextForDemo(s: MorningRecord, roster: Roster, skip?: (missionId: string) => boolean): string | null {
+export function completeNextForDemo(s: MorningRecord, roster: Roster, skip?: (missionId: string) => boolean, exclude?: ReadonlySet<string>): string | null {
   const open = () => s.morning.missions.some((x) => (x.status === "assigned" || x.status === "in_progress") && !skip?.(x.id));
   if (!open()) {
     const target = s.morning.missions.filter((x) => x.status === "short" && !skip?.(x.id)).sort((a, b) => b.importance - a.importance)[0];
-    for (let i = 0; target && i < 10 && target.status === "short"; i++) if (!rescueShort(s, roster, target.id)) break;
+    for (let i = 0; target && i < 10 && target.status === "short"; i++) if (!rescueShort(s, roster, target.id, exclude)) break;
   }
   return completeNext(s, roster, skip);
 }

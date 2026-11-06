@@ -37,7 +37,9 @@ import { writeImprovements } from "@/lib/voice/improve";
 import { nudgeInactive } from "@/lib/nudge/ops";
 import { seedDemoStory } from "@/lib/kikigaki/ops";
 import { seedDemoTalk } from "@/lib/morning/demo-talk";
-import { inboxKeyOf } from "@/lib/inbox/key";
+import { STAGE_IDS } from "@/lib/demo-cast";
+import { DEMO_PREFIX, inboxKeyOf } from "@/lib/inbox/key";
+import { clearThread } from "@/lib/inbox/store";
 import { push } from "@/lib/line/client";
 import { MSG } from "@/lib/line/messages";
 import { getTeam } from "@/lib/teams";
@@ -66,6 +68,13 @@ async function update(change: (s: MorningRecord) => void | Promise<void>) {
 /** 0: デモの日付で予告（予報 12cm）。LINE のある人には予告が届く */
 export async function startEmptyMorning() {
   return guarded("startEmptyMorning", async () => {
+    // デモの架空の人の隊長トークは空にしてから始める（練習の知らせが撮影に残らないように。本物の人のトークには触れない）
+    if (demoEnabled()) {
+      for (const p of (await loadRoster()).participants) {
+        const k = inboxKeyOf(p);
+        if (k?.startsWith(DEMO_PREFIX)) await clearThread(k).catch(() => undefined);
+      }
+    }
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     refresh();
   });
@@ -120,10 +129,10 @@ export async function completeOne() {
     let allDone = false;
     const notices: { key: string; messages: LineMessage[] }[] = [];
     await update(async (s) => {
-      // 本物の人（LINE でログインした人）が向かっている家は、本人の写真で終えるので後回し（撮影で先に終わらせない）
-      const real = new Set(roster.participants.filter((p) => p.lineUserId).map((p) => p.id));
-      const skip = (id: string) => s.morning.sorties.some((x) => x.missionId === id && x.status === "going" && real.has(x.participantId));
-      const missionId = completeNextForDemo(s, roster, skip);
+      // 本物の人（LINE でログインした人）と撮影ステージの3人は勝手に動かさない。その人が向かっている家は、本人の写真で終えるので後回し
+      const keep = new Set([...roster.participants.filter((p) => p.lineUserId).map((p) => p.id), ...STAGE_IDS]);
+      const skip = (id: string) => s.morning.sorties.some((x) => x.missionId === id && x.status === "going" && keep.has(x.participantId));
+      const missionId = completeNextForDemo(s, roster, skip, keep);
       const mission = s.morning.missions.find((m) => m.id === missionId);
       if (!mission) return;
       const sorties = s.morning.sorties.filter((x) => x.missionId === mission.id);
@@ -229,7 +238,7 @@ export async function writeRecapNow() {
 export async function rescue() {
   return guarded("rescue", async () => {
     const roster = await loadRoster();
-    await update((s) => void rescueShort(s, roster));
+    await update((s) => void rescueShort(s, roster, undefined, STAGE_IDS)); // 撮影ステージの3人は勝手に動かさない
   });
 }
 

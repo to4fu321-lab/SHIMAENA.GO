@@ -69,6 +69,9 @@ describe("デモの朝の流れ", () => {
     const joined = s.morning.sorties.find((x) => x.participantId === helperId && x.status === "going")!;
     expect(joined.missionId).toBe(short.id);
     expect(joined.teamId).not.toBe(a.teamId);
+    // 撮影ステージの人など、動かさない人は選ばない
+    const everyone = new Set(R.participants.map((p) => p.id));
+    expect(rescueShort(s, R, undefined, everyone)).toBeNull();
     // 4: A の家は写真で終えるので後回し。ほかの家を全部終わらせられる
     const skip = (id: string) => id === short.id;
     for (let k = 0; k < 40 && completeNextForDemo(s, R, skip); k++) {

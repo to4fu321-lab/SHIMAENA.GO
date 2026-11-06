@@ -39,14 +39,15 @@
 </header>
 <div class="stage" id="stage"></div>
 <script>
-  // 4台: A・B は別のチームの手伝う人、C はお願いする家の人、右端は町の地図
+  // 4台: A・B は別のチームの手伝う人、C はお願いする家の人、右端は町の地図。
+  // 配役は lib/demo-cast.ts と同じにする（C の家＝拠点7 は A・B の両方に最初の「助けて」が届く距離。/admin の 4・5 はこの3人を動かさない）
   const PHONES = [
     { name: "A 田中さん（手伝う・サルビア）", as: "h1", start: "/chat" },
     { name: "B そうたさん（手伝う・マリーゴールド）", as: "h11", start: "/chat" },
-    { name: "C 佐藤さん（お願いする家）", as: "r1", start: "/chat" },
+    { name: "C 小林さん（お願いする家・拠点7）", as: "r7", start: "/chat" },
     { name: "町の地図", as: "h1", start: "/map" },
   ];
-  const PAGES = [["隊長トーク", "/chat"], ["地図", "/map"], ["ホーム", "/"], ["お願いする", "/ask"], ["声のありがとう", "/thanks/m1"], ["カード", "/cards"], ["つなぐ", "/connect"]];
+  const PAGES = [["隊長トーク", "/chat"], ["地図", "/map"], ["ホーム", "/"], ["お願いする", "/ask"], ["声のありがとう", "/thanks/m-base7"], ["カード", "/cards"], ["つなぐ", "/connect"]];
   const stage = document.getElementById("stage");
   const base = () => document.getElementById("base").value.replace(/\/$/, "");
   const url = (p, path) => `${base()}${path}${path.includes("?") ? "&" : "?"}as=${p.as}`;
