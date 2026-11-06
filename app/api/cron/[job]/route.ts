@@ -17,6 +17,9 @@ import { jstDate } from "@/lib/jst";
 import { warmDayTopic } from "@/lib/topic/day";
 import { warmSnowSong } from "@/lib/song/day";
 
+// v1.27: 日曜は週刊絵本のさし絵を、返事のあとで Claude が描く（after()）。その時間まで関数を止めない
+export const maxDuration = 300;
+
 /** 警報で止める仕事（週のまとめは止めない） */
 const STORM_JOBS = new Set(["announce", "rollcall", "plan", "noon", "pm"]);
 

@@ -467,3 +467,20 @@ body {
 }
 .agent-step { animation: agent-step-in 0.35s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .agent-step { animation: none; } }
+
+/* 週刊絵本（spec v1.27）: ページをめくった感じ。左を軸に少し起き上がって、紙の影が流れる */
+@keyframes book-turn {
+  0% { transform: perspective(900px) rotateY(-14deg); filter: brightness(0.92); }
+  100% { transform: perspective(900px) rotateY(0deg); filter: brightness(1); }
+}
+.book-turn { animation: book-turn 0.55s cubic-bezier(.2,.8,.2,1) both; transform-origin: left center; }
+@keyframes book-shade {
+  0% { opacity: 0.45; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+.book-shade { animation: book-shade 0.6s ease-out both; background: linear-gradient(90deg, rgba(59,42,120,0.25), transparent); }
+@media (prefers-reduced-motion: reduce) { .book-turn, .book-shade { animation: none; } }
+@media print {
+  .book-noprint { display: none !important; }
+  .book-sheet { break-after: page; }
+}

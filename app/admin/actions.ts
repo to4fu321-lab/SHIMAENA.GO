@@ -136,6 +136,20 @@ export async function completeOne() {
   });
 }
 
+/** 町の週刊絵本（spec v1.27）: 今週の記録から文と絵を作る。絵は返事のあとで Claude が描いて差しかえる */
+export async function makeBookNow() {
+  return guarded("makeBookNow", async () => {
+    const { currentWeekStart, makeBook } = await import("@/lib/book/make");
+    try {
+      const b = await makeBook(await currentWeekStart());
+      await update((s) => void s.log.push(`今週の絵本「${b.title}」を作りました（文: ${b.by === "claude" ? "Claude" : "定型"}・絵: ${b.status === "drawing" ? "Claude が描いています" : "プログラム"}）`));
+    } catch (e) {
+      await update((s) => void s.log.push(`今週の絵本に失敗: ${e instanceof Error ? e.message : String(e)}`));
+    }
+    revalidatePath("/book");
+  });
+}
+
 /** SNS の投稿文を Claude に書いてもらう（数字が変わっていなくても作り直す）。キーがなければ定型のまま */
 export async function writeShareTextsNow() {
   return guarded("writeShareTextsNow", async () => {

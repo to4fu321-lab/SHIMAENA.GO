@@ -26,6 +26,7 @@ import {
   runCommander,
   reopenDemo,
   runWeekly,
+  makeBookNow,
   startEmptyMorning,
   thanksDemo,
   nudgeNow,
@@ -291,6 +292,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <Step n="6" label="日曜の夜: 今週の群れ" action={runWeekly} />
+          <form action={makeBookNow}>
+            <button className={link}>今週の絵本を作る（文と絵: Claude）→ /book</button>
+          </form>
           <form action={announceByForecast}>
             <button className={link}>本当の天気（Open-Meteo）で予告を判断</button>
           </form>

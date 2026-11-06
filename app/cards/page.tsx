@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { listBooks } from "@/lib/book/store";
 import { onTeam } from "@/lib/member";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
@@ -60,6 +61,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
   const solo = me ? await soloStatus(me.id, new Date()) : undefined;
   const recent = solo?.recent.slice(0, 3) ?? [];
   const q = demoAs ? `?as=${demoAs}` : "";
+  const hasBook = (await listBooks(1).catch(() => [])).length > 0; // 町の週刊絵本（spec v1.27）
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
@@ -80,6 +82,15 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
             <Icon name="guide" size={28} accent="var(--ice)" />
             図鑑
           </Link>
+          {hasBook && (
+            <Link href={`/book${q}`} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs font-bold">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                <path d="M12 6 C9 4 5 4 3 5 V19 C5 18 9 18 12 20 C15 18 19 18 21 19 V5 C19 4 15 4 12 6 Z" fill="#ffe7a0" />
+                <path d="M12 6 V20" />
+              </svg>
+              絵本
+            </Link>
+          )}
         </div>
       </header>
 

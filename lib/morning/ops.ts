@@ -955,6 +955,8 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
   s.weekly = { weekStart: from, commentary: text.commentary, nextWeek: text.nextWeek, ranking: summary.ranking, teamTotals: summary.teamTotals, titles: summary.titles, at: now.toISOString() };
   s.log.push(`${today} 今週の群れ: ${summary.days} 朝・${summary.missionsDone} 軒、称号 ${summary.titles.length} 人、チームを組み直し、トーク ${sent} 人`);
   await saveMorning(s);
+  // 町の週刊絵本（spec v1.27）: 今週の記録から文と絵。失敗しても週のまとめは止めない
+  await import("../book/make").then((m) => m.makeBook(from, now)).catch((e) => recordProblem("book/weekly", e));
   return { summary, commentary: text.commentary, nextWeek: text.nextWeek, nextTeams, sent };
 }
 
