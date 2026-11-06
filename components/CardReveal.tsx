@@ -59,6 +59,34 @@ export default function CardReveal({ card, label = "カードを発行しまし�
     }
   });
   const [round, setRound] = useState(0);
+  // v1.24: Claude が絵を描いている間は 6 秒ごとに確かめ、描き上がったら絵を読み直して、もう一度めくる
+  const [drawing, setDrawing] = useState(Boolean(card.pending));
+  const [ver, setVer] = useState(0);
+  useEffect(() => {
+    if (!drawing) return;
+    let stop = false;
+    const tick = async () => {
+      try {
+        const r = await fetch(`/api/cards/${card.id}/state`, { cache: "no-store" });
+        const j = (await r.json()) as { pending?: boolean };
+        if (!stop && j.pending === false) {
+          setDrawing(false);
+          setVer((v) => v + 1);
+          setRound((x) => x + 1);
+          return;
+        }
+      } catch {
+        // つながらないときは次で
+      }
+      if (!stop) timer = window.setTimeout(tick, 6000);
+    };
+    let timer = window.setTimeout(tick, 6000);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+    };
+  }, [drawing, card.id]);
+  const v = ver > 0 ? `v=${ver}` : "";
   // 音（spec v1.19）: globals.css の card-* の時刻に合わせて予約。静止表示のときは「ピン」だけ
   // タブを開くときに部品が2回置かれることがあるので、同じカードの同じ回は3秒のあいだ鳴らし直さない
   useEffect(() => {
@@ -84,9 +112,10 @@ export default function CardReveal({ card, label = "カードを発行しまし�
     return (
       <figure className="mx-auto w-full max-w-[18rem]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/cards/${card.id}/front.png?size=preview`} alt={`カード「${card.designName}」`} className="aspect-[600/840] w-full rounded-2xl shadow-md" />
+        <img src={`/api/cards/${card.id}/front.png?size=preview${v ? `&${v}` : ""}`} alt={`カード「${card.designName}」`} className="aspect-[600/840] w-full rounded-2xl shadow-md" />
         <figcaption className="mt-2 text-center text-base font-bold">
           {label}: {card.designName}（{serial}）
+          {drawing && <span className="block text-sm text-ink-soft">Claude が絵を描いています（1〜3分）</span>}
         </figcaption>
       </figure>
     );
@@ -98,7 +127,7 @@ export default function CardReveal({ card, label = "カードを発行しまし�
           {/* 裏 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/cards/${card.id}/back.png?size=preview`}
+            src={`/api/cards/${card.id}/back.png?size=preview${v ? `&${v}` : ""}`}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full rounded-2xl shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)]"
@@ -106,7 +135,7 @@ export default function CardReveal({ card, label = "カードを発行しまし�
           {/* 表（消印なし）＋ 光 ＋ 動くスタンプ */}
           <div className="card-shake absolute inset-0 overflow-hidden rounded-2xl shadow-lg [backface-visibility:hidden]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/api/cards/${card.id}/front.png?stamp=0`} alt={`カード「${card.designName}」`} className="h-full w-full" />
+            <img src={`/api/cards/${card.id}/front.png?stamp=0${v ? `&${v}` : ""}`} alt={`カード「${card.designName}」`} className="h-full w-full" />
             <span className="card-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/2" aria-hidden="true" />
             <Stamp card={card} />
           </div>
@@ -115,6 +144,7 @@ export default function CardReveal({ card, label = "カードを発行しまし�
       <figcaption className="card-caption mt-2 text-center">
         <span className="block text-base font-bold">{label}</span>
         <span className="block text-lg font-bold">「{card.designName}」</span>
+        {drawing && <span className="block text-sm font-bold text-ink-soft">Claude がこの1枚の絵をゼロから描いています（1〜3分）</span>}
         <span className="block text-sm text-ink-soft">
           {serial}
           {card.code ? ` ・ この時だけの設計図 #${card.code}` : ""}

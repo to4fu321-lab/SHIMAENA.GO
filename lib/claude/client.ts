@@ -79,6 +79,39 @@ export async function askWithWebSearch(task: string, opts: { maxUses?: number } 
   throw new Error("Web 検索が終わりませんでした");
 }
 
+/**
+ * 長い答え（絵の SVG など）を JSON でもらう（spec v1.24）。長いので流しながら受け取る（途中で切れないように）。
+ * model を渡すとそのモデル（例: 環境変数 CARD_ART_MODEL）。形は schema で確かめる
+ */
+export async function askJsonLong<S extends z.ZodType>(opts: AskJsonOptions<S> & { maxTokens?: number; modelId?: string }): Promise<z.infer<S>> {
+  const model = opts.modelId ?? CLAUDE_MODEL;
+  const stream = getClient().beta.messages.stream({
+    model,
+    max_tokens: opts.maxTokens ?? 64000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    output_config: { effort: opts.effort ?? "high", format: betaZodOutputFormat(opts.schema) },
+    messages: [
+      {
+        role: "user",
+        content: [
+          ...(opts.images ?? []).map((img) => ({
+            type: "image" as const,
+            source: { type: "base64" as const, media_type: img.mediaType, data: img.base64 },
+          })),
+          { type: "text" as const, text: `${opts.task}\n\n入力（JSON）:\n${JSON.stringify(opts.input)}` },
+        ],
+      },
+    ],
+  });
+  const res = await stream.finalMessage();
+  if (res.stop_reason === "refusal") throw new ClaudeRefusalError("Claude がこの依頼を断りました");
+  if (res.stop_reason === "max_tokens") throw new Error("Claude の答えが長すぎて途中で切れました");
+  const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+  return opts.schema.parse(JSON.parse(text)) as z.infer<S>;
+}
+
 /** Claude に JSON で答えてもらう。形は schema で保証される */
 export async function askJson<S extends z.ZodType>(opts: AskJsonOptions<S>): Promise<z.infer<S>> {
   const light = opts.model === "light";

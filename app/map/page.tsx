@@ -19,6 +19,9 @@ import { destinationsFor } from "@/lib/nav";
 import { emojiGrid } from "@/lib/share";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
+// v1.24: 完了でカードが出たあと、返事のあとで Claude が絵を描く（after()）。その時間まで関数を止めない
+export const maxDuration = 300;
+
 export const metadata: Metadata = { title: "地図 ・ シマエナGO" };
 
 async function MapContent({ searchParams }: { searchParams: Promise<{ as?: string; road?: string; view?: string }> }) {

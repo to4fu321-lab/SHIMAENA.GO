@@ -31,6 +31,8 @@ export interface Repo {
   listCardsByMission(missionId: string): Promise<Card[]>;
   /** 裏面を作り直す（ありがとう点呼が届いたとき） */
   updateCardBack(id: string, backSvg: string): Promise<void>;
+  /** 表を描き直す（v1.24: Claude がゼロから描いた絵が届いたとき） */
+  updateCardFront(id: string, svg: string): Promise<void>;
   /** 発行したカードの総数（公開ページの集計） */
   countCards(): Promise<number>;
   // ソロ出動の台帳（v1.3）。同じ人・同じ日・同じ種類（家の完了は missionId ごと）は1回だけ。入れば true
@@ -157,6 +159,10 @@ export const memoryRepo: Repo = {
   async updateCardBack(id, backSvg) {
     const c = mem().cards.get(id);
     if (c) c.backSvg = backSvg;
+  },
+  async updateCardFront(id, svg) {
+    const c = mem().cards.get(id);
+    if (c) c.svg = svg;
   },
   async countCards() {
     return mem().cards.size;
@@ -369,7 +375,7 @@ async function dropOldCardFks(): Promise<void> {
 
 const dbCardMethods: Pick<
   Repo,
-  "insertCard" | "getCard" | "listCardsByRecipient" | "countCardsForRollcall" | "listCardsByMission" | "updateCardBack"
+  "insertCard" | "getCard" | "listCardsByRecipient" | "countCardsForRollcall" | "listCardsByMission" | "updateCardBack" | "updateCardFront"
 > = {
   async listCardsByMission(missionId) {
     const rows = await query<CardRow>(`select ${CARD_COLS} from cards where mission_id = $1 order by serial`, [missionId]);
@@ -377,6 +383,9 @@ const dbCardMethods: Pick<
   },
   async updateCardBack(id, backSvg) {
     await query("update cards set back_svg = $2 where id = $1", [id, backSvg]);
+  },
+  async updateCardFront(id, svg) {
+    await query("update cards set svg = $2 where id = $1", [id, svg]);
   },
   async insertCard(card, svg, backSvg) {
     try {

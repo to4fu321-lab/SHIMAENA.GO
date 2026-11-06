@@ -49,6 +49,9 @@ import { loginAction, logoutAction } from "./auth-actions";
 import Pager, { Screen } from "@/components/Pager";
 import PagedNodes from "./PagedNodes";
 
+// v1.24: 完了でカードが出たあと、返事のあとで Claude が絵を描く（after()）。その時間まで関数を止めない
+export const maxDuration = 300;
+
 export const metadata: Metadata = { title: "デモ操作 ・ シマエナGO" };
 
 const ROLLCALL_TEXT = { announced: "予告済み", open: "点呼中", planned: "作戦配信済み", closed: "終了" } as const;

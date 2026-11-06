@@ -1,6 +1,5 @@
 // 完了した家の人にカードを発行する: レア判定 → Claude が文字 → SVG → 保存 → LINE で2枚（表・裏）。
 import type { PhotoDepth } from "../snow-estimate";
-import type { CardScene } from "./scene";
 import type { RevealCard } from "./reveal";
 import { randomBytes } from "node:crypto";
 import { cardText } from "../claude/card";
@@ -17,7 +16,33 @@ import { TOWN } from "../town";
 import { baseUrl } from "../url";
 import type { Card, Mission, Participant, SnowType, Sortie } from "../types";
 import { decideRarity } from "./rarity";
-import { dayTopic } from "../topic/day";
+import { dayTopic, type TopicItem } from "../topic/day";
+import { drawLater, willDraw } from "./drawn";
+import type { ArtInput } from "../claude/art";
+import { FALL_LABEL, PROP_LABEL, SKY_LABEL, type CardScene } from "./scene";
+import type { TeamId } from "../types";
+
+const MOOD_LABEL = { calm: "静か", lively: "にぎやか", heroic: "大仕事" } as const;
+const GROUND_CM = [3, 10, 22, 35];
+
+/** Claude にゼロから描いてもらう材料（v1.24） */
+function artInput(o: { date: string; at: string; scene: CardScene; teamIds: (TeamId | undefined)[]; style: Card["style"]; designName: string; topics: TopicItem[]; seed: string }): ArtInput {
+  const topic = o.topics.find((t) => t.label === o.scene.topic);
+  return {
+    date: o.date,
+    completedAtJst: hm(o.at),
+    sky: SKY_LABEL[o.scene.sky],
+    fall: FALL_LABEL[o.scene.fall],
+    groundCm: GROUND_CM[o.scene.ground],
+    members: o.teamIds.map((id) => (id ? { teamColor: getTeam(id).color, teamName: getTeam(id).name } : { teamColor: "#b9a7e8", teamName: "ソロ" })),
+    ...(topic ? { topic: { label: topic.label, hint: topic.hint } } : {}),
+    style: o.style,
+    mood: MOOD_LABEL[o.scene.mood],
+    props: o.scene.props.map((p) => PROP_LABEL[p]),
+    designName: o.designName,
+    seed: `${o.seed}|${o.scene.code}`,
+  };
+}
 import { backExtras, renderCardBackSvg, renderCardSvg, type CardArt } from "./svg";
 
 export { baseUrl };
@@ -77,6 +102,7 @@ export async function issueCardsForMission(
     teamIds: members.map((m) => m.teamId),
     streakDays: opts.streakDays ?? 1,
   });
+  const topics = (await dayTopic(s.morning.rollcall.date)).items;
   const text = await cardText({
     date: s.morning.rollcall.date,
     completedAtJst: hm(completedAt),
@@ -93,15 +119,17 @@ export async function issueCardsForMission(
     thanks: Boolean(s.thanks?.[mission.id]),
     mixed: new Set(members.map((m) => m.teamId)).size >= 2,
     seed: `${s.morning.rollcall.id}|${mission.id}|${completedAt}`,
-    topics: (await dayTopic(s.morning.rollcall.date)).items,
+    topics,
   });
   mission.snowKg = text.snowKg; // 町内の「どけた雪の合計」に使う
   const issuedCount = s.morning.sorties.length;
   const already = await r.countCardsForRollcall(s.morning.rollcall.id);
   const cards: Card[] = [];
+  const toDraw: { id: string; art: CardArt }[] = [];
   let sent = 0;
   for (const [i, m] of members.entries()) {
     const art: CardArt = {
+      pending: willDraw(),
       style: rarity.style,
       designName: text.designName,
       designNameEn: text.designNameEn,
@@ -145,12 +173,18 @@ export async function issueCardsForMission(
     });
     await r.insertCard(card, svg, back);
     cards.push(card);
+    toDraw.push({ id: card.id, art });
     if (m.lineUserId) {
       // 初出撃の歓迎は、カードと同じ1回のプッシュにまとめる
       await push(m.lineUserId, [...(firstFlight ? MSG.firstFlight(art.townName) : []), ...cardImageMessages(card.id)]);
       sent++;
     }
   }
+  // v1.24: 返事のあとで、Claude がこの家の絵をゼロから描いて差しかえる
+  drawLater(
+    toDraw,
+    artInput({ date: s.morning.rollcall.date, at: completedAt, scene: text.scene, teamIds: members.map((m) => m.teamId), style: rarity.style, designName: text.designName, topics, seed: `${s.morning.rollcall.id}|${mission.id}` }),
+  );
   s.log.push(
     `拠点${base?.number ?? "?"}のカード「${text.designName}」（${rarity.label} ${"★".repeat(rarity.stars)}）を ${cards.length} 枚発行` +
       (firstFlightIds.length > 0 ? `（初出撃 ${firstFlightIds.length} 人）` : ""),
@@ -171,6 +205,7 @@ export function revealOf(card: Card, date: string, code?: string): RevealCard {
     date,
     stampText: card.snowKg > 0 ? `${card.snowKg}kg` : "ソロ",
     ...(code ? { code } : {}),
+    ...(willDraw() ? { pending: true } : {}),
   };
 }
 
@@ -228,6 +263,7 @@ export async function issueSoloCard(
   const v = SOLO_CARD[opts.variant];
   // その時だけの場面（と、ふだんの1枚なら名前・副題）を Claude に。失敗しても決まった名前で発行する
   let named: { designName: string; designNameEn: string; flavor: string; scene?: CardScene } = { designName: v.designName, designNameEn: v.designNameEn, flavor: v.flavor };
+  const topics = await dayTopic(opts.date).then((d) => d.items, () => [] as TopicItem[]);
   try {
     const t = await cardText({
       date: opts.date,
@@ -243,13 +279,14 @@ export async function issueSoloCard(
       photoDepth: opts.weather?.photoDepth,
       modelDepthCm: opts.weather?.depthCm,
       seed: `solo|${opts.logId}`,
-      topics: (await dayTopic(opts.date)).items,
+      topics,
     });
     named = opts.variant === "daily" ? { designName: t.designName, designNameEn: t.designNameEn, flavor: t.flavor, scene: t.scene } : { ...named, scene: t.scene };
   } catch (e) {
     console.error("[solo] カードの名前と場面を作れませんでした（決まった名前で発行します）:", e instanceof Error ? e.message : e);
   }
   const art: CardArt = {
+    pending: willDraw(),
     style: v.style,
     designName: named.designName,
     designNameEn: named.designNameEn,
@@ -288,6 +325,11 @@ export async function issueSoloCard(
   const svg = renderCardSvg(art);
   const back = renderCardBackSvg(art, { thanks: opts.hitokoto, subtasks: [`${opts.missionLabel}（ソロ出動）`], firstFlight: opts.firstFlight });
   await repo().insertCard(card, svg, back);
+  if (named.scene) {
+    drawLater([{ id: card.id, art }], artInput({ date: opts.date, at: opts.at, scene: named.scene, teamIds: [p.teamId], style: v.style, designName: art.designName, topics, seed: `solo|${opts.logId}` }));
+  } else if (art.pending) {
+    await repo().updateCardFront(card.id, renderCardSvg({ ...art, pending: false })); // 場面がない（名前を作れなかった）ときは描かない
+  }
   // LINE に送るのは特別な1枚だけ（はじめて・5日連続・仲間）。ふだんの1枚は画面で見せる（月の通数を使わないため。v1.8）
   const k = inboxKeyOf(p);
   if (k && opts.variant !== "daily") {

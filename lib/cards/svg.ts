@@ -28,6 +28,10 @@ export interface CardArt {
   stampText?: string;
   /** v1.8: その時だけの場面（空・降る雪・積もった雪・持ち物・雰囲気・なぜこの絵か・設計図の番号） */
   scene?: CardScene;
+  /** v1.24: Claude がゼロから描いた絵（点検済み。座標 0〜540 × 0〜560）。あれば型の絵の上を全部おおう */
+  picture?: string;
+  /** v1.24: いま Claude が描いている（型の絵に「描いています」の帯を出す） */
+  pending?: boolean;
 }
 
 export const CARD_W = 600;
@@ -469,16 +473,28 @@ function eijin(art: CardArt): string {
   ${info(art, { pill: "#ffd400", pillText: "#1a1a1a", title: "#0b2fa8", subtitle: "#ff2e63", names: "#1a1a1a", meta: "#555" })}`;
 }
 
+/** v1.24: 描いている間の帯（data-art="pending" が目印。画像は貯めずに毎回読み直してもらう） */
+export const PENDING_BAND = `<g data-art="pending"><rect x="60" y="520" width="480" height="52" rx="26" fill="#3b2a78" opacity="0.88"/><text x="300" y="553" font-family="${JP}" font-size="20" font-weight="700" fill="#ffffff" text-anchor="middle">Claude がこの1枚を描いています…</text></g>`;
+
+export const isPendingSvg = (svg: string) => svg.includes('data-art="pending"');
+
 const STYLES: Record<CardStyle, (art: CardArt) => string> = { kawaii, retrowave, kirie, pixel, eijin };
 
 /** 表面 */
 export function renderCardSvg(art: CardArt): string {
   let body = STYLES[art.style](art);
-  // v1.23: その時だけの挿絵（ステッカー）。消印より下に貼る
-  if (art.scene?.motif) {
-    const sticker = stickerSvg(art.style, art.scene.motif, art.scene.code);
+  // v1.24: Claude がゼロから描いた絵があれば、絵の枠の中を全部それにする。なければ v1.23 の挿絵（ステッカー）
+  let layer = "";
+  if (art.picture) {
+    layer = `<g clip-path="url(#pic)" data-art="drawn"><rect x="30" y="30" width="540" height="560" fill="#ffffff"/><g transform="translate(30 30)">${art.picture}</g></g>`;
+  } else {
+    if (art.scene?.motif) layer = stickerSvg(art.style, art.scene.motif, art.scene.code);
+    if (art.pending) layer += PENDING_BAND;
+  }
+  if (layer) {
+    // 消印より下に入れる
     const at = body.indexOf(STAMP_START);
-    body = at >= 0 ? body.slice(0, at) + sticker + body.slice(at) : body + sticker;
+    body = at >= 0 ? body.slice(0, at) + layer + body.slice(at) : body + layer;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CARD_W} ${CARD_H}" width="${CARD_W}" height="${CARD_H}">${body}\n</svg>`;
 }

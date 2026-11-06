@@ -22,4 +22,6 @@ export interface RevealCard {
   stampText: string;
   /** この時だけの設計図の番号（あれば） */
   code?: string;
+  /** v1.24: Claude がまだ絵を描いている（画面は描き上がるまで待って、絵を読み直す） */
+  pending?: boolean;
 }
