@@ -14,11 +14,11 @@ import TabBar from "./TabBar";
 
 const card = "rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10";
 
-export default function NakamaScreen({ viewerId, view, q }: { viewerId: string; view: NakamaView; q: string }) {
+export default function NakamaScreen({ viewerId, view, q, initialTab }: { viewerId: string; view: NakamaView; q: string; initialTab?: number }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [note, setNote] = useState<NakamaResult | { ok: boolean; text: string } | null>(null);
-  const [tab, setTab] = useState(view.incoming.length > 0 || view.matched.length > 0 ? 1 : 0);
+  const [tab, setTab] = useState(initialTab ?? (view.incoming.length > 0 || view.matched.length > 0 ? 1 : 0));
   const run = (f: () => Promise<NakamaResult | { ok: boolean; text: string }>, then?: (r: { ok: boolean }) => void) =>
     start(async () => {
       try {

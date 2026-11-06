@@ -11,9 +11,10 @@ import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "なかま ・ シマエナGO" };
 
-async function Content({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+async function Content({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   await connection();
-  const { as } = await searchParams;
+  const { as, tab } = await searchParams;
+  const initialTab = tab && /^[0-2]$/.test(tab) ? Number(tab) : undefined;
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
   const view = viewerId ? await nakamaView(viewerId, new Date()) : undefined;
@@ -32,12 +33,12 @@ async function Content({ searchParams }: { searchParams: Promise<{ as?: string }
   return (
     <>
       <StormBanner />
-      <NakamaScreen viewerId={viewerId} view={view} q={demoAs ? `?as=${demoAs}` : ""} />
+      <NakamaScreen viewerId={viewerId} view={view} q={demoAs ? `?as=${demoAs}` : ""} initialTab={initialTab} />
     </>
   );
 }
 
-export default function NakamaPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+export default function NakamaPage({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   return (
     <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
       <Content searchParams={searchParams} />

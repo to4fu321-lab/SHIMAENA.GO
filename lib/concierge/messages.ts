@@ -13,7 +13,7 @@ export function optionAction(o: ConciergeOption): CardAction {
     : { type: "postback", label: o.button.slice(0, 20), data: o.action.data, displayText: o.button };
 }
 
-export function conciergePick(reply: string, o: ConciergeOption, imageUrl: string, safety?: string): LineMessage[] {
+export function conciergePick(reply: string, o: ConciergeOption, imageUrl: string, safety?: string, why?: string): LineMessage[] {
   const tap = optionAction(o);
   const card: FlexMessage = {
     type: "flex",
@@ -29,6 +29,7 @@ export function conciergePick(reply: string, o: ConciergeOption, imageUrl: strin
         paddingAll: "20px",
         contents: [
           { type: "text", text: reply, size: "lg", weight: "bold", color: COLORS.ink, wrap: true },
+          ...(why ? [{ type: "text", text: `💡 ${why}`, size: "md", color: COLORS.winter, wrap: true }] : []),
           ...(safety ? [{ type: "text", text: safety, size: "sm", color: COLORS.lamp, wrap: true }] : []),
           bigButton(o.button, tap, "main"),
         ],

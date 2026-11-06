@@ -16,6 +16,7 @@ import type { Participant } from "../types";
 import { baseUrl } from "../url";
 import { conciergeAsk, conciergePick } from "./messages";
 import { BODY_WORDS, buildOptions, type ConciergeContext } from "./options";
+import { loadProfile, updateProfile } from "./profile";
 import { clearSession, loadSession, saveSession } from "./session";
 
 /** その人の今の状況（名前・場所は含めない） */
@@ -34,7 +35,9 @@ export async function conciergeContext(p: Participant, record: MorningRecord, no
     tipOk = last === undefined || now.getTime() - Date.parse(last) > 14 * 86400000;
   }
   const rc = m.rollcall;
+  const profile = await loadProfile(p.id).catch(() => undefined);
   return {
+    motives: profile?.motives ?? [],
     role: p.role === "requester" ? "requester" : "helper",
     hasTeam: onTeam(p),
     rollcall: isToday ? rc.status : "none",
@@ -69,11 +72,14 @@ export async function concierge(lineUserId: string, text: string, now = new Date
     snowCm: ctx.rollcall === "none" ? 0 : rc.forecastCm,
     safety: ctx.safety,
     hour: Number(jstHourMinute(now).slice(11, 13)),
-    options: options.map(({ id, title, minutes, points, about }) => ({ id, title, minutes, points, about })),
+    options: options.map(({ id, title, minutes, points, about, motives }) => ({ id, title, minutes, points, about, motives })),
     history: session?.history ?? [],
     text: text.slice(0, 200),
+    profile: { motives: ctx.motives ?? [], summary: (await loadProfile(p.id).catch(() => undefined))?.summary ?? "" },
   };
   const res = await askConcierge(input, options);
+  // その人の方向と要約を残す（spec v1.17。新しく読み取れたときだけ入れ替える。体のことばの文からは残さない）
+  if (!res.guarded && (res.motives.length > 0 || res.summary)) await updateProfile(p.id, { motives: res.motives, summary: res.summary }, now).catch(() => undefined);
 
   if (res.option) {
     await clearSession(lineUserId);
@@ -88,7 +94,7 @@ export async function concierge(lineUserId: string, text: string, now = new Date
     });
     const outside = res.option.id === "own_house" || res.option.id === "patrol" || res.option.id === "join";
     const safety = ctx.safety && outside ? "大雪・寒さの朝です。ひとりでやらず、15分ごとに休みましょう。" : undefined;
-    return conciergePick(res.reply, res.option, `${baseUrl()}${img}`, safety);
+    return conciergePick(res.reply, res.option, `${baseUrl()}${img}`, safety, res.why);
   }
   // まだ選べない: 聞き返して、続きを10分だけ覚えておく（体のことばを含む文は残さない）
   await saveSession(lineUserId, {

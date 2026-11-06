@@ -63,7 +63,7 @@ describe("夜はよその家に行かない（入口ぜんぶ）", () => {
       soloDoneToday: [], safety: false, firstTime: false, tipOk: false, night: true,
     };
     const ids = buildOptions(ctx).map((o) => o.id);
-    expect(ids).toEqual(["own_house", "online", "cheer"]);
+    expect(ids).toEqual(["own_house", "online", "cheer", "baton", "team", "cards"]); // 夜は なかま（合流）にも誘わない。家の中でできることだけ
     expect(buildOptions({ ...ctx, night: false }).map((o) => o.id)).toContain("my_mission");
   });
 });

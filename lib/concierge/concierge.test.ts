@@ -31,17 +31,25 @@ const input = (text: string, c: ConciergeContext, turn = 1): ConciergeInput => (
   snowCm: 12,
   safety: c.safety,
   hour: 7,
-  options: buildOptions(c).map(({ id, title, minutes, points, about }) => ({ id, title, minutes, points, about })),
+  options: buildOptions(c).map(({ id, title, minutes, points, about, motives }) => ({ id, title, minutes, points, about, motives })),
   history: [],
   text,
+  profile: { motives: c.motives ?? [], summary: "" },
 });
 const t = (ms: LineMessage[]) => ms.map(textOf).join("\n");
 const hero = (m: LineMessage) => ((m as FlexMessage).contents.hero?.url as string | undefined) ?? "";
 
 describe("候補はプログラムが絞る", () => {
-  it("手伝う側・雪のない日: 自分の家 → 見回り → アプリで3分 → 応援。終えたものは出さない", () => {
-    expect(buildOptions(ctx()).map((o) => o.id)).toEqual(["own_house", "patrol", "online", "cheer"]);
-    expect(buildOptions(ctx({ soloDoneToday: ["own_house"] })).map((o) => o.id)).toEqual(["patrol", "online", "cheer"]);
+  it("手伝う側・雪のない日: 自分の家 → 見回り → アプリで3分 → 応援 → なかま…。終えたものは出さない（6つまで）", () => {
+    expect(buildOptions(ctx()).map((o) => o.id)).toEqual(["own_house", "patrol", "online", "cheer", "nakama", "baton"]);
+    expect(buildOptions(ctx({ soloDoneToday: ["own_house"] })).map((o) => o.id)).toEqual(["patrol", "online", "cheer", "nakama", "baton", "team"]);
+  });
+  it("方向（spec v1.17）: つながりの人には なかま が前に、ゲームの人には チーム・図鑑 が前に。点呼はいつも先頭。夜は合流に誘わない", () => {
+    expect(buildOptions(ctx({ motives: ["connect"] })).map((o) => o.id).slice(0, 2)).toEqual(["nakama", "baton"]);
+    expect(buildOptions(ctx({ motives: ["game"] })).map((o) => o.id).slice(0, 3)).toEqual(["own_house", "online", "team"]);
+    expect(buildOptions(ctx({ motives: ["connect"], rollcall: "open" }))[0].id).toBe("rollcall");
+    expect(buildOptions(ctx({ motives: ["connect"], night: true })).map((o) => o.id)).not.toContain("nakama");
+    expect(buildOptions(ctx({ role: "requester", hasTeam: false })).map((o) => o.id)).not.toContain("nakama");
   });
   it("点呼の時間で答えていなければ、点呼が先。作戦中で人手不足なら、その家へ。向かっている人には行き先", () => {
     expect(buildOptions(ctx({ rollcall: "open" }))[0].id).toBe("rollcall");
@@ -72,6 +80,17 @@ describe("選び方（キーなしの言葉の一覧）と点検", () => {
   it("「手伝いたい」→ 人手不足の家があればそこ", () => {
     expect(mockConcierge(input("何か手伝いたい", ctx({ rollcall: "planned", answered: true, shortHouses: 1 }))).pick).toBe("join");
   });
+  it("方向を読む（spec v1.17）: 「仲間がほしい」→ なかま、「体を動かしたい」→ 自分の家か人手不足の家、「カードを集めたい」→ 図鑑。理由が付く", () => {
+    const a = mockConcierge(input("雪かきで仲間がほしい", ctx()));
+    expect(a.motives).toEqual(["connect"]);
+    expect(a.pick).toBe("nakama");
+    expect(a.why).toContain("つながり");
+    expect(mockConcierge(input("運動不足なので体を動かしたい", ctx())).pick).toBe("own_house");
+    expect(mockConcierge(input("カードを集めたい", ctx())).pick).toBe("own_house");
+    expect(mockConcierge(input("図鑑を埋めたい。カード集め", ctx({ soloDoneToday: ["own_house"] }))).pick).toBe("team");
+    // 前に分かっている方向も効く
+    expect(mockConcierge(input("どうしようかな", ctx({ motives: ["connect"] }))).pick).toBe("nakama");
+  });
   it("分からない文は聞き返す（1往復目）。3往復目は必ず1つ選ぶ", () => {
     const c = ctx();
     const first = mockConcierge(input("うーん", c));
@@ -85,14 +104,17 @@ describe("選び方（キーなしの言葉の一覧）と点検", () => {
     const c = ctx();
     const opts = buildOptions(c);
     const r = tidyConcierge(
-      { reply: "屋根に上りましょう。とても大事です。三文目です。", pick: "roof", question: null, caption: "<b>がんばれ</b>12345", sky: "dawn" },
+      { reply: "屋根に上りましょう。とても大事です。三文目です。", pick: "roof", question: null, caption: "<b>がんばれ</b>12345", sky: "dawn", motives: [], why: null, summary: "" },
       input("何すれば", c),
       opts,
     );
     expect(r.option).toBeNull();
     expect(r.reply).toBe("屋根に上りましょう。とても大事です。");
     expect(r.caption).not.toMatch(/[<>]|\d{3}/);
-    const body = tidyConcierge({ reply: "腰が痛いなら休みましょう。", pick: "online", question: null, caption: "x", sky: "dawn" }, input("a", c), opts);
+    const body = tidyConcierge({ reply: "腰が痛いなら休みましょう。", pick: "online", question: null, caption: "x", sky: "dawn", motives: ["exercise", "bad" as never], why: "腰のため", summary: "腰が痛い人" }, input("a", c), opts);
+    expect(body.motives).toEqual(["exercise"]);
+    expect(body.why).toBeUndefined(); // 体のことばの理由は出さない
+    expect(body.summary).toBe(""); // 体のことは残さない
     expect(body.reply).not.toContain("腰");
   });
   it("体のことば・危ない作業のことばには、Claude を使わず決まった返事（体調は判断しない）", () => {

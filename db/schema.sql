@@ -219,6 +219,14 @@ create table if not exists push_subscriptions (
 );
 create index if not exists push_subscriptions_key on push_subscriptions (inbox_key);
 
+-- その人が求めている方向（spec v1.17: connect / exercise / community / game）と要約（40字）。原文は残さない
+create table if not exists participant_profiles (
+  participant_id text primary key,
+  motives jsonb not null default '[]'::jsonb,
+  summary text not null default '',
+  updated_at timestamptz not null default now()
+);
+
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
   ('marigold', 'マリーゴールド', '#FF8A3D'),

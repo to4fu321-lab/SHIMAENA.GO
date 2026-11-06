@@ -1,8 +1,9 @@
 // AI参加コンシェルジュ: その人に「いま本当に開いている」参加の方法を、普通のプログラムで絞る（spec v1.7）。
 // Claude はこの候補の中から選ぶだけ。候補にないこと（他人の家を依頼にする・屋根の雪下ろし など）は提案できない。
 import type { Prop } from "../line/you-image";
+import type { Motive } from "./profile";
 
-export type OptionId = "rollcall" | "my_mission" | "join" | "own_house" | "patrol" | "online" | "tip" | "cheer";
+export type OptionId = "rollcall" | "my_mission" | "join" | "own_house" | "patrol" | "online" | "tip" | "cheer" | "nakama" | "baton" | "team" | "cards";
 
 export interface ConciergeContext {
   role: "helper" | "requester";
@@ -25,6 +26,8 @@ export interface ConciergeContext {
   tipOk: boolean;
   /** 夜（19時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
   night?: boolean;
+  /** その人が求めている方向（spec v1.17: つながり・運動・地域貢献・ゲーム）。合う候補を前に出す */
+  motives?: Motive[];
 }
 
 export type OptionAction = { kind: "uri"; path: string } | { kind: "postback"; data: string };
@@ -42,6 +45,8 @@ export interface ConciergeOption {
   about: string;
   prop: Prop;
   action: OptionAction;
+  /** この候補が合う方向（spec v1.17） */
+  motives: Motive[];
 }
 
 const O = {
@@ -54,6 +59,7 @@ const O = {
     about: ctx.role === "requester" ? "雪かきに来てほしいかを1タップで答える。来てほしければ人が向かう" : "今朝何分動けるかを1タップで答える。司令官が近くの家を割り当てる",
     prop: "megaphone",
     action: { kind: "postback", data: "cc:rollcall" },
+    motives: ["community"],
   }),
   my_mission: (): ConciergeOption => ({
     id: "my_mission",
@@ -64,6 +70,7 @@ const O = {
     about: "もう今朝の家に向かっている。地図で行き先と「終わりました」を確認する",
     prop: "map",
     action: { kind: "uri", path: "/map" },
+    motives: ["community", "connect"],
   }),
   join: (ctx: ConciergeContext): ConciergeOption => ({
     id: "join",
@@ -74,6 +81,7 @@ const O = {
     about: `人手が足りない家が${ctx.shortHouses}軒ある。地図から10分だけ加われる（別のチームの家でもよい）`,
     prop: "map",
     action: { kind: "uri", path: "/map" },
+    motives: ["community", "connect", "exercise"],
   }),
   own_house: (ctx: ConciergeContext): ConciergeOption => ({
     id: "own_house",
@@ -84,6 +92,7 @@ const O = {
     about: "いちばん始めやすい。自分の家の玄関前を終わるまで。始めと終わりの写真で、Before/After を自慢できる",
     prop: "shovel",
     action: { kind: "uri", path: "/solo?pick=10&focus=own_house" },
+    motives: ["exercise", "game"],
   }),
   patrol: (ctx: ConciergeContext): ConciergeOption => ({
     id: "patrol",
@@ -94,6 +103,7 @@ const O = {
     about: "スコップがなくてもできる。除雪がまだ・道が細い・歩道がない・ぐさぐさ・つるつるの所を、写真と場所で近所に知らせる",
     prop: "map",
     action: { kind: "uri", path: "/solo?pick=10&focus=report_snow" },
+    motives: ["community", "exercise"],
   }),
   online: (): ConciergeOption => ({
     id: "online",
@@ -104,6 +114,7 @@ const O = {
     about: "外に出られない・時間がない人向け。家の中で、地図の道の危険と雪解けの進みを見る",
     prop: "phone",
     action: { kind: "uri", path: "/map" },
+    motives: ["game"],
   }),
   tip: (): ConciergeOption => ({
     id: "tip",
@@ -114,6 +125,7 @@ const O = {
     about: "雪かきの経験がある人向け。コツを一言教えると、名前は出さずに手伝う人のカードに載る",
     prop: "pencil",
     action: { kind: "postback", data: "tip:ask" },
+    motives: ["community", "connect"],
   }),
   cheer: (): ConciergeOption => ({
     id: "cheer",
@@ -124,6 +136,52 @@ const O = {
     about: "体を動かせない日でもできる。1日1回、町の応援ゲージに1つ足す",
     prop: "tea",
     action: { kind: "uri", path: "/public/town#cheer" },
+    motives: ["community"],
+  }),
+  // ---- 方向ごとの候補（spec v1.17）。候補の外は提案しない ----
+  nakama: (): ConciergeOption => ({
+    id: "nakama",
+    button: "なかまと10分だけ一緒に",
+    title: "なかまと10分",
+    minutes: 10,
+    points: 0,
+    about: "つながりを求める人向け。近くの人を「今から10分」「今日のどこかで」で誘える（相手が「一緒にやる」を押したら成立）。再会もここから",
+    prop: "tea",
+    action: { kind: "uri", path: "/nakama?tab=1" },
+    motives: ["connect"],
+  }),
+  baton: (): ConciergeOption => ({
+    id: "baton",
+    button: "雪かきバトンを見る",
+    title: "雪かきバトン",
+    minutes: 3,
+    points: 0,
+    about: "つながりを求める人向け。近所（250m）の人が残したバトンに「ありがとう」「続きをやります」。自分の雪かきのあとにバトンを残せる",
+    prop: "phone",
+    action: { kind: "uri", path: "/nakama?tab=2" },
+    motives: ["connect", "community"],
+  }),
+  team: (): ConciergeOption => ({
+    id: "team",
+    button: "今週のチームと得点を見る",
+    title: "チームの得点を見る",
+    minutes: 2,
+    points: 0,
+    about: "ゲームとして楽しみたい人向け。今週のチーム（月〜日）・3チームの得点・自分の活動がチームの何点になるか",
+    prop: "phone",
+    action: { kind: "uri", path: "/team" },
+    motives: ["game"],
+  }),
+  cards: (): ConciergeOption => ({
+    id: "cards",
+    button: "カード図鑑と連続出動を見る",
+    title: "カード図鑑を見る",
+    minutes: 2,
+    points: 0,
+    about: "ゲームとして楽しみたい人向け。その時だけのカード・5つのタッチの集まり具合・連続出動の日数・ごほうびまでの枚数",
+    prop: "phone",
+    action: { kind: "uri", path: "/cards/book" },
+    motives: ["game"],
   }),
 };
 
@@ -151,9 +209,25 @@ export function buildOptions(ctx: ConciergeContext): ConciergeOption[] {
     // お互いさま（v1.10）: チームに入っていれば、人手の足りない家にも誘える（体を使うので前には出さない）
     if (!ctx.safety && ctx.hasTeam && ctx.rollcall === "planned" && ctx.shortHouses > 0) list.push(O.join(ctx));
   }
-  // 夜は、よその家・道の見回り・人手不足の家には誘わない（自分の家と家の中だけ）
-  const nightOk: OptionId[] = ["rollcall", "own_house", "online", "tip", "cheer"];
-  return (ctx.night ? list.filter((o) => nightOk.includes(o.id)) : list).slice(0, 5);
+  // 方向ごとの候補（spec v1.17）: チームのある人には なかま・バトン・チーム・図鑑
+  if (ctx.hasTeam) list.push(O.nakama(), O.baton(), O.team(), O.cards());
+  else list.push(O.baton(), O.cards());
+  // 夜は、よその家・道の見回り・人手不足の家・合流には誘わない（自分の家と家の中だけ）
+  const nightOk: OptionId[] = ["rollcall", "own_house", "online", "tip", "cheer", "baton", "team", "cards"];
+  const open_ = ctx.night ? list.filter((o) => nightOk.includes(o.id)) : list;
+  return rankByMotives(open_, ctx.motives).slice(0, 6);
+}
+
+/**
+ * その人の方向に合う候補を前に出す（順は安定）。点呼・自分の行き先はいつも先頭（今やるべきこと）。
+ * 方向がなければそのまま
+ */
+export function rankByMotives(list: ConciergeOption[], motives: Motive[] | undefined): ConciergeOption[] {
+  if (!motives || motives.length === 0) return list;
+  const first = list.filter((o) => o.id === "rollcall" || o.id === "my_mission");
+  const rest = list.filter((o) => !first.includes(o));
+  const score = (o: ConciergeOption) => o.motives.filter((m) => motives.includes(m)).length;
+  return [...first, ...rest.map((o, i) => ({ o, i })).sort((a, b) => score(b.o) - score(a.o) || a.i - b.i).map((x) => x.o)];
 }
 
 /** 言葉の中の、体・病気のことば（体調は判断しない。記録にも残さない） */

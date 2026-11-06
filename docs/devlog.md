@@ -491,4 +491,7 @@
 - T81 やったこと: `web-push`（鍵 VAPID_*）。`public/manifest.webmanifest`・`public/sw.js`（通知を受けて隊長トークを開く）・アイコンは `/api/icon/<size>.png`（シマエナガの絵から作る）。表 `push_subscriptions`、送り口（`lib/line/client.ts`）が隊長トークに入れたあと `lib/push/send.ts` で端末へ（鍵なし・一時停止・購読なしは送らない。届かない端末は消す）。`components/PushSetup.tsx`: なぜ要るかの1枚 → 許可、iPhone は「ホーム画面に追加」の3ステップ、「あとで」は3日出さない。家族の代わりに登録した人も隊長トークを読める（読むだけ）。/admin/settings に通知をオンにした人数。テスト3件。
 - T81 詰まったこと: Playwright で navigator.serviceWorker を消して iPhone の Safari をまねたら、登録部品が例外で画面ごと落ちた → serviceWorker がない端末でも壊れないよう守った（実機の iPhone でも同じ守りが効く）。
 - T81 次: T82 自由な相談とマッチング（4つの方向）。
+- T82 やったこと: `lib/concierge/profile.ts`（4つの方向 connect／exercise／community／game と要約40字。表 `participant_profiles`。原文・体のこと・名前は残さない）。候補に方向の札を付け、方向ごとの候補（なかまと10分・雪かきバトン・チームの得点・カード図鑑）を足し、その人の方向に合うものを前に（点呼・行き先はいつも先頭、夜は合流に誘わない）。Claude の答えに motives／why（理由1文）／summary。カードに「💡 理由」。採点表 concierge を更新。なかまの画面を `?tab=` で合流・バトンから開ける。テスト 6 件。
+- T82 詰まったこと: なし。
+- T82 次: T83 声を貯めて改善。
 
