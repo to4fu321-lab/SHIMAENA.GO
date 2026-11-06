@@ -30,6 +30,7 @@ import {
   thanksDemo,
   nudgeNow,
   seedRoadReportsDemo,
+  seedKikigakiDemo,
   writeImprovementsNow,
   writeRecapNow,
   writeShareTextsNow,
@@ -341,6 +342,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           </form>
           <form action={seedRoadReportsDemo}>
             <button className={link}>道の報告をデモで2件入れる（つるつる・道が細い）</button>
+          </form>
+          <form action={seedKikigakiDemo}>
+            <button className={link}>デモの聞き書きを1件入れる（次に終わる家・届ける）</button>
           </form>
         </div>
         <PagedNodes nodes={views} label="様子" />

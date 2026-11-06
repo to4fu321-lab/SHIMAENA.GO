@@ -505,11 +505,13 @@ export interface CardBack {
   subtasks: string[];
   /** 受け取る人にとって最初のカード（初出撃） */
   firstFlight?: boolean;
+  /** v1.26: この家の雪の思い出（聞き書き）の題名。届いたときだけ1行 */
+  story?: string;
 }
 
 /** 裏面（LINE では2枚目）: 依頼者の一言、やったこと、排雪。初出撃ならリボン */
 export function renderCardBackSvg(art: CardArt, back: CardBack): string {
-  const lines = back.subtasks.slice(0, 6).map((t, i) => `<text x="80" y="${430 + i * 34}" font-family="${JP}" font-size="20" fill="#3b2a78">☑ ${escapeXml(t)}</text>`).join("");
+  const lines = back.subtasks.slice(0, back.story ? 4 : 6).map((t, i) => `<text x="80" y="${430 + i * 34}" font-family="${JP}" font-size="20" fill="#3b2a78">☑ ${escapeXml(t)}</text>`).join("");
   const ribbon = back.firstFlight
     ? `<g transform="translate(300 206)"><rect x="-120" y="-17" width="240" height="34" rx="17" fill="#ffd400"/><text x="0" y="6" font-family="${JP}" font-size="16" font-weight="700" fill="#3b2a78" text-anchor="middle" letter-spacing="2">初出撃 ・ FIRST FLIGHT</text></g>`
     : "";
@@ -527,6 +529,7 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
   ${thanks}
   <text x="80" y="395" font-family="${JP}" font-size="14" fill="#8a7bb5" letter-spacing="2">このときにやったこと</text>
   ${lines}
+  ${back.story ? `<text x="300" y="584" font-family="${JP}" font-size="15" font-weight="700" fill="#6b4fcf" text-anchor="middle">この家の雪の思い出「${escapeXml(back.story)}」が届いています</text>` : ""}
   ${art.scene?.topic ? `<text x="300" y="612" font-family="${JP}" font-size="13" fill="#8a7bb5" text-anchor="middle">今日の話題「${escapeXml(art.scene.topic)}」から描いた挿絵</text>` : ""}
   ${art.scene ? `<text x="300" y="634" font-family="${JP}" font-size="13" fill="#8a7bb5" text-anchor="middle">この時だけの設計図 #${escapeXml(art.scene.code)} ・ ${escapeXml(art.scene.why)}</text>` : ""}
   <rect x="60" y="650" width="480" height="110" rx="20" fill="#f1ecff"/>
@@ -541,14 +544,16 @@ export function renderCardBackSvg(art: CardArt, back: CardBack): string {
  * 前の裏面から「設計図」と「推定の元」の行を読み戻す（ありがとう点呼で裏面を描き直しても消さないため。表は表に描いてある）。
  * 表に XML の記号は出ないので、エスケープを戻すだけでよい。
  */
-export function backExtras(backSvg: string): { scene?: Pick<CardScene, "code" | "why" | "topic">; basis?: string } {
+export function backExtras(backSvg: string): { scene?: Pick<CardScene, "code" | "why" | "topic">; basis?: string; story?: string } {
   const un = (t: string) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
   const sc = /この時だけの設計図 #([0-9a-f]{4}) ・ ([^<]*)</.exec(backSvg);
   const basis = /推定: ([^<]*)</.exec(backSvg);
   const topic = /今日の話題「([^<]*)」から描いた挿絵</.exec(backSvg);
+  const story = /この家の雪の思い出「([^<]*)」が届いています</.exec(backSvg);
   return {
     ...(sc ? { scene: { code: sc[1], why: un(sc[2]), ...(topic ? { topic: un(topic[1]) } : {}) } } : {}),
     ...(basis ? { basis: un(basis[1]) } : {}),
+    ...(story ? { story: un(story[1]) } : {}),
   };
 }
 
