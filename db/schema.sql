@@ -63,6 +63,10 @@ create table if not exists cards (
 
 -- 先に作った表に後から足した列（create table if not exists では足されないので、ここで足す。何度流しても安全）
 alter table cards add column if not exists back_svg text;
+-- 古い版の表にあった外部キー（rollcalls / missions への参照）を外す。ソロ出動のカードは rollcall_id が solo-<日付>、
+-- mission_id が solo-<台帳の ID> なので、残っていると「カードを発行できませんでした」になる（11/6 本番で発生）。
+alter table cards drop constraint if exists cards_rollcall_id_fkey;
+alter table cards drop constraint if exists cards_mission_id_fkey;
 
 -- 「今朝の状態」（点呼・回答・ミッション・出撃・得点・文面）をまるごと JSON で1行に持つ。
 -- Vercel はリクエストごとに別のサーバーになるので、メモリではなくここに置く。

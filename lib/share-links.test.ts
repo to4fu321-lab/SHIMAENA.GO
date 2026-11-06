@@ -26,3 +26,13 @@ describe("共有のリンク", () => {
     }
   });
 });
+
+describe("応援を呼ぶ（ミッション中）", () => {
+  it("ミッションの名前が入り、名前・場所は入らない", async () => {
+    const { cheerRequestMessage } = await import("./share-links");
+    const m = cheerRequestMessage("https://example.com", "自分の家の雪かき");
+    expect(m.text).toContain("「自分の家の雪かき」に出動中");
+    expect(m.url).toBe("https://example.com/public/town?via=cheer#cheer");
+    expect(cheerRequestMessage("https://example.com").text).toContain("出動しています");
+  });
+});

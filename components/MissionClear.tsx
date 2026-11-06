@@ -242,6 +242,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
             shares={shares}
             invite={invite}
             baton={hasBaton ? (view) => <NakamaAfter viewerId={clear.viewerId!} source="help_house" missionId={clear.missionId} photoChecked={Boolean(clear.evidence)} view={view} /> : undefined}
+            more="/connect"
           />
         </Panel>
       )}

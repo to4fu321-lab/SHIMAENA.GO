@@ -69,7 +69,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
         </Link>
         <h1 className="text-center text-xl font-bold">活動カード</h1>
         <div className="flex">
-          <Link href={`/share${q}`} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs font-bold">
+          <Link href={`/connect${q}`} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs font-bold">
             <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 3v12M7 8l5-5 5 5" />
               <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />

@@ -166,43 +166,56 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
     );
   }
   if (fill) {
+    // 「つなぐ › 広める」: 投稿する画像を主役に（まん中に大きく）、文は短い欄、ボタンは大きい3つ＋小さい3つ（11/6 本人の指摘「UI を分かりやすくキレイに」）
+    const link = "min-h-10 whitespace-nowrap px-1.5 text-sm font-bold text-ink underline underline-offset-4 disabled:opacity-40";
     return (
-      <section className="flex min-h-0 flex-1 flex-col gap-2 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-ink/10" aria-label={title}>
-        <h2 className="text-lg font-bold leading-tight">{title}</h2>
+      <section className="flex min-h-0 flex-1 flex-col gap-2" aria-label={title}>
         {options.length > 1 && (
-          <div className="-mx-1 flex shrink-0 gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]" role="tablist">
+          <div className="grid shrink-0 gap-1 rounded-2xl bg-card p-1 ring-1 ring-ink/10" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }} role="tablist">
             {options.map((o) => (
               <button
                 key={o.key}
                 role="tab"
                 aria-selected={o.key === opt.key}
                 onClick={() => setKey(o.key)}
-                className={`min-h-11 shrink-0 rounded-full px-3 py-1 text-sm font-bold ring-1 ${o.key === opt.key ? "bg-ink text-white ring-ink" : "bg-card text-ink ring-ink/30"}`}
+                className={`min-h-10 whitespace-nowrap rounded-xl px-0.5 text-[13px] font-bold ${o.key === opt.key ? "bg-ink text-white" : "text-ink"}`}
               >
                 {o.label}
               </button>
             ))}
           </div>
         )}
-        <div className="flex min-h-0 flex-1 gap-2">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`${opt.image}${opt.image.includes("?") ? "&" : "?"}format=square`} alt={`${opt.label}のシェア画像`} className="aspect-square w-28 shrink-0 self-start rounded-2xl ring-1 ring-ink/10" />
-          <textarea
-            aria-label="投稿文（直してから投稿できます）"
-            value={text}
-            onChange={(e) => setTexts((t) => ({ ...t, [opt.key]: e.target.value }))}
-            className="min-h-28 min-w-0 flex-1 resize-none rounded-2xl bg-paper p-2 text-base text-ink ring-1 ring-ink/15"
+          <img
+            key={opt.key}
+            src={`${opt.image}${opt.image.includes("?") ? "&" : "?"}format=square`}
+            alt={`${opt.label}のシェア画像`}
+            className="aspect-square max-h-[30dvh] w-auto max-w-full rounded-2xl shadow-lg ring-1 ring-ink/10"
           />
+          <label className="block w-full shrink-0 text-xs font-bold text-ink-soft">
+            投稿文（直してから投稿できます）
+            <textarea
+              value={text}
+              onChange={(e) => setTexts((t) => ({ ...t, [opt.key]: e.target.value }))}
+              rows={3}
+              className="mt-1 w-full resize-none rounded-2xl bg-card p-2.5 text-base leading-snug text-ink ring-1 ring-ink/15"
+            />
+          </label>
         </div>
-        <div className="grid shrink-0 grid-cols-3 gap-1.5">
-          <button onClick={postX} className={`${btn} min-h-12 bg-black px-1 text-white`}>X に投稿</button>
-          <button onClick={postLine} className={`${btn} min-h-12 bg-[#06C755] px-1 text-white`}>LINE で送る</button>
-          <button disabled={busy} onClick={() => shareImage("square")} className={`${btn} min-h-12 bg-ink px-1 text-white`}>画像で共有</button>
-          <button disabled={busy} onClick={() => save("square")} className={`${btn} btn-white min-h-12 px-1`}>画像を保存</button>
-          <button disabled={busy} onClick={() => save("story")} className={`${btn} btn-white min-h-12 px-1`}>ストーリーズ</button>
-          <button disabled={busy} onClick={copy} className={`${btn} btn-white min-h-12 px-1`}>文をコピー</button>
+        <div className="grid shrink-0 grid-cols-3 gap-2">
+          <button onClick={postX} className={`${btn} min-h-12 bg-black px-1 text-white shadow-md`}>X に投稿</button>
+          <button onClick={postLine} className={`${btn} min-h-12 bg-[#06C755] px-1 text-white shadow-md`}>LINE で送る</button>
+          <button disabled={busy} onClick={() => shareImage("square")} className={`${btn} min-h-12 bg-ink px-1 text-white shadow-md`}>画像で共有</button>
         </div>
-        <p className="shrink-0 text-sm leading-snug text-ink-soft" role="status">
+        <div className="flex shrink-0 items-center justify-center gap-1">
+          <button disabled={busy} onClick={() => save("square")} className={link}>画像を保存</button>
+          <span className="text-ink/30" aria-hidden="true">・</span>
+          <button disabled={busy} onClick={() => save("story")} className={link}>ストーリーズ用</button>
+          <span className="text-ink/30" aria-hidden="true">・</span>
+          <button disabled={busy} onClick={copy} className={link}>文をコピー</button>
+        </div>
+        <p className="shrink-0 text-center text-xs leading-snug text-ink-soft" role="status">
           {msg ?? "自動では投稿しません。名前や家の場所は画像に入りません。"}
         </p>
       </section>

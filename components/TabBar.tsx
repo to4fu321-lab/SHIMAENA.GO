@@ -1,21 +1,22 @@
-// 画面のいちばん下のタブ（ホーム／地図／隊長／活動／使い方）。アイコンと名前を必ず一緒に出す。
+// 画面のいちばん下のタブ（ホーム／地図／隊長／つなぐ／活動）。アイコンと名前を必ず一緒に出す。
+// 11/6 本人の指示「つなぐをいつでも開けるように」: 「使い方」の代わりに「つなぐ」（/connect）。使い方はホーム右上と設定から。
 // 「隊長」（隊長トーク、spec v1.17）には未読の数を小さく出す（cookie の本人のもの。画面の部品なので、数は開いたあとに取る）。
 import Link from "next/link";
 import type { IconName } from "@/lib/brand";
 import ChatBadge from "./ChatBadge";
 import Icon from "./Icon";
 
-type Tab = "home" | "map" | "chat" | "card" | "guide";
+type Tab = "home" | "map" | "chat" | "connect" | "card";
 
 const TABS: { key: Tab; label: string; icon: IconName; path: string; keepAs: boolean }[] = [
   { key: "home", label: "ホーム", icon: "house", path: "/", keepAs: true },
   { key: "map", label: "地図", icon: "map", path: "/map", keepAs: true },
   { key: "chat", label: "隊長", icon: "chat", path: "/chat", keepAs: true },
+  { key: "connect", label: "つなぐ", icon: "connect", path: "/connect", keepAs: true },
   { key: "card", label: "活動", icon: "card", path: "/cards", keepAs: true },
-  { key: "guide", label: "使い方", icon: "guide", path: "/rules", keepAs: false },
 ];
 
-export default function TabBar({ active, q = "" }: { active: Tab; q?: string }) {
+export default function TabBar({ active, q = "" }: { active?: Tab; q?: string }) {
   const as = /[?&]as=([hr]\d+)/.exec(q)?.[1];
   return (
     <nav className="shrink-0 border-t border-ink/10 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="メニュー">

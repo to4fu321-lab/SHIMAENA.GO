@@ -41,7 +41,7 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 /**
  * ホーム = 今朝の出撃画面（spec v1.1 10.6）。スクロールしない1画面:
  * キャラクターと町 → 今日のミッション（あと何軒） → 今日の数字 → 雪かきGO！／ソロ活動をする → 下のタブ。
- * 右上は設定。SNS・友だちを誘うは活動カードの「広める」（/share）へ。
+ * 右上は使い方と設定。SNS・友だちを誘う・応援を呼ぶ・バトン・なかまは「つなぐ」（/connect、下のタブとホームの「仲間を増やす」）へ。
  */
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
@@ -162,7 +162,12 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         </div>
         {/* BGM のオン・オフ（spec v1.19）。効果音は設定の「音」で */}
         <SoundToggle compact />
-        {/* 設定（11/6: 「くわしく」をやめて、中身は地図・チーム・活動カードの「広める」へ） */}
+        {/* 使い方（下のタブを「つなぐ」にしたので、ここと設定から。11/6） */}
+        <Link href="/rules" className="flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="使い方">
+          <Icon name="guide" size={28} accent="var(--ice)" />
+          使い方
+        </Link>
+        {/* 設定（11/6: 「くわしく」をやめて、中身は地図・チーム・つなぐへ） */}
         <Link href={`/settings${q}`} className="flex min-h-12 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold" aria-label="設定">
           <Icon name="settings" size={28} accent="var(--ice)" />
           設定
@@ -329,12 +334,27 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             </Link>
           </div>
         )}
-        {/* 雪かきを頼む（spec v1.20 お互いさま）: 手伝う人も頼む人も同じアプリで */}
-        <Link href={`/ask${q}`} className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-card text-base font-bold ring-1 ring-ink/15 short:min-h-10">
-          <span aria-hidden="true">🏠</span>
-          雪かきをお願いする
-          <span aria-hidden="true">›</span>
-        </Link>
+        {/* 雪かきを頼む（spec v1.20 お互いさま）と、仲間を増やす（つなぐ。11/6 本人の指示「ホームからも仲間を増やすボタン」） */}
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/ask${q}`} className="flex min-h-12 items-center gap-2 rounded-full bg-card pl-1.5 pr-3 shadow-sm ring-1 ring-ink/15 short:min-h-11">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-warm">
+              <Icon name="ask" size={24} accent="var(--camellia)" />
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">お願いする</span>
+              <span className="block whitespace-nowrap text-xs text-ink-soft">うちの雪かきを</span>
+            </span>
+          </Link>
+          <Link href={`/connect${q}`} className="flex min-h-12 items-center gap-2 rounded-full bg-card pl-1.5 pr-3 shadow-sm ring-1 ring-ink/15 short:min-h-11">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-camellia-soft">
+              <Icon name="connect" size={24} accent="var(--lamp)" />
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">仲間を増やす</span>
+              <span className="block whitespace-nowrap text-xs text-ink-soft">誘う・広める</span>
+            </span>
+          </Link>
+        </div>
       </main>
 
       <TabBar active="home" q={q} />

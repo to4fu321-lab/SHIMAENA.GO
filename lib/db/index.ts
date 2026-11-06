@@ -104,6 +104,11 @@ export async function dbStatus(): Promise<DbStatus> {
     const rows = await query<{ table_name: string }>("select table_name from information_schema.tables where table_schema = 'public'");
     const existing = new Set(rows.map((r) => r.table_name));
     const missing = expected.filter((t) => !existing.has(t));
+    // 古い版の表に残った外部キー（cards → rollcalls / missions）があると、ソロのカードが入らない。「DB を準備する」で外す
+    const oldFks = await query<{ conname: string }>(
+      "select conname from pg_constraint where conrelid = 'cards'::regclass and conname in ('cards_rollcall_id_fkey', 'cards_mission_id_fkey')",
+    ).catch(() => []);
+    for (const c of oldFks) missing.push(`cards の古い制約 ${c.conname} を外す`);
     if (missing.length > 0) return { kind: "unprepared", missing };
     const cnt = await query<{ n: string }>("select count(*)::text as n from participants");
     return { kind: "ready", participants: Number(cnt[0]?.n ?? 0) };

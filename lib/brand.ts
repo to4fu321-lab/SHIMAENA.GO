@@ -16,7 +16,7 @@ export const COLORS = {
 /** アイコンの中の「差し色」。描く側で好きな色に置き換える */
 export const ACCENT_TOKEN = "var(--icon-accent, currentColor)";
 
-export type IconName = "go" | "map" | "card" | "guide" | "settings" | "house" | "town" | "ask" | "chat";
+export type IconName = "go" | "map" | "card" | "guide" | "settings" | "house" | "town" | "ask" | "chat" | "connect";
 
 /** 線の書式。w は線の太さ、fill は塗り（なしなら none） */
 const st = (w = 7, fill = "none") => `fill="${fill}" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
@@ -41,6 +41,8 @@ export const ICONS: Record<IconName, string> = {
   // 雪かきを頼む: 家と、上がった手（ハート）
   ask: `<path d="M12 50 L42 24 L72 50 V86 H12 Z" ${st(6)}/><rect x="34" y="60" width="16" height="26" rx="2" ${st(5)}/><path d="M78 40 c-6 -8 -18 -4 -14 6 l14 14 l14 -14 c4 -10 -8 -14 -14 -6 Z" ${st(5, A)}/>`,
   // 隊長に相談: ふきだし
+  // つなぐ: 向かい合う2羽（シマエナガ）と、間のハート（広める・誘う・バトン・なかま）
+  connect: `<circle cx="28" cy="46" r="16" ${st(6)}/><path d="M12 86 c0 -16 8 -24 16 -24 s16 8 16 24" ${st(6)}/><circle cx="72" cy="46" r="16" ${st(6)}/><path d="M56 86 c0 -16 8 -24 16 -24 s16 8 16 24" ${st(6)}/><path d="M50 36 c-5 -7 -16 -3 -12 6 l12 12 l12 -12 c4 -9 -7 -13 -12 -6 Z" ${st(5, A)}/><circle cx="24" cy="44" r="2.5" fill="currentColor"/><circle cx="76" cy="44" r="2.5" fill="currentColor"/>`,
   chat: `<path d="M16 22 H84 a6 6 0 0 1 6 6 V62 a6 6 0 0 1 -6 6 H46 L28 84 V68 H16 a6 6 0 0 1 -6 -6 V28 a6 6 0 0 1 6 -6 Z" ${st(7, A)}/><circle cx="32" cy="45" r="5" fill="currentColor"/><circle cx="50" cy="45" r="5" fill="currentColor"/><circle cx="68" cy="45" r="5" fill="currentColor"/>`,
 };
 
@@ -55,6 +57,7 @@ export const MENU = {
   card: { label: "活動カード", sub: "今日の活動をふりかえる", icon: "card", bg: COLORS.ink, fg: COLORS.white, accent: COLORS.camellia },
   guide: { label: "使い方", sub: "はじめての方へ", icon: "guide", bg: COLORS.warm, fg: COLORS.ink, accent: COLORS.ice },
   settings: { label: "設定", sub: "登録の確認・やり直し", icon: "settings", bg: COLORS.white, fg: COLORS.ink, accent: COLORS.ice },
+  connect: { label: "つなぐ", sub: "広める・誘う・バトン・なかま", icon: "connect", bg: COLORS.camellia, fg: COLORS.ink, accent: COLORS.lamp },
 } as const satisfies Record<string, { label: string; sub: string; icon: IconName; bg: string; fg: string; accent: string }>;
 
 export type MenuKey = keyof typeof MENU;

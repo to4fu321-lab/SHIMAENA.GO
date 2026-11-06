@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SoloMission } from "@/lib/solo/missions";
 import { shrink } from "./shrink";
 import { play } from "@/lib/sound/engine";
+import CheerCall from "./CheerCall";
 
 const HINT: Record<string, string> = {
   patrol: "例: 角の道が凍っていた",
@@ -131,6 +132,8 @@ export default function MissionRun({
       >
         {pending ? "報告中…" : ready ? "報告してクリア！" : !before ? "Before を撮ろう" : "終わったら After を撮ろう"}
       </button>
+      {/* ゲーム中にも応援を呼べる（11/6 本人の指示） */}
+      <CheerCall mission={mission.label} compact />
 
         </>
       ) : (
@@ -192,6 +195,7 @@ export default function MissionRun({
       >
         {pending ? "報告中…" : ready ? "報告してクリア！" : canPhoto ? "写真かひとことを入れてね" : "ひとことを入れてね"}
       </button>
+      <CheerCall mission={mission.label} compact />
 
         </>
       )}

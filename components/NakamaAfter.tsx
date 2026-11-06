@@ -14,6 +14,7 @@ export default function NakamaAfter({
   photoChecked,
   q = "",
   view: shown,
+  onDone,
 }: {
   viewerId: string;
   source: "own_house" | "help_house" | "road";
@@ -22,6 +23,8 @@ export default function NakamaAfter({
   q?: string;
   /** 親が「バトン」「次は？」のどちらを出すか決めるとき（完了画面の「つなぐ」タブ）。ないときは上の2つのボタンで切りかえる */
   view?: "baton" | "wish";
+  /** バトンを渡せたあとに呼ぶ（「つなぐ」の一覧に戻るなど） */
+  onDone?: () => void;
 }) {
   const [pending, start] = useTransition();
   const [preset, setPreset] = useState<string>(BATON_PRESETS[0]);
@@ -37,6 +40,7 @@ export default function NakamaAfter({
     start(async () => {
       const r = await batonAction(viewerId, { source, status, preset, text, photoChecked, missionId }).catch(() => ({ ok: false, text: "うまくいきませんでした。" }));
       setBatonNote(r);
+      if (r.ok) onDone?.();
     });
   const pickWish = (w: NextWish) =>
     start(async () => {

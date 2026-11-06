@@ -14,6 +14,7 @@ import type { ShortHouse } from "@/lib/morning/watch";
 import { useEffect, useRef, useState } from "react";
 import GoBriefing from "./GoBriefing";
 import HazardIcon from "./HazardIcon";
+import CheerCall from "./CheerCall";
 import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
@@ -295,6 +296,8 @@ export default function MapScreen({
                 ))}
               </div>
             )}
+            {/* ゲーム中にも応援を呼べる（11/6 本人の指示）。まだ終わっていない担当があるとき */}
+            {myView.status !== "done" && <CheerCall mission={`拠点${myBase.number}の雪かき`} compact />}
             {myMission?.request && (
               <p className="rounded-2xl bg-warm px-3 py-2 text-base ring-2 ring-lamp">
                 <span className="eyebrow block">お願いした人から</span>
@@ -389,7 +392,7 @@ export default function MapScreen({
               <li className="col-span-2 text-ink-soft">マスは 50m 四方。どの家かは、割り当てられた人の隊長トークにだけ届きます。</li>
             </ul>
             {shareText && prog.total > 0 && <ShareButton text={shareText} />}
-            <Link href={`/share${q}`} className="btn btn-white w-full text-base">
+            <Link href={`/connect${q}`} className="btn btn-white w-full text-base">
               画像つきで SNS に投稿する（X・Instagram）
             </Link>
           </div>

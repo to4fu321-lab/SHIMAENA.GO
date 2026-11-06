@@ -6,9 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { joinAction } from "@/app/map/actions";
-import { answerAction, proposeAction, reactAction, todayModeAction, type NakamaResult } from "@/app/nakama/actions";
+import { answerAction, proposeAction, todayModeAction, type NakamaResult } from "@/app/nakama/actions";
 import type { NakamaView } from "@/lib/nakama/ops";
-import { CHILD_NOTE, REACTION_LABEL, TODAY_MODES, type TodayMode } from "@/lib/nakama/rules";
+import { CHILD_NOTE, TODAY_MODES, type TodayMode } from "@/lib/nakama/rules";
+import BatonFeed from "./BatonFeed";
 import Pager, { PagedList, Screen } from "./Pager";
 import TabBar from "./TabBar";
 
@@ -34,7 +35,7 @@ export default function NakamaScreen({ viewerId, view, q, initialTab }: { viewer
 
   const header = (
     <div className="flex items-center gap-3 px-4 pb-2 pt-3">
-      <Link href={`/solo${q}`} aria-label="雪かきGO！へ戻る" className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
+      <Link href={`/connect${q}`} aria-label="つなぐへ戻る" className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
         ‹
       </Link>
       <div className="min-w-0">
@@ -47,7 +48,7 @@ export default function NakamaScreen({ viewerId, view, q, initialTab }: { viewer
   );
 
   return (
-    <Screen header={header} footer={<TabBar active="home" q={q} />}>
+    <Screen header={header} footer={<TabBar active="connect" q={q} />}>
       {note && (
         <p className={`mx-4 mb-2 shrink-0 rounded-2xl px-3 py-2 text-base leading-snug ${note.ok ? "bg-ice-soft" : "bg-warm"}`} role="status">
           {note.text}
@@ -187,45 +188,8 @@ export default function NakamaScreen({ viewerId, view, q, initialTab }: { viewer
           )}
         </>
 
-        {/* この地域の雪かきバトン（1つずつ） */}
-        <>
-          <p className="shrink-0 text-lg leading-snug">
-            🎽 この地域の雪かきに、今日 <b className="text-2xl tabular-nums">{view.area.people}</b> 人が参加しました。
-          </p>
-          {view.area.story && <p className="shrink-0 rounded-2xl bg-ice-soft px-3 py-2 text-base leading-snug">{view.area.story}</p>}
-          <PagedList
-            label="バトン"
-            items={view.area.batons}
-            empty={<p className={`${card} text-lg leading-snug`}>今日のバトンはまだありません。活動を終えたら、完了の画面から次の人へバトンを渡せます。</p>}
-            render={(b) => (
-              <div key={b.id} className={`${card} flex flex-1 flex-col gap-2`}>
-                <p className="text-base font-bold text-ink-soft">
-                  {b.band}の活動者・{b.where}・{b.done ? "終わった" : "途中まで"}
-                </p>
-                <p className="text-xl leading-snug">「{b.message}」</p>
-                {b.photoChecked && <p className="text-base">📷 写真で確認済み</p>}
-                {b.own ? (
-                  <p className="mt-auto text-base text-ink-soft">あなたのバトン: ありがとう {b.thanks}・続きをやります {b.cont}</p>
-                ) : (
-                  <div className="mt-auto grid grid-cols-2 gap-2">
-                    {(["thanks", "continue"] as const).map((r) => (
-                      <button
-                        key={r}
-                        disabled={pending}
-                        aria-pressed={b.mine === r}
-                        onClick={() => run(() => reactAction(viewerId, b.id, r))}
-                        className={`min-h-14 rounded-2xl px-2 text-base font-bold leading-tight ring-2 ${b.mine === r ? "bg-lamp text-white ring-lamp" : "bg-paper ring-ink/15"}`}
-                      >
-                        {r === "thanks" ? "🙏" : "💪"} {REACTION_LABEL[r]} {r === "thanks" ? b.thanks : b.cont}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          />
-          <p className="shrink-0 text-sm text-ink-soft">名前と家の場所は出しません。地域は約250m四方です。</p>
-        </>
+        {/* この地域の雪かきバトン（1つずつ）。渡すのもここから（11/6） */}
+        <BatonFeed viewerId={viewerId} area={view.area} q={q} />
       </Pager>
     </Screen>
   );

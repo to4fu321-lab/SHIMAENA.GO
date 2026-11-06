@@ -22,10 +22,10 @@ export function inviteMessage(origin: string, joinUrl?: string): { text: string;
   };
 }
 
-/** 友だちに応援を頼む文。開くと公開ページの「町を応援する」へ（登録なし・1日1回） */
-export function cheerRequestMessage(origin: string): { text: string; url: string } {
+/** 友だちに応援を頼む文。開くと公開ページの「町を応援する」へ（登録なし・1日1回）。mission を渡すと「いま◯◯に出動中」（ミッション中の「応援を呼ぶ」） */
+export function cheerRequestMessage(origin: string, mission?: string): { text: string; url: string } {
   return {
-    text: "いま、町内の雪かきに出動しています！⛄\nよかったら「町を応援する」を押してください（登録なし・1日1回）。",
+    text: `${mission ? `いま「${mission}」に出動中！⛄` : "いま、町内の雪かきに出動しています！⛄"}\nよかったら「町を応援する」を押してください（登録なし・1日1回）。`,
     url: `${origin}/public/town?via=cheer#cheer`,
   };
 }

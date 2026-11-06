@@ -240,7 +240,7 @@ export default function SoloClear({
       {/* つなぐ: 共有（地図のピン → 自慢の画像 → SNS → 投稿文）／誘う／バトン／次は？ */}
       {(hasShare || baton) && (
         <Panel>
-          <ConnectPanel shares={shareItems} invite={invite} baton={baton} />
+          <ConnectPanel shares={shareItems} invite={invite} baton={baton} more={`/connect${q}`} />
         </Panel>
       )}
     </ClearFrame>

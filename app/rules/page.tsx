@@ -67,8 +67,8 @@ export default function RulesPage() {
             ["house", "ホーム", "今日の雪・チーム・雪かきGO！・ソロ活動はここから。「雪かきをお願いする」もここ。のぞくだけでもOK。"],
             ["map", "地図", "町の雪の状況と、助けが必要な家（50m のマス）。滑る所・細い道など、近所の人の道の報告もここで。"],
             ["chat", "隊長", "積もった朝のお知らせや作戦が届くトーク。シマエナ隊長に、何をすればいいか・今日の雪などを文でも声でも聞けます。"],
-            ["card", "活動", "今日の羽・連続出動・その時だけのカード。右上の「広める」から SNS への投稿や友だちの誘いも。"],
-            ["guide", "使い方", "このページ。触って覚えるチュートリアル。"],
+            ["connect", "つなぐ", "広める（SNS に投稿）・友だちを誘う・応援を呼ぶ・雪かきバトン・なかま（合流）。いつでもここから。"],
+            ["card", "活動", "今日の羽・連続出動・その時だけのカード・図鑑。"],
           ] as const
         ).map(([icon, label, text]) => (
           <li key={label} className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export default function RulesPage() {
           </li>
         ))}
       </ul>
-      <p className="text-base">登録の確認・やり直し・連携コードは、ホーム右上の「設定」から。LINE は本人の確認（ログイン）にだけ使います。</p>
+      <p className="text-base">この「使い方」はホーム右上と設定から。登録の確認・やり直し・連携コードは、ホーム右上の「設定」から。LINE は本人の確認（ログイン）にだけ使います。</p>
     </Card>
 
     <Card title="手伝う人は、3つだけ">
@@ -165,7 +165,7 @@ export default function RulesPage() {
     <div className="flex h-dvh flex-col overflow-hidden bg-paper text-ink">
       <Bgm track="morning" />
       <Tutorial joinUrl={lineJoinUrl()} rules={rules} />
-      <TabBar active="guide" />
+      <TabBar />
     </div>
   );
 }

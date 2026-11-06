@@ -326,6 +326,34 @@ function rowToCard(r: CardRow): Card {
   };
 }
 
+/** カードの行を入れる（Neon） */
+async function insertCardRow(card: Card, svg: string, backSvg: string): Promise<void> {
+  await query(
+    `insert into cards (id, recipient_id, rollcall_id, mission_id, serial, issued_count, design_name, design_name_en, rarity_label, stars, style,
+       snow_kg, snow_kg_comparison, member_names, team_ids, svg, back_svg, created_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16, $17, $18)
+     on conflict (id) do nothing`,
+    [
+      card.id, card.recipientId, card.rollcallId, card.missionId, card.serial, card.issuedCount, card.designName, card.designNameEn,
+      card.rarityLabel, card.stars, card.style, card.snowKg, card.snowKgComparison, JSON.stringify(card.memberNames),
+      JSON.stringify(card.teamIds), svg, backSvg, card.createdAt,
+    ],
+  );
+}
+
+/** 古い版の表に残っていた外部キーの名前（いまの db/schema.sql にはない） */
+export const OLD_CARD_FKS = ["cards_rollcall_id_fkey", "cards_mission_id_fkey"] as const;
+
+/** その外部キーに当たった失敗か（Postgres の 23503 か、名前が入っている） */
+export function isOldCardFk(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return OLD_CARD_FKS.some((n) => msg.includes(n));
+}
+
+async function dropOldCardFks(): Promise<void> {
+  for (const n of OLD_CARD_FKS) await query(`alter table cards drop constraint if exists ${n}`);
+}
+
 const dbCardMethods: Pick<
   Repo,
   "insertCard" | "getCard" | "listCardsByRecipient" | "countCardsForRollcall" | "listCardsByMission" | "updateCardBack"
@@ -338,17 +366,15 @@ const dbCardMethods: Pick<
     await query("update cards set back_svg = $2 where id = $1", [id, backSvg]);
   },
   async insertCard(card, svg, backSvg) {
-  await query(
-    `insert into cards (id, recipient_id, rollcall_id, mission_id, serial, issued_count, design_name, design_name_en, rarity_label, stars, style,
-       snow_kg, snow_kg_comparison, member_names, team_ids, svg, back_svg, created_at)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16, $17, $18)
-     on conflict (id) do nothing`,
-    [
-      card.id, card.recipientId, card.rollcallId, card.missionId, card.serial, card.issuedCount, card.designName, card.designNameEn,
-      card.rarityLabel, card.stars, card.style, card.snowKg, card.snowKgComparison, JSON.stringify(card.memberNames),
-      JSON.stringify(card.teamIds), svg, backSvg, card.createdAt,
-    ],
-  );
+    try {
+      await insertCardRow(card, svg, backSvg);
+    } catch (e) {
+      // 古い版の表に残った外部キー（cards_rollcall_id_fkey など）に当たったら、その場で外してもう一度（db/schema.sql と同じ文。何度流しても安全）
+      if (!isOldCardFk(e)) throw e;
+      console.error("[cards] 古い外部キーを外します:", e instanceof Error ? e.message : e);
+      await dropOldCardFks();
+      await insertCardRow(card, svg, backSvg);
+    }
   },
   async getCard(id) {
   const rows = await query<CardRow & { svg: string; back_svg: string }>(`select ${CARD_COLS}, svg, back_svg from cards where id = $1`, [id]);
