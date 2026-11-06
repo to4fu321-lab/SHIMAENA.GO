@@ -20,7 +20,7 @@ const mission = (n: number, status: Mission["status"], requiredPeople: number, i
 
 const missions: Mission[] = [
   mission(1, "done", 2, 6, "出られない・レベル2 → 2人。近い2人で"),
-  mission(2, "done", 3, 9, "道路まで・いいえ → 3人。近い3人で"),
+  mission(2, "done", 3, 9, "道路まで・出られない → 3人。近い3人で"),
   mission(3, "short", 3, 9, "道路まで30分・坂 → 3人。あと2人、近所に声かけ"),
   mission(4, "in_progress", 2, 5, "出られない・レベル2 → 2人。近い2人で"),
   mission(5, "assigned", 2, 4, "一緒にやる・レベル3 → 2人。本人も加わる"),
