@@ -51,3 +51,6 @@ next-env.d.ts
 
 # テストモードの結果（npm run sim の書き出し）
 /.sim
+
+# 点検ループの結果（npm run tenken の書き出し）
+/.tenken

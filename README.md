@@ -137,7 +137,8 @@ Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作�
 3. **本人の役割**: 判断（仕様・デザインの選択）、鍵の準備（LINE Developers・Neon・Vercel の環境変数）、実機での確認、デモ動画。Claude Code からの報告は毎回3行以内（できたこと・見てほしいもの・次）にして、スマホで読める量に。
 4. **企画役のエージェント**: [`.claude/agents/kikaku.md`](.claude/agents/kikaku.md) に「コードは変えず、面白さ・広がる仕組みを調べて提案書を書く」役を置いた。
 5. **町を丸ごとテスト**: 性格を決めた架空の参加者20人と頼む家10軒で、雪の朝（お知らせ → 作戦 → 行く・行けない → 駆けつけ → 写真で完了 → カード）を本物の処理に通して確かめる（`npm run sim` → `.sim/report.html`。[`lib/sim/`](lib/sim/)）。
-6. **記録はすべて公開**: 日ごとの [`docs/devlog.md`](docs/devlog.md)、タスクの順番 [`docs/tasks.md`](docs/tasks.md)、見送った案 [`docs/plan-b-nuisho.md`](docs/plan-b-nuisho.md)、カードやアイコンの試作 [`docs/design/`](docs/design/)。コミット履歴がそのまま制作の記録です。
+6. **点検ループ**: [`docs/tenken.md`](docs/tenken.md) の決まりで、AI が4時間ごとに全ページをスマホ幅で開いて（`npm run tenken`）、不具合・意味不明な文言・改善を見つけ、小さいものは直してコミット、大きいものは [`docs/tasks.md`](docs/tasks.md) に積み、迷うものは本人に提案する。本人は気づいたことを [`docs/tenken/inbox.md`](docs/tenken/inbox.md) に1行書くだけ。
+7. **記録はすべて公開**: 日ごとの [`docs/devlog.md`](docs/devlog.md)、タスクの順番 [`docs/tasks.md`](docs/tasks.md)、見送った案 [`docs/plan-b-nuisho.md`](docs/plan-b-nuisho.md)、カードやアイコンの試作 [`docs/design/`](docs/design/)。コミット履歴がそのまま制作の記録です。
 
 ## 開発の記録
 - 日々の記録: [`docs/devlog.md`](docs/devlog.md)
