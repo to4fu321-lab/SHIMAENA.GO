@@ -56,13 +56,9 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
           雪の朝に LINE で点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲームです。仲間がいない日も、
           <b>ソロ出動</b>（自分の家の雪かき・道の危険の報告）で、1人の10分から参加できます。
         </p>
-        {join ? (
-          <a href={`${join}`} className="btn btn-big bg-[#06C755] text-white">
-            LINE で参加する
-          </a>
-        ) : (
-          <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
-        )}
+        <Link href={join} className="btn btn-big bg-lamp text-white">
+            はじめる（30秒で登録）
+          </Link>
         {kind.startsWith("quiz-") && (
           <Link href="/public/diagnosis" className="btn btn-ink btn-big">
             あなたも診断する

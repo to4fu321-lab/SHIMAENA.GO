@@ -485,4 +485,7 @@
 - T79 やったこと: 隊長トーク `/chat`（`lib/inbox/view.ts` で LINE の形の文面を吹き出しに直す・`lib/chat/send.ts` で本人の文／ボタン／写真を今までの Webhook と同じ処理へ・`components/ChatScreen.tsx`）。下のタブに「隊長」（未読の数）。会話の上限 3往復→30（60分）、道の通知 3回→6回。スクショ `.shots/chat.png`（390×844・375×667 とも1画面）。テスト 7 件。
 - T79 詰まったこと: TabBar がソロ・なかまのクライアント部品からも使われていて、未読の数を server component で出せなかった → server action で取る小さな部品に。Turbopack のビルドが一度 panic した → `.next` を消して通った。
 - T79 次: T80 LINE ログイン（Web）と画面の登録。
+- T80 やったこと: 「LINE でログイン」（Web の OAuth: `/api/auth/line/start` → LINE の許可画面 → `/api/auth/line/callback`。id_token は LINE に確かめてもらう）。`/login`。`/start` は LIFF なしの画面の登録（手伝う／手伝ってほしい／家族の代わりに → 家の場所 → 2問）、連携コードも画面で。登録前の印（署名つき cookie）。署名の鍵は `AUTH_SECRET`（`lib/auth/secret.ts`）。LIFF・LiffBridge・LineLoginButton・「LINE で送ってログイン」・Webhook・リッチメニュー・`@line/liff`・LINE の通数を外した。/admin/settings は「設定／状態」の2タブ。`docs/login-setup.md`。スクショ `.shots/login.png`・`start-*.png`（2サイズとも1画面）。
+- T80 詰まったこと: 「家族の代わりに登録」した家族本人は参加者ではないので、隊長トークは開けない（T81 で、家族の鍵で読めるようにする）。
+- T80 次: T81 通知（Web Push と PWA）。
 

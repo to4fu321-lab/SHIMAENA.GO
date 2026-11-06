@@ -4,7 +4,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-auth";
-import { deleteRichMenu, setupRichMenu } from "@/lib/line/richmenu";
 import { withStateLock } from "@/lib/ops/lock";
 import { loadSettings, saveSettings } from "@/lib/ops/settings";
 import { loadMorning, saveMorning } from "@/lib/morning/store";
@@ -20,38 +19,10 @@ async function log(line: string) {
   });
 }
 
-function done(message: string, tab: "menu" | "settings"): never {
+function done(message: string, tab: "settings"): never {
   revalidatePath(PAGE);
   revalidatePath("/admin");
   redirect(`${PAGE}?tab=${tab}&done=${encodeURIComponent(message)}`);
-}
-
-/** リッチメニューを作り直して全員の既定にする（古い同名メニューは消える） */
-export async function updateRichMenuAction() {
-  await requireAdmin();
-  let msg: string;
-  try {
-    const r = await setupRichMenu((await loadSettings()).chatBarText);
-    msg = r.richMenuId ? `リッチメニューを更新しました（${r.richMenuId}）` : "LINE の鍵がないので、画像を作るところまで確かめました";
-  } catch (e) {
-    msg = `リッチメニューの更新に失敗: ${e instanceof Error ? e.message : String(e)}`;
-  }
-  await log(msg);
-  done(msg, "menu");
-}
-
-/** 使っていないリッチメニューを1つ消す（既定のものは消せない） */
-export async function deleteRichMenuAction(formData: FormData) {
-  await requireAdmin();
-  const id = String(formData.get("richMenuId") ?? "");
-  let msg: string;
-  try {
-    msg = (await deleteRichMenu(id)) ? `リッチメニューを消しました（${id}）` : "消せませんでした（使用中か、見つかりません）";
-  } catch (e) {
-    msg = `リッチメニューを消せませんでした: ${e instanceof Error ? e.message : String(e)}`;
-  }
-  await log(msg);
-  done(msg, "menu");
 }
 
 /** 動きの設定を保存する */
@@ -61,12 +32,10 @@ export async function saveSettingsAction(formData: FormData) {
   const after = await saveSettings({
     linePaused: formData.get("linePaused") === "on",
     snowThresholdCm: Number(formData.get("snowThresholdCm")),
-    chatBarText: String(formData.get("chatBarText") ?? ""),
   });
   const changes: string[] = [];
-  if (before.linePaused !== after.linePaused) changes.push(after.linePaused ? "LINE の送信を一時停止" : "LINE の送信を再開");
+  if (before.linePaused !== after.linePaused) changes.push(after.linePaused ? "通知を一時停止" : "通知を再開");
   if (before.snowThresholdCm !== after.snowThresholdCm) changes.push(`予告の基準 ${before.snowThresholdCm}→${after.snowThresholdCm}cm`);
-  if (before.chatBarText !== after.chatBarText) changes.push(`メニューの下の文字「${after.chatBarText}」（反映は「リッチメニューを更新」で）`);
   const msg = changes.length ? `設定を保存: ${changes.join("・")}` : "設定は変わっていません";
   if (changes.length) await log(msg);
   done(msg, "settings");

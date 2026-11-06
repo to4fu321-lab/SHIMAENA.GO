@@ -1,24 +1,25 @@
 "use client";
 
-// LINE で1タップ開始（spec v1.14）。LINE アプリの中で開くと、最初の1回の「許可する」で本人確認と友だち追加が済む（LIFF の友だち追加オプション）。
-// 登録は1画面ずつ大きなボタンで: ①手伝う／お願いする ②家の場所 ③2問 → そのままソロ出動へ。トークの会話の登録と同じ中身。
-// 家族の代わりに登録するときは、今までどおりトークで（連携コードが要るため）。
+// はじめる（spec v1.17）。LINE でログイン → 画面で30秒の登録 → そのままソロ出動へ。
+// 登録は1画面ずつ大きなボタンで: ①手伝う／手伝ってほしい／家族の代わりに ②家の場所 ③2問 → 「はじめる！」。
+// 家族の代わりの登録は、最後に6桁の連携コードを出す（ご本人・ほかの家族が「連携コードを入れる」で紐づく）。
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
-import { signInWithLiff } from "@/app/map/actions";
-import { registerWithLiff } from "@/app/start/actions";
+import { linkCodeAction, registerAction } from "@/app/start/actions";
 import type { LatLng } from "@/lib/types";
+import LoginButton from "./LoginButton";
 import Mascot from "./Mascot";
-import LineLoginButton from "./LineLoginButton";
 
 const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
 
-type Phase = "loading" | "outside" | "role" | "place" | "questions" | "saving" | "error";
-type Role = "helper" | "requester";
+/** guest = ログインしていない、pending = ログイン済みで未登録、member = 登録済み、redo = 登録のやり直し */
+export type StartStatus = "guest" | "pending" | "member" | "redo";
+type Phase = "role" | "place" | "questions" | "saving" | "code" | "done";
+type Role = "helper" | "requester" | "family";
 
-const Q: Record<Role, { q1: { title: string; options: [string, string][] }; q2: { title: string; options: [string, string][] } }> = {
+const Q: Record<"helper" | "requester", { q1: { title: string; options: [string, string][] }; q2: { title: string; options: [string, string][] } }> = {
   helper: {
     q1: { title: "雪の朝、何分くらい動けますか？", options: [["15", "15分"], ["30", "30分"], ["60", "60分"]] },
     q2: { title: "スコップなどの道具はありますか？", options: [["yes", "ある"], ["no", "ない"]] },
@@ -29,11 +30,9 @@ const Q: Record<Role, { q1: { title: string; options: [string, string][] }; q2: 
   },
 };
 
-export default function StartScreen({ liffId, center }: { liffId?: string; center: LatLng }) {
+export default function StartScreen({ status, name, center, next }: { status: StartStatus; name: string; center: LatLng; next: string }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>(liffId ? "loading" : "outside");
-  const [token, setToken] = useState<string>();
-  const [name, setName] = useState("");
+  const [phase, setPhase] = useState<Phase>("role");
   const [role, setRole] = useState<Role>();
   const [place, setPlace] = useState<LatLng>();
   const [picking, setPicking] = useState<LatLng>();
@@ -41,40 +40,9 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
   const [q2, setQ2] = useState<string>();
   const [msg, setMsg] = useState<string>();
   const [locating, setLocating] = useState(false);
-
-  useEffect(() => {
-    if (!liffId) return;
-    (async () => {
-      try {
-        // LINE が別の画面（町の地図など）へ移す途中なら、ここでは何もしない（11/5 本人の報告: 地図→ソロへ勝手に移った）
-        const passing = () => new URLSearchParams(location.search).has("liff.state") || location.pathname !== "/start";
-        if (passing()) return;
-        const { default: liff } = await import("@line/liff");
-        await liff.init({ liffId });
-        if (passing()) return;
-        if (!liff.isLoggedIn()) {
-          setPhase("outside"); // Safari など。LINE アプリで開き直してもらう
-          return;
-        }
-        const t = liff.getAccessToken() ?? undefined;
-        if (!t) return setPhase("outside");
-        setToken(t);
-        const prof = await liff.getProfile().catch(() => undefined);
-        if (prof?.displayName) setName(prof.displayName);
-        const r = await signInWithLiff(t);
-        if (r.ok) {
-          if (passing()) return;
-          router.replace("/"); // もう登録している人は、いつものホームへ（勝手に出動の画面へは進めない。11/5 本人の報告）
-          return;
-        }
-        setPhase(r.reason === "not_registered" ? "role" : "error");
-        if (r.reason !== "not_registered") setMsg("LINE であなたを確かめられませんでした。LINE アプリで開き直してください。");
-      } catch (e) {
-        console.warn("[start]", e);
-        setPhase("outside");
-      }
-    })();
-  }, [liffId, router]);
+  const [code, setCode] = useState("");
+  const [linkCode, setLinkCode] = useState<string>();
+  const [doneText, setDoneText] = useState<string>();
 
   const here = () => {
     setMsg(undefined);
@@ -98,19 +66,34 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
   };
 
   const save = async () => {
-    if (!token || !role || !place || !q1 || !q2) return;
+    if (!role || !place || !q1 || !q2) return;
     setPhase("saving");
-    const r = await registerWithLiff(token, { role, location: place, q1, q2 }).catch(() => ({ ok: false, text: "うまくいきませんでした。" }));
+    const r = await registerAction({ role, location: place, q1, q2 }).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
     if (r.ok) {
-      router.replace("/solo?welcome=1");
+      if (role === "family") {
+        setLinkCode("linkCode" in r ? r.linkCode : undefined);
+        setPhase("done");
+        return;
+      }
+      router.replace(status === "redo" ? "/settings" : next === "/" ? "/solo?welcome=1" : next);
       return;
     }
     setMsg(r.text);
     setPhase("questions");
   };
 
-  const openInLine = `https://liff.line.me/${liffId}/start`;
+  const link = async (whoAmI: "self" | "family") => {
+    setMsg(undefined);
+    const r = await linkCodeAction(code, whoAmI).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
+    if (!r.ok) return setMsg(r.text);
+    setDoneText(r.text);
+    setPhase("done");
+    if (whoAmI === "self") setTimeout(() => router.replace("/"), 1500);
+  };
+
   const big = "min-h-20 w-full rounded-3xl px-4 text-left text-xl font-bold ring-2";
+  const qRole = role === "helper" ? "helper" : "requester";
+  const registering = status === "pending" || status === "redo";
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper px-4 pb-4 pt-5 text-ink">
@@ -135,7 +118,7 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
           <h1 className="text-2xl font-bold leading-tight">{name ? `${name}さん、ようこそ` : "はじめる"}</h1>
         </div>
       </header>
-      {phase !== "loading" && phase !== "outside" && phase !== "error" && (
+      {registering && ["role", "place", "questions", "saving"].includes(phase) && (
         <ol className="mt-3 flex shrink-0 gap-1.5" aria-label="すすみぐあい">
           {(["role", "place", "questions"] as const).map((p, i) => (
             <li key={p} className={`h-2 flex-1 rounded-full ${["role", "place", "questions", "saving"].indexOf(phase) >= i ? "bg-lamp" : "bg-ink/15"}`} />
@@ -146,36 +129,32 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
       <main className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
         {msg && <p className="shrink-0 rounded-2xl bg-warm px-3 py-2 text-base">{msg}</p>}
 
-        {phase === "loading" && <p className="m-auto text-lg">LINE であなたを確かめています…</p>}
-
-        {phase === "outside" && (
+        {status === "guest" && (
           <>
-            <p className="text-xl font-bold leading-snug">LINE アプリで開くと、1タップで始められます。</p>
-            <p className="text-lg leading-snug">「許可する」を押すだけで、本人の確認と友だち追加が終わります。そのあと30秒の登録で、すぐ出動できます。</p>
-            {liffId ? (
-              <a href={openInLine} className="btn btn-big mt-auto bg-[#06C755] text-white">
-                LINE アプリで始める
-              </a>
-            ) : (
-              <p className="rounded-2xl bg-card px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加してください。</p>
-            )}
-            <p className="text-base font-bold">もう LINE で登録している方</p>
-            <LineLoginButton />
+            <p className="text-xl font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
+            <p className="text-lg leading-snug">LINE は本人の確認にだけ使います。点呼やお知らせは、このアプリに届きます。</p>
+            <LoginButton next="/start" className="mt-auto" />
             <Link href="/?as=h3" className="btn btn-white text-lg">
               デモを見る（登録なし）
             </Link>
           </>
         )}
 
-        {phase === "error" && (
-          <a href={openInLine} className="btn btn-big mt-auto bg-[#06C755] text-white">
-            LINE アプリで開き直す
-          </a>
+        {status === "member" && (
+          <>
+            <p className="text-xl font-bold leading-snug">もう登録が終わっています。</p>
+            <Link href="/" className="btn btn-lamp btn-big mt-auto w-full">
+              きょうの町へ
+            </Link>
+            <Link href="/start?redo=1" className="btn btn-white text-lg">
+              登録をやり直す
+            </Link>
+          </>
         )}
 
-        {phase === "role" && (
+        {registering && phase === "role" && (
           <>
-            <h2 className="text-xl font-bold">あなたはどちらですか？</h2>
+            <h2 className="text-xl font-bold">{status === "redo" ? "もう一度、どちらですか？" : "あなたはどちらですか？"}</h2>
             <button onClick={() => (setRole("helper"), setPhase("place"))} className={`${big} bg-card ring-ink/15`}>
               🧤 手伝う
               <span className="block text-base font-normal text-ink-soft">近所の雪かきを10分から</span>
@@ -184,18 +163,26 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
               🏠 手伝ってほしい
               <span className="block text-base font-normal text-ink-soft">自分の家の雪かきを頼みたい（自分も参加できます）</span>
             </button>
-            <p className="mt-auto text-base text-ink-soft">家族の代わりに登録するときは、LINE のトークで「登録」と送ってください。</p>
+            <button onClick={() => (setRole("family"), setPhase("place"))} className={`${big} bg-card ring-ink/15`}>
+              👪 家族の代わりに登録
+              <span className="block text-base font-normal text-ink-soft">離れて住む親の家を登録。終わると知らせが届きます</span>
+            </button>
+            <button onClick={() => setPhase("code")} className="mt-auto text-base underline">
+              連携コード（6桁）をお持ちの方はこちら
+            </button>
           </>
         )}
 
-        {phase === "place" && (
+        {registering && phase === "place" && (
           <>
-            <h2 className="text-xl font-bold">家の場所を教えてください</h2>
+            <h2 className="text-xl font-bold">{role === "family" ? "ご家族の家の場所を教えてください" : "家の場所を教えてください"}</h2>
             <p className="text-lg leading-snug">近くの雪かきを知らせるために使います。地図には 50m のマスでしか出ず、名前や住所は出ません。</p>
-            <button disabled={locating} onClick={here} className="btn btn-lamp btn-big mt-auto w-full">
-              {locating ? "いまの場所を調べています…" : "📍 いま家にいる（いまの場所）"}
-            </button>
-            <button onClick={() => setPicking(center)} className="btn btn-white btn-big w-full">
+            {role !== "family" && (
+              <button disabled={locating} onClick={here} className="btn btn-lamp btn-big mt-auto w-full">
+                {locating ? "いまの場所を調べています…" : "📍 いま家にいる（いまの場所）"}
+              </button>
+            )}
+            <button onClick={() => setPicking(center)} className={`btn btn-big w-full ${role === "family" ? "btn-lamp mt-auto" : "btn-white"}`}>
               🗺 地図で選ぶ
             </button>
             <button onClick={() => setPhase("role")} className="text-base underline">
@@ -204,15 +191,15 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
           </>
         )}
 
-        {(phase === "questions" || phase === "saving") && role && (
+        {registering && (phase === "questions" || phase === "saving") && role && (
           <>
             {(["q1", "q2"] as const).map((k) => {
-              const q = Q[role][k];
+              const q = Q[qRole][k];
               const val = k === "q1" ? q1 : q2;
               const set = k === "q1" ? setQ1 : setQ2;
               return (
                 <section key={k} className="shrink-0 space-y-2">
-                  <h2 className="text-lg font-bold leading-snug">{q.title}</h2>
+                  <h2 className="text-lg font-bold leading-snug">{role === "family" ? q.title.replace("ひとりだと", "ご本人はひとりだと") : q.title}</h2>
                   <div className={`grid gap-2 ${q.options.length === 4 ? "grid-cols-2" : q.options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
                     {q.options.map(([v, label]) => (
                       <button
@@ -229,11 +216,60 @@ export default function StartScreen({ liffId, center }: { liffId?: string; cente
               );
             })}
             <button disabled={!q1 || !q2 || phase === "saving"} onClick={save} className="btn btn-lamp btn-big mt-auto w-full disabled:opacity-40">
-              {phase === "saving" ? "登録しています…" : "はじめる！"}
+              {phase === "saving" ? "登録しています…" : role === "family" ? "登録する" : "はじめる！"}
             </button>
             <button onClick={() => setPhase("place")} className="text-base underline">
               ‹ 家の場所を選び直す
             </button>
+          </>
+        )}
+
+        {registering && phase === "code" && (
+          <>
+            <h2 className="text-xl font-bold">連携コードを入れてください</h2>
+            <p className="text-lg leading-snug">ご家族が登録したときに出た6桁の番号です。</p>
+            <input
+              inputMode="numeric"
+              pattern="\d*"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="123456"
+              className="min-h-16 w-full rounded-2xl bg-card text-center text-3xl font-bold tracking-widest ring-2 ring-ink/15 focus:outline-none focus:ring-lamp"
+              aria-label="連携コード（6桁）"
+            />
+            <p className="text-lg font-bold">あなたは？</p>
+            <button disabled={code.length !== 6} onClick={() => link("self")} className="btn btn-lamp btn-big w-full disabled:opacity-40">
+              お願いする本人です
+            </button>
+            <button disabled={code.length !== 6} onClick={() => link("family")} className="btn btn-white btn-big w-full disabled:opacity-40">
+              家族です（知らせを受け取る）
+            </button>
+            <button onClick={() => setPhase("role")} className="mt-auto text-base underline">
+              ‹ もどる
+            </button>
+          </>
+        )}
+
+        {phase === "done" && (
+          <>
+            {linkCode ? (
+              <>
+                <h2 className="text-xl font-bold">ご家族の登録ができました</h2>
+                <p className="text-lg leading-snug">連携コード</p>
+                <p className="rounded-2xl bg-card py-3 text-center text-4xl font-bold tracking-widest ring-2 ring-lamp">{linkCode}</p>
+                <p className="text-base leading-snug">ご本人がこのアプリに LINE でログインして、この6桁を入れると、ご本人にも点呼が届きます。ほかのご家族も同じ番号で知らせを受け取れます。番号は控えておいてください。</p>
+                <p className="text-base leading-snug">雪かきが終わると、あなたにも知らせが届きます（隊長トーク）。</p>
+              </>
+            ) : (
+              <p className="text-xl font-bold leading-snug">{doneText ?? "できました。"}</p>
+            )}
+            <Link href="/chat" className="btn btn-lamp btn-big mt-auto w-full">
+              隊長トークを開く
+            </Link>
+            <Link href="/" className="btn btn-white text-lg">
+              きょうの町へ
+            </Link>
           </>
         )}
       </main>

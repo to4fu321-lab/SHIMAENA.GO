@@ -13,8 +13,3 @@ export function isDeployed(): boolean {
 export function demoEnabled(): boolean {
   return (process.env.DEMO_MODE ?? "on").trim().toLowerCase() !== "off";
 }
-
-/** LINE に本当には送らず、記録だけする（検証で月の通数を使わないため）。LINE_DRY_RUN=1 */
-export function lineDryRun(): boolean {
-  return ["1", "true", "on"].includes((process.env.LINE_DRY_RUN ?? "").trim().toLowerCase());
-}

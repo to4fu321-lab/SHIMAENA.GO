@@ -41,15 +41,3 @@ export async function multicast(to: string[], messages: LineMessage[]): Promise<
 export async function reply(key: string, messages: LineMessage[]): Promise<boolean> {
   return deliver(key, messages);
 }
-
-/** LINE のアクセストークンから、その人の LINE のアカウント ID と表示名を確かめる（画面側の申告を信じない） */
-export async function getProfileByAccessToken(accessToken: string): Promise<{ userId: string; displayName: string } | undefined> {
-  try {
-    const res = await fetch("https://api.line.me/v2/profile", { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (!res.ok) return undefined;
-    const json = (await res.json()) as { userId?: string; displayName?: string };
-    return json.userId ? { userId: json.userId, displayName: json.displayName ?? "" } : undefined;
-  } catch {
-    return undefined;
-  }
-}

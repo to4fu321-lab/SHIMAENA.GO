@@ -120,7 +120,6 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
   const [safety, setSafety] = useState<boolean[]>([false, false, false]);
   const [photo, setPhoto] = useState(false);
   const [flash, setFlash] = useState(0);
-  const [showJoinHelp, setShowJoinHelp] = useState(false);
 
   const viewport = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; horiz?: boolean } | null>(null);
@@ -456,18 +455,9 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
         <span>⭐ 大切なルール</span>
         <span aria-hidden="true">⌄</span>
       </button>
-      {joinUrl ? (
-        <a href={joinUrl} className="btn btn-big shrink-0 gap-2 rounded-full bg-[#06C755] text-white shadow-md">
-          <span className="rounded-md bg-white px-1.5 text-sm font-bold text-[#06C755]">LINE</span>
-          LINE で参加する
-        </a>
-      ) : (
-        <button type="button" onClick={() => setShowJoinHelp((v) => !v)} className="btn btn-big shrink-0 gap-2 rounded-full bg-[#06C755] text-white shadow-md">
-          <span className="rounded-md bg-white px-1.5 text-sm font-bold text-[#06C755]">LINE</span>
-          LINE で参加する
-        </button>
-      )}
-      {showJoinHelp && !joinUrl && <p className="tut-pop shrink-0 text-center text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>}
+      <a href={joinUrl ?? "/start"} className="btn btn-big shrink-0 gap-2 rounded-full bg-lamp text-white shadow-md">
+        はじめる（LINE でログイン → 30秒で登録）
+      </a>
       <button
         type="button"
         onClick={() => {

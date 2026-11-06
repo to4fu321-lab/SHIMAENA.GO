@@ -24,7 +24,7 @@ import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { jstDate, jstHourMinute, jstMinutes, jstIso } from "../jst";
 import { inboxKeyOf } from "../inbox/key";
-import { getProfileByAccessToken, multicast, push } from "../line/client";
+import { multicast, push } from "../line/client";
 import { MSG } from "../line/messages";
 import type { LineMessage } from "../line/types";
 import { mapsUrl } from "../nav";
@@ -1028,20 +1028,6 @@ export async function offerTaskNow(participantId: string, minutes: NowMinutes, n
 function clockTextJst(d: Date): string {
   const m = jstMinutes(d);
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-}
-
-/** LIFF のアクセストークンから「この地図を見ている参加者」を決める */
-/** LIFF のアクセストークンから参加者を探す。LINE に確かめられない・登録がまだ、を分けて返す（画面で案内を変えるため） */
-export async function resolveViewerByLiff(
-  accessToken: string,
-): Promise<{ ok: true; participant: Participant } | { ok: false; reason: "no_profile" | "not_registered" }> {
-  const profile = await getProfileByAccessToken(accessToken);
-  if (!profile) {
-    console.error("[liff] LINE のプロフィールを取れませんでした（アクセストークンが無効か、LIFF に profile の権限がない）");
-    return { ok: false, reason: "no_profile" };
-  }
-  const p = await repo().findParticipantByLineUserId(profile.userId);
-  return p ? { ok: true, participant: p } : { ok: false, reason: "not_registered" };
 }
 
 export { jstIso };

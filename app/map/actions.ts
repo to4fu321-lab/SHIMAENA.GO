@@ -1,15 +1,12 @@
 "use server";
 
-import { ensureTeam } from "@/lib/member";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
 import type { ClearSummary } from "@/lib/morning/clear";
-import { completeManually, completeWithPhoto, joinMission, joinNearby, reportShort, resolveViewerByLiff, setGoing } from "@/lib/morning/ops";
-import { readViewer, signViewer, trustedViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { completeManually, completeWithPhoto, joinMission, joinNearby, reportShort, setGoing } from "@/lib/morning/ops";
+import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
-import { INVITE_COOKIE, isInviteCode, linkInvitee } from "@/lib/invite";
 import { stormStopText } from "@/lib/storm";
 
 export interface ActionResult {
@@ -32,7 +29,7 @@ const firstText = (messages: { type: string }[]) =>
 export async function goAction(viewerId: string): Promise<ActionResult> {
   return withStateLock("map:goAction", async () => {
     const id = await trustedViewer(viewerId);
-    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
     const stop = await stormStopText();
     if (stop) return { ok: false, text: stop };
     const messages = await setGoing(id, true);
@@ -55,7 +52,7 @@ export async function shortAction(viewerId: string): Promise<ActionResult> {
 export async function joinAction(viewerId: string, missionId: string): Promise<ActionResult> {
   return withStateLock("map:joinAction", async () => {
     const id = await trustedViewer(viewerId);
-    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
     const stop = await stormStopText();
     if (stop) return { ok: false, text: stop };
     const messages = await joinMission(id, missionId);
@@ -68,7 +65,7 @@ export async function joinAction(viewerId: string, missionId: string): Promise<A
 export async function fiveMinutesAction(viewerId: string): Promise<ActionResult> {
   return withStateLock("map:fiveMinutesAction", async () => {
     const id = await trustedViewer(viewerId);
-    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から地図を開いてください。" };
+    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
     const stop = await stormStopText();
     if (stop) return { ok: false, text: stop };
     const r = await joinNearby(id, 10);
@@ -102,25 +99,4 @@ export async function manualFinishAction(viewerId: string): Promise<ActionResult
     revalidatePath("/map");
     return { ok: r.done, text: firstText(r.messages), clear: r.clear };
   });
-}
-
-/** LIFF でログインした人を、この画面の「自分」にする */
-export async function signInWithLiff(accessToken: string): Promise<{ ok: boolean; nickname?: string; changed?: boolean; reason?: "no_profile" | "not_registered" }> {
-  const r = await resolveViewerByLiff(accessToken);
-  if (!r.ok) return { ok: false, reason: r.reason };
-  const found = r.participant;
-  // 前に登録したお願いする側の人も、アプリを開いたらチームに入る（spec v1.10）
-  const p = await ensureTeam(found).catch(() => found);
-  // LINE の中で招待リンクを開いてから登録した人を、誘った人と結びつける（v1.8 仲間を増やす。最初の1回だけ）
-  const inv = (await cookies()).get(INVITE_COOKIE)?.value;
-  if (isInviteCode(inv)) await linkInvitee(p.id, inv);
-  const changed = readViewer((await cookies()).get(VIEWER_COOKIE)?.value) !== p.id; // 前から本人なら、画面を作り直さない
-  (await cookies()).set(VIEWER_COOKIE, signViewer(p.id), {
-    httpOnly: true,
-    sameSite: "none", // LINE の中のブラウザから開くため
-    secure: true,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 180,
-  });
-  return { ok: true, nickname: p.nickname, changed };
 }

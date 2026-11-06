@@ -5,22 +5,18 @@ import { hasDb, query } from "../db";
 import { SNOW_THRESHOLD_CM } from "../weather";
 
 export interface AdminSettings {
-  /** LINE への送信を一時停止する（LINE_DRY_RUN=1 と同じ。送らずに記録だけ） */
+  /** 通知（Web Push）を一時停止する（隊長トークには残す）。spec v1.17 */
   linePaused: boolean;
   /** 前夜の予告を出す基準（翌朝 6:00 までの降雪 cm） */
   snowThresholdCm: number;
-  /** リッチメニューを閉じたときにトーク画面の下に出る文字（14字まで） */
-  chatBarText: string;
 }
 
 export const DEFAULT_SETTINGS: AdminSettings = {
   linePaused: false,
   snowThresholdCm: SNOW_THRESHOLD_CM,
-  chatBarText: "メニュー（町・相談）",
 };
 
 export const THRESHOLD_RANGE = { min: 1, max: 30 } as const;
-export const CHAT_BAR_MAX = 14; // LINE の決まり
 
 const KEY = "admin_settings";
 const g = globalThis as { __shimaenaSettings?: AdminSettings };
@@ -29,11 +25,9 @@ const g = globalThis as { __shimaenaSettings?: AdminSettings };
 export function normalizeSettings(raw: Partial<Record<keyof AdminSettings, unknown>> | null | undefined): AdminSettings {
   const r = raw ?? {};
   const cm = Number(r.snowThresholdCm);
-  const bar = typeof r.chatBarText === "string" ? r.chatBarText.trim().slice(0, CHAT_BAR_MAX) : "";
   return {
     linePaused: r.linePaused === true,
     snowThresholdCm: Number.isFinite(cm) ? Math.min(THRESHOLD_RANGE.max, Math.max(THRESHOLD_RANGE.min, Math.round(cm))) : DEFAULT_SETTINGS.snowThresholdCm,
-    chatBarText: bar || DEFAULT_SETTINGS.chatBarText,
   };
 }
 

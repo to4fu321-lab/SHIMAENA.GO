@@ -3,7 +3,6 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import LiffBridge from "@/components/LiffBridge";
 import { collection, nextReward, REWARDS } from "@/lib/cards/collection";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
@@ -40,7 +39,6 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
     <Screen
       header={
         <div className="space-y-1 px-4 pb-2 pt-3">
-          <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!as} />
           <div className="flex items-center justify-between">
             <h1 className="flex items-center gap-2 text-2xl font-bold">
               <Icon name="card" size={34} accent="var(--camellia)" />
@@ -77,7 +75,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           { key: "cards", label: `カード ${cards.length}` },
         ]}
       >
-        {/* 今日の活動をふりかえる（LINE のメニュー「活動カード」から来た人が、まず見るところ） */}
+        {/* 今日の活動をふりかえる（下のタブ「活動」から来た人が、まず見るところ） */}
         <div className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="今日の活動">
           <h2 className="text-lg font-bold">今日の活動</h2>
           {solo ? (
@@ -116,7 +114,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
               )}
             </>
           ) : (
-            <p className="text-base">LINE で登録すると、今日の羽や連続出動がここに出ます。</p>
+            <p className="text-base">登録すると、今日の羽や連続出動がここに出ます。</p>
           )}
         </div>
 

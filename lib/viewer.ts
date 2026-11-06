@@ -1,16 +1,13 @@
-// 地図を見ている人の印（cookie）。LIFF でログインした LINE のユーザーを参加者 ID に結びつけ、署名して持つ。
+// 画面を見ている人の印（cookie）。LINE でログインした人を参加者 ID に結びつけ、署名して持つ（spec v1.17）。
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { demoEnabled, isDeployed } from "./env";
+import { appSecret } from "./auth/secret";
+import { demoEnabled } from "./env";
 
 export const VIEWER_COOKIE = "viewer";
 
-/** 署名の鍵。公開環境で LINE_CHANNEL_SECRET がなければ使わない（誰でも知っている仮の鍵で本人になりすませてしまうため） */
-function secret(): string | undefined {
-  const s = process.env.LINE_CHANNEL_SECRET;
-  if (s) return s;
-  return isDeployed() ? undefined : "dev-only-secret";
-}
+/** 署名の鍵（lib/auth/secret.ts）。公開環境で鍵がなければ使わない（誰でも知っている仮の鍵で本人になりすませてしまうため） */
+const secret = appSecret;
 
 function sign(id: string): string | undefined {
   const key = secret();
@@ -19,7 +16,7 @@ function sign(id: string): string | undefined {
 
 export function signViewer(participantId: string): string {
   const sig = sign(participantId);
-  if (!sig) throw new Error("LINE_CHANNEL_SECRET がないので、ログインの印を作れません");
+  if (!sig) throw new Error("署名の鍵（AUTH_SECRET）がないので、ログインの印を作れません");
   return `${participantId}.${sig}`;
 }
 

@@ -6,8 +6,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import LiffBridge from "@/components/LiffBridge";
-import LineLoginButton from "@/components/LineLoginButton";
+import LoginButton from "@/components/LoginButton";
 import { lineJoinUrl } from "@/lib/line/join";
 import SoloScreen from "@/components/SoloScreen";
 import { loadRoster } from "@/lib/morning/roster";
@@ -38,21 +37,16 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
     const join = lineJoinUrl();
     return (
       <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 py-5 text-ink">
-        <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
         <h1 className="text-2xl font-bold">
           雪かきGO！ <span className="block text-base font-normal text-ink-soft">ひとりで10分（ソロ出動）</span>
         </h1>
         <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">仲間がいなくても、自分の10分で町を変えられる。</p>
-          <p className="text-base">ソロ出動は LINE で登録した人の画面です。</p>
-          <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} />
-          {join ? (
-            <a href={join} className="btn btn-white text-lg">
-              はじめての方: LINE で友だち追加
-            </a>
-          ) : (
-            <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
-          )}
+          <p className="text-base">ソロ出動は登録した人の画面です。</p>
+          <LoginButton next="/solo" />
+          <Link href={join} className="btn btn-white text-lg">
+            はじめての方: 30秒で登録
+          </Link>
           <Link href="/rules" className="btn btn-white text-lg">
             使い方
           </Link>
@@ -84,7 +78,6 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   ];
   return (
     <>
-      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
       <StormBanner />
       <SoloScreen
         viewerId={me.id}

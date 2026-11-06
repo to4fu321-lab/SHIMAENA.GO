@@ -43,13 +43,9 @@ async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string 
       <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
         <h2 className="text-xl font-bold">ソロ出動で、さっそく10分</h2>
         <p>シマエナGO は、雪の朝に町内でくっついて雪をどける雪かきゲームです。仲間がいない日も、1人の10分（ソロ出動）から参加できます。</p>
-        {join ? (
-          <a href={join} className="btn btn-big bg-[#06C755] text-white">
-            LINE で参加する
-          </a>
-        ) : (
-          <p className="rounded-2xl bg-paper px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
-        )}
+        <Link href={join} className="btn btn-big bg-lamp text-white">
+            はじめる（30秒で登録）
+          </Link>
         <Link href="/public/town" className="btn btn-ink btn-big">
           町の雪解けを見る
         </Link>

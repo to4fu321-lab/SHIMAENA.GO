@@ -1,4 +1,4 @@
-// 今週のチーム（T47）。LINE のチーム発表の「チームを見る」から開く。
+// 今週のチーム（T47）。隊長トークのチーム発表の「チームを見る」から開く。
 // 1週間（月曜〜日曜）のチームを、チームの色・チーム色のマフラーのシマエナガ・期間で大きく見せる。名前は出さない（人数だけ）。
 // 1画面（11/5 本人の指示）: タブ「あなたのチーム／3チーム／しくみ」を横スワイプ。縦にはスクロールしない。
 import type { Metadata } from "next";
@@ -7,7 +7,6 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import LiffBridge from "@/components/LiffBridge";
 import Mascot from "@/components/Mascot";
 import Pager, { Screen } from "@/components/Pager";
 import { jstDate } from "@/lib/jst";
@@ -48,7 +47,6 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
         </nav>
       }
     >
-      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
       <div className="pt-3" />
       <Pager tabs={[{ key: "mine", label: mine ? "あなた" : "今週" }, { key: "three", label: "3チーム" }, { key: "how", label: "しくみ" }]}>
       {/* 発表（チームの色いっぱいに） */}
@@ -83,7 +81,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
           <h1 className="text-3xl font-bold">今週のチーム</h1>
           <p className="mt-1 text-lg font-bold">{term.label}</p>
           <p className="mt-1 text-base">
-            {me ? "お願いする側の人はチームに入りません。3チームが家の雪をどけに来ます。" : "LINE で「手伝う」で登録すると、3チームのどれかに入ります。"}
+            {me ? "お願いする側の人はチームに入りません。3チームが家の雪をどけに来ます。" : "「手伝う」で登録すると、3チームのどれかに入ります。"}
           </p>
         </section>
       )}
@@ -131,7 +129,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
           <li className="flex gap-2">
             <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-white">2</span>
             <span>
-              <b>日曜の夜 9時</b>に組み直して、LINE で「チーム発表」が届きます。
+              <b>日曜の夜 9時</b>に組み直して、隊長トークに「チーム発表」が届きます。
             </span>
           </li>
           <li className="flex gap-2">

@@ -1,14 +1,13 @@
 // 雪かき中の印（spec v1.12）。行き先カードの「雪かき中の印（玄関で見せる）」から開く。
 // 持ち物（腕章など）は使わない。毎週変わるチームの色と、毎日変わる合言葉はこの画面で見せる。名前は出さない。
-// 本人（LINE でログインした人・デモの架空の人）だけが見られる。夜は合言葉を出さない。
+// 本人（ログインした人・デモの架空の人）だけが見られる。夜は合言葉を出さない。
 // 1画面（11/5 本人の指示）: 小さいスマホでもスクロールしないよう、シマエナガの輪だけを画面の高さに合わせて縮める。
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import LiffBridge from "@/components/LiffBridge";
-import LineLoginButton from "@/components/LineLoginButton";
+import LoginButton from "@/components/LoginButton";
 import LiveClock from "@/components/LiveClock";
 import Mascot from "@/components/Mascot";
 import { passwordOf } from "@/lib/badge";
@@ -41,13 +40,12 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
   if (!theme) {
     return (
       <main className="mx-auto min-h-dvh max-w-md bg-paper px-4 pt-8 text-center text-ink">
-        <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
         <Mascot className="mx-auto h-28 w-auto" />
         <h1 className="mt-2 text-2xl font-bold">雪かき中の印</h1>
         <p className="mt-3 text-lg">
-          {me ? "チームに入っている人だけに出ます。" : "LINE の行き先カードから開いてください。"}
+          {me ? "チームに入っている人だけに出ます。" : "ログインすると、あなたの印が出ます。"}
         </p>
-        {!me && <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} className="mt-4 text-left" />}
+        {!me && <LoginButton next="/badge" className="mt-4 text-left" />}
         <Link href={`/${q}`} className="btn btn-lamp mt-6 text-lg">
           ホームへ
         </Link>
@@ -57,7 +55,6 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
 
   return (
     <main className="mx-auto flex h-dvh max-w-md flex-col overflow-hidden bg-paper text-ink">
-      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
 
       {/* 町内共通の印（毎週同じ） */}
       <section className="shrink-0 bg-ink px-4 py-2 text-center text-white" aria-label="町内共通の印">

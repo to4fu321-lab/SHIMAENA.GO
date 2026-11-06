@@ -36,3 +36,9 @@ export const clockText = (min: number) => `${pad(Math.floor(min / 60))}:${pad(mi
 export function jstIso(ymd: string, minutes: number): string {
   return `${ymd}T${clockText(minutes)}:00+09:00`;
 }
+
+/** 日本時間で今月の1日 0:00 を ISO で（「今月の数」に使う） */
+export function monthStartIso(now = new Date()): string {
+  const ym = jstDate(now).slice(0, 7);
+  return new Date(`${ym}-01T00:00:00+09:00`).toISOString();
+}

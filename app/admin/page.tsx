@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { hasClaudeKey } from "@/lib/claude/client";
-import { hasLineKeys } from "@/lib/line/client";
+import { hasLoginKeys } from "@/lib/auth/line-login";
 import { clockText } from "@/lib/morning/flow";
 import { dbStatus, type DbStatus } from "@/lib/db";
 import { loadRoster } from "@/lib/morning/roster";
@@ -35,7 +35,8 @@ import { THANKS_CHOICES } from "@/lib/claude/thanks";
 import { adminGate } from "@/lib/admin-auth";
 import { makeNameMasker } from "@/lib/admin-names";
 import { demoEnabled } from "@/lib/env";
-import { readLineUsage } from "@/lib/ops/line-usage";
+import { countOutSince } from "@/lib/inbox/store";
+import { monthStartIso } from "@/lib/jst";
 import { listProblems } from "@/lib/ops/problems";
 import { loginAction, logoutAction } from "./auth-actions";
 import Pager, { Screen } from "@/components/Pager";
@@ -113,7 +114,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
     const { login } = await searchParams;
     return <Login failed={login === "failed"} unconfigured={gate === "unconfigured"} />;
   }
-  const [s, db, roster, problems, usage] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), readLineUsage()]);
+  const [s, db, roster, problems, notices] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), countOutSince(monthStartIso()).catch(() => 0)]);
   const names = makeNameMasker(roster.participants);
   const m = s.morning;
   const totals = teamTotals(m);
@@ -149,7 +150,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
     </section>,
     <section key="map" className={`${card} space-y-2`}>
       <h2 className="font-bold">地図を開く（別の人として）</h2>
-      <p className="text-base text-ink-soft">LINE で登録した {lineCount} 人には、予告・点呼・作戦が LINE に届きます。</p>
+      <p className="text-base text-ink-soft">LINE でログインして登録した {lineCount} 人（と、デモの架空の人）には、予告・点呼・作戦が隊長トークに届きます。</p>
       <div className="flex flex-wrap gap-2">
         {helpers.slice(0, 9).map((h) => (
           <Link key={h.id} href={`/map?as=${h.id}`} className="rounded-full px-3 py-1 text-base font-bold text-white" style={{ background: TEAMS.find((t) => t.id === h.teamId)?.color }}>
@@ -198,7 +199,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
   for (const msg of s.messages.slice(0, 6))
     views.push(
       <section key={`msg-${msg.participantId}`} className={`${card} min-h-0 overflow-y-auto`}>
-        <h2 className="font-bold">LINE に届く文面（{name(msg.participantId)}さんへ）</h2>
+        <h2 className="font-bold">隊長トークに届く文面（{name(msg.participantId)}さんへ）</h2>
         <p className="mt-1 rounded-2xl bg-ice-soft px-3 py-2 text-base">{names.mask(msg.text)}</p>
       </section>,
     );
@@ -355,11 +356,11 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
             </ol>
           </section>
           <p className="text-sm text-ink-soft">
-            隊長: {hasClaudeKey() ? "Claude" : "モック"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE: {hasLineKeys() ? "設定済み" : "未設定"} ・ 今月の送信 {usage.sent} 通
+            隊長: {hasClaudeKey() ? "Claude" : "モック"} ・ 保存: {STORAGE_TEXT(db)} ・ LINE ログイン: {hasLoginKeys() ? "設定済み" : "未設定"} ・ 今月の文面 {notices} 件
           </p>
           <div className="flex items-center justify-between">
             <Link href="/admin/settings" className="text-base font-bold underline">
-              管理者ダッシュボード（メニュー・設定・警報）
+              管理者ダッシュボード（設定・警報・鍵）
             </Link>
             {gate === "ok" && (
               <form action={logoutAction}>

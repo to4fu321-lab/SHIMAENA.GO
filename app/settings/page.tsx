@@ -1,4 +1,4 @@
-// 設定（v1.4）: LINE のリッチメニューから外して Web に置いた。登録の確認と、やり直しの方法だけ。
+// 設定: 登録の確認と、やり直し・連携コード・お知らせの説明（spec v1.17: 画面で）。
 // 1画面（11/5 本人の指示）: タブ「あなたの登録／やり直す／お知らせ」を横スワイプ。縦にはスクロールしない。
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -6,11 +6,9 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import Icon from "@/components/Icon";
-import LiffBridge from "@/components/LiffBridge";
-import LineLoginButton from "@/components/LineLoginButton";
+import LoginButton from "@/components/LoginButton";
 import Pager, { Screen } from "@/components/Pager";
 import RedoRegistration from "@/components/RedoRegistration";
-import { lineJoinUrl } from "@/lib/line/join";
 import { loadRoster } from "@/lib/morning/roster";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
@@ -38,7 +36,6 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
   const q = demoAs ? `?as=${demoAs}` : "";
   const team = TEAMS.find((t) => t.id === me?.teamId);
-  const join = lineJoinUrl();
 
   return (
     <Screen
@@ -64,8 +61,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       </nav>
       }
     >
-      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
-      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "line", label: "お知らせ" }]}>
+      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "notice", label: "お知らせ" }]}>
 
       {me ? (
         <section className="rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="あなたの登録">
@@ -94,32 +90,32 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       ) : (
         <section className="space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
           <h2 className="text-lg font-bold">まだ登録がありません</h2>
-          <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} />
-          <p className="text-base">はじめての方は、LINE で「シマエナGO」を友だち追加すると、1分で登録できます。</p>
-          {join ? (
-            <a href={join} className="btn btn-white text-lg">
-              はじめての方: LINE で友だち追加
-            </a>
-          ) : (
-            <p className="rounded-2xl bg-ice-soft px-3 py-2 text-base">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
-          )}
+          <LoginButton next="/settings" />
+          <p className="text-base">はじめての方は、LINE でログインして30秒で登録できます。</p>
+          <Link href="/start" className="btn btn-white text-lg">
+            はじめての方: 30秒で登録
+          </Link>
         </section>
       )}
 
       <section className="space-y-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="登録をやり直す">
         <h2 className="text-lg font-bold">登録をやり直す</h2>
         <p className="text-base">役わり・家の場所・動ける時間を変えたいときは、もう一度登録します。羽やカードは消えません。</p>
-        <RedoRegistration liffId={process.env.NEXT_PUBLIC_LIFF_ID} />
+        <RedoRegistration />
+        <p className="text-base">ご家族から6桁の連携コードをもらった方は、「はじめる」の画面で入れられます。</p>
+        <Link href="/start?redo=1" className="btn btn-white text-lg">
+          連携コードを入れる
+        </Link>
       </section>
 
       <section className="space-y-2 rounded-3xl bg-warm p-4 ring-1 ring-ink/10" aria-label="お知らせについて">
-        <h2 className="text-lg font-bold">LINE のお知らせ</h2>
+        <h2 className="text-lg font-bold">お知らせの届き方</h2>
         <ul className="list-disc space-y-1 pl-5 text-base">
           <li>雪が降りそうな前の夜に「明日の朝」のお知らせ。</li>
           <li>雪の朝 6:30 に、1問だけの点呼。ボタンを1回押すだけです。</li>
-          <li>家族の連携は、6桁の連携コードを LINE のトークに送ります。</li>
+          <li>どれも下のタブ「隊長」（隊長トーク）に届きます。LINE は本人の確認（ログイン）にだけ使います。</li>
         </ul>
-        <p className="text-sm text-ink-soft">お知らせを止めたいときは、LINE で「シマエナGO」をブロックしてください。いつでも戻せます。</p>
+        <p className="text-sm text-ink-soft">お知らせを止めたいときは、スマホの通知をオフにしてください。いつでも戻せます。</p>
       </section>
 
       </Pager>

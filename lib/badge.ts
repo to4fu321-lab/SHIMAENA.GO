@@ -1,8 +1,8 @@
 // 雪かき中の印と今日の合言葉（spec v1.12、本人の指示「毎週色が変わるから参加の敷居が上がらない仕組みで」）。
 // 腕章などの持ち物は使わない（参加のハードルを上げないため）。チームの色は毎週変わるので、スマホの画面で見せる。
 // 合言葉は日付と鍵からプログラムが決める（AI は使わない）。手伝う人の画面と、依頼者・家族の LINE で同じ言葉になる。
+import { appSecret } from "./auth/secret";
 import { createHmac } from "node:crypto";
-import { isDeployed } from "./env";
 
 /** 雪や冬のやさしい言葉（人名・地名・怖い語は入れない。声に出して言いやすい長さ） */
 export const PASSWORDS = [
@@ -13,11 +13,10 @@ export const PASSWORDS = [
   "やきいも", "おでん", "おもち", "ゆず", "カイロ", "ランタン", "ゆきみち", "ひだまり",
 ] as const;
 
-/** 合言葉の鍵。公開環境で LINE_CHANNEL_SECRET がなければ作らない（公開リポジトリの仮の鍵だと誰でも分かってしまうため） */
+/** 合言葉の鍵（lib/auth/secret.ts）。公開環境で鍵がなければ作らない（公開リポジトリの仮の鍵だと誰でも分かってしまうため） */
 function secret(): string | undefined {
-  const s = process.env.LINE_CHANNEL_SECRET;
-  if (s) return s;
-  return isDeployed() ? undefined : "dev-only-secret";
+  const s = appSecret();
+  return s;
 }
 
 /** その日（日本時間 YYYY-MM-DD）の合言葉。鍵がなければ undefined */

@@ -84,35 +84,12 @@ describe("今朝の状態を1つずつ書き換える", () => {
   });
 });
 
-describe("Webhook のイベント処理", () => {
-  it("送り直し（同じ ID）は1回、1件の失敗で他を止めない", async () => {
-    vi.stubEnv("DATABASE_URL", "");
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const handled: string[] = [];
-    vi.doMock("../line/handle", () => ({
-      handleEvent: async (ev: { webhookEventId?: string; type: string }) => {
-        if (ev.type === "boom") throw new Error("こわれた");
-        handled.push(ev.webhookEventId ?? "?");
-      },
-    }));
-    const { processEvents } = await import("../line/process");
-    const base = { source: { type: "user" as const, userId: "U1" }, timestamp: 0 };
-    const n = await processEvents([
-      { ...base, type: "follow", replyToken: "r", webhookEventId: "w-1" },
-      { ...base, type: "boom", webhookEventId: "w-2" },
-      { ...base, type: "follow", replyToken: "r", webhookEventId: "w-1", deliveryContext: { isRedelivery: true } },
-      { ...base, type: "follow", replyToken: "r", webhookEventId: "w-3" },
-    ]);
-    expect(handled).toEqual(["w-1", "w-3"]);
-    expect(n).toBe(2);
-    vi.doUnmock("../line/handle");
-  });
-});
-
 describe("公開環境の逃げ道をふさぐ", () => {
-  it("公開環境で LINE_CHANNEL_SECRET がなければ、仮の鍵で本人の印を作らない", async () => {
+  it("公開環境で署名の鍵（AUTH_SECRET など）がなければ、仮の鍵で本人の印を作らない", async () => {
     vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("AUTH_SECRET", "");
     vi.stubEnv("LINE_CHANNEL_SECRET", "");
+    vi.stubEnv("LINE_LOGIN_CHANNEL_SECRET", "");
     const { readViewer, signViewer } = await import("../viewer");
     expect(() => signViewer("p-abc")).toThrow();
     // 手元の仮の鍵で作った印は、公開環境では通らない

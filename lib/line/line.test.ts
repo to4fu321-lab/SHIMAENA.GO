@@ -4,26 +4,8 @@ import { memoryRepo } from "../repo";
 import { finishRegistration, handleEvent, toInput } from "./handle";
 import { MSG } from "./messages";
 import { parseText, step, type RegSession } from "./registration";
-import { signBody, verifySignature } from "./signature";
 import type { LineEvent, LineMessage, TextMessage } from "./types";
 import { actionsOf } from "./flex";
-
-describe("署名検証", () => {
-  const secret = "test-secret";
-  const body = JSON.stringify({ events: [{ type: "follow" }] });
-
-  it("正しい署名なら通る", () => {
-    expect(verifySignature(body, signBody(body, secret), secret)).toBe(true);
-  });
-  it("本文が1文字でも違えば通らない", () => {
-    expect(verifySignature(body + " ", signBody(body, secret), secret)).toBe(false);
-  });
-  it("別の secret・署名なし・長さ違いは通らない", () => {
-    expect(verifySignature(body, signBody(body, "other"), secret)).toBe(false);
-    expect(verifySignature(body, null, secret)).toBe(false);
-    expect(verifySignature(body, "abc", secret)).toBe(false);
-  });
-});
 
 describe("文字の読み取り", () => {
   it("「登録」「設定」はやり直し、6桁は連携コード、それ以外は文字", () => {

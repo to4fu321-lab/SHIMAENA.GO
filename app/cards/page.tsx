@@ -5,7 +5,6 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import Icon from "@/components/Icon";
-import LiffBridge from "@/components/LiffBridge";
 import Mascot, { SnowTown } from "@/components/Mascot";
 import TabBar from "@/components/TabBar";
 import { nextReward } from "@/lib/cards/collection";
@@ -13,7 +12,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { repo } from "@/lib/repo";
 import { soloStatus } from "@/lib/solo/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
-import LineLoginButton from "@/components/LineLoginButton";
+import LoginButton from "@/components/LoginButton";
 
 export const metadata: Metadata = { title: "活動カード ・ シマエナGO" };
 
@@ -52,7 +51,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
   const { as } = await searchParams;
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
-  // 誰の画面か: デモの架空の人 → LINE でログインした本人。どちらでもなければ「登録すると、ここにたまります」（他人のカードは見せない）
+  // 誰の画面か: デモの架空の人 → ログインした本人。どちらでもなければ「登録すると、ここにたまります」（他人のカードは見せない）
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
   const cards = me ? await repo().listCardsByRecipient(me.id).catch(() => []) : [];
@@ -63,7 +62,6 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
-      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
       <header className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center bg-ice-soft px-2 pt-2">
         <Link href={`/${q}`} className="btn min-h-12 px-2 text-base">
           ‹ ホーム
@@ -82,7 +80,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           <Mascot size={60} team={onTeam(me) ? me?.teamId : undefined} className="shrink-0" />
           <p className="text-base font-bold leading-snug">
             {!me ? (
-              "LINE で登録すると、ここに活動がたまります。"
+              "登録すると、ここに活動がたまります。"
             ) : reward ? (
               <>
                 あと <span className="text-xl text-lamp-deep">{reward.left}</span> 枚で
@@ -95,7 +93,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           </p>
         </div>
 
-        {!me && !demoAs && <LineLoginButton liffId={process.env.NEXT_PUBLIC_LIFF_ID} />}
+        {!me && !demoAs && <LoginButton next="/cards" />}
         {solo && (
           <div className="grid grid-cols-3 gap-2 text-center">
             {[

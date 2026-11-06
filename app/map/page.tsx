@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
-import LiffBridge from "@/components/LiffBridge";
 import MapScreen from "@/components/MapScreen";
 import { soloCells, viewCells } from "@/lib/cells";
 import { latestClear, withInvites } from "@/lib/morning/clear";
@@ -26,7 +25,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   await connection(); // 毎回いまの状態を読む
   const { as, road: focusRoad } = await searchParams;
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
-  // 誰の画面か: ?as=h3（デモで3台のスマホに別の人を出す）→ LIFF でログインした本人（cookie）→ 既定の人
+  // 誰の画面か: ?as=h3（デモで3台のスマホに別の人を出す）→ ログインした本人（cookie）→ 既定の人
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value) ?? record.morning.viewerId;
   const state = { ...record.morning, viewerId };
@@ -48,7 +47,6 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
     <>
       <AutoRefresh />
       <StormBanner />
-      <LiffBridge liffId={process.env.NEXT_PUBLIC_LIFF_ID} enabled={!demoAs} />
       <MapScreen
         state={state}
         cells={cells}

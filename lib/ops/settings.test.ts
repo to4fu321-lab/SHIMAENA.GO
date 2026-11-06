@@ -9,8 +9,6 @@ describe("管理者ダッシュボードの設定", () => {
     expect(normalizeSettings({ snowThresholdCm: 99 }).snowThresholdCm).toBe(30);
     expect(normalizeSettings({ snowThresholdCm: 0 }).snowThresholdCm).toBe(1);
     expect(normalizeSettings({ snowThresholdCm: "abc" }).snowThresholdCm).toBe(DEFAULT_SETTINGS.snowThresholdCm);
-    expect(normalizeSettings({ chatBarText: "  " }).chatBarText).toBe(DEFAULT_SETTINGS.chatBarText);
-    expect(normalizeSettings({ chatBarText: "あ".repeat(20) }).chatBarText).toHaveLength(14);
     expect(normalizeSettings({ linePaused: "true" }).linePaused).toBe(false);
   });
 

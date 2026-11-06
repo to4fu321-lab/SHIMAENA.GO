@@ -17,8 +17,8 @@ export function xShareUrl(text: string, url?: string): string {
 /** 友だちを誘う文。参加先は LINE の友だち追加（なければ公開ページ） */
 export function inviteMessage(origin: string, joinUrl?: string): { text: string; url: string } {
   return {
-    text: "雪の朝、10分だけ町内の雪かきを一緒にしませんか？⛄\nシマエナGO は LINE で1分で参加できます。ひとりの10分で、町が変わる。",
-    url: joinUrl ?? `${origin}/public/town?via=sns`,
+    text: "雪の朝、10分だけ町内の雪かきを一緒にしませんか？⛄\nシマエナGO は LINE でログインして30秒で参加できます。ひとりの10分で、町が変わる。",
+    url: joinUrl ? new URL(joinUrl, origin).href : `${origin}/public/town?via=sns`,
   };
 }
 

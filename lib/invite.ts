@@ -4,6 +4,7 @@
 // v1.8（本人の判断「水増しはよい。参加者を増やす・敷居を下げるが最優先」）: 誘った人に羽（開いた +2・応援 +3・仲間の初出動 +20、上限なし）。
 // 仲間が初出動したら、誘った人と誘われた人の二人に「ふたりの群れ」カード（チームの得点には入れない）。
 import { createHmac, randomBytes } from "node:crypto";
+import { appSecret } from "./auth/secret";
 import { hasDb, query } from "./db";
 import { jstDate } from "./jst";
 import { repo } from "./repo";
@@ -15,7 +16,7 @@ export const INVITE_COOKIE = "shimaena_inv";
 const CODE = /^[A-Za-z0-9_-]{8}$/;
 
 function secret(): string {
-  return process.env.LINE_CHANNEL_SECRET || "shimaena-invite";
+  return appSecret() || "shimaena-invite";
 }
 
 export function inviteCode(participantId: string): string {

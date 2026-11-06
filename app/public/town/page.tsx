@@ -53,12 +53,10 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
   const join = lineJoinUrl();
   const site = baseUrl();
   const max = Math.max(1, ...Object.values(st.teamTotals));
-  const joinButton = join ? (
-    <a href={join} className="btn btn-big shrink-0 bg-[#06C755] text-white">
-      LINE で参加する
-    </a>
-  ) : (
-    <p className="shrink-0 rounded-2xl bg-card px-3 py-2 text-base ring-1 ring-ink/10">LINE で「シマエナGO」を検索して友だち追加 → 登録（1分）</p>
+  const joinButton = (
+    <Link href={join} className="btn btn-big shrink-0 bg-lamp text-white">
+      はじめる（30秒で登録）
+    </Link>
   );
   // 1画面に収める（11/5 本人の指示「基本1画面」）: 町 → 数字 → とは → 参加 → 応援 → 広める をタブと横スワイプで
   const tabs = [
