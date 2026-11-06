@@ -35,6 +35,10 @@ import { countHomeNow } from "@/lib/solo/home-now";
 import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 import Bgm from "@/components/Bgm";
+import SnowSongChip from "@/components/SnowSongChip";
+import { loadSnowSong, warmSnowSong } from "@/lib/song/day";
+import { hasClaudeKey } from "@/lib/claude/client";
+import { runLater } from "@/lib/ops/later";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
@@ -53,6 +57,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     parseSkyParam(skyParam) ? Promise.resolve({} as Awaited<ReturnType<typeof currentWeather>>) : currentWeather(TOWN.center),
   ]);
   const m = record.morning;
+  // 今朝の雪の歌（spec v1.28）: まだなければ作る。Claude に頼むときは返事のあとで（次の自動更新で出る）
+  const songDay = appToday(record);
+  const song = (await loadSnowSong(songDay)) ?? (hasClaudeKey() ? (runLater("song/warm", async () => void (await warmSnowSong(songDay))), undefined) : await warmSnowSong(songDay));
   // 背景の空: いまの天気と時間（デモでは ?sky=night-snow のように上書きできる）
   const sky = parseSkyParam(skyParam) ?? { time: timeOfDay(jstMinutes()), weather: weatherOf(wx.code, m.rollcall.status === "closed" ? 0 : m.rollcall.forecastCm) };
   const demoAs = as && isDemoViewer(as) ? as : undefined;
@@ -194,6 +201,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       {/* 真ん中: 空と雪の町（天気と時間で変わる）、しゃべるシマエナ隊長 */}
       <div className="relative min-h-10 flex-1 overflow-hidden">
         <SkyBackdrop sky={sky} />
+        {song && <SnowSongChip song={song} q={q} />}
         {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
         <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} />
       </div>

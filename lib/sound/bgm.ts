@@ -5,8 +5,11 @@
 // 曲の切りかえは 0.6 秒のクロスフェード。同じ曲ならタブを移っても頭に戻らない。
 import { getEngine, isUnlocked, onRebuild, onSoundPrefs, onUnlocked, setBgmLevel, soundPrefs } from "./engine";
 import { bass, bell, clap, crunch, epiano, hat, kick, lead, pad, snare, wind } from "./synth";
+import type { SnowSong } from "./snow-song";
 
-export type BgmTrack = "morning" | "mission" | "clear";
+/** v1.28: snow = 今朝の雪の歌（その日だけの曲。なければ「しらかばの朝」） */
+export type BgmTrack = "morning" | "mission" | "clear" | "snow";
+type FixedTrack = Exclude<BgmTrack, "snow">;
 
 /** 1小節ぶんを予約する関数。b = 小節の番号（0〜bars-1）、t0 = 小節の始まり（秒）、beat = 1拍の秒 */
 type BarFn = (ctx: BaseAudioContext, out: AudioNode, b: number, t0: number, beat: number) => void;
@@ -86,7 +89,7 @@ const CLEAR_BELLS: [number, number, number, number][] = [
   [7, 0, 84, 3],
 ];
 
-export const SONGS: Record<BgmTrack, Song> = {
+export const SONGS: Record<FixedTrack, Song> = {
   morning: {
     title: "しらかばの朝",
     bpm: 82,
@@ -182,6 +185,107 @@ export const SONGS: Record<BgmTrack, Song> = {
 
 export const LOOP_SECONDS = (s: Song): number => (60 / s.bpm) * 4 * s.bars;
 
+/**
+ * 今朝の雪の歌（v1.28）: 音符データ（lib/sound/snow-song.ts）を鳴らせる曲にする。
+ * groove でリズムの組み方を変える（lofi＝しらかばの朝の仲間・drive＝四つ打ち・ballad＝ほぼビートなし・march＝行進）
+ */
+export function songFromData(d: SnowSong): Song {
+  const byBar = (notes: SnowSong["melody"]) => {
+    const m = new Map<number, SnowSong["melody"]>();
+    for (const n of notes) m.set(n[0], [...(m.get(n[0]) ?? []), n]);
+    return m;
+  };
+  const mel = byBar(d.melody);
+  const spk = byBar(d.sparkle);
+  return {
+    title: d.title,
+    bpm: d.bpm,
+    bars: d.bars,
+    intro(ctx, out, at) {
+      // はじまりの合図: その曲の最初の和音を鈴で上がる（0.8 秒）
+      d.chords[0].forEach((m, i) => bell(ctx, out, m + 12, at + i * 0.1, 1.2, 0.08));
+      return 0.8;
+    },
+    bar(ctx, out, b, t0, beat) {
+      const at = (x: number) => t0 + x * beat;
+      const chord = d.chords[b % d.chords.length];
+      const root = d.bass[b % d.bass.length];
+      if (b === 0 && d.wind > 0) wind(ctx, out, t0, beat * 4 * d.bars + 1, 0.01 + 0.035 * d.wind);
+      switch (d.groove) {
+        case "drive": {
+          pad(ctx, out, chord.map((m) => m + 12), t0, beat * 4.1, 0.024, 1300);
+          for (let i = 0; i < 8; i++) bass(ctx, out, root + (i % 2 ? 12 : 0), at(i / 2), beat * 0.42, i % 2 ? 0.13 : 0.2);
+          for (let i = 0; i < 4; i++) kick(ctx, out, at(i), 0.36);
+          for (let i = 0; i < 4; i++) hat(ctx, out, at(i + 0.5), 0.04);
+          if (d.crunch) {
+            crunch(ctx, out, at(1), 0.14);
+            crunch(ctx, out, at(3), 0.16);
+          } else {
+            clap(ctx, out, at(1), 0.07);
+            clap(ctx, out, at(3), 0.08);
+          }
+          break;
+        }
+        case "ballad": {
+          pad(ctx, out, chord, t0, beat * 4.3, 0.03, 900);
+          for (const m of chord) epiano(ctx, out, m, at(0) + (m % 3) * 0.01, beat * 3.5, 0.05);
+          bass(ctx, out, root, at(0), beat * 3, 0.16);
+          if (b % 2 === 1) kick(ctx, out, at(0), 0.14);
+          hat(ctx, out, at(2), 0.015, 0.05);
+          break;
+        }
+        case "march": {
+          pad(ctx, out, chord, t0, beat * 4.1, 0.022, 1100);
+          for (let i = 0; i < 4; i++) bass(ctx, out, i % 2 ? root + 7 : root, at(i), beat * 0.6, 0.2);
+          kick(ctx, out, at(0), 0.4);
+          kick(ctx, out, at(2), 0.34);
+          snare(ctx, out, at(1), 0.1);
+          snare(ctx, out, at(3), 0.11);
+          if (b % 4 === 3) for (let i = 0; i < 4; i++) snare(ctx, out, at(3 + i * 0.25), 0.05 + i * 0.015);
+          if (d.crunch) for (const x of [0.5, 2.5]) crunch(ctx, out, at(x), 0.1);
+          break;
+        }
+        default: {
+          for (const x of b % 2 === 0 ? [1.5, 3.5] : [1.5, 2.5, 3.5]) for (const m of chord) epiano(ctx, out, m, at(x) + (m % 3) * 0.004, beat * 1.2, x === 2.5 ? 0.045 : 0.07);
+          bass(ctx, out, root, at(0), beat * 0.9, 0.2);
+          bass(ctx, out, root, at(2.5), beat * 0.4, 0.13);
+          bass(ctx, out, root + 7, at(3), beat * 0.8, 0.15);
+          kick(ctx, out, at(0), 0.28);
+          kick(ctx, out, at(2.5), 0.18);
+          snare(ctx, out, at(1), 0.06);
+          snare(ctx, out, at(3), 0.07);
+          for (let i = 0; i < 8; i++) hat(ctx, out, at(i / 2 + (i % 2 ? 0.08 : 0)), i % 2 ? 0.02 : 0.032, 0.035);
+          if (d.crunch) crunch(ctx, out, at(3), 0.07);
+        }
+      }
+      for (const [, x, m, len] of mel.get(b) ?? []) {
+        if (d.lead === "lead") lead(ctx, out, m, at(x), beat * len * 0.9, 0.05);
+        else if (d.lead === "epiano") epiano(ctx, out, m, at(x), beat * len * 1.1, 0.1);
+        else bell(ctx, out, m, at(x), beat * len * 1.4, 0.11);
+      }
+      for (const [, x, m, len] of spk.get(b) ?? []) bell(ctx, out, m, at(x), beat * len * 1.6, 0.045);
+    },
+  };
+}
+
+let snowSong: { key: string; song: Song } | null = null;
+
+/** 今朝の雪の歌を登録する（ホームが置く）。同じ曲なら何もしない */
+export function setSnowSong(d: SnowSong | null): void {
+  const key = d ? `${d.date}|${d.title}|${d.by}|${d.melody.length}` : "";
+  if ((snowSong?.key ?? "") === key) return;
+  snowSong = d ? { key, song: songFromData(d) } : null;
+  if (current?.track === "snow") {
+    current.player.stop();
+    current = null;
+  }
+  scheduleApply();
+}
+
+function songFor(track: BgmTrack): Song {
+  return track === "snow" ? (snowSong?.song ?? SONGS.morning) : SONGS[track];
+}
+
 // ---- 演奏（2つの時計）----
 const LOOKAHEAD = 0.15;
 const TICK_MS = 25;
@@ -268,7 +372,7 @@ function apply(): void {
   setBgmLevel(w.level);
   if (current?.track === w.track) return;
   current?.player.stop();
-  const player = new Player(e.ctx, SONGS[w.track], e.bgm);
+  const player = new Player(e.ctx, songFor(w.track), e.bgm);
   player.start();
   current = { track: w.track, player };
   document.documentElement.dataset.bgm = w.track; // 確かめ用（scripts/sound-check.cjs が読む）

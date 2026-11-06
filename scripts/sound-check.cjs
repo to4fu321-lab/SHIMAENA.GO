@@ -66,7 +66,7 @@ async function waitForServer(url, ms = 40000) {
     const sfx = () => page.evaluate(() => window.__sfx.splice(0));
     const home = `http://localhost:${PORT}/?as=h1`;
 
-    // 1. 開いただけでは鳴らない（スマホの決まり）。最初のタップで解放され、BGM「しらかばの朝」が始まる
+    // 1. 開いただけでは鳴らない（スマホの決まり）。最初のタップで解放され、BGM「今朝の雪の歌」（v1.28）が始まる
     await page.goto(home, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
     let c = await counts();
@@ -75,10 +75,10 @@ async function waitForServer(url, ms = 40000) {
     await page.waitForTimeout(700);
     c = await counts();
     ok(c.state === "running", `最初のタップで AudioContext が動く（${c.state}）`);
-    ok(c.bgm === "morning", `ホームの BGM は「しらかばの朝」（${c.bgm}）`);
-    if (c.bgm !== "morning") console.log("  debug:", JSON.stringify(await page.evaluate(() => window.__bgmDebug)));
+    ok(c.bgm === "snow", `ホームの BGM は今朝の雪の歌（v1.28。${c.bgm}）`);
+    if (c.bgm !== "snow") console.log("  debug:", JSON.stringify(await page.evaluate(() => window.__bgmDebug)));
     const before = c.osc;
-    await page.waitForTimeout(3200); // 「しらかばの朝」の1小節は約 2.9 秒。次の小節が予約されるまで待つ
+    await page.waitForTimeout(3200); // 今朝の雪の歌の1小節は 2〜3 秒。次の小節が予約されるまで待つ
     c = await counts();
     ok(c.osc > before + 10, `BGM が先読みで予約され続ける（3.2秒で +${c.osc - before} 音）`);
 
@@ -99,7 +99,7 @@ async function waitForServer(url, ms = 40000) {
     const b1 = (await counts()).osc;
     await page.waitForTimeout(3200);
     c = await counts();
-    ok(c.state === "running" && c.osc > b1 + 10 && c.bgm === "morning", `戻ると続きから鳴る（${c.state}・3.2秒で +${c.osc - b1} 音・${c.bgm}）`);
+    ok(c.state === "running" && c.osc > b1 + 10 && c.bgm === "snow", `戻ると続きから鳴る（${c.state}・3.2秒で +${c.osc - b1} 音・${c.bgm}）`);
     // 時計が止まったまま戻ったふり → 次のタップで新しい AudioContext になり、BGM が続く
     await page.evaluate(() => {
       const ctx = window.__sound.ctx;
@@ -117,7 +117,7 @@ async function waitForServer(url, ms = 40000) {
     await page.waitForTimeout(3200);
     c = await counts();
     const rebuilt = await page.evaluate(() => window.__sound.ctx !== window.__oldCtx && window.__oldCtx.state === "closed");
-    ok(rebuilt && c.state === "running" && c.osc > b2 + 10 && c.bgm === "morning", `時計が止まっていたら作り直して鳴り続ける（作り直し ${rebuilt}・${c.state}・+${c.osc - b2} 音・${c.bgm}）`);
+    ok(rebuilt && c.state === "running" && c.osc > b2 + 10 && c.bgm === "snow", `時計が止まっていたら作り直して鳴り続ける（作り直し ${rebuilt}・${c.state}・+${c.osc - b2} 音・${c.bgm}）`);
 
     // 2. 下のタブで地図へ: 同じ「しらかばの朝」のまま（出発前）
     await page.getByRole("link", { name: "地図" }).click();

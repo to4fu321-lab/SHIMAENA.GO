@@ -34,6 +34,7 @@ import {
   writeRecapNow,
   writeShareTextsNow,
 } from "./actions";
+import { remakeSnowSong } from "./song-actions";
 import { THANKS_CHOICES } from "@/lib/claude/thanks";
 import { adminGate } from "@/lib/admin-auth";
 import { makeNameMasker } from "@/lib/admin-names";
@@ -334,6 +335,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           )}
           <form action="/api/cards/try" method="get">
             <button className={link}>カードの試し描き（今日の話題・Claude の挿絵）</button>
+          </form>
+          <form action={remakeSnowSong}>
+            <button className={link}>今朝の雪の歌を作り直す（Claude が作曲）</button>
           </form>
           <form action={seedRoadReportsDemo}>
             <button className={link}>道の報告をデモで2件入れる（つるつる・道が細い）</button>
