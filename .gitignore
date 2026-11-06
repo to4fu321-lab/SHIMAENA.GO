@@ -48,3 +48,6 @@ next-env.d.ts
 
 # 並行作業用の作業コピー（Claude Code）
 /.claude/worktrees/
+
+# テストモードの結果（npm run sim の書き出し）
+/.sim

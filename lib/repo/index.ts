@@ -67,7 +67,20 @@ function mem(): Mem {
   return g.__shimaenaRepo;
 }
 
-const EMPTY_COUNTS = (): Record<TeamId, number> => ({ salvia: 0, marigold: 0, lupinus: 0 });
+/** テストモード（lib/sim）用: メモリの名簿を、まるごと別の町の参加者・拠点に入れ替える（カードなども空にする） */
+export function resetMemoryRoster(participants: Participant[], bases: Base[]): void {
+  g.__shimaenaRepo = {
+    participants: new Map(participants.map((p) => [p.id, structuredClone(p)])),
+    bases: new Map(bases.map((b) => [b.id, structuredClone(b)])),
+    links: [],
+    sessions: new Map(),
+    cards: new Map(),
+    soloLogs: new Map(),
+    cheers: new Map(),
+  };
+}
+
+const EMPTY_COUNTS =(): Record<TeamId, number> => ({ salvia: 0, marigold: 0, lupinus: 0 });
 
 export const memoryRepo: Repo = {
   async findParticipantByLineUserId(lineUserId) {

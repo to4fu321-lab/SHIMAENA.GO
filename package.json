@@ -9,7 +9,8 @@
     "lint": "eslint",
     "check": "eslint && tsc --noEmit && vitest run --passWithNoTests && next build",
     "shot": "node scripts/shot.cjs",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "sim": "SIM_OUT=.sim vitest run lib/sim"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
