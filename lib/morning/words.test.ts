@@ -66,9 +66,7 @@ describe("LINE の流れ", () => {
     expect(JSON.stringify(card.contents)).toContain("お願い: 09:00 まで・玄関前");
   });
 
-  it("分からない文は聞き返して、ボタンの質問をもう一度出す", async () => {
-    const ms = await answerByWords("U-words", "こんにちは");
-    expect(ms).not.toBeNull();
-    expect(t(ms!)).toContain("来てほしいですか");
+  it("点呼の答えと読めない文は答えない（隊長の相談へ回す）", async () => {
+    expect(await answerByWords("U-words", "こんにちは")).toBeNull();
   });
 });

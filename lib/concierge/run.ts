@@ -15,6 +15,9 @@ import { safetyLine } from "../safety";
 import type { Participant } from "../types";
 import { baseUrl } from "../url";
 import { conciergeAsk, conciergePick } from "./messages";
+import { currentWeather, weatherOf } from "../sky";
+import { TOWN } from "../town";
+import { depthAt, fetchHourlySnow, sumSnowfall } from "../weather";
 import { BODY_WORDS, buildOptions, type ConciergeContext } from "./options";
 import { addVoice } from "../voice/store";
 import { loadProfile, updateProfile } from "./profile";
@@ -53,6 +56,23 @@ export async function conciergeContext(p: Participant, record: MorningRecord, no
   };
 }
 
+/** 町のいまの天気と、この先24時間の雪（Open-Meteo）。隊長が「今日は雪ある？」に答えられるように。失敗したら分かる分だけ */
+export async function conciergeWeather(now: Date): Promise<NonNullable<ConciergeInput["weather"]>> {
+  const [cur, hourly] = await Promise.all([
+    currentWeather(TOWN.center).catch(() => ({}) as Awaited<ReturnType<typeof currentWeather>>),
+    fetchHourlySnow(TOWN.center, (u, init) => fetch(u, { ...init, signal: AbortSignal.timeout(2500) })).catch(() => undefined),
+  ]);
+  const label = { snow: "雪", cloudy: "くもり", clear: "晴れ" } as const;
+  const hour = jstHourMinute(now).slice(0, 13) + ":00"; // "2026-12-13T07:00"
+  const later = jstHourMinute(new Date(now.getTime() + 24 * 3600000)).slice(0, 13) + ":00";
+  return {
+    now: cur.code === undefined ? "不明" : label[weatherOf(cur.code)],
+    ...(cur.tempC !== undefined ? { tempC: Math.round(cur.tempC) } : {}),
+    ...(hourly ? { snowNext24hCm: sumSnowfall(hourly, hour, later) } : {}),
+    ...(hourly && depthAt(hourly, hour) !== undefined ? { depthCm: depthAt(hourly, hour) } : {}),
+  };
+}
+
 /**
  * 登録した人の自由な文に答える。登録していない人・お願いする側でも手伝う側でもない人は null（登録の会話へ）。
  */
@@ -67,6 +87,7 @@ export async function concierge(lineUserId: string, text: string, now = new Date
   // force: 聞き返さずに1つ選ぶ（「出動する」で家がなかったとき。spec v1.10）
   const turn = opts.force ? MAX_TURNS : Math.min(MAX_TURNS, (session?.turn ?? 0) + 1);
   const rc = record.morning.rollcall;
+  const weather = await conciergeWeather(now).catch(() => undefined);
   const input: ConciergeInput = {
     turn,
     role: ctx.role,
@@ -77,6 +98,7 @@ export async function concierge(lineUserId: string, text: string, now = new Date
     options: options.map(({ id, title, minutes, points, about, motives }) => ({ id, title, minutes, points, about, motives })),
     history: session?.history ?? [],
     text: text.slice(0, 200),
+    ...(weather ? { weather } : {}),
     profile: { motives: ctx.motives ?? [], summary: (await loadProfile(p.id).catch(() => undefined))?.summary ?? "" },
   };
   const res = await askConcierge(input, options);
@@ -115,4 +137,4 @@ export async function inConversation(lineUserId: string, now = new Date()): Prom
 }
 
 /** 相談らしい文か（点呼の時間でも、点呼の答えより先にコンシェルジュへ回す） */
-export const CONSULT_WORDS = /分からない|わからない|何から|なにから|初めて|はじめて|どうすれば|何をすれば|なにをすれば|何ができ|なにができ|できること|手伝いたい|参加したい|参加できる|応援したい|教えたい|コツ|迷って|不安/;
+export const CONSULT_WORDS = /何すれば|なにすれば|何したら|なにしたら|どうしたら|何しよう|ひま|暇|雪(は|が)?(ない|降|ふ|どう|ある)|天気|積雪|分からない|わからない|何から|なにから|初めて|はじめて|どうすれば|何をすれば|なにをすれば|何ができ|なにができ|できること|手伝いたい|参加したい|参加できる|応援したい|教えたい|コツ|迷って|不安/;

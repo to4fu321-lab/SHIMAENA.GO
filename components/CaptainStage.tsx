@@ -2,6 +2,7 @@
 // ホームのシマエナ隊長: 吹き出しで順番に話し（7秒ごと）、枝の上でゆれる。
 // タップすると空へ飛んでいって、反対側から戻ってくる（戻ったら次のことばへ）。30秒ごとに自分でも飛ぶ。
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import { cheersSeenAction } from "@/app/home-actions";
 import type { TeamId } from "@/lib/types";
@@ -16,8 +17,11 @@ export default function CaptainStage({
   team,
   arrival = [],
   viewerId,
+  chatHref = "/chat",
 }: {
   lines: string[];
+  /** 吹き出しを押すと隊長トークへ（11/6 本人の指示: 「隊長」タブだけでは相談できると分かりにくい） */
+  chatHref?: string;
   team?: TeamId;
   /** 応援・おつかれさまが届いていたら、隊長が飛んできて先に話す（聞いたらしるしを付ける） */
   arrival?: string[];
@@ -76,10 +80,13 @@ export default function CaptainStage({
       {/* 吹き出し（しっぽは隊長の口元へ）。ことばが変わるたびにふわっと出る */}
       <div className="absolute left-3 top-2 z-10 max-w-[64%] short:top-1" aria-live="polite">
         <div key={`${i}-${flying}-${arriving}`} className={flying ? "speech-away" : "speech-pop"}>
-          <p className="relative rounded-3xl bg-card px-3.5 py-1.5 text-base font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
+          <Link href={chatHref} className="relative block rounded-3xl bg-card px-3.5 py-1.5 text-base font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
             <span className="block text-xs font-bold text-lamp-deep">シマエナ隊長</span>
             {flying ? "いってくるしま〜！" : arriving ? "おーい！知らせがあるえな〜！" : line}
-          </p>
+            <span className="mt-1 flex items-center gap-1 rounded-full bg-lamp px-2.5 py-0.5 text-sm font-bold text-white short:mt-0.5">
+              <span aria-hidden="true">💬</span>隊長に相談する<span aria-hidden="true" className="ml-auto">›</span>
+            </span>
+          </Link>
           <svg viewBox="0 0 40 30" className="absolute -bottom-[20px] right-[6%] h-[24px] w-8" aria-hidden="true">
             <path d="M2 0 C10 10 24 22 38 28 C30 18 26 8 26 0 Z" fill="var(--card)" stroke="rgba(41,68,92,.15)" strokeWidth="2" strokeLinejoin="round" />
             <path d="M3 -2 H25 V3 H3 Z" fill="var(--card)" />

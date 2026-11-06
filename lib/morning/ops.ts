@@ -222,10 +222,9 @@ export async function answerByWords(lineUserId: string, text: string, now = new 
   const status = s0.morning.rollcall.status;
   if (status !== "open" && status !== "planned") return null;
   const w = await readWords({ text, role: p.role });
-  if (w.answer === "unknown") {
-    const question = p.role === "requester" ? MSG.rollcallRequester(...rcArgs(s0)) : MSG.rollcallHelper(...rcArgs(s0));
-    return [...MSG.wordsAskBack(w.askBack ?? "もう一度、下のボタンで教えてください。"), question.at(-1)!];
-  }
+  // 点呼の答えと読めない文（相談・雑談・質問）は、ここでは答えない（null）。呼ぶ側が隊長の相談（AI）へ回す
+  // （前は聞き返して点呼の質問をもう一度出していたので、何を言っても「出られますか？」になっていた。11/6 本人の指摘）
+  if (w.answer === "unknown") return null;
   const replyMsgs = await answerRollcall(lineUserId, `rc:ans=${w.answer}`, now);
   const request: RequestNote = {
     ...(w.deadline ? { deadline: w.deadline } : {}),

@@ -195,7 +195,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       <div className="relative min-h-10 flex-1 overflow-hidden">
         <SkyBackdrop sky={sky} />
         {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
-        <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} />
+        <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} />
       </div>
 
       <main className="relative -mt-3 shrink-0 space-y-2 px-4 pb-2.5 short:space-y-1.5 short:pb-1.5">
@@ -309,34 +309,30 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             </Link>
           </div>
         ) : (
-          <>
-        <Link
-          href={goHref}
-          className={`btn btn-lamp min-h-16 justify-start gap-3 rounded-full px-5 py-1.5 short:min-h-14 short:py-1`}
-        >
-          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lamp">
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path d="M8 5 L19 12 L8 19 Z" fill="currentColor" />
-            </svg>
-          </span>
-          <span className="text-left leading-tight">
-            <span className="block text-2xl">{MENU.go.label}</span>
-            <span className="block text-sm font-bold">
-              {bonuses.length > 0 ? `いまなら ${bonuses.join("・")}点` : "19時までなら、いつでも10分から"}
-            </span>
-          </span>
-        </Link>
-        <Link href={fiveHref} className="btn btn-white min-h-13 gap-3 rounded-full bg-ice-soft/60 py-1 short:min-h-12 short:py-0.5">
-          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7 V12 L15.5 14" />
-          </svg>
-          <span className="text-left leading-tight">
-            <span className="block text-lg">ソロ活動をする</span>
-            <span className="block text-sm font-normal">自分の家の雪かき・道の危険の報告</span>
-          </span>
-        </Link>
-          </>
+          // 昼も夜と同じ形（11/6 本人の指示）: 左に雪かきGO！、右にソロ活動。半分ずつ1行
+          <div className="grid grid-cols-2 gap-2">
+            <Link href={goHref} className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-lamp">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path d="M8 5 L19 12 L8 19 Z" fill="currentColor" />
+                </svg>
+              </span>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">{MENU.go.label}</span>
+                <span className="block whitespace-nowrap text-xs font-bold">{bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
+              </span>
+            </Link>
+            <Link href={fiveHref} className="flex min-h-14 items-center gap-2 rounded-full bg-card px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink shadow-md ring-1 ring-ink/15">
+              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" className="shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7 V12 L15.5 14" />
+              </svg>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">ソロ活動</span>
+                <span className="block whitespace-nowrap text-xs font-bold">自宅の雪かき</span>
+              </span>
+            </Link>
+          </div>
         )}
       </main>
 
