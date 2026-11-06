@@ -287,10 +287,10 @@ export function applyPlan(s: MorningRecord, roster: Roster, plan: Plan): void {
 }
 
 /** 人がそろっている家を1軒、完了にする（時計を6分進める） */
-export function completeNext(s: MorningRecord, roster: Roster): string | null {
-  const m = s.morning.missions
-    .filter((x) => x.status === "assigned" || x.status === "in_progress")
-    .sort((a, b) => b.importance - a.importance)[0];
+export function completeNext(s: MorningRecord, roster: Roster, skip?: (missionId: string) => boolean): string | null {
+  const open = s.morning.missions.filter((x) => x.status === "assigned" || x.status === "in_progress").sort((a, b) => b.importance - a.importance);
+  // skip: デモで先に終わらせたくない家（本物の人が写真で終える家）。ほかに家がなければ、それも終わらせる
+  const m = open.find((x) => !skip?.(x.id)) ?? open[0];
   if (!m) return null;
   s.clockMin = Math.max(s.clockMin, 7 * 60) + 6;
   const at = iso(s, s.clockMin);
@@ -308,15 +308,24 @@ export function completeNext(s: MorningRecord, roster: Roster): string | null {
 }
 
 /**
- * 人手不足の家に、手の空いた人（割り当てなし、または自分の家を終えた人）が駆けつける。
- * そろったら作業中にする。
+ * 人手不足の家に、手の空いた人（割り当てなし、または自分の家を終えた人）が駆けつける（/admin のデモ操作）。そろったら作業中にする。
+ * - 家: もう誰かが向かっている人手不足の家を先に（「行く」を押した人のところへ合流する）
+ * - 人: 架空の人だけ（本物の人＝LINE でログインした人を勝手に動かさない）。「行けない（0分）」と答えた人は除く。
+ *   v1.20 から手伝う側には朝の質問がないので、答えていない人も動ける。その家にまだいないチームの人を先に（2チームの合流）、
+ *   次に自分の家を終えた人（駆けつけボーナス）
  */
-export function rescueShort(s: MorningRecord, roster: Roster): string | null {
-  const m = s.morning.missions.find((x) => x.status === "short");
+export function rescueShort(s: MorningRecord, roster: Roster, targetId?: string): string | null {
+  const going = s.morning.sorties.filter((x) => x.status === "going");
+  const shorts = s.morning.missions.filter((x) => x.status === "short" && (!targetId || x.id === targetId));
+  const m = shorts.find((x) => going.some((g) => g.missionId === x.id)) ?? shorts[0];
   if (!m) return null;
-  const busy = new Set(s.morning.sorties.filter((x) => x.status === "going").map((x) => x.participantId));
-  const canMove = (id: string) => (s.answers.find((a) => a.participantId === id)?.answer ?? 0) !== 0;
-  const helper = roster.participants.find((p) => p.role === "helper" && p.teamId && !busy.has(p.id) && canMove(p.id));
+  const busy = new Set(going.map((x) => x.participantId));
+  const canMove = (id: string) => s.answers.find((a) => a.participantId === id)?.answer !== 0;
+  const teamsThere = new Set(s.morning.sorties.filter((x) => x.missionId === m.id).map((x) => x.teamId));
+  const finished = (id: string) => s.morning.sorties.some((x) => x.participantId === id && x.status === "done");
+  const candidates = roster.participants.filter((p) => p.role === "helper" && p.teamId && !p.lineUserId && !busy.has(p.id) && canMove(p.id));
+  const rank = (p: (typeof candidates)[number]) => (teamsThere.has(p.teamId!) ? 0 : 2) + (finished(p.id) ? 1 : 0);
+  const helper = candidates.reduce<(typeof candidates)[number] | undefined>((best, p) => (!best || rank(p) > rank(best) ? p : best), undefined);
   if (!helper) return null;
   const finishedOwn = s.morning.sorties.some((x) => x.participantId === helper.id && x.status === "done");
   s.morning.sorties.push({
@@ -328,9 +337,22 @@ export function rescueShort(s: MorningRecord, roster: Roster): string | null {
     status: "going",
     rescue: finishedOwn, // 駆けつけボーナスは自分の割り当てを終えた人だけ
   });
-  const going = s.morning.sorties.filter((x) => x.missionId === m.id).length;
-  if (going >= m.requiredPeople) m.status = "in_progress";
+  const people = s.morning.sorties.filter((x) => x.missionId === m.id).length;
+  if (people >= m.requiredPeople) m.status = "in_progress";
   const number = roster.bases.find((b) => b.id === m.baseId)?.number ?? "?";
   s.log.push(`${clockText(s.clockMin)} ${helper.nickname}さんが拠点${number}に駆けつけ`);
   return helper.id;
+}
+
+/**
+ * /admin の「1軒、完了にする」（デモ）: v1.20 は手伝う側に朝の質問がないので、作戦のあとも人手不足の家ばかりになる。
+ * 終わらせる家がなければ、人手不足の家（skip の家を除く・大事な順）に架空の人を駆けつけさせてそろえてから、1軒終わらせる。
+ */
+export function completeNextForDemo(s: MorningRecord, roster: Roster, skip?: (missionId: string) => boolean): string | null {
+  const open = () => s.morning.missions.some((x) => (x.status === "assigned" || x.status === "in_progress") && !skip?.(x.id));
+  if (!open()) {
+    const target = s.morning.missions.filter((x) => x.status === "short" && !skip?.(x.id)).sort((a, b) => b.importance - a.importance)[0];
+    for (let i = 0; target && i < 10 && target.status === "short"; i++) if (!rescueShort(s, roster, target.id)) break;
+  }
+  return completeNext(s, roster, skip);
 }

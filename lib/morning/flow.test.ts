@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mockPlan } from "../claude/commander";
 import { teamTotals } from "./view";
-import { applyPlan, commanderInput, completeNext, emptyMorning, fillAnswers, rescueShort, ringRollcall } from "./flow";
+import { applyPlan, commanderInput, completeNext, completeNextForDemo, emptyMorning, fillAnswers, putAnswer, rescueShort, ringRollcall } from "./flow";
 import { TOWN_ROSTER as R } from "./roster";
 
 describe("デモの朝の流れ", () => {
@@ -44,12 +44,37 @@ describe("デモの朝の流れ", () => {
     while (completeNext(s, R)) {
       /* 先に終わらせて手を空ける */
     }
-    const short = s.morning.missions.find((m) => m.status === "short");
-    if (!short) return; // この乱数では不足がない場合
+    const shortIds = s.morning.missions.filter((m) => m.status === "short").map((m) => m.id);
+    if (shortIds.length === 0) return; // この乱数では不足がない場合
     const helperId = rescueShort(s, R);
     expect(helperId).not.toBeNull();
-    const sortie = s.morning.sorties.find((x) => x.participantId === helperId && x.missionId === short.id)!;
-    expect(sortie.status).toBe("going");
-    expect(sortie.rescue).toBe(true);
+    const sortie = s.morning.sorties.find((x) => x.participantId === helperId && x.status === "going")!;
+    expect(shortIds).toContain(sortie.missionId);
+    const finishedOwn = s.morning.sorties.some((x) => x.participantId === helperId && x.status === "done");
+    expect(sortie.rescue).toBe(finishedOwn);
+  });
+
+  it("v1.20 の流れ（手伝う側は答えない）でも、駆けつけは「行く」を押した人の家へ別のチームから。4 で全部終わらせられる", () => {
+    const s = emptyMorning();
+    ringRollcall(s);
+    // 頼む家の答えだけ（手伝う側の答えはない）
+    for (const p of R.participants) if (p.role === "requester") putAnswer(s, p.id, "no", `${s.morning.rollcall.date}T06:31:00+09:00`);
+    applyPlan(s, R, mockPlan(commanderInput(s, R)));
+    const short = s.morning.missions.find((m) => m.status === "short")!;
+    expect(short).toBeTruthy();
+    // 本物の人（A）が「行く（10分でも）」で人手不足の家へ
+    const a = R.participants.find((p) => p.role === "helper" && p.teamId)!;
+    s.morning.sorties.push({ id: "sA", missionId: short.id, participantId: a.id, teamId: a.teamId!, subtaskIds: [], status: "going", rescue: false });
+    const helperId = rescueShort(s, R);
+    const joined = s.morning.sorties.find((x) => x.participantId === helperId && x.status === "going")!;
+    expect(joined.missionId).toBe(short.id);
+    expect(joined.teamId).not.toBe(a.teamId);
+    // 4: A の家は写真で終えるので後回し。ほかの家を全部終わらせられる
+    const skip = (id: string) => id === short.id;
+    for (let k = 0; k < 40 && completeNextForDemo(s, R, skip); k++) {
+      if (s.morning.missions.filter((m) => m.status !== "done" && m.status !== "no_answer").every((m) => m.id === short.id)) break;
+    }
+    expect(s.morning.missions.find((m) => m.id === short.id)!.status).not.toBe("done");
+    expect(s.morning.missions.filter((m) => m.id !== short.id && m.status !== "no_answer").every((m) => m.status === "done")).toBe(true);
   });
 });

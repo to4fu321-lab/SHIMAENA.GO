@@ -10,7 +10,7 @@ import { withStateLock } from "@/lib/ops/lock";
 import { clearProblems } from "@/lib/ops/problems";
 import { applySchema, seedTown } from "@/lib/db";
 import { issueCardsForMission } from "@/lib/cards/issue";
-import { DEMO_DATE, completeNext, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
+import { DEMO_DATE, completeNextForDemo, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
 import { isThanksChoice } from "@/lib/claude/thanks";
 import { isCheerChoice } from "@/lib/morning/cheer";
 import { latestClear } from "@/lib/morning/clear";
@@ -120,7 +120,10 @@ export async function completeOne() {
     let allDone = false;
     const notices: { key: string; messages: LineMessage[] }[] = [];
     await update(async (s) => {
-      const missionId = completeNext(s, roster);
+      // 本物の人（LINE でログインした人）が向かっている家は、本人の写真で終えるので後回し（撮影で先に終わらせない）
+      const real = new Set(roster.participants.filter((p) => p.lineUserId).map((p) => p.id));
+      const skip = (id: string) => s.morning.sorties.some((x) => x.missionId === id && x.status === "going" && real.has(x.participantId));
+      const missionId = completeNextForDemo(s, roster, skip);
       const mission = s.morning.missions.find((m) => m.id === missionId);
       if (!mission) return;
       const sorties = s.morning.sorties.filter((x) => x.missionId === mission.id);

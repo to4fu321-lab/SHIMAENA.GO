@@ -278,14 +278,14 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <Step n="0" label="前夜の予告（12cm）" action={startEmptyMorning} />
-          <Step n="1" label="6:30 エナガ点呼を鳴らす" action={ringNow} disabled={status !== "announced"} />
-          <Step n="2" label="住民が答える（ランダム）" action={answerRandomly} disabled={status !== "open"} />
+          <Step n="1" label="6:30 積もった → 登録した家を雪かき待ちに" action={ringNow} disabled={status !== "announced"} />
+          <Step n="2" label="（なくてよい）架空の人が手伝える時間を答える" action={answerRandomly} disabled={status !== "open"} />
           <Step n="3" label="6:40 司令官の作戦" action={runCommander} disabled={status !== "open" || s.answers.length === 0} />
           <Step
             n="4"
             label="1軒、完了にする"
             action={completeOne}
-            disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress")}
+            disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress" || x.status === "short")}
           />
           <Step n="5" label="人手不足の家へ駆けつけ" action={rescue} disabled={!anyShort} />
           <Step n="5b" label="まだ降っている → もう一度" action={reopenDemo} disabled={status !== "planned" || !anyDone} />
