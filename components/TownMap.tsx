@@ -197,7 +197,7 @@ export default function TownMap({
       // 道の危険（写真の場所にピン）。押すと写真と内容
       for (const rp of road) {
         const mk = L.marker(rp.location, {
-          icon: L.divIcon({ className: "", html: hazardPinHtml(rp.hazard, esc(rp.label), Boolean(rp.fresh)), iconSize: [44, 55], iconAnchor: [22, 55], popupAnchor: [0, -50] }),
+          icon: L.divIcon({ className: "", html: hazardPinHtml(rp.hazard, esc(rp.label), Boolean(rp.fresh)), iconSize: [48, 60], iconAnchor: [24, 60], popupAnchor: [0, -54] }),
         })
           .bindPopup(
             `<div class="hz-pop"><div class="hz-pop-head">${hazardSvg(rp.hazard, 36)}<span><b>${esc(rp.label)}</b><small>${esc(rp.ago)}・近所の人の報告</small></span></div>${rp.note ? `<span>「${esc(rp.note)}」</span>` : ""}<img src="/api/road/${encodeURIComponent(rp.id)}/photo" alt="報告の写真（ぼかし済み）" loading="lazy" /></div>`,

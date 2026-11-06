@@ -440,9 +440,9 @@ body {
 @media (prefers-reduced-motion: reduce) { .badge-ring { animation-duration: 12s; } }
 
 /* 道の危険のピン（11/6 新しい形）: しずく形のオレンジ＋三角のアイコン。報告から2時間は足もとが脈打つ */
-.hz-pin { position: relative; width: 44px; height: 55px; filter: drop-shadow(0 3px 5px rgba(41, 68, 92, 0.35)); }
+.hz-pin { position: relative; width: 48px; height: 60px; filter: drop-shadow(0 3px 5px rgba(41, 68, 92, 0.35)); }
 .hz-pin > svg { position: relative; display: block; }
-.hz-in { position: absolute; left: 9px; top: 7px; width: 26px; height: 26px; }
+.hz-in { position: absolute; left: 9px; top: 7px; width: 30px; height: 30px; }
 .hz-halo { position: absolute; left: 50%; bottom: -6px; width: 46px; height: 18px; margin-left: -23px; border-radius: 50%; background: rgba(232, 121, 47, 0.28); }
 .hz-fresh .hz-halo { animation: hz-halo 1.8s ease-out infinite; }
 @keyframes hz-halo {

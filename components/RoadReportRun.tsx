@@ -91,7 +91,7 @@ export default function RoadReportRun({
   };
 
   // 押せないときは、何が足りないかをボタンの上に1行で
-  const missing = !hz ? "危険の種類をえらんでください" : !file ? "写真を撮ってください（その場で1枚）" : blurred === "wait" ? "AI がぼかしを入れています…" : !blurred ? "写真を撮り直してください" : loc.state !== "ok" ? "場所を調べています…" : "";
+  const missing = !hz ? "危険の種類をえらんでください" : !file ? "写真を1枚撮ってください" : blurred === "wait" ? "AI がぼかしを入れています…" : !blurred ? "写真を撮り直してください" : loc.state !== "ok" ? "場所を調べています…" : "";
   const chosen = HAZARDS.find((h) => h.id === hz);
 
   return (
@@ -123,7 +123,7 @@ export default function RoadReportRun({
                 on ? "bg-[#FFF1D6] ring-[3px] ring-[#F5A524]" : "bg-paper ring-1 ring-ink/10"
               }`}
             >
-              <HazardIcon id={h.id} size={36} />
+              <HazardIcon id={h.id} size={42} />
               <span className="text-balance">{h.short}</span>
             </button>
           );
