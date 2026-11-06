@@ -298,7 +298,7 @@ export default function ChatScreen({
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={listening ? "聞いています…" : "隊長に話す（例: 何からすればいい？）"}
+          placeholder={listening ? "聞いています…" : "隊長に話す"}
           maxLength={300}
           enterKeyHint="send"
           className="min-h-12 min-w-0 flex-1 rounded-full bg-paper px-4 text-base ring-1 ring-ink/15 focus:outline-none focus:ring-2 focus:ring-lamp"
