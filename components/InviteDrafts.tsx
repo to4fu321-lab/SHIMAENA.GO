@@ -9,7 +9,7 @@ import { PagedList } from "./Pager";
 
 export default function InviteDrafts({ drafts, url, result }: { drafts: string[]; url?: string; result?: string }) {
   const send = (text: string) => {
-    const link = url ?? inviteMessage(window.location.origin, process.env.NEXT_PUBLIC_LINE_ADD_FRIEND_URL || undefined).url;
+    const link = url ?? inviteMessage(window.location.origin, "/start").url;
     window.open(lineShareUrl(text, link), "_blank", "noopener,noreferrer");
   };
   return (

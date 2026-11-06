@@ -1,6 +1,6 @@
 # シマエナGO（Built with Claude: Japan 2026 提出作品）
 
-**「寒い冬は、くっついて乗り切る。」** 雪の朝に LINE で点呼が届き、町内のランダム3チームがひとり暮らしの家の雪をどける雪かきゲーム。
+**「寒い冬は、くっついて乗り切る。」** 雪の朝に点呼が届き、町内のランダム3チームがひとり暮らしの家の雪をどける雪かきゲーム。
 
 - 仕様の正本: `docs/spec.md`（変えるときは本人の了承を取る）
 - 作業の順番: `docs/tasks.md`
@@ -17,7 +17,7 @@
 - Next.js（App Router）+ TypeScript + Tailwind CSS。Vercel で公開。
 - データベースは Neon（Postgres、素の SQL）。`DATABASE_URL` がない間はメモリ保存で開発する。
 - AI は Claude API（`ANTHROPIC_API_KEY`）。出力は JSON。採点表 `data/rubric.json` を毎回渡す。キーがない間はモック応答。
-- LINE Messaging API ＋ LIFF（`LINE_CHANNEL_SECRET` / `LINE_CHANNEL_ACCESS_TOKEN` / `NEXT_PUBLIC_LIFF_ID`）。
+- LINE は**ログインだけ**（LINE ログイン Web 版: `LINE_LOGIN_CHANNEL_ID` / `LINE_LOGIN_CHANNEL_SECRET`、署名の鍵 `AUTH_SECRET`）。点呼・お知らせ・相談はアプリ内の「隊長トーク」（`/chat`）と端末への通知（Web Push: `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `NEXT_PUBLIC_VAPID_PUBLIC_KEY`）。設定は `docs/login-setup.md`（spec v1.17）。
 - 地図は Leaflet ＋ OpenStreetMap。天気は Open-Meteo。
 - 画面はスマホ表示が最優先。本文 18px 以上、ボタンは少なく大きく。
 - **基本1画面**: どの画面もスマホ（390×844）で縦スクロールなしに収める。入りきらないときは中身を減らすか、タブで分ける（`components/Pager.tsx`）。確かめ方: `npm run build` のあと `node scripts/fit.cjs "/そのページ"`（390×844 と 375×667 ではみ出しを測る）とスクショ。

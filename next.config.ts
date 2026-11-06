@@ -8,10 +8,6 @@ const nextConfig: NextConfig = {
   // /admin の「DB を準備する」が db/schema.sql を、カードの PNG 化が日本語フォントを読むので、Vercel のサーバー側に同梱する
   outputFileTracingIncludes: { "/admin": ["./db/schema.sql"], "/api/cards/**": ["./assets/fonts/*.ttf"], "/api/share/**": ["./assets/fonts/*.ttf"], "/api/line/hero/**": ["./assets/fonts/*.ttf"] },
   partialPrefetching: true,
-  // LIFF のエンドポイントが /map のままでも動くように、/map/map → /map、/map/cards → /cards に送る
-  async redirects() {
-    return [{ source: "/map/:page(map|cards|rules|admin|solo)", destination: "/:page", permanent: false }];
-  },
   turbopack: {
     rules: {
       "*.css": {

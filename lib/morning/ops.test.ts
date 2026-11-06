@@ -28,7 +28,7 @@ describe("朝の本番の操作（メモリ保存・LINE には送らない）",
     const announced = await announce({ date: DEMO_DATE, forecastCm: 12 });
     expect(announced.morning.rollcall.status).toBe("announced");
     expect(announced.briefing).toContain("12cm");
-    expect(announced.log.at(-1)).toMatch(/予告を LINE で \d+ 人に送信/);
+    expect(announced.log.at(-1)).toMatch(/予告を隊長トークで \d+ 人に/);
     expect((await listThread("U-real")).filter((x) => x.dir === "out").length).toBeGreaterThan(0); // 本物の人の隊長トークに入った
     expect((await listThread("demo:h3")).length).toBeGreaterThan(0); // 架空の人にも（デモ）
 

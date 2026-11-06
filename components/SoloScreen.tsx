@@ -52,14 +52,14 @@ export default function SoloScreen({
   shortHouses: number;
   /** ホームの「10分だけ出動」から来た */
   pickFive: boolean;
-  /** LINE のコンシェルジュがすすめたミッション（最初に大きく出す） */
+  /** 隊長トークのコンシェルジュがすすめたミッション（最初に大きく出す） */
   focus?: string;
   /** 夜（19時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
   night?: boolean;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
   shareOptions?: ShareOption[];
-  /** 近くの道の報告を LINE で受け取るか（未回答は undefined） */
+  /** 近くの道の報告を通知で受け取るか（未回答は undefined） */
   roadAlerts?: boolean;
 }) {
   const [pending, start] = useTransition();
@@ -310,12 +310,12 @@ export default function SoloScreen({
           // 近くの道の報告を LINE で受け取る（11/4 本人の指示。コンシェルジュが登録のあとにも聞く）
           <div className="flex items-center gap-2 rounded-2xl bg-ice-soft px-3 py-1.5">
             <span className="min-w-0 flex-1 text-sm font-bold leading-snug">
-              🔔 近く（300m）の報告を LINE で受け取る
+              🔔 近く（300m）の報告を通知で受け取る
             </span>
             <button
               role="switch"
               aria-checked={Boolean(alertsOn)}
-              aria-label="近くの道の報告を LINE で受け取る"
+              aria-label="近くの道の報告を通知で受け取る"
               disabled={pending}
               onClick={toggleAlerts}
               className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${alertsOn ? "bg-lamp" : "bg-ink/25"}`}
@@ -400,7 +400,7 @@ export default function SoloScreen({
                 <span className="min-w-0 flex-1 leading-snug">
                   <b className="block text-base">道の危険を報告しました</b>
                   <span className="block text-sm text-white/85">
-                    みんなの安全のために、ありがとう！{roadDone.later ? "近くの人には朝 6:30 にお知らせします。" : "近くの人へ LINE でお知らせします。"}
+                    みんなの安全のために、ありがとう！{roadDone.later ? "近くの人には朝 6:30 にお知らせします。" : "近くの人へお知らせします。"}
                   </span>
                 </span>
                 <Link href={`/map${q ? `${q}&` : "?"}road=${roadDone.id}`} className="shrink-0 rounded-full bg-white/15 px-3 py-2 text-sm font-bold">

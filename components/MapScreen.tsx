@@ -59,7 +59,7 @@ export default function MapScreen({
   solo?: SoloCell[];
   /** 道の危険の報告（24時間以内） */
   road?: RoadPin[];
-  /** LINE の通知から開いたときに、その報告を開く */
+  /** 通知から開いたときに、その報告を開く */
   focusRoad?: string;
   cells: CellView[];
   bases: Base[];
@@ -334,7 +334,7 @@ export default function MapScreen({
                 <HazardIcon id="ice" size={20} />
                 オレンジのピン: 道の危険（24時間。押すと写真）
               </li>
-              <li className="col-span-2 text-ink-soft">マスは 50m 四方。どの家かは、割り当てられた人の LINE にだけ届きます。</li>
+              <li className="col-span-2 text-ink-soft">マスは 50m 四方。どの家かは、割り当てられた人の隊長トークにだけ届きます。</li>
             </ul>
             {shareText && prog.total > 0 && <ShareButton text={shareText} />}
             <Link href={`/today${q}#share`} className="btn btn-white w-full text-base">

@@ -28,7 +28,7 @@ export default function RoadReportRun({
   const [hz, setHz] = useState<HazardId | null>(null);
   const [file, setFile] = useState<File | undefined>();
   const [preview, setPreview] = useState<string | null>(null);
-  // 地図と LINE に出す小さい写真は、AI でナンバー・表札・顔・家をぼかしてから（spec v1.11）
+  // 地図と隊長トークに出す小さい写真は、AI でナンバー・表札・顔・家をぼかしてから（spec v1.11）
   const [blurred, setBlurred] = useState<{ blob: Blob; note: string } | "wait" | null>(null);
   const [note, setNote] = useState("");
   const [loc, setLoc] = useState<Loc>({ state: "wait" });

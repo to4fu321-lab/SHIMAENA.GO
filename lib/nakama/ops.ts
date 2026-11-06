@@ -127,7 +127,7 @@ async function blockedNow(now: Date): Promise<string | undefined> {
 export async function setTodayMode(participantId: string, mode: string, now: Date): Promise<{ ok: boolean; text: string }> {
   if (!isTodayMode(mode)) return { ok: false, text: "その選び方はありません。" };
   const p = await repo().findParticipant(participantId);
-  if (!p) return { ok: false, text: "登録が見つかりません。LINE から開いてください。" };
+  if (!p) return { ok: false, text: "登録が見つかりません。ログインし直してください。" };
   await setTodayModeRow(p.id, mode, await todayOf(now), now.toISOString());
   return { ok: true, text: mode === "solo" ? "今日はひとりで自由に。いつもどおりどうぞ。" : "近くで同じ気持ちの人をさがします。見つからなくても、いつもどおり参加できます。" };
 }
@@ -256,7 +256,7 @@ export async function proposeMeetup(fromId: string, toId: string, window: string
   const blocked = await blockedNow(now);
   if (blocked) return { ok: false, text: blocked };
   const view = await nakamaView(fromId, now);
-  if (!view) return { ok: false, text: "登録が見つかりません。LINE から開いてください。" };
+  if (!view) return { ok: false, text: "登録が見つかりません。ログインし直してください。" };
   if (!view.active) return { ok: false, text: "先に「誰かと一緒に」などを選んでください。" };
   const cand = view.candidates.find((c) => c.participantId === toId);
   if (!cand) return { ok: false, text: "いまはその人を誘えません。ほかの候補か、ひとりでどうぞ。" };

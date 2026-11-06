@@ -1,4 +1,4 @@
-// SNS のリンク先（spec v1.3）。LINE 登録前でも見られる。画像は /api/share/<kind>.png（集計だけ、名前や家は出さない）。
+// SNS のリンク先（spec v1.3）。登録前でも見られる。画像は /api/share/<kind>.png（集計だけ、名前や家は出さない）。
 // X などがリンクの見出し画像（OG）を取りに来るので、params だけで作れる静的なページにしている。
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -53,7 +53,7 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
         <h2 className="text-xl font-bold">{p.title}</h2>
         <p>{p.description}</p>
         <p>
-          雪の朝に LINE で点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲームです。仲間がいない日も、
+          雪の朝に点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲームです。仲間がいない日も、
           <b>ソロ出動</b>（自分の家の雪かき・道の危険の報告）で、1人の10分から参加できます。
         </p>
         <Link href={join} className="btn btn-big bg-lamp text-white">

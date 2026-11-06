@@ -1,7 +1,7 @@
 "use client";
 
 // 使い方 = 触って覚えるチュートリアル（1画面1項目のスライド）。
-// スマホは左右にスワイプ、PC は「次へ」「戻る」ボタンと ← → キー。LINE の操作は練習版（何も送信しない）。
+// スマホは左右にスワイプ、PC は「次へ」「戻る」ボタンと ← → キー。隊長トークの操作は練習版（何も送信しない）。
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { inviteMessage, lineShareUrl } from "@/lib/share-links";
@@ -11,7 +11,7 @@ import LineChat, { type ChatMsg } from "./LineChat";
 
 const STEPS = ["はじめに", "参加する", "雪かきに行く", "雪かきをする", "完了する", "仲間になる"] as const;
 const LAST = STEPS.length - 1;
-/** 点呼の答え（本物の LINE と同じ。spec v1.8: いつ手伝えそうか） */
+/** 点呼の答え（本物の隊長トークと同じ。spec v1.8: いつ手伝えそうか） */
 const WHEN = [
   ["am", "朝（〜9時）"],
   ["noon", "お昼（〜13時）"],
@@ -189,7 +189,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
   const team = TEAMS[0];
   const practiced = [when !== null, going, snow === 0, photo];
 
-  /* --- LINE の会話（押したボタンから組み立てる） --- */
+  /* --- 隊長トークの会話（押したボタンから組み立てる） --- */
   const rollcall: ChatMsg[] = [
     { id: "h1", from: "bot", text: "おはようだしま〜！☃️\n今朝は雪12cm、相手は『ぼた雪のドンブリ』です。" },
     { id: "h2", from: "bot", text: "今日、いつ手伝えそうですか？\n（6時〜19時なら、いつでも10分から）" },
@@ -257,7 +257,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
 
     /* 1 参加する: 点呼に答える */
     <>
-      <Title id="tut-h-1" sub="雪の朝 6:30、LINE にこの1問が届きます。下のボタンを押してみよう。">
+      <Title id="tut-h-1" sub="雪の朝 6:30、隊長トークにこの1問が届きます。下のボタンを押してみよう。">
         今日、いつ手伝えそうですか？
       </Title>
       <div className="relative flex min-h-0 flex-1 flex-col">
@@ -388,9 +388,9 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
       </div>
     </>,
 
-    /* 4 完了する: LINE で写真を送る */
+    /* 4 完了する: 隊長トークで写真を送る */
     <>
-      <Title id="tut-h-4" sub="LINE の「写真を撮る」を押してみよう（練習なので撮影も送信もしません）。">
+      <Title id="tut-h-4" sub="隊長トークの「写真を撮る」を押してみよう（練習なので撮影も送信もしません）。">
         終わったら、写真を1枚！
       </Title>
       <div className="relative flex min-h-0 flex-1 flex-col">
@@ -419,7 +419,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
       )}
     </>,
 
-    /* 5 仲間になる: お祝い・ルール・LINE で参加 */
+    /* 5 仲間になる: お祝い・ルール・はじめる */
     <>
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-3xl bg-gradient-to-b from-ice-soft to-paper ring-1 ring-ink/10">
         {index === LAST && (

@@ -4,7 +4,6 @@ import Icon from "@/components/Icon";
 import Tutorial from "@/components/tutorial/Tutorial";
 import { lineJoinUrl } from "@/lib/line/join";
 import TabBar from "@/components/TabBar";
-import { MENU, type MenuKey } from "@/lib/brand";
 import { TEAMS } from "@/lib/teams";
 
 export const metadata: Metadata = { title: "使い方 ・ シマエナGO" };
@@ -60,36 +59,34 @@ export default function RulesPage() {
   // くわしいルール（チュートリアルの「大切なルール」から開く）
   const rules = (
     <>
-    <Card title="LINE のメニュー（下の4つ）">
+    <Card title="下のタブ（5つ）">
       <ul className="space-y-2">
-        {(["town", "ask", "map", "consult"] as MenuKey[]).map((k) => (
-          <li key={k} className="flex items-center gap-3">
-            <span className="grid size-12 shrink-0 place-items-center rounded-xl ring-1 ring-ink/20" style={{ background: MENU[k].bg, color: MENU[k].fg }}>
-              <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
-                <Icon name={MENU[k].icon} size={26} accent={k === "town" ? MENU[k].bg : MENU[k].accent} />
-              </span>
+        {(
+          [
+            ["house", "ホーム", "今日の雪・チーム・雪かきGO！・ソロ活動はここから。のぞくだけでもOK。"],
+            ["map", "地図", "町の雪の状況と、助けが必要な家（50m のマス）。雪かきを頼むのもここから。"],
+            ["chat", "隊長", "点呼・作戦・お知らせが届くトーク。シマエナ隊長に、何をすればいいか・今日の雪などを文で聞けます。"],
+            ["card", "活動", "今日の羽・連続出動・その時だけのカード。"],
+            ["guide", "使い方", "このページ。触って覚えるチュートリアル。"],
+          ] as const
+        ).map(([icon, label, text]) => (
+          <li key={label} className="flex items-center gap-3">
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-card ring-1 ring-ink/20">
+              <Icon name={icon} size={30} accent="var(--lamp)" />
             </span>
             <span>
-              <b>{MENU[k].label}</b>
-              <span className="block text-base text-ink-soft">
-                {k === "town"
-                  ? "ホームを開きます。のぞくだけでもOK。今日の雪・チーム・出動・ソロ活動はここから。"
-                  : k === "ask"
-                    ? "6〜19時ならいつでも、自分の家の雪かきを頼めます。近くの人に知らせます。"
-                    : k === "map"
-                      ? "町の雪の状況と、助けが必要な家（50m のマス）を見られます。"
-                      : "シマエナ隊長に、何をすればいいか・今日の雪などを文で聞けます。よくある質問のボタンもあります。"}
-              </span>
+              <b>{label}</b>
+              <span className="block text-base text-ink-soft">{text}</span>
             </span>
           </li>
         ))}
       </ul>
-      <p className="text-base">活動カード・使い方は、ホームの下のタブから。登録の確認・やり直しは「設定」から。</p>
+      <p className="text-base">登録の確認・やり直し・連携コードは「設定」から。LINE は本人の確認（ログイン）にだけ使います。</p>
     </Card>
 
     <Card title="手伝う人は、3つだけ">
       <ol className="space-y-4">
-        <Step n={1} title="雪の朝、LINE に1問だけ届く" text="「今日、いつ手伝えそうですか？」朝（〜9時）・お昼（〜13時）・夕方（〜19時）・今日は休む から1つ押すだけ。6〜19時なら、いつでも10分から。" />
+        <Step n={1} title="雪の朝、隊長トークに1問だけ届く" text="「今日、いつ手伝えそうですか？」朝（〜9時）・お昼（〜13時）・夕方（〜19時）・今日は休む から1つ押すだけ。6〜19時なら、いつでも10分から。" />
         <Step n={2} title="「行く」を押す" text="6:40 に近くの家が届きます。町の地図の「雪かきGO！」で準備を確かめて出発。同じチームの仲間も見えます。" />
         <Step n={3} title="終わったら写真を1枚" text="「写真を撮る」ボタンで1枚。町の地図のマスがチームの色に塗られて、その時だけのカードが届きます。" />
       </ol>
@@ -99,7 +96,7 @@ export default function RulesPage() {
       <p>
         雪の朝に届く「今朝、玄関から外に出られそうですか？」に、<b>はい・いいえ・誰かと一緒なら</b>から1つ押すだけ。
       </p>
-      <p className="text-ink-soft">LINE を使っていない方は、ご家族が代わりに登録できます。終わったらご家族にも知らせが届きます。</p>
+      <p className="text-ink-soft">スマホを使っていない方は、ご家族が代わりに登録できます。終わったらご家族にも知らせが届きます。</p>
     </Card>
 
     <Card title="チームと点数">
@@ -112,7 +109,7 @@ export default function RulesPage() {
         ))}
       </div>
       <p>
-        手伝う人は3チームに分かれます。チームは<b>月曜〜日曜の1週間</b>。<b>日曜の夜 9時</b>に組み直して、LINE で「チーム発表」が届きます。毎週ちがう顔ぶれなので、いろんな人と知り合えます。
+        手伝う人は3チームに分かれます。チームは<b>月曜〜日曜の1週間</b>。<b>日曜の夜 9時</b>に組み直して、隊長トークに「チーム発表」が届きます。毎週ちがう顔ぶれなので、いろんな人と知り合えます。
       </p>
       <p className="text-ink-soft">町の地図のマスと、シマエナガのマフラーが、あなたのチームの色になります。</p>
       <ul className="list-inside list-disc space-y-1 text-ink-soft">

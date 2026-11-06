@@ -1,4 +1,4 @@
-// シマエナ診断（spec v1.3）。登録なしで遊べる5問 → 5タイプ。結果は ?r=タイプ で共有でき、結果の画像から LINE 参加・ソロ出動へ。
+// シマエナ診断（spec v1.3）。登録なしで遊べる5問 → 5タイプ。結果は ?r=タイプ で共有でき、結果の画像から登録・ソロ出動へ。
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";

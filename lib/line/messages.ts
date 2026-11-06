@@ -1,4 +1,4 @@
-// LINE に送る文面と大きなボタン（クイックリプライ）。文面はここにまとめて、あとで直しやすくする。
+// 隊長トークに届く文面と大きなボタン（spec v1.17 で LINE からアプリへ。形は LINE のときのまま）。文面はここにまとめて、あとで直しやすくする。
 // 方針（v1.4）: 1つの吹き出しに1つの話題。短く、やさしい日本語で。次にすることはボタンで出す（最後の吹き出しに付く）。
 // うまくいかなかったときも「失敗」と感じさせない言い方にする。どれも吹き出しの配列を返す。
 // v1.6: シマエナ隊長の口調（語尾「〜しま〜」「〜えな〜」）は、手伝う側への文と隊長カードだけ。
@@ -31,7 +31,7 @@ function withButtons(body: string, buttons: Button[]): TextMessage {
 
 /** postback のボタン（押した文字がトークに出る） */
 const pb = (label: string, data: string): Button => ({ type: "postback", label, data, displayText: label });
-/** Web の画面を開くボタン（LIFF があれば LINE の中で開く） */
+/** 画面を開くボタン */
 const open = (label: string, path: string): Button => ({ type: "uri", label, uri: liffUrl(path) });
 /** 文字を送るボタン（「雪かきGO！」「登録」など） */
 const say = (label: string, t = label): Button => ({ type: "message", label, text: t });
@@ -202,7 +202,7 @@ export const MSG = {
     bubbles([
       "ご家族の登録ができました。",
       `連携コード: ${code}`,
-      "ご本人の LINE でこのアカウントを友だち追加して、この6桁を送ると、ご本人にも点呼が届きます。ほかのご家族も、同じ番号でお知らせを受け取れます。",
+      "ご本人がこのアプリに LINE でログインして、「はじめる」の画面でこの6桁を入れると、ご本人にも点呼が届きます。ほかのご家族も、同じ番号でお知らせを受け取れます。",
     ]),
 
   // ---- 前夜の予告・朝のあいさつ ----
@@ -285,7 +285,7 @@ export const MSG = {
   /** 画面で30秒の登録へ（spec v1.14） */
   /** スタンプ・音声・動画・ファイル: 読めないので、文字かボタンをお願いする（spec 12: 音声入力はしない） */
   unsupported: () => bubbles(["ごめんなさい、スタンプや音声・動画は読めません。", "文字で送るか、下のボタンから選んでください。"], [say("隊長に相談"), B.go, B.map]),
-  startInvite: (): LineMessage[] => [withButtons("LINE の中の画面で、30秒で登録できます。", [open("30秒で登録する", "/start")])],
+  startInvite: (): LineMessage[] => [withButtons("「はじめる」の画面で、30秒で登録できます。", [open("30秒で登録する", "/start")])],
   notRegistered: () => bubbles(["登録がまだです。1分で終わります。"], [B.register, B.guide]),
   planForRequester: (startTime: string, ns: string[]) =>
     ns.length > 0
@@ -468,7 +468,7 @@ export const MSG = {
   /** コンシェルジュが登録のあとに聞く: 近くの道の報告を受け取るか */
   roadAsk: (): LineMessage[] => [
     ask(
-      "シマエナコンシェルジュです。\n家の近く（300m）で「除雪が来ていない」「凍って転びやすい」などの報告があったら、LINE でお知らせしましょうか？（1日3回まで・いつでも変えられます）",
+      "シマエナコンシェルジュです。\n家の近く（300m）で「除雪が来ていない」「凍って転びやすい」などの報告があったら、通知でお知らせしましょうか？（1日6回まで・いつでも変えられます）",
       [
         { label: "知らせてほしい", data: "road:on" },
         { label: "いらない", data: "road:off", tone: "soft" },

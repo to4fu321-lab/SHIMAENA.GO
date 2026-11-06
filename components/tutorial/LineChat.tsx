@@ -1,6 +1,6 @@
 "use client";
 
-// 使い方の中の「LINE の画面」の練習版。本物の Bot と同じ文面・同じボタンで、押すと会話が進む（何も送信しない）。
+// 使い方の中の「隊長トーク」の練習版。本物と同じ文面・同じボタンで、押すと会話が進む（何も送信しない）。
 import { useEffect, useRef } from "react";
 import Mascot from "../Mascot";
 
@@ -44,14 +44,14 @@ export default function LineChat({ messages, replies = [], className = "" }: { m
   }, [messages.length]);
 
   return (
-    <div className={`flex min-h-0 flex-col overflow-hidden rounded-3xl bg-card shadow-md ring-1 ring-ink/15 ${className}`} role="group" aria-label="LINE の画面（練習）">
-      {/* LINE のトークの見出し */}
+    <div className={`flex min-h-0 flex-col overflow-hidden rounded-3xl bg-card shadow-md ring-1 ring-ink/15 ${className}`} role="group" aria-label="隊長トーク（練習）">
+      {/* トークの見出し */}
       <div className="flex shrink-0 items-center gap-2 border-b border-ink/10 px-3 py-1.5">
         <span className="grid size-7 place-items-center rounded-full bg-ice-soft">
           <Mascot size={24} />
         </span>
-        <b className="flex-1 text-base">シマエナGO</b>
-        <span className="rounded-full bg-[#06C755] px-2 py-0.5 text-xs font-bold text-white">LINE 練習</span>
+        <b className="flex-1 text-base">隊長トーク</b>
+        <span className="rounded-full bg-lamp px-2 py-0.5 text-xs font-bold text-white">練習</span>
       </div>
       {/* トーク */}
       <div ref={body} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-2" aria-live="polite">
@@ -74,7 +74,7 @@ export default function LineChat({ messages, replies = [], className = "" }: { m
           ),
         )}
       </div>
-      {/* クイックリプライ（LINE の吹き出しの下のボタン） */}
+      {/* 吹き出しの下の小さなボタン */}
       {replies.length > 0 && (
         <div className="flex shrink-0 gap-2 overflow-x-auto border-t border-ink/10 bg-card px-2 py-2">
           {replies.map((r) => (

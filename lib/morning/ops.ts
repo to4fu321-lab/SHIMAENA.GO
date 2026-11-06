@@ -84,7 +84,7 @@ export async function announce(opts: { date: string; forecastCm: number; tempMin
   const roster = await loadRoster();
   const ids = lineIds(roster.participants);
 const ok =   await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName, safetyLine({ cm: opts.forecastCm, tempMinC: opts.tempMinC, windMaxMs: opts.windMaxMs }))); // 予告はシマエナ隊長のカード1枚に
-  s.log.push(ok ? `予告を LINE で ${ids.length} 人に送信` : "⚠ 予告を LINE で送れませんでした（/admin の「問題」を見てください）");
+  s.log.push(ok ? `予告を隊長トークで ${ids.length} 人に` : "⚠ 予告を隊長トークに入れられませんでした（/admin の「問題」を見てください）");
   await saveMorning(s);
   return s;
 }
@@ -128,8 +128,8 @@ export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
   const okR = await multicast(requesters, MSG.rollcallRequester(...rcArgs(s)));
   const okH = await multicast(helpers, MSG.rollcallHelper(...rcArgs(s)));
   const sent = (okR ? requesters.length : 0) + (okH ? helpers.length : 0);
-  if (!okR || !okH) s.log.push("⚠ 点呼の一部が LINE で送れませんでした（/admin の「問題」を見てください）");
-  s.log.push(`点呼を LINE で ${sent} 人に送信`);
+  if (!okR || !okH) s.log.push("⚠ 点呼の一部を隊長トークに入れられませんでした（/admin の「問題」を見てください）");
+  s.log.push(`点呼を隊長トークで ${sent} 人に`);
   await saveMorning(s);
   return { record: s, sent };
 }
@@ -297,7 +297,7 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
     if (await push(k, [...head, ...body])) sent++;
     else failed++;
   }
-  s.log.push(`作戦を LINE で ${sent} 人に送信${failed > 0 ? `（⚠ ${failed} 人に送れず。/admin の「問題」を見てください）` : ""}`);
+  s.log.push(`作戦を隊長トークで ${sent} 人に${failed > 0 ? `（⚠ ${failed} 人に入れられず。/admin の「問題」を見てください）` : ""}`);
   await saveMorning(s);
   // 開始 20 分前（6:40）の時点で足りない家はすぐヘルプ通知（spec 4-a）、返事なしの家は声かけと家族へ（spec 4）
   for (const m of s.morning.missions) {
@@ -625,7 +625,7 @@ export async function applyThanks(
   }
   const record: ThanksRecord = { choice, label, sentence, at: now.toISOString(), sentTo };
   s.thanks = { ...(s.thanks ?? {}), [m.id]: record };
-  s.log.push(`拠点${base.number}: ありがとう点呼「${label}」→ ${sorties.length} 人（LINE ${sentTo} 人）。裏面: ${sentence}`);
+  s.log.push(`拠点${base.number}: ありがとう点呼「${label}」→ ${sorties.length} 人（トーク ${sentTo} 人）。裏面: ${sentence}`);
   await saveMorning(s);
   try {
     await rerenderBacks(m.id, {
@@ -672,7 +672,7 @@ export async function applyCheer(
   }
   const record: CheerRecord = { choice, label, at: now.toISOString(), sentTo };
   s.cheers = { ...(s.cheers ?? {}), [m.id]: [...(s.cheers?.[m.id] ?? []), record] };
-  s.log.push(`拠点${base.number}: ご家族から応援「${label}」→ ${sorties.length} 人（LINE ${sentTo} 人）`);
+  s.log.push(`拠点${base.number}: ご家族から応援「${label}」→ ${sorties.length} 人（トーク ${sentTo} 人）`);
   await saveMorning(s);
   return { ok: true, messages: MSG.cheerSent(label, sorties.length), record };
 }
@@ -752,7 +752,7 @@ export async function notifyHelp(missionId: string, now = new Date()): Promise<{
     notifiedIds: [...state.notifiedIds, ...targets.map((t) => t.id)],
   });
   s.log.push(
-    `拠点${number}: ヘルプ通知 ${radiusLabel(ring)}（${targets.length} 人: ${targets.map((t) => t.nickname).join("・") || "該当なし"}、LINE ${sent} 人）`,
+    `拠点${number}: ヘルプ通知 ${radiusLabel(ring)}（${targets.length} 人: ${targets.map((t) => t.nickname).join("・") || "該当なし"}、トーク ${sent} 人）`,
   );
   await saveMorning(s);
   return { ring: radiusLabel(ring), notified: targets.length };
@@ -921,7 +921,7 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
     }
   }
   s.weekly = { weekStart: from, commentary: text.commentary, nextWeek: text.nextWeek, ranking: summary.ranking, teamTotals: summary.teamTotals, titles: summary.titles, at: now.toISOString() };
-  s.log.push(`${today} 今週の群れ: ${summary.days} 朝・${summary.missionsDone} 軒、称号 ${summary.titles.length} 人、チームを組み直し、LINE ${sent} 人`);
+  s.log.push(`${today} 今週の群れ: ${summary.days} 朝・${summary.missionsDone} 軒、称号 ${summary.titles.length} 人、チームを組み直し、トーク ${sent} 人`);
   await saveMorning(s);
   return { summary, commentary: text.commentary, nextWeek: text.nextWeek, nextTeams, sent };
 }
@@ -997,7 +997,7 @@ export async function askForHelp(lineUserId: string, now = new Date()): Promise<
     }
   }
   setHelpState(s, m.id, { stage: 1, lastAt: at, notifiedIds: targets.map((t) => t.id) });
-  s.log.push(`拠点${base.number}: 「雪かきを頼む」で雪かき待ちに（近くの ${sent}人に LINE）`);
+  s.log.push(`拠点${base.number}: 「雪かきを頼む」で雪かき待ちに（近くの ${sent}人にお知らせ）`);
   await saveMorning(s);
   return MSG.askOpened(base.number, sent);
 }
@@ -1083,7 +1083,7 @@ export async function laterShift(when: "noon" | "pm", now = new Date()): Promise
   const to = lineIds(roster.participants.filter((p) => ids.includes(p.id)));
   if (to.length === 0) return { reopened, sent: 0 };
   const ok = await multicast(to, MSG.laterNudge(when, houses, activeHelpers(s.morning)));
-  s.log.push(`${when === "noon" ? "お昼" : "夕方"}の出番を LINE で ${ok ? to.length : 0} 人に（待っている家 ${houses} 軒）`);
+  s.log.push(`${when === "noon" ? "お昼" : "夕方"}の出番を隊長トークで ${ok ? to.length : 0} 人に（待っている家 ${houses} 軒）`);
   await saveMorning(s);
   return { reopened, sent: ok ? to.length : 0 };
 }

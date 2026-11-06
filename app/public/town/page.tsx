@@ -1,4 +1,4 @@
-// 公開ページ「町の雪解け」（spec v1.3）。LINE 登録前でも、SNS から開いても見られる。
+// 公開ページ「町の雪解け」（spec v1.3）。登録前でも、SNS から開いても見られる。
 // 出すのは集計だけ（町の雪解け率・今日の人数・今週の活動）。名前・家・マスの位置・拠点番号は出さない。
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -80,7 +80,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
     >
       {isInviteCode(inviteFrom) && <InviteBeacon code={inviteFrom} />}
       <Pager tabs={tabs} initial={via === "cheer" ? 4 : 0}>
-        {/* 1. 町: 雪解け率・何のアプリか・LINE で参加 */}
+        {/* 1. 町: 雪解け率・何のアプリか・はじめる */}
         <div className="contents">
           {via === "invite" && (
             <p className="shrink-0 rounded-2xl bg-camellia-soft px-3 py-2 text-base ring-1 ring-camellia" aria-label="友だちからの招待">
@@ -178,7 +178,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
           <section className="flex flex-col gap-2" aria-label="シマエナGO とは">
             <h2 className="text-xl font-bold">シマエナGO とは</h2>
             <ul className="list-disc space-y-1 pl-5">
-              <li>雪の朝、LINE に1問だけの点呼が届きます。</li>
+              <li>雪の朝、アプリの「隊長トーク」に1問だけの点呼が届きます。</li>
               <li>町内の3チームが、ひとり暮らしの家の雪を10分単位でどけます。</li>
               <li>動いた時だけのカードが届きます。お金には換えません。</li>
             </ul>
@@ -194,10 +194,10 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
             <h2 className="text-xl font-bold">参加する</h2>
             {via === "invite" && (
               <p className="rounded-2xl bg-camellia-soft px-3 py-2 text-base ring-1 ring-camellia">
-                🎴 このページから LINE で参加して最初の出動をすると、あなたと誘ってくれた友だちの<b>二人に限定カード「ふたりの群れ」</b>が届きます。
+                🎴 このページから登録して最初の出動をすると、あなたと誘ってくれた友だちの<b>二人に限定カード「ふたりの群れ」</b>が届きます。
               </p>
             )}
-            <p className="text-base">LINE で登録すると、1人の10分（ソロ出動）から参加できます。</p>
+            <p className="text-base">LINE でログインして登録すると、1人の10分（ソロ出動）から参加できます。</p>
             {joinButton}
             <Link href="/public/diagnosis" className="btn btn-white btn-big">
               シマエナ診断（あなたは何シマエナ？）
