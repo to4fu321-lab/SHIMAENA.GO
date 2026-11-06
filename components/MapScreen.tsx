@@ -13,6 +13,7 @@ import { requestLabel } from "@/lib/request-note";
 import type { ShortHouse } from "@/lib/morning/watch";
 import { useState } from "react";
 import GoBriefing from "./GoBriefing";
+import HazardIcon from "./HazardIcon";
 import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
@@ -328,6 +329,10 @@ export default function MapScreen({
               <li>
                 <span className="legend bg-ice" />
                 🪶 ソロ出動の足あと
+              </li>
+              <li className="col-span-2 flex items-center gap-1.5">
+                <HazardIcon id="ice" size={20} />
+                オレンジのピン: 道の危険（24時間。押すと写真）
               </li>
               <li className="col-span-2 text-ink-soft">マスは 50m 四方。どの家かは、割り当てられた人の LINE にだけ届きます。</li>
             </ul>

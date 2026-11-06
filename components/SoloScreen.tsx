@@ -20,6 +20,8 @@ import MissionRun from "./MissionRun";
 import RoadReportRun from "./RoadReportRun";
 import BragShare from "./BragShare";
 import NakamaAfter from "./NakamaAfter";
+import HazardIcon from "./HazardIcon";
+import { HAZARDS } from "@/lib/road/hazards";
 import Mascot, { SnowTown } from "./Mascot";
 import TabBar from "./TabBar";
 
@@ -279,8 +281,23 @@ export default function SoloScreen({
           )}
           <span className="ml-auto text-sm font-bold tabular-nums text-ink-soft">{i + 1}/{slides.length}</span>
         </div>
-        <h2 className="text-2xl font-bold leading-tight">{done ? "✓ " : ""}{m.label}</h2>
-        <p className="text-[15px] leading-snug">{m.description}</p>
+        <h2 className="text-2xl font-bold leading-tight short:text-xl">{done ? "✓ " : ""}{m.label}</h2>
+        {m.kind === "report_snow" ? (
+          // 5つの危険を、警告標識のアイコンで先に見せる（11/6 本人の指示「分かりやすい UI」）
+          <>
+            <p className="text-[15px] leading-snug short:hidden">見つけた危険を、写真と場所で近所に知らせる。</p>
+            <ul className="grid grid-cols-5 gap-1" aria-label="知らせられる危険">
+              {HAZARDS.map((h) => (
+                <li key={h.id} className="flex flex-col items-center text-center text-xs font-bold leading-tight">
+                  <HazardIcon id={h.id} size={34} />
+                  <span className="mt-0.5 text-balance">{h.short}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="text-[15px] leading-snug">{m.description}</p>
+        )}
         <div className="grid grid-cols-3 divide-x divide-ink/15 rounded-2xl bg-paper py-1.5 text-center text-xs font-bold">
           <p><span className="block text-xl tabular-nums">{m.timeLabel ?? `${m.minutes}分`}</span>時間</p>
           <p><span className="block text-xl text-lamp">{DIFF[m.difficulty]}</span>むずかしさ</p>
@@ -378,13 +395,18 @@ export default function SoloScreen({
           minutesLabel={brag ? `${brag.minutes}分` : roadDone ? "報告" : undefined}
           share={[
             roadDone && (
-              <p key="pin" className="rounded-2xl bg-ice-soft px-3 py-2 text-center text-base ring-1 ring-ice">
-                📍 地図にピンを立てました。
-                <span className="block text-sm">{roadDone.later ? "近くの人には、朝 6:30 にお知らせします。" : "近くで「受け取る」にした人へ LINE でお知らせします。"}</span>
-                <Link href={`/map${q ? `${q}&` : "?"}road=${roadDone.id}`} className="mt-1 inline-block font-bold underline">
-                  地図で見る
+              <div key="pin" className="toast-in flex items-center gap-3 rounded-2xl bg-ink px-3 py-2.5 text-white shadow-lg" role="status">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-xl font-bold text-ink" aria-hidden="true">✓</span>
+                <span className="min-w-0 flex-1 leading-snug">
+                  <b className="block text-base">道の危険を報告しました</b>
+                  <span className="block text-sm text-white/85">
+                    みんなの安全のために、ありがとう！{roadDone.later ? "近くの人には朝 6:30 にお知らせします。" : "近くの人へ LINE でお知らせします。"}
+                  </span>
+                </span>
+                <Link href={`/map${q ? `${q}&` : "?"}road=${roadDone.id}`} className="shrink-0 rounded-full bg-white/15 px-3 py-2 text-sm font-bold">
+                  地図 ›
                 </Link>
-              </p>
+              </div>
             ),
             brag && <BragShare key="brag" viewerId={viewerId} before={brag.before} after={brag.after} minutes={brag.minutes} page={shareOptions[0]?.page} snow={brag.snow} cardId={brag.cardId} />,
             <QuickShare key="quick" text={roadDone ? "近所の道の危険を、写真と場所で知らせました。⚠️\nみんなで冬の道を安全に。\n#シマエナGO #雪道" : clearMessage("solo", brag?.minutes ?? (clear.onsite ? 10 : 3))} image={shareOptions[0]?.image ?? "/api/share/today.png"} page={shareOptions[0]?.page} />,
@@ -423,7 +445,7 @@ export default function SoloScreen({
         {!runMission && (
           // なかま（spec v1.13）: 任意。ひとりでの出動はこのままワンタップ
           <Link href={`/nakama${q}`} className="mt-1 flex min-h-10 items-center justify-between rounded-xl bg-white/15 px-3 text-base font-bold">
-            <span>👥 だれかと一緒に・バトン（任意）</span>
+            <span className="truncate">👥 だれかと一緒に・バトン（任意）</span>
             <span aria-hidden="true">›</span>
           </Link>
         )}

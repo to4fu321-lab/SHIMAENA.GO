@@ -9,6 +9,8 @@ import { type CellView, type SoloCell, cellCenter, cellPolygon } from "@/lib/cel
 import { TEAMS } from "@/lib/teams";
 import { TOWN } from "@/lib/town";
 import type { TeamId } from "@/lib/types";
+import type { HazardId } from "@/lib/road/hazards";
+import { hazardPinHtml, hazardSvg } from "@/lib/road/icons";
 
 const RED = "#C0392B"; // 人手不足（赤は地図の状態色だけに使う）
 const GREY = "#8B949E"; // 返事なし
@@ -67,10 +69,13 @@ function cellStyle(cell: CellView): StyleSpec {
 /** 道の危険のピン（報告した人の名前は持たない） */
 export interface RoadPin {
   id: string;
+  hazard: HazardId;
   emoji: string;
   label: string;
   location: LatLng;
   ago: string;
+  /** 報告から2時間以内（ピンの足もとが脈打つ） */
+  fresh?: boolean;
   note?: string;
 }
 
@@ -192,11 +197,11 @@ export default function TownMap({
       // 道の危険（写真の場所にピン）。押すと写真と内容
       for (const rp of road) {
         const mk = L.marker(rp.location, {
-          icon: L.divIcon({ className: "", html: `<div class="road-pin" aria-label="${esc(rp.label)}">${rp.emoji}</div>`, iconSize: [38, 38], iconAnchor: [19, 38] }),
+          icon: L.divIcon({ className: "", html: hazardPinHtml(rp.hazard, esc(rp.label), Boolean(rp.fresh)), iconSize: [44, 55], iconAnchor: [22, 55], popupAnchor: [0, -50] }),
         })
           .bindPopup(
-            `<div class="road-pop"><img src="/api/road/${encodeURIComponent(rp.id)}/photo" alt="" loading="lazy" /><b>${rp.emoji} ${esc(rp.label)}</b><span>${esc(rp.ago)}${rp.note ? `・${esc(rp.note)}` : ""}</span></div>`,
-            { maxWidth: 200, minWidth: 180 },
+            `<div class="hz-pop"><div class="hz-pop-head">${hazardSvg(rp.hazard, 36)}<span><b>${esc(rp.label)}</b><small>${esc(rp.ago)}・近所の人の報告</small></span></div>${rp.note ? `<span>「${esc(rp.note)}」</span>` : ""}<img src="/api/road/${encodeURIComponent(rp.id)}/photo" alt="報告の写真（ぼかし済み）" loading="lazy" /></div>`,
+            { maxWidth: 230, minWidth: 210 },
           )
           .addTo(layer!);
         if (rp.id === focusRoad && focused.current !== focusRoad) {

@@ -438,3 +438,25 @@ body {
 @keyframes badge-spin { to { transform: rotate(360deg); } }
 .badge-ring { animation: badge-spin 4s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .badge-ring { animation-duration: 12s; } }
+
+/* 道の危険のピン（11/6 新しい形）: しずく形のオレンジ＋三角のアイコン。報告から2時間は足もとが脈打つ */
+.hz-pin { position: relative; width: 44px; height: 55px; filter: drop-shadow(0 3px 5px rgba(41, 68, 92, 0.35)); }
+.hz-pin > svg { position: relative; display: block; }
+.hz-in { position: absolute; left: 9px; top: 7px; width: 26px; height: 26px; }
+.hz-halo { position: absolute; left: 50%; bottom: -6px; width: 46px; height: 18px; margin-left: -23px; border-radius: 50%; background: rgba(232, 121, 47, 0.28); }
+.hz-fresh .hz-halo { animation: hz-halo 1.8s ease-out infinite; }
+@keyframes hz-halo {
+  0% { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+/* 吹き出し（Leaflet のポップアップの中身） */
+.hz-pop { display: grid; gap: 6px; color: #29445c; font-size: 14px; }
+.hz-pop-head { display: flex; align-items: center; gap: 8px; }
+.hz-pop-head b { display: block; font-size: 17px; line-height: 1.25; }
+.hz-pop-head small { display: block; font-size: 13px; color: #4a6076; }
+.hz-pop img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; background: #eef2f6; }
+/* 報告したあとのお知らせ（濃い帯） */
+.toast-in { animation: tut-pop 0.4s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .hz-fresh .hz-halo, .toast-in { animation: none; }
+}

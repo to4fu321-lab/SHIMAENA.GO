@@ -42,7 +42,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   const now = new Date();
   const road = (await listRoadReportsSince(new Date(now.getTime() - SHOW_MS).toISOString()).catch(() => [])).flatMap((r) => {
     const h = hazard(r.hazard);
-    return h ? [{ id: r.id, emoji: h.emoji, label: h.label, location: r.location, ago: agoText(r.at, now), note: r.note }] : [];
+    return h ? [{ id: r.id, hazard: h.id, emoji: h.emoji, label: h.label, location: r.location, ago: agoText(r.at, now), fresh: now.getTime() - Date.parse(r.at) < 2 * 3600_000, note: r.note }] : [];
   });
   return (
     <>
