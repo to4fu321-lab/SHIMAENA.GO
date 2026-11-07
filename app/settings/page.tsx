@@ -1,6 +1,7 @@
 // 設定: 登録の確認と、やり直し・連携コード・お知らせの説明（spec v1.17: 画面で）。
 // 1画面（11/5 本人の指示）: タブ「あなたの登録／やり直す／お知らせ／音」を横スワイプ。縦にはスクロールしない。
 // 「音」（spec v1.19）: 効果音と BGM のオン・オフ（端末に保存）。
+// 「時計」（spec v1.31）: スマートウォッチと使う（手首の点呼・動きを数える・心拍）。
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -12,6 +13,7 @@ import Pager, { Screen } from "@/components/Pager";
 import NudgeSwitch from "@/components/NudgeSwitch";
 import RedoRegistration from "@/components/RedoRegistration";
 import SoundToggle from "@/components/SoundToggle";
+import WatchSettings from "@/components/WatchSettings";
 import { loadNudge } from "@/lib/nudge/store";
 import { loadRoster } from "@/lib/morning/roster";
 import { TEAMS } from "@/lib/teams";
@@ -67,7 +69,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       </nav>
       }
     >
-      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "notice", label: "お知らせ" }, { key: "sound", label: "音" }]}>
+      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "notice", label: "お知らせ" }, { key: "sound", label: "音" }, { key: "watch", label: "時計" }]}>
 
       {me ? (
         <section className="rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="あなたの登録">
@@ -126,6 +128,8 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       </section>
 
       <SoundToggle />
+
+      <WatchSettings />
 
       </Pager>
     </Screen>

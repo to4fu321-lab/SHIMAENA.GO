@@ -15,6 +15,7 @@ import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
 import { stormStopText } from "@/lib/storm";
 import { findPrivateAreas, WHOLE, type PrivacyResult } from "@/lib/claude/privacy";
+import { cleanStrokes } from "@/lib/watch/strokes";
 
 export interface SoloActionResult {
   ok: boolean;
@@ -39,7 +40,8 @@ export async function completeSoloAction(formData: FormData): Promise<SoloAction
       if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
       photo = { bytes, mediaType };
     }
-    const r = await completeSolo(id, kind, { photo, note, now: new Date() });
+    const strokes = cleanStrokes(formData.get("strokes")); // v1.31 スコップカウンター（任意）
+    const r = await completeSolo(id, kind, { photo, note, strokes, now: new Date() });
     revalidatePath("/solo");
     revalidatePath("/");
     revalidatePath("/map");

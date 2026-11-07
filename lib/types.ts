@@ -295,5 +295,7 @@ export interface SoloLog {
   cellKey?: string;
   /** 家の完了（help_house）のとき、そのミッション ID（同じ家で二重に数えない） */
   missionId?: string;
+  /** v1.31: スコップカウンター（スマホのセンサーで数えた「ザクッ」の回数。数えていないときはなし。得点には入れない） */
+  strokes?: number;
   at: string; // ISO
 }

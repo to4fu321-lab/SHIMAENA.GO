@@ -100,6 +100,7 @@ create table if not exists solo_logs (
   at timestamptz not null default now()
 );
 create unique index if not exists solo_logs_once on solo_logs (participant_id, date, kind, coalesce(mission_id, ''));
+alter table solo_logs add column if not exists strokes integer; -- v1.31 スコップカウンターの回数（数えていないときは null）
 
 -- SNS 閲覧者の「町を応援する」の数（日付ごと）。得点にも羽にも入れない。
 create table if not exists town_cheers (

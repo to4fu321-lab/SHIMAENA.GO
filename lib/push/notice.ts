@@ -27,6 +27,14 @@ export interface PushPayload {
   tag?: string;
   /** 音・振動なし（夜の急がない知らせ） */
   silent?: boolean;
+  /** v1.31: 通知のボタン（時計や通知の画面から、開かずに答える）。Android は 2 つまで。iPhone はボタンが出ない */
+  actions?: PushAction[];
+}
+
+export interface PushAction {
+  /** `pb:` + ボタンの data（service worker が /api/push/act へ送る） */
+  action: string;
+  title: string;
 }
 
 export interface Notice {
@@ -99,6 +107,26 @@ export function quietHours(now = new Date()): boolean {
   return h >= 22 || h < 6;
 }
 
+/** 通知に付けるボタンの対象（点呼の答え・人手が足りない家への返事）。ほかは開いて答える */
+const ACTIONABLE = /^(rc:ans=[a-z0-9]+|help:go=[\w-]+|help:no)$/;
+export const ACTIONS_MAX = 2; // Android の Chrome が出せる数
+const TITLE_MAX = 12; // 時計の小さな画面に収まる長さ
+
+/**
+ * 文面のボタンから、通知のボタンを 2 つまで（v1.31 スマートウォッチ）。
+ * 1 つ目は最初のボタン（行く・朝）、2 つ目は「休む／無理」の控えめな答え（なければ 2 番目）。
+ * 手首で押せるのは「答え」だけ。地図を開くなどのリンクは付けない。
+ */
+export function noticeActions(messages: LineMessage[]): PushAction[] {
+  const pbs = messages.flatMap(actionsOf).flatMap((a) => (a.type === "postback" && ACTIONABLE.test(a.data) ? [a] : []));
+  if (pbs.length === 0) return [];
+  const seen = new Set<string>();
+  const uniq = pbs.filter((a) => !seen.has(a.data) && seen.add(a.data));
+  const soft = uniq.find((a, i) => i > 0 && (/=0$/.test(a.data) || a.data === "help:no"));
+  const picked = uniq.length <= ACTIONS_MAX ? uniq : [uniq[0], soft ?? uniq[1]];
+  return picked.map((a) => ({ action: `pb:${a.data}`, title: a.label.replace(/^[^\p{L}\p{N}]+\s*/u, "").slice(0, TITLE_MAX) }));
+}
+
 /** 文面から通知を作る */
 export function buildNotice(messages: LineMessage[], now = new Date()): Notice {
   const { kind, url } = noticeKind(messages);
@@ -107,5 +135,7 @@ export function buildNotice(messages: LineMessage[], now = new Date()): Notice {
   const payload: PushPayload = { title: k.title, body, url: url ?? k.url };
   if (k.tag) payload.tag = k.tag;
   if (k.urgency !== "high" && quietHours(now)) payload.silent = true;
+  const actions = noticeActions(messages);
+  if (actions.length > 0) payload.actions = actions;
   return { kind, payload, urgency: k.urgency, ttl: k.ttl };
 }

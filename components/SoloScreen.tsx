@@ -17,6 +17,7 @@ import { clearMessage } from "@/lib/share-links";
 import SoloClear from "./SoloClear";
 import MissionFlash from "./MissionFlash";
 import MissionRun from "./MissionRun";
+import { strokesStorageKey } from "./ShovelMeter";
 import RoadReportRun from "./RoadReportRun";
 import Bgm from "./Bgm";
 import BragShare from "./BragShare";
@@ -88,7 +89,10 @@ export default function SoloScreen({
     if (!r) setBefore(undefined);
     try {
       if (r) localStorage.setItem(runKey, JSON.stringify(r));
-      else localStorage.removeItem(runKey);
+      else {
+        localStorage.removeItem(runKey);
+        localStorage.removeItem(strokesStorageKey(viewerId)); // スコップカウンターの続きも消す
+      }
     } catch {}
   };
   useEffect(() => {
@@ -124,7 +128,7 @@ export default function SoloScreen({
     }, 1500);
   };
 
-  const submit = (kind: string, file?: File, note?: string, minutes?: number) => {
+  const submit = (kind: string, file?: File, note?: string, minutes?: number, strokes?: number) => {
     const shot = before;
     start(async () => {
       try {
@@ -132,6 +136,7 @@ export default function SoloScreen({
         fd.set("viewerId", viewerId);
         fd.set("kind", kind);
         if (note) fd.set("note", note);
+        if (strokes) fd.set("strokes", String(strokes)); // v1.31 スコップカウンター
         if (file) fd.set("photo", new File([await shrink(file)], "solo.jpg", { type: "image/jpeg" }));
         const r = await completeSoloAction(fd);
         setResult(r);
@@ -512,7 +517,8 @@ export default function SoloScreen({
                     q={q}
                     before={before}
                     onBefore={setBefore}
-                    onReport={(file, note) => submit(m.kind, file, note, Math.max(1, Math.round((Date.now() - running.startedAt) / 60000)))}
+                    strokesKey={strokesStorageKey(viewerId)}
+                    onReport={(file, note, strokes) => submit(m.kind, file, note, Math.max(1, Math.round((Date.now() - running.startedAt) / 60000)), strokes)}
                     onQuit={() => {
                       homeSignal(m.kind, false);
                       setRunning(null);
