@@ -21,6 +21,8 @@
   /* スマホ */
   .phone { position:absolute; left:150px; top:62px; width:430px; height:930px; border:12px solid #0d1620; border-radius:54px; background:#fff; box-shadow:0 30px 60px rgba(0,0,0,.5), 0 0 0 2px rgba(255,255,255,.1); overflow:hidden; }
   .phone img { display:block; width:430px; height:930px; object-fit:cover; }
+  .tapfx { position:absolute; width:90px; height:90px; margin:-45px 0 0 -45px; border-radius:50%; border:6px solid var(--lamp); background:rgba(217,130,91,.35); pointer-events:none; opacity:0; }
+  .finger { position:absolute; width:46px; height:46px; margin:-14px 0 0 -14px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 4px 12px rgba(0,0,0,.35); opacity:0; }
   .label { position:absolute; left:150px; top:1004px; width:454px; text-align:center; font-size:26px; font-weight:700; color:var(--ink-soft); letter-spacing:.06em; }
   /* テロップ（右） */
   .telops { position:absolute; left:700px; top:120px; width:1140px; display:flex; flex-direction:column; gap:26px; }
@@ -28,13 +30,22 @@
   .telop.small { font-size:36px; font-weight:700; color:#dfe8f0; }
   .telop.tag { display:inline-block; align-self:flex-start; background:var(--lamp); color:#fff; padding:14px 36px; border-radius:999px; font-size:52px; box-shadow:0 10px 30px rgba(217,130,91,.45); }
   .card .telops { left:0; top:auto; bottom:300px; width:1920px; align-items:center; text-align:center; }
+  .card.low .telops { bottom:220px; }
   .card .telop.tag { align-self:center; }
   .card.top .telops { top:110px; bottom:auto; }
   /* 字幕 */
-  .sub { position:absolute; left:700px; width:1140px; top:880px; font-family:"Noto Sans JP", sans-serif; font-size:40px; font-weight:700; line-height:1.5; color:#fff; text-align:left; }
+  .sub { position:absolute; left:660px; width:1220px; top:880px; font-family:"Noto Sans JP", sans-serif; font-size:38px; font-weight:700; line-height:1.5; color:#fff; text-align:left; }
   .sub span { display:inline; background:rgba(10,20,30,.62); padding:8px 18px; border-radius:12px; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
   .card .sub { left:160px; width:1600px; top:900px; text-align:center; }
-  .sub.captain span { background:rgba(217,130,91,.92); }
+  .sub.captain { left:0; width:1920px; top:470px; text-align:center; font-family:"Zen Maru Gothic",sans-serif; font-size:46px; }
+  .sub.captain span { position:relative; background:#fff; color:var(--ink); border:4px solid var(--salvia); border-radius:999px; padding:14px 40px; box-shadow:0 10px 30px rgba(41,68,92,.18); }
+  .sub.captain span::before { content:""; position:absolute; left:50%; top:-26px; margin-left:-16px; border:16px solid transparent; border-bottom-color:var(--salvia); border-top:0; }
+  .sub.captain span::after { content:""; position:absolute; left:50%; top:-19px; margin-left:-12px; border:12px solid transparent; border-bottom-color:#fff; border-top:0; }
+  .app .sub.captain { left:1080px; width:840px; top:630px; font-size:42px; }
+  .titlecard .sub.captain { left:1310px; width:560px; top:230px; text-align:left; }
+  .titlecard .sub.captain span::before { left:-28px; top:50%; margin:-16px 0 0 0; border:16px solid transparent; border-right-color:var(--salvia); border-left:0; }
+  .titlecard .sub.captain span::after { left:-19px; top:50%; margin:-12px 0 0 0; border:12px solid transparent; border-right-color:#fff; border-left:0; }
+  .ochi-bird { position:absolute; left:1300px; top:230px; }
   .sub.daughter span { background:rgba(125,79,104,.92); }
   /* カード共通 */
   .card { background:#1b2e41; }
@@ -43,7 +54,7 @@
   .title-bg { position:absolute; inset:0; background:linear-gradient(180deg,#f4f7fa 0%,#e3eef3 60%,#d6e4ec 100%); }
   .title-main { top:430px; font-size:150px; color:var(--ink); letter-spacing:.02em; text-shadow:0 6px 0 #fff; }
   .title-tag { top:610px; font-size:56px; color:var(--lamp-deep); font-weight:700; }
-  .title-small { top:700px; font-size:30px; color:#4a6076; font-weight:700; }
+  .title-small { top:700px; font-size:38px; color:#4a6076; font-weight:700; }
   .birds { position:absolute; left:0; width:1920px; top:60px; display:flex; justify-content:center; align-items:flex-end; gap:0; }
   .branch { position:absolute; left:560px; top:410px; width:800px; height:14px; background:#6b4a33; border-radius:8px; }
   /* 図 */
@@ -57,10 +68,13 @@
   .col .no { color:#ffd0b5; }
   /* 作り方 */
   .mk-phone { position:absolute; left:150px; top:62px; width:430px; height:930px; border:12px solid #0d1620; border-radius:54px; background:#fff; overflow:hidden; color:var(--ink); }
-  .mk-head { background:var(--ink); color:#fff; font-size:22px; font-weight:700; padding:18px 20px 12px; }
+  .mk-head { position:absolute; left:0; top:0; right:0; z-index:2; background:var(--ink); color:#fff; font-size:22px; font-weight:700; padding:18px 20px 12px; }
+  .mk-clip { position:absolute; left:0; top:92px; right:0; bottom:0; overflow:hidden; }
   .mk-head small { display:block; font-size:16px; color:var(--ink-soft); font-weight:500; }
   .mk-list { padding:14px 16px; display:flex; flex-direction:column; gap:10px; will-change:transform; }
-  .mk-item { background:var(--ice-soft); border-radius:18px 18px 18px 4px; padding:10px 14px; font-family:"Noto Sans JP",sans-serif; font-size:16px; line-height:1.4; font-weight:500; }
+  .mk-item { background:var(--ice-soft); border-radius:18px 18px 18px 4px; padding:10px 14px 10px 40px; font-family:"Noto Sans JP",sans-serif; font-size:16px; line-height:1.4; font-weight:500; position:relative; }
+  .mk-item svg { position:absolute; left:8px; top:8px; }
+  .mk-birds { position:absolute; left:1240px; top:600px; }
   .mk-item.me { background:var(--warm); border-radius:18px 18px 4px 18px; margin-left:40px; }
   .mk-item b { color:var(--lamp-deep); }
   /* 終わり */
@@ -99,6 +113,60 @@ function snowLayer(seed, n, opts = {}) {
   return el;
 }
 
+// ---- 人物（丸くてやわらかい絵柄。シマエナガと同じ色づかい）----
+// 200×300 の枠。足の底が y=292。pose: shovel / back（腰に手）/ cane / blower / wave / cup / child
+function person(o) {
+  const { x = 0, y = 0, s = 1, flip = false, skin = "#f3d9c6", coat = "#29445c", pants = "#1e3346", hat = "#c0392b", hair = "#3b2a22", scarf = "#d9825b", boots = "#2a2a2a", mitt = "#c0392b", pose = "shovel", face = "smile", kind = "adult", id = "", lean = 0 } = o;
+  const child = kind === "child", elder = kind === "elder";
+  const H = child ? 0.8 : 1; // 子どもは頭を大きく、体を短く
+  const headR = child ? 40 : 34, headY = child ? 92 : 78;
+  const bodyTop = headY + headR - 6, bodyBot = child ? 232 : 250;
+  const legTop = bodyBot - 12;
+  const headPart = () => {
+    let top;
+    if (elder) top = `<path d="M${100 - headR} ${headY - 4} Q100 ${headY - headR - 10} ${100 + headR} ${headY - 4} Q100 ${headY + 2} ${100 - headR} ${headY - 4}Z" fill="#d9d2cc"/><circle cx="${100 + headR - 8}" cy="${headY - headR + 6}" r="11" fill="#d9d2cc"/>`;
+    else if (o.beanie === false) top = `<path d="M${100 - headR} ${headY} Q${100 - headR} ${headY - headR - 4} 100 ${headY - headR - 2} Q${100 + headR} ${headY - headR - 4} ${100 + headR} ${headY} Q${100 + headR - 6} ${headY - 10} 100 ${headY - 14} Q${100 - headR + 6} ${headY - 10} ${100 - headR} ${headY}Z" fill="${hair}"/>`;
+    else top = `<path d="M${100 - headR - 2} ${headY - 2} Q100 ${headY - headR - 14} ${100 + headR + 2} ${headY - 2} L${100 + headR + 2} ${headY + 6} Q100 ${headY - 2} ${100 - headR - 2} ${headY + 6}Z" fill="${hat}"/><rect x="${100 - headR - 4}" y="${headY - 4}" width="${headR * 2 + 8}" height="14" rx="7" fill="${hat}" filter="brightness(.85)"/><circle cx="100" cy="${headY - headR - 10}" r="9" fill="#fff"/>`;
+    const eyes = face === "happy"
+      ? `<path d="M86 ${headY + 2} q6 -7 12 0" fill="none" stroke="#1d2f40" stroke-width="3.2" stroke-linecap="round"/><path d="M102 ${headY + 2} q6 -7 12 0" fill="none" stroke="#1d2f40" stroke-width="3.2" stroke-linecap="round"/>`
+      : face === "tired"
+        ? `<path d="M86 ${headY + 2} q6 4 12 0" fill="none" stroke="#1d2f40" stroke-width="3.2" stroke-linecap="round"/><path d="M102 ${headY + 2} q6 4 12 0" fill="none" stroke="#1d2f40" stroke-width="3.2" stroke-linecap="round"/>`
+        : `<circle cx="91" cy="${headY + 2}" r="3.4" fill="#1d2f40"/><circle cx="109" cy="${headY + 2}" r="3.4" fill="#1d2f40"/>`;
+    const mouth = face === "tired" ? `<path d="M95 ${headY + 16} q5 -4 10 0" fill="none" stroke="#1d2f40" stroke-width="2.6" stroke-linecap="round"/>` : face === "open" ? `<ellipse cx="100" cy="${headY + 16}" rx="5" ry="6" fill="#8f3a3a"/>` : `<path d="M94 ${headY + 14} q6 6 12 0" fill="none" stroke="#1d2f40" stroke-width="2.6" stroke-linecap="round"/>`;
+    const glasses = elder ? `<circle cx="91" cy="${headY + 2}" r="8" fill="none" stroke="#5b4636" stroke-width="2"/><circle cx="109" cy="${headY + 2}" r="8" fill="none" stroke="#5b4636" stroke-width="2"/><path d="M99 ${headY + 2} h2" stroke="#5b4636" stroke-width="2"/>` : "";
+    return `<circle cx="100" cy="${headY}" r="${headR}" fill="${skin}"/>${top}${eyes}${glasses}<ellipse cx="82" cy="${headY + 11}" rx="6" ry="3.6" fill="#f2b8bf" opacity=".8"/><ellipse cx="118" cy="${headY + 11}" rx="6" ry="3.6" fill="#f2b8bf" opacity=".8"/>${mouth}`;
+  };
+  const scarfPart = `<path d="M${100 - headR + 4} ${bodyTop + 2} Q100 ${bodyTop + 16} ${100 + headR - 4} ${bodyTop + 2} L${100 + headR - 2} ${bodyTop + 12} Q100 ${bodyTop + 28} ${100 - headR + 2} ${bodyTop + 12}Z" fill="${scarf}"/><path d="M${100 + headR - 14} ${bodyTop + 10} l14 30 l-16 6 l-10 -30Z" fill="${scarf}" filter="brightness(.85)"/>`;
+  const body = `<path d="M${100 - 34 * H} ${bodyTop + 10} Q100 ${bodyTop - 4} ${100 + 34 * H} ${bodyTop + 10} L${100 + 46 * H} ${bodyBot} Q100 ${bodyBot + 14} ${100 - 46 * H} ${bodyBot}Z" fill="${coat}"/><path d="M${100 - 44 * H} ${bodyBot - 26} Q100 ${bodyBot - 16} ${100 + 44 * H} ${bodyBot - 26}" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="5"/><circle cx="100" cy="${bodyTop + 40}" r="3.5" fill="rgba(255,255,255,.55)"/><circle cx="100" cy="${bodyTop + 62}" r="3.5" fill="rgba(255,255,255,.55)"/>`;
+  const legs = `<rect x="${100 - 30 * H}" y="${legTop}" width="${26 * H + 2}" height="${292 - legTop - 16}" rx="10" fill="${pants}"/><rect x="${100 + 4 * H}" y="${legTop}" width="${26 * H + 2}" height="${292 - legTop - 16}" rx="10" fill="${pants}"/><rect x="${100 - 36 * H}" y="268" width="${34 * H + 4}" height="24" rx="10" fill="${boots}"/><rect x="${100 + 2 * H}" y="268" width="${34 * H + 4}" height="24" rx="10" fill="${boots}"/>`;
+  const sh = bodyTop + 22; // 肩の高さ
+  const arm = (d, mx, my) => `<path d="${d}" fill="none" stroke="${coat}" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${mx}" cy="${my}" r="12" fill="${mitt}"/>`;
+  let arms = "", tool = "", extra = "", behind = "", front = "";
+  if (pose === "shovel") {
+    // 両手でスコップ。柄は手の中を通り、刃は足元の雪に。動かすのは .arm グループ
+    const shovel = (len = 180) => `<g transform="translate(176 ${sh - 6}) rotate(-42)"><rect x="-5.5" y="0" width="11" height="${len}" rx="5" fill="#8b5a2b"/><rect x="-14" y="-6" width="28" height="12" rx="6" fill="#8b5a2b"/><path d="M-27 ${len - 10} L27 ${len - 10} L21 ${len + 36} L-21 ${len + 36}Z" fill="#6b7f92"/><path d="M-27 ${len - 10} L27 ${len - 10} L25 ${len - 2} L-25 ${len - 2}Z" fill="#9fb0bf"/></g>`;
+    // 柄の向き (sin42, cos42) = (0.67, 0.74)。手は柄の上から 40 と 100 の所
+    arms = `<g class="arm">${shovel(child ? 130 : 180)}${arm(`M${100 + 26 * H} ${sh} Q180 ${sh + 4} 203 ${sh + 24}`, 203, sh + 24)}${arm(`M${100 - 6 * H} ${sh + 26} Q150 ${sh + 90} 243 ${sh + 68}`, 243, sh + 68)}</g>`;
+  } else if (pose === "back") { // 腰に手（痛い）: ひじを外に張って、手は腰の後ろ（体の後ろに描く）
+    behind = arm(`M${100 + 28 * H} ${sh} Q${100 + 78 * H} ${sh + 40} ${100 + 30 * H} ${bodyBot - 30}`, 100 + 24 * H, bodyBot - 30) + arm(`M${100 - 28 * H} ${sh} Q${100 - 78 * H} ${sh + 40} ${100 - 30 * H} ${bodyBot - 30}`, 100 - 24 * H, bodyBot - 30);
+    tool = `<g transform="rotate(18 150 ${bodyBot})"><rect x="150" y="${sh - 10}" width="11" height="${292 - sh}" rx="5" fill="#8b5a2b"/><path d="M135 ${270} l44 0 l10 30 l-64 0Z" fill="#6b7f92"/></g>`;
+    extra = `<g class="ouch"><path d="M${100 + 62 * H} ${bodyBot - 56} l6 -16 l6 14 l14 -8 l-8 14 l16 2 l-16 6 l8 14 l-14 -8 l-6 14 l-6 -16 l-14 8 l8 -14 l-16 -2 l16 -6 l-8 -14Z" fill="#ffd27a" stroke="#c0392b" stroke-width="2"/><text x="${100 + 84 * H}" y="${bodyBot - 70}" font-size="30" font-weight="900" fill="#c0392b" font-family="Zen Maru Gothic">ズキッ</text></g>`;
+  } else if (pose === "cane") {
+    arms = arm(`M${100 + 28 * H} ${sh} Q${100 + 54} ${sh + 40} ${100 + 50} ${sh + 86}`, 150, sh + 90) + arm(`M${100 - 28 * H} ${sh} Q${100 - 56} ${sh + 30} ${100 - 60} ${sh + 70}`, 40, sh + 74);
+    tool = `<rect x="146" y="${sh + 90}" width="9" height="${292 - sh - 92}" rx="4" fill="#8b5a2b"/><rect x="134" y="${sh + 84}" width="30" height="12" rx="6" fill="#8b5a2b"/>`;
+  } else if (pose === "blower") {
+    arms = arm(`M${100 + 28 * H} ${sh} Q${100 + 56} ${sh + 30} ${100 + 62} ${sh + 56}`, 164, sh + 58) + arm(`M${100 - 28 * H} ${sh} Q${100 - 20} ${sh + 46} ${100 + 24} ${sh + 60}`, 128, sh + 64);
+    tool = `<g><rect x="130" y="${sh + 56}" width="70" height="12" rx="6" fill="#444"/><rect x="178" y="${sh + 40}" width="110" height="80" rx="16" fill="#c0392b"/><rect x="190" y="${sh + 8}" width="34" height="40" rx="8" fill="#555"/><rect x="266" y="${sh + 48}" width="40" height="50" rx="8" fill="#8a1f16"/><circle cx="205" cy="${sh + 126}" r="20" fill="#222"/><circle cx="205" cy="${sh + 126}" r="8" fill="#888"/><circle cx="272" cy="${sh + 126}" r="20" fill="#222"/><circle cx="272" cy="${sh + 126}" r="8" fill="#888"/><path d="M246 ${sh + 40} l0 -46 q0 -16 16 -16 l22 0" fill="none" stroke="#555" stroke-width="18" stroke-linecap="round"/><g class="spray" fill="#eaf4fa" stroke="#9cc3d8" stroke-width="2"><circle cx="300" cy="${sh - 26}" r="9"/><circle cx="326" cy="${sh - 44}" r="12"/><circle cx="356" cy="${sh - 68}" r="15"/><circle cx="390" cy="${sh - 98}" r="18"/><circle cx="426" cy="${sh - 128}" r="14" opacity=".7"/></g></g>`;
+  } else if (pose === "wave") {
+    arms = arm(`M${100 + 28 * H} ${sh} Q${100 + 60} ${sh - 10} ${100 + 62} ${sh - 50}`, 164, sh - 56) + arm(`M${100 - 28 * H} ${sh} Q${100 - 56} ${sh + 40} ${100 - 50} ${sh + 80}`, 50, sh + 84);
+  } else if (pose === "cup") {
+    arms = arm(`M${100 + 28 * H} ${sh} Q${100 + 60} ${sh + 30} ${100 + 26} ${sh + 56}`, 124, sh + 58) + arm(`M${100 - 28 * H} ${sh} Q${100 - 60} ${sh + 30} ${100 - 26} ${sh + 56}`, 76, sh + 58);
+    front = `<rect x="84" y="${sh + 40}" width="32" height="30" rx="6" fill="#fff"/><ellipse cx="100" cy="${sh + 40}" rx="16" ry="5" fill="#d9825b"/><g class="steam" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"><path d="M94 ${sh + 30} c-4 -8 4 -12 0 -20"/><path d="M106 ${sh + 30} c-4 -8 4 -12 0 -20"/></g>`;
+  }
+  const shadow = `<ellipse cx="100" cy="292" rx="${60 * H}" ry="12" fill="rgba(41,68,92,.14)"/>`;
+  return `<g class="person" id="${id}" transform="translate(${x} ${y}) scale(${flip ? -s : s} ${s})${flip ? " translate(-200 0)" : ""}">${shadow}${tool}${legs}<g class="upper" transform="rotate(${lean} 100 ${legTop})">${behind}${body}${arms}${front}${scarfPart}${headPart()}</g>${extra}</g>`;
+}
+
 // ---- カード（イラスト）----
 const CARDS = {
   snow() {
@@ -107,22 +175,26 @@ const CARDS = {
       <svg viewBox="0 0 1920 1080" style="position:absolute;inset:0" width="1920" height="1080">
         <circle cx="1560" cy="160" r="60" fill="#fff8e1" opacity=".9"/>
         <g fill="#0d1a27"><rect x="120" y="470" width="420" height="330"/><polygon points="90,480 330,300 570,480"/><rect x="920" y="520" width="360" height="280"/><polygon points="900,530 1100,380 1300,530"/><rect x="1420" y="500" width="380" height="300"/><polygon points="1400,510 1610,350 1820,510"/></g>
-        <g fill="#ffe9a8" opacity=".9"><rect x="200" y="560" width="70" height="80" rx="6"/><rect x="1000" y="600" width="60" height="70" rx="6"/></g>
+        <g fill="#ffe9a8" opacity=".9"><rect x="200" y="560" width="70" height="80" rx="6"/><rect x="1150" y="600" width="60" height="70" rx="6"/></g>
         <g fill="#eef3f8"><path d="M90 480 L330 300 L570 480 L520 486 L330 345 L140 486 Z"/><path d="M900 530 L1100 380 L1300 530 L1250 536 L1100 420 L950 536 Z"/><path d="M1400 510 L1610 350 L1820 510 L1770 516 L1610 395 L1450 516 Z"/></g>
         <rect x="0" y="790" width="1920" height="290" fill="#f4f7fa"/>
-        <ellipse id="mound" cx="1180" cy="860" rx="150" ry="60" fill="#e3eef3"/>
-        <g id="person" transform="translate(760 640)">
-          <ellipse cx="60" cy="230" rx="90" ry="22" fill="#d6e4ec"/>
-          <rect x="18" y="80" width="84" height="130" rx="34" fill="#29445c"/>
-          <circle cx="60" cy="50" r="38" fill="#f0d6c4"/><path d="M22 48 C22 10 98 10 98 48 Z" fill="#c0392b"/><circle cx="60" cy="8" r="12" fill="#fff"/>
-          <rect x="12" y="200" width="40" height="60" rx="14" fill="#1e3346"/><rect x="68" y="200" width="40" height="60" rx="14" fill="#1e3346"/>
-          <g id="arm"><rect x="90" y="100" width="150" height="26" rx="13" fill="#29445c"/><rect x="230" y="60" width="14" height="130" rx="7" fill="#8b5a2b"/><path d="M200 185 L280 185 L300 240 L180 240 Z" fill="#6b7f92"/></g>
-        </g>
-        <text x="1180" y="990" font-size="34" font-weight="700" fill="#4a6076" text-anchor="middle" font-family="Zen Maru Gothic">イメージ（ここは本人の実写に差し替え可）</text>
+        <ellipse cx="420" cy="880" rx="260" ry="70" fill="#e3eef3"/><ellipse id="mound" cx="1120" cy="850" rx="200" ry="60" fill="#dbe7ee"/>
+        <g id="dig">${person({ x: 600, y: 330, s: 1.75, pose: "shovel", face: "smile", coat: "#29445c", hat: "#c0392b", id: "digger", lean: 16 })}</g>
+        <g id="ouchg" opacity="0">${person({ x: 600, y: 330, s: 1.75, pose: "back", face: "tired", coat: "#29445c", hat: "#c0392b", lean: -8 })}
+          <g id="breath" fill="#fff" opacity=".7"><circle cx="800" cy="500" r="9"/><circle cx="822" cy="486" r="12"/><circle cx="850" cy="468" r="15"/></g>
+          <path d="M840 400 q-14 26 0 40 q14 -14 0 -40Z" fill="#8fc8ea"/></g>
+        <text x="1890" y="54" font-size="24" font-weight="700" fill="rgba(255,255,255,.6)" text-anchor="end" font-family="Zen Maru Gothic">※イメージ</text>
       </svg>`;
     const snow = snowLayer(1, 140); el.append(snow);
-    const arm = el.querySelector("#arm"), mound = el.querySelector("#mound");
-    el.update = (lt) => { snow.update(lt); const k = Math.sin(lt * 4); arm.setAttribute("transform", `rotate(${-18 + k * 22} 100 112)`); mound.setAttribute("ry", 60 + lt * 2.5); mound.setAttribute("rx", 150 + lt * 5); };
+    const dig = el.querySelector("#dig"), ouch = el.querySelector("#ouchg"), arm = el.querySelector("#digger .arm"), mound = el.querySelector("#mound"), breath = el.querySelector("#breath");
+    el.update = (lt) => {
+      snow.update(lt);
+      const digging = lt < 8.2;
+      dig.setAttribute("opacity", digging ? 1 : 0); ouch.setAttribute("opacity", digging ? 0 : 1);
+      arm.setAttribute("transform", `rotate(${-4 + Math.sin(lt * 4) * 12} 112 90)`);
+      mound.setAttribute("ry", 60 + Math.min(lt, 8) * 4); mound.setAttribute("rx", 200 + Math.min(lt, 8) * 8);
+      const k = (lt - 8.2) % 2.2; breath.setAttribute("transform", `translate(${k * 24} ${-k * 18})`); breath.setAttribute("opacity", Math.max(0, 0.75 - k * 0.3));
+    };
     return el;
   },
   sofa() {
@@ -134,18 +206,18 @@ const CARDS = {
         <rect x="260" y="520" width="1200" height="300" rx="70" fill="#7d4f68"/><rect x="300" y="420" width="1120" height="200" rx="60" fill="#8f6179"/>
         <rect x="220" y="560" width="120" height="260" rx="50" fill="#6c4259"/><rect x="1380" y="560" width="120" height="260" rx="50" fill="#6c4259"/>
         <path d="M400 560 C600 480 1100 500 1300 560 L1300 700 C1100 760 600 740 400 700 Z" fill="#c8a7b8"/>
-        <g id="feet"><rect x="980" y="330" width="70" height="230" rx="35" fill="#f4e4d0"/><rect x="1080" y="300" width="70" height="260" rx="35" fill="#f4e4d0"/><rect x="975" y="330" width="80" height="80" rx="30" fill="#c0392b"/><rect x="1075" y="300" width="80" height="80" rx="30" fill="#c0392b"/></g>
-        <g id="phone"><rect x="560" y="430" width="120" height="200" rx="18" fill="#0d1620" transform="rotate(-18 620 530)"/><rect x="572" y="442" width="96" height="176" rx="12" fill="#f4f7fa" transform="rotate(-18 620 530)"/><circle cx="620" cy="520" r="160" fill="#bfe0ee" opacity=".18"/></g>
+        <g id="feet"><g transform="rotate(-10 1000 570)"><rect x="965" y="360" width="70" height="220" rx="35" fill="#f4e4d0"/><rect x="965" y="300" width="70" height="90" rx="35" fill="#c0392b"/><rect x="990" y="300" width="100" height="62" rx="31" fill="#c0392b"/><rect x="975" y="372" width="50" height="10" rx="5" fill="#fff" opacity=".45"/></g><g transform="rotate(10 1130 570)"><rect x="1095" y="340" width="70" height="240" rx="35" fill="#f4e4d0"/><rect x="1095" y="280" width="70" height="90" rx="35" fill="#c0392b"/><rect x="1120" y="280" width="100" height="62" rx="31" fill="#c0392b"/><rect x="1105" y="352" width="50" height="10" rx="5" fill="#fff" opacity=".45"/></g><path d="M900 560 q110 -40 300 0 l0 40 l-300 0Z" fill="#c8a7b8"/></g>
+        <g id="phone"><circle cx="620" cy="520" r="170" fill="#bfe0ee" opacity=".16"/><g transform="rotate(-18 620 530)"><rect x="556" y="424" width="128" height="212" rx="20" fill="#0d1620"/><clipPath id="scr"><rect x="566" y="434" width="108" height="192" rx="12"/></clipPath><image href="../../.video/rec/still-home.png" x="566" y="434" width="108" height="234" clip-path="url(#scr)" preserveAspectRatio="xMidYMin slice"/></g></g>
         <g><rect x="1560" y="740" width="180" height="70" rx="12" fill="#6b4a33"/><rect x="1610" y="660" width="80" height="80" rx="14" fill="#f4f7fa"/><ellipse cx="1650" cy="660" rx="40" ry="10" fill="#d9825b"/>
           <g id="steam" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".7"><path d="M1630 640 C1620 620 1640 610 1630 590"/><path d="M1660 640 C1650 620 1670 610 1660 590"/></g></g>
-        <text x="960" y="1000" font-size="34" font-weight="700" fill="#d9c5b5" text-anchor="middle" font-family="Zen Maru Gothic">イメージ（ソファーの足元とスマホ。実写に差し替え可）</text>
+        <text x="1890" y="54" font-size="24" font-weight="700" fill="rgba(255,255,255,.55)" text-anchor="end" font-family="Zen Maru Gothic">※イメージ</text>
       </svg>`;
     const steam = el.querySelector("#steam"), feet = el.querySelector("#feet"), phone = el.querySelector("#phone");
     el.update = (lt) => { steam.setAttribute("transform", `translate(0 ${-((lt * 25) % 40)})`); steam.setAttribute("opacity", 0.3 + 0.4 * Math.abs(Math.sin(lt * 1.5))); feet.setAttribute("transform", `translate(0 ${Math.sin(lt * 1.2) * 6})`); phone.setAttribute("transform", `translate(0 ${Math.sin(lt * 1.2 + 1) * 4})`); };
     return el;
   },
   title(isEnd) {
-    const el = document.createElement("div"); el.className = "scene card";
+    const el = document.createElement("div"); el.className = "scene card titlecard";
     el.innerHTML = `<div class="title-bg"></div>
       <div class="branch"></div>
       <div class="birds"><div style="transform:translate(40px,60px) scale(.85)">${mascot(SCARF.marigold, 240)}</div><div style="transform:translate(10px,80px) scale(.8)">${mascot(SCARF.lupinus, 240)}</div><div style="transform:translate(-20px,30px)">${mascot(SCARF.salvia, 300, "happy")}</div></div>
@@ -160,20 +232,22 @@ const CARDS = {
   },
   end() { return CARDS.title(true); },
   problem() {
-    const el = document.createElement("div"); el.className = "scene card";
+    const el = document.createElement("div"); el.className = "scene card low";
     el.innerHTML = `<div style="position:absolute;inset:0;background:linear-gradient(180deg,#0f1c2b 0%,#1b2e41 60%,#29445c 100%)"></div>
       <div class="branch" style="top:470px;left:520px;width:880px;background:#4a3324"></div>
-      <div class="birds" style="top:90px"><div style="transform:translate(60px,70px) scale(1.05)">${mascot(SCARF.marigold, 280)}</div><div style="transform:translate(20px,95px) scale(1.0)">${mascot(SCARF.lupinus, 280)}</div><div style="transform:translate(-30px,30px) scale(1.1)">${mascot(SCARF.salvia, 330)}</div></div>`;
+      <div class="birds" style="top:90px"><div id="b1" style="transform:translate(60px,70px) scale(1.05)">${mascot(SCARF.marigold, 280)}</div><div id="b2" style="transform:translate(20px,95px) scale(1.0)">${mascot(SCARF.lupinus, 280)}</div><div style="transform:translate(-30px,30px) scale(1.1)">${mascot(SCARF.salvia, 330)}</div></div>
+      <div style="position:absolute;left:0;width:1920px;top:1030px;text-align:center;font-size:20px;color:#8fa9bd;font-weight:700">出典: 2020年国勢調査／令和8年版高齢社会白書／内閣府「人々のつながりに関する基礎調査」（令和7年）</div>`;
     const snow = snowLayer(5, 120, { alpha: 0.8 }); el.append(snow);
-    const birds = el.querySelector(".birds");
-    el.update = (lt) => { snow.update(lt); birds.style.transform = `translateY(${Math.sin(lt * 1.6) * 5}px) scale(${1 + lt * 0.006})`; };
+    const birds = el.querySelector(".birds"), b1 = el.querySelector("#b1"), b2 = el.querySelector("#b2");
+    // 最初は青い1羽だけ（ひとり）。6秒から2羽がそっと寄ってくる（「くっついて乗り切る」の伏線）
+    el.update = (lt) => { snow.update(lt); birds.style.transform = `translateY(${Math.sin(lt * 1.6) * 5}px) scale(${1 + lt * 0.006})`; const k = ease((lt - 6) / 1.4); b1.style.opacity = k; b1.style.transform = `translate(${60 - (1 - k) * 220}px,70px) scale(1.05)`; b2.style.opacity = k; b2.style.transform = `translate(${20 - (1 - k) * 120}px,95px) scale(1.0)`; };
     return el;
   },
   diagram() {
     const el = document.createElement("div"); el.className = "scene card";
     el.innerHTML = `<div class="cols">
-      <div class="col ai"><h2>Claude（AI）に任せる<small>段取り</small></h2><ul style="padding:0;margin:0"><li>🧭 家ごとに人数・担当・理由を決める</li><li>📷 写真1枚で「通れるか」を確かめる</li><li>💬 相談にのって、合う参加の仕方をすすめる</li><li>📖 聞き書きから絵本を書く・カードを描く</li></ul></div>
-      <div class="col human"><h2>人とプログラムがやる<small>気持ちと安全</small></h2><ul style="padding:0;margin:0"><li>🔢 得点・雪の kg・夜のルール（プログラム）</li><li>🛡 安全の注意・名前と場所は AI に渡さない</li><li>🩺 体調や医療は判断しない</li><li class="no">🎤 「ありがとう」は、本人の声で</li></ul></div>
+      <div class="col ai"><h2>Claude（AI）に任せる<small>段取り</small></h2><ul style="padding:0;margin:0"><li>🧭 家ごとに人数・担当・理由を決める</li><li>📷 写真1枚で「通れるか」を確かめる</li><li>💬 相談にのり、合う参加の仕方をすすめる</li><li>📖 聞き書きから絵本を書く・カードを描く</li></ul></div>
+      <div class="col human"><h2>AI に任せない<small>気持ちと安全（人とプログラム）</small></h2><ul style="padding:0;margin:0"><li>🔢 得点・雪の kg・夜のルール</li><li>🛡 安全の注意・名前と場所は AI に渡さない</li><li>🩺 体調や医療は判断しない</li><li class="no">🎤 「ありがとう」は、本人の声で</li></ul></div>
     </div>
     <div class="big" style="top:80px;font-size:72px;color:#fff">AI は段取りを。<span style="color:#ffd0b5">人は、会いに行く。</span></div>`;
     el.update = () => {};
@@ -181,8 +255,9 @@ const CARDS = {
   },
   making() {
     const el = document.createElement("div"); el.className = "scene";
-    const items = (T.commits || []).map((c, i) => `<div class="mk-item ${i % 3 === 0 ? "me" : ""}">${i % 3 === 0 ? "🛋 " : "🐦 "}${c.replace(/</g, "&lt;")}</div>`).join("");
-    el.innerHTML = `<div class="mk-phone"><div class="mk-head">Claude Code（スマホから）<small>日本語で頼む → 作る → 確かめる → コミット。6日間。</small></div><div class="mk-list" id="mk">${items}</div></div>
+    const items = (T.commits || []).map((c, i) => `<div class="mk-item ${i % 3 === 0 ? "me" : ""}">${i % 3 === 0 ? "🛋" : mascot(SCARF.lamp, 26)}${c.replace(/</g, "&lt;")}</div>`).join("");
+    el.innerHTML = `<div class="mk-phone"><div class="mk-head">Claude Code（スマホから）<small>日本語で頼む → 作る → 確かめる → コミット。6日間。</small></div><div class="mk-clip"><div class="mk-list" id="mk">${items}</div></div></div>
+      <div class="mk-birds"><svg width="520" height="300" viewBox="0 0 520 300"><rect x="20" y="236" width="480" height="12" rx="6" fill="#6b4a33"/>${mascot(SCARF.marigold, 150).replace("<svg", '<svg x="60" y="110"')}${mascot(SCARF.lupinus, 150).replace("<svg", '<svg x="190" y="104"')}${mascot(SCARF.salvia, 190, "happy").replace("<svg", '<svg x="310" y="70"')}</svg></div>
       <div style="position:absolute;left:150px;top:1004px;width:454px;text-align:center;font-size:24px;font-weight:700;color:#b7c7d6">このリポジトリの本当のコミット記録</div>`;
     const list = el.querySelector("#mk");
     el.update = (lt) => { list.style.transform = `translateY(${-lt * 60}px)`; };
@@ -190,10 +265,7 @@ const CARDS = {
   },
   future() {
     const el = document.createElement("div"); el.className = "scene card";
-    const person = (x, y, s, body, hat, tool) => `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="60" cy="230" rx="80" ry="18" fill="#d6e4ec"/><rect x="18" y="80" width="84" height="130" rx="34" fill="${body}"/><circle cx="60" cy="50" r="38" fill="#f0d6c4"/><path d="M22 48 C22 10 98 10 98 48 Z" fill="${hat}"/><rect x="12" y="200" width="40" height="60" rx="14" fill="#1e3346"/><rect x="68" y="200" width="40" height="60" rx="14" fill="#1e3346"/>${tool}</g>`;
-    const shovel = `<g class="arm"><rect x="90" y="100" width="130" height="24" rx="12" fill="#29445c"/><rect x="210" y="70" width="12" height="120" rx="6" fill="#8b5a2b"/><path d="M185 185 L255 185 L270 235 L170 235 Z" fill="#6b7f92"/></g>`;
-    const cane = `<rect x="-10" y="110" width="12" height="150" rx="6" fill="#8b5a2b"/>`;
-    const blower = `<g class="arm"><rect x="90" y="120" width="60" height="20" rx="10" fill="#29445c"/><rect x="140" y="100" width="130" height="90" rx="18" fill="#c0392b"/><rect x="150" y="60" width="30" height="50" rx="8" fill="#555"/><circle cx="175" cy="200" r="22" fill="#222"/><circle cx="245" cy="200" r="22" fill="#222"/></g>`;
+    const bubble = (x, y, text, w = 150) => `<g><rect x="${x}" y="${y}" width="${w}" height="54" rx="27" fill="#fff" stroke="#c8a7b8" stroke-width="3"/><path d="M${x + 30} ${y + 52} l10 16 l14 -16Z" fill="#fff" stroke="#c8a7b8" stroke-width="3"/><rect x="${x + 28}" y="${y + 48}" width="30" height="6" fill="#fff"/><text x="${x + w / 2}" y="${y + 36}" font-size="28" font-weight="900" fill="#7d4f68" text-anchor="middle" font-family="Zen Maru Gothic">${text}</text></g>`;
     el.innerHTML = `<div style="position:absolute;inset:0;background:linear-gradient(180deg,#f7c59f 0%,#fbe3c9 35%,#dbe9f1 70%,#f4f7fa 100%)"></div>
       <svg viewBox="0 0 1920 1080" width="1920" height="1080" style="position:absolute;inset:0">
         <circle id="sun" cx="1500" cy="330" r="110" fill="#ffd27a"/>
@@ -201,17 +273,22 @@ const CARDS = {
         <g fill="#fff"><path d="M40 430 L250 280 L460 430 L420 436 L250 320 L80 436 Z"/><path d="M540 480 L710 350 L880 480 L840 486 L710 388 L580 486 Z"/><rect x="1000" y="425" width="520" height="22" rx="8"/><rect x="1620" y="385" width="260" height="22" rx="8"/></g>
         <g fill="#ffe9a8"><rect x="140" y="520" width="60" height="70" rx="6"/><rect x="1060" y="500" width="50" height="60" rx="6"/><rect x="1160" y="500" width="50" height="60" rx="6"/><rect x="1260" y="500" width="50" height="60" rx="6"/><rect x="1060" y="600" width="50" height="60" rx="6"/><rect x="1160" y="600" width="50" height="60" rx="6"/></g>
         <rect x="0" y="750" width="1920" height="330" fill="#f4f7fa"/>
-        ${person(250, 540, 1, "#29445c", "#2F6FE4", shovel)}
-        ${person(560, 620, 0.7, "#9B5DE5", "#ffd27a", shovel)}
-        ${person(820, 560, 0.95, "#7d4f68", "#c8a7b8", cane)}
-        ${person(1080, 540, 1, "#FF8A3D", "#1e3346", blower)}
-        ${person(1480, 600, 0.75, "#2F6FE4", "#c0392b", shovel)}
-        ${person(1680, 560, 0.95, "#4a6076", "#9B5DE5", shovel)}
-        <text x="960" y="1030" font-size="30" font-weight="700" fill="#4a6076" text-anchor="middle" font-family="Zen Maru Gothic">イメージ: マンションの人も、雪かき機の人も、子どもも、お年寄りも、いっしょに</text>
+        <ellipse cx="420" cy="880" rx="300" ry="60" fill="#e3eef3"/><ellipse cx="1500" cy="890" rx="320" ry="64" fill="#e3eef3"/>
+        <rect x="952" y="300" width="14" height="450" fill="#4a6076"/><rect x="700" y="300" width="266" height="12" rx="6" fill="#4a6076"/><rect x="930" y="250" width="58" height="56" rx="10" fill="#4a6076"/><rect x="940" y="260" width="38" height="36" rx="6" fill="#ffe9a8"/>
+        <g id="birds">${mascot(SCARF.marigold, 90).replace("<svg", '<svg x="700" y="214"')}${mascot(SCARF.lupinus, 90).replace("<svg", '<svg x="790" y="206"')}${mascot(SCARF.salvia, 110, "happy").replace("<svg", '<svg x="880" y="186"')}</g>
+        ${person({ x: 60, y: 480, s: 1.3, pose: "shovel", coat: "#29445c", hat: "#2F6FE4", face: "happy" })}
+        ${person({ x: 330, y: 600, s: 0.9, pose: "shovel", kind: "child", coat: "#9B5DE5", hat: "#ffd27a", face: "happy" })}
+        ${person({ x: 560, y: 480, s: 1.3, pose: "blower", coat: "#FF8A3D", hat: "#1e3346", face: "open" })}
+        ${person({ x: 1060, y: 500, s: 1.25, pose: "cane", kind: "elder", coat: "#7d4f68", beanie: false, face: "happy", mitt: "#f3d9c6" })}
+        ${person({ x: 1290, y: 500, s: 1.25, pose: "cup", kind: "elder", coat: "#c8a7b8", face: "happy" })}
+        ${person({ x: 1500, y: 490, s: 1.3, pose: "wave", coat: "#2F6FE4", beanie: false, hair: "#5b3b2a", face: "happy", flip: true })}
+        ${person({ x: 1700, y: 480, s: 1.3, pose: "shovel", coat: "#4a6076", hat: "#9B5DE5", face: "smile", flip: true })}
+        ${bubble(1180, 462, "おはよう", 180)}${bubble(1470, 440, "ありがとう", 200)}${bubble(210, 440, "♪", 70)}
+        <text x="1890" y="54" font-size="24" font-weight="700" fill="rgba(74,96,118,.7)" text-anchor="end" font-family="Zen Maru Gothic">※イメージ（見たい未来の朝）</text>
       </svg>`;
     const snow = snowLayer(3, 50, { alpha: 0.8 }); el.append(snow);
-    const arms = [...el.querySelectorAll(".arm")], sun = el.querySelector("#sun");
-    el.update = (lt) => { snow.update(lt); arms.forEach((a, i) => a.setAttribute("transform", `rotate(${-16 + Math.sin(lt * 3.2 + i) * 20} 100 112)`)); sun.setAttribute("cy", 330 - Math.min(lt, 13) * 6); };
+    const arms = [...el.querySelectorAll(".arm")], sun = el.querySelector("#sun"), spray = el.querySelector(".spray"), birds = el.querySelector("#birds");
+    el.update = (lt) => { snow.update(lt); arms.forEach((a, i) => a.setAttribute("transform", `rotate(${-6 + Math.sin(lt * 3.2 + i * 1.3) * 12} 112 90)`)); sun.setAttribute("cy", 330 - Math.min(lt, 13) * 6); if (spray) spray.setAttribute("opacity", 0.7 + 0.3 * Math.sin(lt * 9)); birds.setAttribute("transform", `translate(0 ${Math.sin(lt * 2) * 4})`); };
     return el;
   },
 };
@@ -222,10 +299,17 @@ const built = T.scenes.map((s) => {
   if (s.kind === "card") { el = CARDS[s.card](); }
   else {
     el = document.createElement("div"); el.className = "scene app";
-    el.innerHTML = `<div class="phone"><img></div><div class="label">${({ home: "A 手伝う人（田中さん）", ask: "C お願いする家（小林さん）", chat: "A 手伝う人・隊長トーク", map: "A 手伝う人・町の地図", finish: "A 手伝う人・写真で完了", thanks: "C お願いする家・声のありがとう", listen: "A 手伝う人・届いた声", consult: "A 手伝う人・隊長に相談", book: "聞き書き → 町の週刊絵本", "home-end": "ホーム" })[s.scene] || ""}</div>`;
+    el.innerHTML = `<div class="phone"><img></div><div class="label">${({ home: "A 手伝う人（田中さん）", ask: "C お願いする家（小林さん）", chat: "A 手伝う人・隊長トーク", map: "A 手伝う人・町の地図", finish: "A 手伝う人・写真で完了", thanks: "C お願いする家・声のありがとう", listen: "A 手伝う人・届いた声", consult: "A 手伝う人・隊長に相談", book: "聞き書き → 町の週刊絵本", "home-end": "" })[s.scene] || ""}</div>${s.id === "ochi" ? `<div class="ochi-bird">${mascot(SCARF.salvia, 380, "happy")}</div>` : ""}`;
     const snow = snowLayer(11, 50, { alpha: 0.35, speed: 0.6 }); el.prepend(snow);
     const img = el.querySelector("img"); const count = T.frames[s.scene] || 1;
-    el.update = (lt) => { snow.update(lt); const idx = clamp(Math.floor((s.from + lt) * T.fps) + 1, 1, count); const src = `../../.video/frames/${s.scene}/${String(idx).padStart(5, "0")}.jpg`; if (img.getAttribute("src") !== src) img.src = src; el.pending = img.decode().catch(() => {}); };
+    const phone = el.querySelector(".phone"); const fx = document.createElement("div"); fx.className = "tapfx"; const fg = document.createElement("div"); fg.className = "finger"; phone.append(fx, fg);
+    const taps = Object.values((T.rec && T.rec[s.scene] && T.rec[s.scene].marks) || {}).filter((m) => m && m.x != null).map((m) => ({ t: m.t - s.from, x: m.x * 430 / 390, y: m.y * 930 / 844 }));
+    el.update = (lt) => { snow.update(lt);
+      let on = null; for (const tp of taps) { const d = lt - tp.t; if (d > -0.45 && d < 0.7) on = { ...tp, d }; }
+      if (on) { const k = clamp((on.d + 0.45) / 0.45); fg.style.left = on.x + "px"; fg.style.top = on.y + "px"; fg.style.opacity = on.d < 0 ? k * 0.9 : Math.max(0, 0.9 - on.d * 2); fg.style.transform = `scale(${on.d < 0 ? 1.3 - k * 0.3 : 1})`;
+        const r = clamp(on.d / 0.7); fx.style.left = on.x + "px"; fx.style.top = on.y + "px"; fx.style.opacity = on.d < 0 ? 0 : 1 - r; fx.style.transform = `scale(${0.3 + r * 1.4})`; }
+      else { fg.style.opacity = 0; fx.style.opacity = 0; }
+      const idx = clamp(Math.floor((s.from + lt) * T.fps) + 1, 1, count); const src = `../../.video/frames/${s.scene}/${String(idx).padStart(5, "0")}.jpg`; if (img.getAttribute("src") !== src) img.src = src; el.pending = img.decode().catch(() => {}); };
   }
   const telops = document.createElement("div"); telops.className = "telops";
   s.telops.forEach((tp) => { const d = document.createElement("div"); d.className = "telop" + (tp.small ? " small" : "") + (tp.tag ? " tag" : ""); d.textContent = tp.text; d.style.opacity = 0; telops.append(d); tp.el = d; });
@@ -246,12 +330,13 @@ async function seek(t) {
   for (const tp of s.telops) { const kin = ease((t - tp.t0) / 0.35), kout = clamp((tp.t1 - t) / 0.25); tp.el.style.opacity = Math.min(kin, kout); tp.el.style.transform = `translateY(${(1 - kin) * 24}px)`; }
   // 字幕
   let text = "", who = "";
-  for (const [id, at] of s.voice) { const n = T.narration[id]; if (n && t >= at && t < at + n.seconds + 0.35) { text = n.text; who = WHO[n.who]; } }
+  for (const [id, at] of s.voice) { const n = T.narration[id]; if (n && t >= at && t < at + n.seconds + 0.35) { text = n.sub || n.text; who = WHO[n.who]; } }
   if (!text) { // 前のシーンの声が少し食い込むとき
-    const prev = T.scenes[i - 1]; if (prev) for (const [id, at] of prev.voice) { const n = T.narration[id]; if (n && t >= at && t < at + n.seconds + 0.35) { text = n.text; who = WHO[n.who]; } }
+    const prev = T.scenes[i - 1]; if (prev) for (const [id, at] of prev.voice) { const n = T.narration[id]; if (n && t >= at && t < at + n.seconds + 0.35) { text = n.sub || n.text; who = WHO[n.who]; } }
   }
+  if (s.nosub) text = "";
   s.subEl.className = "sub " + who;
-  s.subEl.innerHTML = text ? `<span>${(who === "captain" ? "🐦 " : who === "daughter" ? "🎤 " : "") + text}</span>` : "";
+  s.subEl.innerHTML = text ? `<span>${(who === "daughter" ? "🎤 " : "") + text.replace(/／/g, "<br>")}</span>` : "";
   if (el.pending) await el.pending;
 }
 window.seek = seek;

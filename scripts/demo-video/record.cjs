@@ -51,8 +51,10 @@ const scenes = {};
       const page = await ctx.newPage();
       const t0 = Date.now();
       const marks = {};
-      const mark = (k) => { marks[k] = +((Date.now() - t0) / 1000).toFixed(2); console.log(`  ${name}: ${k} @ ${marks[k]}s`); };
-      await fn(page, mark);
+      const mark = (k, pos) => { marks[k] = { t: +((Date.now() - t0) / 1000).toFixed(2), ...(pos || {}) }; console.log(`  ${name}: ${k} @ ${marks[k].t}s${pos ? ` (${pos.x},${pos.y})` : ""}`); };
+      // タップ: 押す場所を記録してから押す（合成で指の波紋を出す）
+      const tap = async (k, locator) => { const b = await locator.boundingBox(); if (b) mark(k, { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) }); else mark(k); await locator.click(); };
+      await fn(page, mark, tap);
       const seconds = +((Date.now() - t0) / 1000).toFixed(2);
       const video = page.video();
       await ctx.close();
@@ -73,19 +75,18 @@ const scenes = {};
     // 0) 朝をまっさらに（前夜の予告）→ ホームとお願い登録を撮る
     await admin("0 前夜の予告");
 
-    await record("home", async (p, mark) => {
+    await record("home", async (p, mark, tap) => {
       await open(p, "/?as=h1");
       await sleep(2500);
-      mark("tap");
-      await p.getByRole("button", { name: /シマエナ隊長/ }).click();
+      await tap("tap", p.getByRole("button", { name: /シマエナ隊長/ }));
       await sleep(4500);
     });
 
-    await record("ask", async (p, mark) => {
+    await record("ask", async (p, mark, tap) => {
       await open(p, "/ask?as=r7");
       await sleep(1800);
-      mark("omakase"); await p.getByRole("button", { name: /おまかせ/ }).click(); await sleep(1800);
-      mark("genkan"); await p.locator("button", { hasText: "玄関前" }).first().click(); await sleep(1800);
+      await tap("omakase", p.getByRole("button", { name: /おまかせ/ })); await sleep(1800);
+      await tap("genkan", p.locator("button", { hasText: "玄関前" }).first()); await sleep(1800);
       mark("photo"); await p.getByRole("button", { name: /写真を撮って自動で決める/ }).hover(); await sleep(2500);
     });
 
@@ -94,7 +95,7 @@ const scenes = {};
     await admin("3 6:40");
 
     // 隊長トーク（A 田中さん）: おはよう → 助けてほしい家 → 「行く（10分でも）」
-    await record("chat", async (p, mark) => {
+    await record("chat", async (p, mark, tap) => {
       await open(p, "/chat?as=h1");
       const list = await p.evaluate(() => { const els = [...document.querySelectorAll("*")].filter((e) => e.scrollHeight > e.clientHeight + 40 && getComputedStyle(e).overflowY !== "visible"); return els.length ? "" : null; });
       // いちばん上から、ゆっくり下へ
@@ -103,13 +104,12 @@ const scenes = {};
       mark("scroll");
       await p.evaluate(() => new Promise((done) => { const e = [...document.querySelectorAll("*")].find((e) => e.scrollHeight > e.clientHeight + 40 && /auto|scroll/.test(getComputedStyle(e).overflowY)); if (!e) return done(); const to = e.scrollHeight - e.clientHeight, from = 0, start = performance.now(), ms = 4500; const step = (t) => { const k = Math.min(1, (t - start) / ms); e.scrollTop = from + (to - from) * (1 - Math.cos(k * Math.PI)) / 2; if (k < 1) requestAnimationFrame(step); else done(); }; requestAnimationFrame(step); }));
       await sleep(1200);
-      mark("go");
       const goBtns = p.getByRole("button", { name: /行く（10分でも）/ });
       // 拠点7（小林さん）の「行く」
       const n = await goBtns.count();
       let target = goBtns.last();
       for (let i = 0; i < n; i++) { const b = goBtns.nth(i); const near = await b.evaluate((el) => el.closest("div")?.parentElement?.innerText || ""); if (/拠点7/.test(near)) { target = b; break; } }
-      await target.click();
+      await tap("go", target);
       await sleep(5000);
       void list;
     });
@@ -126,7 +126,7 @@ const scenes = {};
     }
 
     // 地図（A）: 拠点7 に2チームが集まる → ほかの家が次々に完了（/admin の 4）
-    await record("map", async (p, mark) => {
+    await record("map", async (p, mark, tap) => {
       await open(p, "/map?as=h1");
       await sleep(2500);
       mark("done1"); await admin("4 1軒、完了にする"); await sleep(1500);
@@ -135,45 +135,40 @@ const scenes = {};
     });
 
     // 写真で「終わりました」→ MISSION CLEAR → カード
-    await record("finish", async (p, mark) => {
+    await record("finish", async (p, mark, tap) => {
       await open(p, "/map?as=h1");
       await sleep(1500);
-      mark("finish");
-      const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.getByRole("button", { name: "終わりました" }).click()]);
+      const finBtn = p.getByRole("button", { name: "終わりました" });
+      { const b = await finBtn.boundingBox(); mark("finish", b ? { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) } : undefined); }
+      const [chooser] = await Promise.all([p.waitForEvent("filechooser"), finBtn.click()]);
       await chooser.setFiles(PHOTO);
-      await p.getByText(/あなたの10分で/).waitFor({ timeout: 30000 });
+      await p.getByRole("heading", { name: /あなたの10分で/ }).waitFor({ timeout: 30000 });
       mark("clear");
       await sleep(4500);
-      mark("card");
-      await p.getByRole("button", { name: /カードを見る/ }).click();
+      await tap("card", p.getByRole("button", { name: /カードを見る/ }));
       await sleep(5500);
     });
 
     // 家の人（C 小林さん）: 「終わりました」の知らせ → 🎤 声でありがとう → 吹き込む → 届ける
-    await record("thanks", async (p, mark) => {
+    await record("thanks", async (p, mark, tap) => {
       await open(p, "/chat?as=r7");
       await sleep(2000);
-      mark("mic");
-      await p.getByRole("link", { name: /声でありがとう/ }).first().click();
+      await tap("mic", p.getByRole("link", { name: /声でありがとう/ }).first());
       await p.waitForLoadState("networkidle");
       await sleep(1500);
-      mark("talk");
-      await p.getByRole("button", { name: /押して話す/ }).click();
+      await tap("talk", p.getByRole("button", { name: /押して話す/ }));
       await sleep(7500); // 娘さんの声（約 7 秒）
-      mark("stop");
-      await p.getByRole("button", { name: /とめる/ }).click();
+      await tap("stop", p.getByRole("button", { name: /とめる/ }));
       await sleep(1500);
-      mark("send");
-      await p.getByRole("button", { name: /届ける/ }).click();
+      await tap("send", p.getByRole("button", { name: /届ける/ }));
       await sleep(3000);
     });
 
     // 手伝った人（A）: 声のありがとうが届く → 聞く
-    await record("listen", async (p, mark) => {
+    await record("listen", async (p, mark, tap) => {
       await open(p, "/chat?as=h1");
       await sleep(2000);
-      mark("listen");
-      await p.getByRole("link", { name: /声を聞く/ }).last().click();
+      await tap("listen", p.getByRole("link", { name: /声を聞く/ }).last());
       await p.waitForLoadState("networkidle");
       await sleep(1000);
       mark("play");
@@ -182,29 +177,26 @@ const scenes = {};
     });
 
     // 隊長に相談（文字を打つ → 返事）→ 🌐 English
-    await record("consult", async (p, mark) => {
+    await record("consult", async (p, mark, tap) => {
       await open(p, "/chat?as=h1");
       await sleep(1200);
       mark("type");
       await p.getByPlaceholder("隊長に話す").pressSequentially("近所の人と知り合いたい", { delay: 90 });
       await sleep(500);
-      mark("send");
-      await p.getByRole("button", { name: "送る" }).click();
+      await tap("send", p.getByRole("button", { name: "送る" }));
       await p.getByText(/はどうですか/).waitFor({ timeout: 30000 }).catch(() => {});
       mark("reply");
       await sleep(3500);
-      mark("lang");
-      await p.getByRole("button", { name: "ことば / Language" }).click();
+      await tap("lang", p.getByRole("button", { name: "ことば / Language" }));
       await sleep(1200);
-      mark("english");
-      await p.getByRole("button", { name: /English/ }).click();
+      await tap("english", p.getByRole("button", { name: /English/ }));
       await sleep(3500);
     });
 
     // 高齢者が教える側に: 聞き書き → 町の週刊絵本（デモの種を入れてから）
     await admin("デモの聞き書きを1件入れる", "ほか");
     await admin("今週の絵本を作る", "ほか");
-    await record("book", async (p, mark) => {
+    await record("book", async (p, mark, tap) => {
       await open(p, "/kikigaki?as=h1");
       await sleep(3500);
       mark("book");
@@ -212,7 +204,7 @@ const scenes = {};
       await sleep(2500);
       mark("read");
       const read = p.getByRole("button", { name: /読む/ });
-      if (await read.count()) { await read.first().click(); await sleep(2500); const next = p.getByRole("button", { name: /›|次/ }); if (await next.count()) { await next.first().click(); await sleep(2500); } }
+      if (await read.count()) { await tap("read2", read.first()); await sleep(2500); const next = p.getByRole("button", { name: /›|次/ }); if (await next.count()) { await tap("next", next.first()); await sleep(2500); } }
       await sleep(1500);
     });
 

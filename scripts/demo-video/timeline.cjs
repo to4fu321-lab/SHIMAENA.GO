@@ -7,7 +7,7 @@ module.exports = {
   bgm: { quietUntil: 33, off: [89, 111.5], fadeOutAt: 177.5 },
   scenes: [
     { id: "open", kind: "card", card: "snow", start: 0, end: 13, voice: [["n01", 0.8]],
-      telops: [{ t0: 2.2, t1: 8.5, text: "札幌・雪かき16年目" }, { t0: 5.6, t1: 9.5, text: "腰：毎年", small: true }] },
+      telops: [{ t0: 2.2, t1: 8.3, text: "札幌・雪かき16年目" }, { t0: 8.6, t1: 13, text: "腰：毎年" }] },
     { id: "sofa", kind: "card", card: "sofa", start: 13, end: 20.5, voice: [["n02", 13.3]],
       telops: [{ t0: 17.4, t1: 20.5, text: "開発環境：ソファー" }, { t0: 18.6, t1: 20.5, text: "開発チーム：私と、シマエナガ（Claude）", small: true }] },
     { id: "title", kind: "card", card: "title", start: 20.5, end: 25, voice: [["c01", 21.2]], telops: [] },
@@ -31,7 +31,7 @@ module.exports = {
       telops: [{ t0: 113, t1: 116.5, text: "Claude が相談にのる", tag: true }, { t0: 117, t1: 120, text: "※語尾はシマエナガです", small: true }, { t0: 120.3, t1: 123, text: "日本語／English／中文／한국어／Tiếng Việt" }] },
     { id: "book", kind: "app", scene: "book", from: 1.5, start: 123, end: 133, voice: [["n12", 123.3]],
       telops: [{ t0: 124, t1: 128.5, text: "高齢者が「教える側」になる" }, { t0: 129, t1: 133, text: "雪の思い出 → 町の週刊絵本（文と絵: Claude）" }] },
-    { id: "diagram", kind: "card", card: "diagram", start: 133, end: 138.5, voice: [["n13", 133.3]], telops: [] },
+    { id: "diagram", kind: "card", card: "diagram", start: 133, end: 138.5, voice: [["n13", 133.3]], telops: [], nosub: true },
     { id: "making", kind: "card", card: "making", start: 138.5, end: 158, voice: [["n14", 138.8], ["n15", 150.0]],
       telops: [{ t0: 140.5, t1: 149.5, text: "開発：スマホ 100%" }, { t0: 143.3, t1: 149.5, text: "コードを書いた時間：0分" }, { t0: 145.6, t1: 149.5, text: "ゴロゴロした時間：6日" }, { t0: 147.5, t1: 149.5, text: "パソコンは、この動画の編集だけ", small: true },
         { t0: 150.2, t1: 158, text: "40代・営業・初心者" }, { t0: 153, t1: 158, text: "仕様を先に決めて、Claude Code をループで自走", small: true }, { t0: 155, t1: 158, text: "テスト 543本 ／ 企画役・点検役のエージェント", small: true }] },

@@ -32,7 +32,7 @@ function prep() {
   }
   const narration = JSON.parse(fs.readFileSync(path.join(V, "narration/narration.json"), "utf8"));
   const commits = fs.existsSync(path.join(V, "commits.txt")) ? fs.readFileSync(path.join(V, "commits.txt"), "utf8").split("\n").filter(Boolean) : [];
-  fs.writeFileSync(path.join(V, "timeline.js"), "window.TIMELINE = " + JSON.stringify({ ...T, frames, narration, commits }) + ";\n");
+  fs.writeFileSync(path.join(V, "timeline.js"), "window.TIMELINE = " + JSON.stringify({ ...T, frames, narration, commits, rec: scenes }) + ";\n");
   console.log("timeline.js を書いた");
 }
 
