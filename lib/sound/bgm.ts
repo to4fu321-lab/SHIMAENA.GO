@@ -4,7 +4,8 @@
 // v1.37: どの曲も 16 小節（前半 A・後半 B で展開）。後半に入ると編成が変わって、同じ繰り返しに聞こえない。
 // 鳴らし方は Web Audio の定番「2つの時計」: setInterval（25ms）で、少し先（0.15秒）までの小節を予約していく。
 // 曲の切りかえは 0.6 秒のクロスフェード。同じ曲ならタブを移っても頭に戻らない。
-import { getEngine, isUnlocked, onRebuild, onSoundPrefs, onUnlocked, setBgmLevel, setBgmTempo, soundPrefs } from "./engine";
+import { bgmOutputGain, getEngine, isUnlocked, onRebuild, onSoundPrefs, onUnlocked, setBgmLevel, setBgmTempo, soundPrefs } from "./engine";
+import { backgroundSupported, playBackground, stopBackground } from "./background";
 import { air, bass, bell, clap, crackle, crash, crunch, epiano, glass, hat, kick, lead, pad, riser, snare, spread, wind } from "./synth";
 import type { SnowSong } from "./snow-song";
 
@@ -477,7 +478,32 @@ class Player {
   }
 }
 
-let current: { track: BgmTrack; player: Player } | null = null;
+/**
+ * 雪かき中の曲（v1.38）: 画面を消しても鳴るように <audio> で鳴らす。書き出しが終わるまでは Web Audio でつなぐ。
+ * 鳴らせない端末・失敗したときは Web Audio のまま（画面の間だけ鳴る、今までどおり）
+ */
+class BackgroundPlayer {
+  private bridge: Player | null;
+  constructor(ctx: AudioContext, song: Song, out: AudioNode) {
+    this.bridge = new Player(ctx, song, out);
+    this.bridge.start();
+    void playBackground(song, bgmOutputGain(), () => {
+      this.bridge?.stop();
+      this.bridge = null;
+    });
+  }
+  start(): void {}
+  stop(): void {
+    this.bridge?.stop();
+    this.bridge = null;
+    stopBackground();
+  }
+}
+
+/** 裏でも鳴らす曲（雪かき中） */
+const BACKGROUND_TRACKS: BgmTrack[] = ["mission"];
+
+let current: { track: BgmTrack; player: Player | BackgroundPlayer } | null = null;
 /** 画面が「この曲を」と頼んだ順の積み重ね（最後に頼んだものが鳴る。画面が消えたら外す） */
 const stack: { id: number; track: BgmTrack; level: number }[] = [];
 let seq = 0;
@@ -493,7 +519,7 @@ function apply(): void {
   const w = want();
   const e = getEngine();
   if (!e || !isUnlocked()) return; // 解放されたら onUnlocked でもう一度
-  if (!w || !soundPrefs().bgm) {
+  if (!w || !soundPrefs().bgm || soundPrefs().ownMusic) {
     if (current) {
       current.player.stop();
       current = null;
@@ -504,7 +530,7 @@ function apply(): void {
   setBgmLevel(w.level);
   if (current?.track === w.track) return;
   current?.player.stop();
-  const player = new Player(e.ctx, songFor(w.track), e.bgm);
+  const player = BACKGROUND_TRACKS.includes(w.track) && backgroundSupported() ? new BackgroundPlayer(e.ctx, songFor(w.track), e.bgm) : new Player(e.ctx, songFor(w.track), e.bgm);
   player.start();
   current = { track: w.track, player };
   document.documentElement.dataset.bgm = w.track; // 確かめ用（scripts/sound-check.cjs が読む）

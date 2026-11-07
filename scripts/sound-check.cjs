@@ -132,19 +132,42 @@ async function waitForServer(url, ms = 40000) {
     await page.waitForTimeout(1200);
     c = await counts();
     ok(c.bgm === "mission", `雪かき中の印は「出撃！」（${c.bgm}）`);
+    // v1.38: 雪かき中の曲は <audio> で鳴る（書き出しが終わるまで待つ）→ 裏に回しても止まらない
+    let bg = null;
+    for (let i = 0; i < 40 && bg !== "playing"; i++) {
+      await page.waitForTimeout(250);
+      bg = await page.evaluate(() => document.documentElement.dataset.bgmBg ?? null);
+    }
+    ok(bg === "playing", `雪かき中の曲は画面を消しても鳴る <audio> で（${bg}）`);
+    await setHidden(true);
+    await page.waitForTimeout(800);
+    bg = await page.evaluate(() => document.documentElement.dataset.bgmBg ?? null);
+    const st = (await counts()).state;
+    ok(bg === "playing" && st === "suspended", `裏に回しても雪かき中の曲は止まらない（${bg}・Web Audio は ${st}）`);
+    await setHidden(false);
+    await page.waitForTimeout(400);
 
     // 4. 設定で BGM をオフ → 止まる。オンに戻す → 戻る
     await page.goto(`http://localhost:${PORT}/settings?as=h1`, { waitUntil: "networkidle" });
     await page.getByRole("tab", { name: "音" }).click();
     await page.waitForTimeout(600);
-    await page.getByRole("switch", { name: /BGM/ }).click();
+    await page.getByRole("switch", { name: /^BGM/ }).click();
     await page.waitForTimeout(300);
     c = await counts();
     ok(c.bgm === null, `BGM をオフにすると止まる（${c.bgm}）`);
-    await page.getByRole("switch", { name: /BGM/ }).click();
+    await page.getByRole("switch", { name: /^BGM/ }).click();
     await page.waitForTimeout(600);
     c = await counts();
     ok(c.bgm === "morning", `オンに戻すと「しらかばの朝」（${c.bgm}）`);
+    // v1.38: 自分の音楽を聴く → BGM は止まる。戻すと鳴る
+    await page.getByRole("switch", { name: /自分の音楽/ }).click();
+    await page.waitForTimeout(300);
+    c = await counts();
+    ok(c.bgm === null, `「自分の音楽を聴く」で BGM が止まる（${c.bgm}）`);
+    await page.getByRole("switch", { name: /自分の音楽/ }).click();
+    await page.waitForTimeout(600);
+    c = await counts();
+    ok(c.bgm === "morning", `戻すと BGM が鳴る（${c.bgm}）`);
 
     // 5. ボタンの音: 主役（ピポッ）と白いボタン（プッ）で音が出る
     const b0 = (await counts()).osc;

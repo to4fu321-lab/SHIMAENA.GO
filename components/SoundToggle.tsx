@@ -31,13 +31,13 @@ export default function SoundToggle({ compact = false }: { compact?: boolean }) 
   const prefs = useSoundPrefs();
   const supported = useClientValue(true, soundSupported); // 端末にしか分からないので、画面が出たあとに読む
   if (compact) {
-    const on = prefs.bgm;
+    const on = prefs.bgm && !prefs.ownMusic; // 「自分の音楽を聴く」の間は BGM は鳴らない
     return (
       <button
         type="button"
         onClick={() => {
           void unlock();
-          setSoundPrefs({ bgm: !on });
+          setSoundPrefs({ bgm: !on, ownMusic: false });
         }}
         aria-label={on ? "BGM を止める" : "BGM を鳴らす"}
         aria-pressed={on}
@@ -54,8 +54,9 @@ export default function SoundToggle({ compact = false }: { compact?: boolean }) 
   return (
     <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="音">
       <h2 className="text-lg font-bold">音</h2>
-      <Switch on={prefs.sfx} label="効果音" note="ボタン・出撃・カードの音と、Android の振動" onChange={(v) => setSoundPrefs({ sfx: v })} />
-      <Switch on={prefs.bgm} label="BGM" note="場面で変わる3曲。ホームの 🔊 でも止められます" onChange={(v) => setSoundPrefs({ bgm: v })} />
+      <Switch on={prefs.sfx} label="効果音" note="ボタンの音と、Android の振動" onChange={(v) => setSoundPrefs({ sfx: v })} />
+      <Switch on={prefs.bgm} label="BGM" note="雪かき中は画面を消しても鳴ります" onChange={(v) => setSoundPrefs({ bgm: v })} />
+      <Switch on={prefs.ownMusic} label="自分の音楽を聴く" note="Spotify などと一緒に。BGM は止まります" onChange={(v) => setSoundPrefs({ ownMusic: v })} />
       <button
         type="button"
         data-sound="none"
@@ -66,7 +67,7 @@ export default function SoundToggle({ compact = false }: { compact?: boolean }) 
       >
         🎵 ためしに鳴らす
       </button>
-      <p className="text-sm text-ink-soft">{supported ? "この設定はこの端末にだけ保存されます。スマホの消音スイッチが入っていると鳴りません。" : "この端末では音が使えません。"}</p>
+      <p className="text-sm text-ink-soft">{supported ? "この端末にだけ保存。消音スイッチ中は鳴りません。" : "この端末では音が使えません。"}</p>
     </section>
   );
 }
