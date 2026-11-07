@@ -260,7 +260,7 @@
 - [x] **T110 隊長に伝える** — 隊長トークの 📮 と設定の「お知らせ」から、種類（🐞💡❓）＋文（声でも）を送る `components/FeedbackSheet.tsx`。`lib/feedback/`（決まり・保存 `feedback_reports`・GitHub・操作）、Claude の整え `lib/claude/feedback.ts`（採点表 `feedback`）、隊長の返事、声に貯める、Issue（鍵があればその場で、なければ Actions `feedback.yml` が1時間ごとに `/api/feedback` から）、閉じた Issue を見つけて本人の隊長トークに「直しました」（/chat を開いたとき・Actions・/admin のボタン）。/admin の「声」タブに報告箱。点検ループの決まり（`docs/tenken.md`・`/tenken`）に報告箱の Issue の扱いを足す。テスト 13 本。
   完了条件: `npm run check` が通る。`/chat?as=h3` の 📮 → 送る → 返事が流れに入る。`/settings?as=h3` のボタン。390×844・375×667 に収まる。
 
-## 第31段: 11/7 本人の指摘5つ（spec v1.34）
+## 第31段: 11/7 本人の指摘5つ（spec v1.35）
 - [x] **T111 新規向けの「できること」とチャット登録・チームの成績・雪かきGOの理由・ソロ2回目・「雪かき待ち」** — `AppTour`（動く絵5枚）→ `RegisterChat`（隊長が3つ聞く）。`/team` の「あなた」になかまと今週の成績（棒が伸びる・数が数えあがる）。ホーム・ソロに「お願い 0軒」の理由。自分の家の雪かきを1日に何回でも（`REPEATABLE`、`again-N`）。地図の「救助待ち」→「雪かき待ち」。
   完了条件: `npm run check` が通る。`/start?opening=1`・`/team?as=h3`・`/?as=h3`・`/solo?as=h3` が 390×844 と 375×667 に収まる（登録のトークは中でスクロール）。
 

@@ -60,6 +60,24 @@ export function isIconId(v: unknown): v is IconId {
 export function isIconBgId(v: unknown): v is IconBgId {
   return ICON_BGS.some((i) => i.id === v);
 }
+/** アイコンの写真（11/7 本人の指示「自分の画像を基本で選べるように」）。画面で 160px 四方の JPEG に縮めた data URL だけ受け付ける */
+export const PHOTO_MAX_CHARS = 60_000;
+export function cleanPhoto(v: unknown): string | undefined {
+  if (typeof v !== "string" || v.length > PHOTO_MAX_CHARS) return undefined;
+  return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : undefined;
+}
+
+/**
+ * まだ選んでいない人のアイコン（11/7 本人の指示「デフォルトアイコンはランダムに」）。
+ * 参加者 ID から決めるので、毎回同じ・人ごとにばらばら（開くたびに変わらない）
+ */
+export function defaultLook(participantId: string): { icon: IconId; iconBg: IconBgId } {
+  let h = 2166136261;
+  for (let i = 0; i < participantId.length; i++) h = Math.imul(h ^ participantId.charCodeAt(i), 16777619);
+  const n = h >>> 0;
+  return { icon: ICONS[n % ICONS.length].id, iconBg: ICON_BGS[Math.floor(n / ICONS.length) % (ICON_BGS.length - 1)].id };
+}
+
 export const iconEmoji = (id: IconId | undefined) => (ICONS.find((i) => i.id === id) ?? ICONS[0]).emoji;
 export const iconBgColor = (id: IconBgId | undefined) => (ICON_BGS.find((i) => i.id === id) ?? ICON_BGS[0]).color;
 
@@ -74,6 +92,8 @@ export interface MyProfile {
   participantId: string;
   icon: IconId;
   iconBg: IconBgId;
+  /** 自分の写真（data URL）。あれば絵文字より先に出す */
+  photo?: string;
   /** ひとこと（40字） */
   intro: string;
   /** 好きなこと（10字×5つまで） */

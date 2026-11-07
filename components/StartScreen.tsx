@@ -1,7 +1,7 @@
 "use client";
 
 // はじめる（spec v1.17）。LINE でログイン → オープニング → 「このアプリでできること」（動く絵、11/7）→ 隊長とのチャットで30秒の登録 → そのままソロ出動へ。
-// 登録の中身は ①手伝う／手伝ってほしい／家族の代わりに ②家の場所 ③2問 → 「はじめる！」（components/RegisterChat.tsx）。
+// 登録の中身は ①手伝う／手伝ってほしい（絵のカードで両方えらべる。spec v1.33）／家族の代わりに ②家の場所 ③質問（両方なら4問。お願いする側は絵で）→ 「はじめる！」（components/RegisterChat.tsx）。
 // 家族の代わりの登録は、最後に6桁の連携コードを出す（ご本人・ほかの家族が「連携コードを入れる」で紐づく）。
 import Link from "next/link";
 import { useRouter } from "next/navigation";

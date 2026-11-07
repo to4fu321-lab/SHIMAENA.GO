@@ -6,7 +6,7 @@
 // 記録 = 仲間・合流・バトン・ありがとう・活動した日・カード
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { saveProfileAction, waveAction } from "@/app/me/actions";
 import type { TidyProfile } from "@/lib/claude/profile";
 import type { Companion, MypageView } from "@/lib/mypage/ops";
@@ -17,6 +17,7 @@ import type { TeamId } from "@/lib/types";
 import Avatar from "./Avatar";
 import Pager, { PagedList, Screen } from "./Pager";
 import ProfileInterview from "./ProfileInterview";
+import { squarePhoto } from "./shrink";
 import TabBar from "./TabBar";
 
 const card = "rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10";
@@ -48,6 +49,8 @@ function Chips({ items, tone, max = TAGS_MAX }: { items: string[]; tone: "ice" |
 interface Draft {
   icon: IconId;
   iconBg: IconBgId;
+  /** 自分の写真（data URL）。null = 写真なし（絵文字のアイコン） */
+  photo: string | null;
   intro: string;
   likes: string;
   interests: string;
@@ -56,8 +59,11 @@ interface Draft {
 
 /** 自分で書く・直す（インタビューの下書きもここで直してから保存） */
 function ProfileEditor({ draft, by, busy, onChange, onSave, onCancel }: { draft: Draft; by?: "claude" | "program"; busy: boolean; onChange: (d: Draft) => void; onSave: () => void; onCancel: () => void }) {
+  const file = useRef<HTMLInputElement>(null);
+  const [reading, setReading] = useState(false);
   const field = "w-full rounded-2xl bg-card px-3 py-2 text-lg leading-snug shadow-sm ring-1 ring-ink/15 placeholder:text-ink-soft/60 short:py-1.5 short:text-base";
   return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2 short:gap-1">
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto short:gap-1">
       <div className="flex shrink-0 items-center gap-2">
         <button type="button" onClick={onCancel} className="btn btn-white min-h-10 shrink-0 whitespace-nowrap px-3 text-sm">
@@ -66,37 +72,63 @@ function ProfileEditor({ draft, by, busy, onChange, onSave, onCancel }: { draft:
         <p className="text-sm font-bold leading-snug">{by ? (by === "claude" ? "隊長が整えました。直してから保存できます" : "答えから組み立てました。直してから保存できます") : "自分で書く・直す"}</p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        <Avatar icon={draft.icon} bg={draft.iconBg} size={64} className="short:!size-14" />
+        <Avatar icon={draft.icon} bg={draft.iconBg} photo={draft.photo ?? undefined} size={64} className="short:!size-14" />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 short:gap-1">
-          <div className="grid grid-flow-col grid-rows-2 gap-1 overflow-x-auto pb-1 [scrollbar-width:thin] short:grid-rows-1 short:pb-0" role="radiogroup" aria-label="アイコン">
+          {/* 基本は自分の写真（顔でなくても、好きな物の写真でも） */}
+          <button type="button" onClick={() => file.current?.click()} disabled={reading} className={`btn min-h-11 w-full gap-1.5 px-2 text-base short:min-h-9 ${draft.photo ? "btn-white" : "btn-lamp"}`}>
+            <span aria-hidden="true">📷</span>
+            {reading ? "写真を読んでいます…" : draft.photo ? "写真を変える" : "自分の写真をアイコンに"}
+          </button>
+          <input
+            ref={file}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (!f) return;
+              setReading(true);
+              try {
+                onChange({ ...draft, photo: await squarePhoto(f) });
+              } catch {
+                /* 読めない写真は、そのまま絵文字のアイコン */
+              }
+              setReading(false);
+            }}
+          />
+          <p className="text-xs font-bold text-ink-soft">または絵をえらぶ</p>
+          <div className="grid grid-flow-col grid-rows-1 gap-1 overflow-x-auto pb-1 [scrollbar-width:thin]" role="radiogroup" aria-label="アイコン">
             {ICONS.map((ic) => (
               <button
                 key={ic.id}
                 type="button"
                 role="radio"
-                aria-checked={draft.icon === ic.id}
+                aria-checked={!draft.photo && draft.icon === ic.id}
                 aria-label={ic.label}
-                onClick={() => onChange({ ...draft, icon: ic.id })}
-                className={`grid size-10 place-items-center rounded-xl text-xl ring-2 ${draft.icon === ic.id ? "bg-lamp ring-lamp" : "bg-card ring-ink/10"}`}
+                onClick={() => onChange({ ...draft, icon: ic.id, photo: null })}
+                className={`grid size-10 place-items-center rounded-xl text-xl ring-2 ${!draft.photo && draft.icon === ic.id ? "bg-lamp ring-lamp" : "bg-card ring-ink/10"}`}
               >
                 {ic.emoji}
               </button>
             ))}
           </div>
-          <div className="flex gap-1.5" role="radiogroup" aria-label="アイコンの背景色">
-            {ICON_BGS.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                role="radio"
-                aria-checked={draft.iconBg === b.id}
-                aria-label={b.label}
-                onClick={() => onChange({ ...draft, iconBg: b.id })}
-                className={`size-7 rounded-full ring-2 ${draft.iconBg === b.id ? "ring-lamp" : "ring-ink/15"}`}
-                style={{ background: b.color }}
-              />
-            ))}
-          </div>
+          {!draft.photo && (
+            <div className="flex gap-1.5" role="radiogroup" aria-label="アイコンの背景色">
+              {ICON_BGS.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.iconBg === b.id}
+                  aria-label={b.label}
+                  onClick={() => onChange({ ...draft, iconBg: b.id })}
+                  className={`size-7 rounded-full ring-2 ${draft.iconBg === b.id ? "ring-lamp" : "ring-ink/15"}`}
+                  style={{ background: b.color }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <label className="block shrink-0">
@@ -115,7 +147,9 @@ function ProfileEditor({ draft, by, busy, onChange, onSave, onCancel }: { draft:
         <span className="text-sm font-bold text-ink-soft short:text-xs">雪かきのあと、こんな話を（{TALK_MAX}字まで）</span>
         <input value={draft.talk} maxLength={TALK_MAX} onChange={(e) => onChange({ ...draft, talk: e.target.value })} placeholder="例: 犬の話、昔の町の話、なんでも" className={field} />
       </label>
-      <button type="button" className="btn btn-lamp btn-big mt-auto w-full shrink-0 short:min-h-12 short:text-lg" disabled={busy} onClick={onSave}>
+    </div>
+      {/* 保存ボタンは入力欄のスクロールの外に置く（小さい画面でも見える） */}
+      <button type="button" className="btn btn-lamp btn-big w-full shrink-0 short:min-h-12 short:text-lg" disabled={busy} onClick={onSave}>
         {busy ? "保存しています…" : "これで保存する"}
       </button>
     </div>
@@ -124,7 +158,7 @@ function ProfileEditor({ draft, by, busy, onChange, onSave, onCancel }: { draft:
 
 function toDraft(v: MypageView): Draft {
   const p = v.profile;
-  return { icon: p?.icon ?? "bird", iconBg: p?.iconBg ?? "ice", intro: p?.intro ?? "", likes: (p?.likes ?? []).join("、"), interests: (p?.interests ?? []).join("、"), talk: p?.talk ?? "" };
+  return { icon: v.look.icon, iconBg: v.look.iconBg, photo: v.look.photo ?? null, intro: p?.intro ?? "", likes: (p?.likes ?? []).join("、"), interests: (p?.interests ?? []).join("、"), talk: p?.talk ?? "" };
 }
 
 export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewerId: string; view: MypageView; q: string; initialTab?: number }) {
@@ -136,6 +170,12 @@ export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewer
   const [by, setBy] = useState<"claude" | "program" | undefined>();
   const [note, setNote] = useState<string | null>(null);
   const p = view.profile;
+  // 「保存しました」などの知らせは数秒で消す（画面の高さを取り続けないように）
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(() => setNote(null), 4000);
+    return () => clearTimeout(t);
+  }, [note]);
   const has = Boolean(p && (p.intro || p.likes.length || p.interests.length || p.talk));
 
   const save = () =>
@@ -167,7 +207,7 @@ export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewer
     });
 
   const fromInterview = (d: TidyProfile) => {
-    setDraft({ icon: d.icon, iconBg: draft.iconBg, intro: d.intro, likes: d.likes.join("、"), interests: d.interests.join("、"), talk: d.talk });
+    setDraft({ icon: d.icon, iconBg: draft.iconBg, photo: draft.photo, intro: d.intro, likes: d.likes.join("、"), interests: d.interests.join("、"), talk: d.talk });
     setBy(d.by);
     setMode("edit");
   };
@@ -177,7 +217,7 @@ export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewer
       <Link href={`/${q}`} aria-label="ホームへ戻る" className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
         ‹
       </Link>
-      <Avatar icon={p?.icon} bg={p?.iconBg} size={44} team={view.teamId} />
+      <Avatar icon={view.look.icon} bg={view.look.iconBg} photo={view.look.photo} size={44} team={view.teamId} />
       <div className="min-w-0 flex-1 leading-tight">
         <h1 className="truncate text-xl font-bold">マイページ</h1>
         <p className="truncate text-sm text-ink-soft">{view.nickname}さん</p>
@@ -210,12 +250,17 @@ export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewer
           <ProfileEditor draft={draft} by={by} busy={pending} onChange={setDraft} onSave={save} onCancel={() => { setMode("view"); setBy(undefined); setDraft(toDraft(view)); }} />
         ) : (
           <>
-            <div className={`${card} flex min-h-0 flex-1 flex-col items-center gap-2 overflow-hidden text-center`}>
-              <Avatar icon={p?.icon} bg={p?.iconBg} size={88} team={view.teamId} />
-              <p className="text-xl font-bold leading-tight">{view.nickname}さん</p>
+            <div className={`${card} flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto`}>
+              {/* 写真・名前は横に並べて、紹介文に高さを回す（11/7 本人の指摘「マイページが途切れている」） */}
+              <div className="flex shrink-0 items-center gap-3">
+                <Avatar icon={view.look.icon} bg={view.look.iconBg} photo={view.look.photo} size={72} team={view.teamId} className="short:!size-14" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xl font-bold leading-tight">{view.nickname}さん</p>
+                  {p?.intro && <p className="mt-0.5 text-lg font-bold leading-snug short:text-base">「{p.intro}」</p>}
+                </div>
+              </div>
               {has ? (
-                <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-hidden text-left">
-                  {p?.intro && <p className="text-center text-lg font-bold leading-snug">「{p.intro}」</p>}
+                <div className="flex w-full flex-col gap-2 text-left">
                   {p && p.likes.length > 0 && (
                     <div>
                       <p className="text-xs font-bold text-ink-soft">好きなこと</p>
@@ -231,20 +276,23 @@ export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewer
                   {p?.talk && <p className="text-base leading-snug text-ink-soft">💬 雪かきのあとは「{p.talk}」</p>}
                 </div>
               ) : (
-                <p className="my-auto text-lg leading-snug text-ink-soft">
+                <p className="my-auto text-center text-lg leading-snug text-ink-soft">
                   まだ紹介がありません。
                   <br />
                   隊長に5つ聞いてもらうと、1分で形になります。
                 </p>
               )}
             </div>
-            <button type="button" onClick={() => { play("chirp"); setMode("interview"); }} className="btn btn-lamp btn-big w-full shrink-0 shadow-md">
-              🎙 隊長に聞いてもらって{has ? "作り直す" : "作る"}
-            </button>
-            <button type="button" onClick={() => { setDraft(toDraft(view)); setBy(undefined); setMode("edit"); }} className="btn btn-white w-full shrink-0 text-lg">
-              ✏️ 自分で{has ? "直す" : "書く"}
-            </button>
-            <p className="shrink-0 text-center text-xs leading-snug text-ink-soft">見えるのは、一緒に活動した仲間だけ。名前・住所は書かないでください。</p>
+            {/* 紹介があるときは2つを横に並べて、紹介に高さを回す */}
+            <div className={has ? "grid shrink-0 grid-cols-2 gap-2" : "flex shrink-0 flex-col gap-2"}>
+              <button type="button" onClick={() => { play("chirp"); setMode("interview"); }} className={`btn btn-lamp w-full shadow-md ${has ? "min-h-14 whitespace-nowrap px-1 text-base" : "btn-big"}`}>
+                {has ? "🎙 隊長と作り直す" : "🎙 隊長に聞いてもらって作る"}
+              </button>
+              <button type="button" onClick={() => { setDraft(toDraft(view)); setBy(undefined); setMode("edit"); }} className={`btn btn-white w-full text-lg ${has ? "min-h-14 px-2" : ""}`}>
+                ✏️ 自分で{has ? "直す" : "書く"}
+              </button>
+            </div>
+            <p className="shrink-0 text-center text-xs leading-snug text-ink-soft short:hidden">見えるのは、一緒に活動した仲間だけ。名前・住所は書かないでください。</p>
           </>
         )}
 
@@ -271,7 +319,7 @@ export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewer
             render={(c) => (
               <div key={c.participantId} className={`${card} flex min-h-0 flex-1 flex-col gap-2 overflow-hidden ${c.wave.theirs && !c.wave.mine ? "ring-2 ring-lamp" : ""}`}>
                 <div className="flex items-center gap-3">
-                  <Avatar icon={c.profile.icon} bg={c.profile.iconBg} size={60} team={c.teamId} />
+                  <Avatar icon={c.profile.icon} bg={c.profile.iconBg} photo={c.profile.photo} size={60} team={c.teamId} />
                   <div className="min-w-0 flex-1 leading-tight">
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xl font-bold">
                       <span>{c.nickname}さん</span>
