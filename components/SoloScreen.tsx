@@ -40,6 +40,7 @@ export default function SoloScreen({
   pickFive,
   focus,
   night = false,
+  noRequests = false,
   q,
   shareOptions = [],
   roadAlerts,
@@ -58,6 +59,8 @@ export default function SoloScreen({
   focus?: string;
   /** 夜（19時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
   night?: boolean;
+  /** 近所のお願いが 0 軒（作戦がまだ）: 自宅の雪かき・道の危険へ誘導する */
+  noRequests?: boolean;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
   shareOptions?: ShareOption[];
@@ -472,7 +475,7 @@ export default function SoloScreen({
       {/* ゲームの HUD: 呼びかけ＋今日の成績 */}
       <div className="shrink-0 rounded-2xl bg-ink px-4 py-2 text-white shadow-md">
         <p className="text-lg font-bold leading-snug">
-          {runMission ? "🎯 遂行中！ 報告でクリア" : pickFive ? "⚡ 出動要請！ 町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
+          {runMission ? "🎯 遂行中！ 報告でクリア" : noRequests && !night ? "🏠 近所のお願いはなし。自宅と道の報告を！" : pickFive ? "⚡ 出動要請！ 町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
         </p>
         <p className="flex items-center justify-between text-sm font-bold text-white/85">
           <span>クリア {doneCount}/{list.length}</span>

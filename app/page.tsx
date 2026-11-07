@@ -86,6 +86,10 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
+  // 近所のお願いがない（作戦がまだ・頼む家が 0 軒）: はっきり伝えて、自宅の雪かきと道の危険を知らせるへ誘導（11/7 本人の指示）
+  const noRequests = asks === 0 && prog.total === 0;
+  const ownHouseHref = `/solo?pick=10&focus=own_house${demoAs ? `&as=${demoAs}` : ""}`;
+  const roadHref = `/solo?pick=10&focus=report_snow${demoAs ? `&as=${demoAs}` : ""}`;
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
   const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
@@ -251,17 +255,19 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <p className="text-lg font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
               ) : (
                 <p className="text-lg font-bold">
-                  {asks > 0 ? `雪かきのお願い ${asks}軒` : rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
-                  {/* 雪はあるのに作戦がまだ（お願いの家が 0 軒）: 近所の雪かきに行けない理由をはっきり（11/7 本人の指摘） */}
-                  {asks === 0 && rc.status !== "closed" && rc.forecastCm > 0 && (
-                    <span className="ml-2 inline-block rounded-full bg-ice-soft px-2 py-0.5 align-middle text-sm font-bold">お願い 0軒</span>
+                  {asks > 0 ? (
+                    `雪かきのお願い ${asks}軒`
+                  ) : (
+                    // 近所のお願いがない: 理由をはっきり、やれることへ誘導（11/7 本人の指示）
+                    <>
+                      近所のお願いは いまなし
+                      {rc.status !== "closed" && rc.forecastCm > 0 && (
+                        <span className="ml-2 inline-block rounded-full bg-ice-soft px-2 py-0.5 align-middle text-sm font-bold whitespace-nowrap">今日の雪 {rc.forecastCm}cm</span>
+                      )}
+                    </>
                   )}
                   <span className="block text-sm">
-                    {asks > 0
-                      ? "地図の待っている家へ。10分だけでも大歓迎"
-                      : rc.status === "closed" || !rc.forecastCm
-                        ? "1人の10分でも町は変わります"
-                        : "頼む家のお願いが出ると、地図に家が出ます。いまは自宅の雪かきを"}
+                    {asks > 0 ? "地図の待っている家へ。10分だけでも大歓迎" : "頼む家のお願いが出ると地図に出ます。それまでは下の2つをどうぞ"}
                   </span>
                 </p>
               )}
@@ -340,6 +346,26 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               </span>
             </Link>
           </div>
+        ) : noRequests ? (
+          // 近所のお願いがない昼: 「雪かきGO！」の代わりに、自宅の雪かきと道の危険を知らせるへ（11/7 本人の指示）
+          <div className="grid grid-cols-2 gap-2">
+            <Link href={ownHouseHref} className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-lamp">
+                <Icon name="house" size={22} accent="var(--lamp)" />
+              </span>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">自宅の雪かき</span>
+                <span className="block whitespace-nowrap text-xs font-bold">何回でも・+8羽</span>
+              </span>
+            </Link>
+            <Link href={roadHref} className="flex min-h-14 items-center gap-2 rounded-full bg-card px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink shadow-md ring-1 ring-ink/15">
+              <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-warm text-lg">⚠️</span>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">道の危険</span>
+                <span className="block whitespace-nowrap text-xs font-bold">写真で・+5羽</span>
+              </span>
+            </Link>
+          </div>
         ) : (
           // 昼も夜と同じ形（11/6 本人の指示）: 左に雪かきGO！、右にソロ活動。半分ずつ1行
           <div className="grid grid-cols-2 gap-2">
@@ -351,7 +377,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               </span>
               <span className="min-w-0 leading-tight">
                 <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">{MENU.go.label}</span>
-                <span className="block whitespace-nowrap text-xs font-bold">{!canHelpHouse ? "お願いはまだ・自宅へ" : bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
+                <span className="block whitespace-nowrap text-xs font-bold">{!canHelpHouse ? "自宅の雪かきへ" : bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
               </span>
             </Link>
             <Link href={fiveHref} className="flex min-h-14 items-center gap-2 rounded-full bg-card px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink shadow-md ring-1 ring-ink/15">

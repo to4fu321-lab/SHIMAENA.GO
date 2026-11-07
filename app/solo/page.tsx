@@ -92,6 +92,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         shortHouses={shorts.length}
         pickFive={pick === "10" || pick === "5"}
         night={isNight()}
+        noRequests={record.morning.missions.filter((m) => m.status !== "no_answer").length === 0}
         focus={SOLO_MISSIONS.some((m) => m.kind === focus && m.kind !== "help_house") ? focus : undefined}
         q={q}
         shareOptions={shareOptions}
