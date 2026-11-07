@@ -88,10 +88,11 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
+  // go=1: 押したらすぐ「雪かきGO！」「お知らせGO！」で始まる（11/7 本人の指示）
   // 近所のお願いがない（作戦がまだ・頼む家が 0 軒）: はっきり伝えて、自宅の雪かきと道の危険を知らせるへ誘導（11/7 本人の指示）
   const noRequests = asks === 0 && prog.total === 0;
-  const ownHouseHref = `/solo?pick=10&focus=own_house${demoAs ? `&as=${demoAs}` : ""}`;
-  const roadHref = `/solo?pick=10&focus=report_snow${demoAs ? `&as=${demoAs}` : ""}`;
+  const ownHouseHref = `/solo?pick=10&focus=own_house&go=1${demoAs ? `&as=${demoAs}` : ""}`;
+  const roadHref = `/solo?pick=10&focus=report_snow&go=1${demoAs ? `&as=${demoAs}` : ""}`;
   // 地図に行けないときの理由（押したら案内の紙を出してからソロへ。11/7 本人の指摘）
   const goReason: GoReason = !planned ? "no-plan" : !me ? "guest" : "no-team";
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）

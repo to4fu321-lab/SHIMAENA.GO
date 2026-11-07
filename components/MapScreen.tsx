@@ -321,7 +321,7 @@ export default function MapScreen({
             <div className="space-y-2" aria-label="いまできること">
               <p className="text-center text-sm font-bold">近所のお願いは いまありません。頼む家のお願いが出ると、地図に家が出ます。</p>
               <div className="grid grid-cols-2 gap-2">
-                <Link href={`/solo?pick=10&focus=own_house${q ? `&as=${state.viewerId}` : ""}`} className="btn btn-lamp min-h-14 text-base">
+                <Link href={`/solo?pick=10&focus=own_house&go=1${q ? `&as=${state.viewerId}` : ""}`} className="btn btn-lamp min-h-14 text-base">
                   🏠 自宅の雪かき
                 </Link>
                 <button type="button" onClick={openReport} className="btn btn-white min-h-14 whitespace-nowrap px-2 text-base max-[380px]:text-sm">
