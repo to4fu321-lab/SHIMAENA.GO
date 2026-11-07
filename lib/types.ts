@@ -146,7 +146,7 @@ export interface Mission {
   startAt: string; // ISO
   /** 司令官の理由（30字、v1.1）。地図の「自分の割り当て」と /admin に出す */
   reason?: string;
-  /** この家でどけた雪の目安 kg（カード発行時に Claude が推定、v1.2）。町内の合計に使う */
+  /** この家でどけた雪の目安 kg（カード発行時に Claude が推定、v1.2）。エリアの合計に使う */
   snowKg?: number;
   /** お願いする人がことばで伝えた段取り（spec v1.6） */
   request?: RequestNote;

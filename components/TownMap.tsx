@@ -278,5 +278,5 @@ export default function TownMap({
     };
   }, []);
 
-  return <div ref={ref} className="h-full w-full" aria-label="町内の地図" />;
+  return <div ref={ref} className="h-full w-full" aria-label="エリアの地図" />;
 }

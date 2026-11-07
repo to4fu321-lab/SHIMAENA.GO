@@ -32,7 +32,7 @@ export function mockRecap(i: RecapInput): Recap {
   } else {
     parts.push("まだ最初の家は終わっていません。");
   }
-  parts.push("今日も、町内の冬が少し軽くなりました。");
+  parts.push("今日も、エリアの冬が少し軽くなりました。");
   return { text: parts.join("") };
 }
 
@@ -40,8 +40,8 @@ export async function recapText(input: RecapInput): Promise<Recap> {
   if (!hasClaudeKey()) return mockRecap(input);
   const res = await askJson({
     task:
-      "今朝の町内の雪かきの実況を書いてください。採点表 recap の規則に従います: 3〜4文、やさしい日本語、入力の数字だけを使い、入力にない数字や出来事は書かない。" +
-      "人の名前は出さない。体調や医療の話はしない。最後の1文は町内へのねぎらい。口調は採点表 voice のシマエナ隊長で、最初に「シマエナ隊長だしま〜！」と名乗る。",
+      "今朝のエリアの雪かきの実況を書いてください。採点表 recap の規則に従います: 3〜4文、やさしい日本語、入力の数字だけを使い、入力にない数字や出来事は書かない。" +
+      "人の名前は出さない。体調や医療の話はしない。最後の1文はエリアへのねぎらい。口調は採点表 voice のシマエナ隊長で、最初に「シマエナ隊長だしま〜！」と名乗る。",
     input,
     schema: RecapSchema,
     effort: "low",

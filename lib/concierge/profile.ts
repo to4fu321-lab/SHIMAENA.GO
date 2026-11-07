@@ -77,7 +77,7 @@ export function motivesFromText(text: string): Motive[] {
   const out: Motive[] = [];
   if (/つなが|仲間|なかま|友だち|友達|一緒|いっしょ|知り合|話し相手|さびし|寂し|ひとりぼっち|交流/.test(t)) out.push("connect");
   if (/運動|体を動か|からだを動か|汗|健康|歩き|散歩|筋|ダイエット|運動不足|体力/.test(t)) out.push("exercise");
-  if (/地域|町内|貢献|役に(も)?立|やくに(も)?立|助けたい|恩返し|困っている人|お年寄り|高齢|ボランティア/.test(t)) out.push("community");
+  if (/地域|町内|エリア|貢献|役に(も)?立|やくに(も)?立|助けたい|恩返し|困っている人|お年寄り|高齢|ボランティア/.test(t)) out.push("community");
   if (/ゲーム|ポイント|点数|得点|カード|図鑑|レア|ランキング|順位|称号|連続|チーム戦|勝ち/.test(t)) out.push("game");
   return out;
 }

@@ -30,7 +30,7 @@ describe("シマエナ診断", () => {
 
   it("結果カードが3サイズで描け、キーなしのひとことは定型", async () => {
     for (const f of ["square", "story", "og"] as const) {
-      const svg = renderShareSvg(quizCardData("kotsu", "example.com/public/diagnosis", "しらかば町内"), f);
+      const svg = renderShareSvg(quizCardData("kotsu", "example.com/public/diagnosis", "しらかばエリア"), f);
       expect(svg).toContain("コツコツシマエナ");
     }
     const png = await svgToPng(renderShareSvg(quizCardData("asa", "x", "y"), "og"), { width: 1200 });

@@ -96,7 +96,7 @@ export default function StartScreen({ status, name, center, next, opening = fals
           <ul className="mt-[4dvh] w-full space-y-2 text-left text-ink short:mt-3">
             {[
               ["❄️", "雪の朝、点呼が届く"],
-              ["👥", "町内ランダム3チーム"],
+              ["👥", "エリアでランダム3チーム"],
               ["🏠", "ひとり暮らしの家を救う"],
             ].map(([icon, text], i) => (
               <li key={text} className="opening-pillar flex items-center gap-3 rounded-2xl bg-white/90 px-4 py-2 text-lg font-bold shadow-md short:py-1.5" style={{ animationDelay: `${0.6 + i * 0.25}s` }}>

@@ -1,4 +1,4 @@
-// 名簿: 参加者と拠点。架空の町内（town.json）と、LINE で登録した本物の人が混ざる。
+// 名簿: 参加者と拠点。架空のエリア（town.json）と、LINE で登録した本物の人が混ざる。
 import { inboxKeyOf } from "../inbox/key";
 import { repo } from "../repo";
 import { TOWN } from "../town";
@@ -9,7 +9,7 @@ export interface Roster {
   bases: Base[];
 }
 
-/** 架空の町内だけの名簿（テストと、DB がないとき） */
+/** 架空のエリアだけの名簿（テストと、DB がないとき） */
 export const TOWN_ROSTER: Roster = { participants: TOWN.participants, bases: TOWN.bases };
 
 export async function loadRoster(): Promise<Roster> {

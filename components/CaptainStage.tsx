@@ -8,7 +8,7 @@ import ChatBadge from "@/components/ChatBadge";
 import { cheersSeenAction } from "@/app/home-actions";
 import type { TeamId } from "@/lib/types";
 
-// 「寒い冬は、くっついて乗り切る。」: 隊長の横に仲間2羽。マフラーは残りの2チームの色（3羽で町内の3チーム）
+// 「寒い冬は、くっついて乗り切る。」: 隊長の横に仲間2羽。マフラーは残りの2チームの色（3羽でエリアの3チーム）
 const ALL_TEAMS: TeamId[] = ["salvia", "marigold", "lupinus"];
 import { play } from "@/lib/sound/engine";
 

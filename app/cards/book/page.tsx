@@ -122,7 +122,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
         {/* 図鑑: 5つのタッチとリボン。未入手は影で見せる（‹ › で2ページ） */}
         <CardBookZukan data={{ styles: col.styles, ribbons: col.ribbons, title: title?.title }} />
 
-        {/* ご褒美（想定）: 町内会から。デモは架空 */}
+        {/* ご褒美（想定）: エリアの世話役から。デモは架空 */}
         <div className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="ご褒美">
           <h2 className="text-lg font-bold">ご褒美（想定）</h2>
           {reward ? (
@@ -147,7 +147,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
             ))}
           </ul>
           <p className="text-xs text-ink-soft">
-            地元の銭湯やお店と町内会がつながる想定です。デモは架空で、実在の店ではありません。お金には換えません。
+            地元の銭湯やお店とつながる想定です。デモは架空で、実在の店ではありません。お金には換えません。
           </p>
         </div>
 

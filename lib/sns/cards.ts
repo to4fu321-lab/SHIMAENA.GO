@@ -11,7 +11,7 @@ export type ShareFormat = "square" | "story" | "og";
 export const SHARE_SIZE: Record<ShareFormat, [number, number]> = { square: [1080, 1080], story: [1080, 1920], og: [1200, 630] };
 
 export interface ShareCard {
-  /** 上の小さな文字（町内名・日付） */
+  /** 上の小さな文字（エリア名・日付） */
   eyebrow: string;
   headline: string;
   bigValue: string;

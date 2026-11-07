@@ -45,7 +45,7 @@ describe("設計図の番号と絵", () => {
     expect(t.scene.sky).toBe("dawn");
     expect(buildScene(input).code).toBe(t.scene.code);
     for (const style of ["kawaii", "retrowave", "kirie", "pixel", "eijin"] as const) {
-      const art: CardArt = { style, designName: t.designName, designNameEn: t.designNameEn, rarityLabel: "早朝", stars: 2, members: [{ name: "ゆき", teamId: "salvia" }], date: "2026-12-14", townName: "しらかば町内", snowKg: t.snowKg, snowKgComparison: t.snowKgComparison, serial: 1, issuedCount: 3, scene: t.scene };
+      const art: CardArt = { style, designName: t.designName, designNameEn: t.designNameEn, rarityLabel: "早朝", stars: 2, members: [{ name: "ゆき", teamId: "salvia" }], date: "2026-12-14", townName: "しらかばエリア", snowKg: t.snowKg, snowKgComparison: t.snowKgComparison, serial: 1, issuedCount: 3, scene: t.scene };
       const svg = renderCardSvg(art);
       expect(svg).toContain(`data-scene="${t.scene.code}"`);
       expect(svg).toContain(STAMP_START);
@@ -55,7 +55,7 @@ describe("設計図の番号と絵", () => {
   });
   it("裏面の描き直し（ありがとう点呼）でも、設計図と推定の元の行が残る", () => {
     const t = mockCardText(input);
-    const art: CardArt = { style: "kawaii", designName: t.designName, designNameEn: t.designNameEn, rarityLabel: "早朝", stars: 2, members: [], date: "2026-12-14", townName: "しらかば町内", snowKg: t.snowKg, snowKgComparison: t.snowKgComparison, snowKgBasis: t.snowKgBasis, serial: 1, issuedCount: 3, scene: t.scene };
+    const art: CardArt = { style: "kawaii", designName: t.designName, designNameEn: t.designNameEn, rarityLabel: "早朝", stars: 2, members: [], date: "2026-12-14", townName: "しらかばエリア", snowKg: t.snowKg, snowKgComparison: t.snowKgComparison, snowKgBasis: t.snowKgBasis, serial: 1, issuedCount: 3, scene: t.scene };
     const back = renderCardBackSvg(art, { thanks: "ありがとう", subtasks: [] });
     const ex = backExtras(back);
     expect(ex.scene).toEqual({ code: t.scene.code, why: t.scene.why });
