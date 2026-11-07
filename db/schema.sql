@@ -253,6 +253,27 @@ create table if not exists voice_logs (
   created_at timestamptz not null default now()
 );
 create index if not exists voice_logs_date on voice_logs (date);
+-- マイページ（spec v1.32）: アイコン・ひとこと・好きなこと・興味。見えるのは一緒に活動した仲間だけ
+create table if not exists my_profiles (
+  participant_id text primary key,
+  icon text not null,
+  icon_bg text not null,
+  intro text not null default '',
+  likes jsonb not null default '[]'::jsonb,
+  interests jsonb not null default '[]'::jsonb,
+  talk text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+-- なかま帳の「また一緒に」の手ふり（spec v1.32）。2人の組で1行。30日で古くなる
+create table if not exists nakama_waves (
+  from_id text not null,
+  to_id text not null,
+  at timestamptz not null default now(),
+  primary key (from_id, to_id)
+);
+create index if not exists nakama_waves_to on nakama_waves (to_id);
+
 
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),

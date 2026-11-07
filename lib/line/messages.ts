@@ -514,6 +514,15 @@ export const MSG = {
       [open("合流を見る", "/nakama")],
     ),
   ],
+  /** なかま帳の「また一緒に」の手ふり（spec v1.32）。相手に1回だけ。返事はいらない */
+  nakamaWave: (o: { fromName: string; mutual: boolean }): LineMessage[] => [
+    withButtons(
+      o.mutual
+        ? `👋 ${o.fromName}さんも「また一緒に」と手をふりました。おたがいに、です。雪の朝に「前回の仲間と」を選ぶと、先に候補に出ます。`
+        : `👋 ${o.fromName}さんが「また一緒に雪かきしたい」と手をふっています。返事はいりません。雪の朝に「前回の仲間と」を選ぶと会えるかもしれません。`,
+      [open("なかま帳を見る", "/me?tab=1")],
+    ),
+  ],
   /** 合流の返事（返信なので通数を使わない） */
   nakamaAnswer: (t: string, matched: boolean): LineMessage[] => [withButtons(t, [open(matched ? "合流を見る" : "なかまの画面", "/nakama"), B.solo])],
 } satisfies Record<string, (...args: never[]) => LineMessage[]>;

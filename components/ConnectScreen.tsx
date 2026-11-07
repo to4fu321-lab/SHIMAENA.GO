@@ -210,9 +210,14 @@ export default function ConnectScreen({
           <p className={`shrink-0 rounded-2xl px-3 py-2 text-sm leading-snug ${note ? "bg-ice-soft" : nakama.blocked ? "bg-warm" : nakama.wishLine ? "bg-camellia-soft font-bold" : "text-ink-soft"}`} role="status">
             {note ?? (nakama.blocked ? "🌙 夜は合流をお休み。自分の家の雪かきはいつでもどうぞ。" : nakama.wishLine ? `🐦 ${nakama.wishLine}` : `どれでも自由に。断っても何も減りません。${CHILD_NOTE}`)}
           </p>
-          <Link href={`/nakama${q}`} className="btn btn-ink w-full shrink-0 text-lg">
-            👥 合流の候補を見る ›
-          </Link>
+          <div className="grid shrink-0 grid-cols-2 gap-2">
+            <Link href={`/nakama${q}`} className="btn btn-ink text-lg">
+              👥 合流の候補 ›
+            </Link>
+            <Link href={`/me?tab=1${qa}`} className="btn btn-white text-lg">
+              📒 なかま帳 ›
+            </Link>
+          </div>
         </div>
       ) : (
         <NeedLogin key="nakama" what="なかま（合流）" />

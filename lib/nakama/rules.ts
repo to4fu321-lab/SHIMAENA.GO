@@ -102,6 +102,8 @@ export interface CandidateInput {
   meets: Map<string, number>;
   /** 出さない相手（今日見送られた・7日で2回見送られた・提案中） */
   excluded: Set<string>;
+  /** おたがいに「また一緒に」と手をふった仲間（なかま帳、spec v1.32）。再会の候補で先に */
+  mutualWaves?: Set<string>;
 }
 
 export interface Candidate {
@@ -141,6 +143,7 @@ export function pickCandidates(input: CandidateInput): Candidate[] {
     let score = 0;
     if (kind === "welcome" || kind === "senior") score += 30; // 初参加の人が孤立しないように
     if (kind === "reunion" && myMode === "reunion") score += 25;
+    if (kind === "reunion" && input.mutualWaves?.has(o.id)) score += 15; // おたがいに「また一緒に」
     if (o.role !== me.role) score += 5; // ちがう立場の人どうし（世代は年齢で決めつけない）
     if (myMode === "reunion") score -= met * 3; // 仲間の中でも、会った回数が少ない人から
     else if (met >= OFTEN_MEETS) score -= 20; // 同じ人ばかりにしない
