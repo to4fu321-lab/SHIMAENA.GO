@@ -424,7 +424,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
               報告箱（確かめ中 {feedbackOpen} 件）<span className="text-sm font-normal text-ink-soft"> ・ Issue: {hasGithubToken() ? "その場で" : "Actions が1時間ごとに"}</span>
             </h2>
             {feedback.length === 0 ? (
-              <p className="text-sm text-ink-soft">まだありません。隊長トークの 📮 か設定の「隊長に伝える」から届きます。</p>
+              <p className="text-sm text-ink-soft">まだありません。隊長トークの封筒のボタンか設定の「要望・バグ報告」から届きます。</p>
             ) : (
               <ul className="space-y-0.5 text-sm">
                 {feedback.slice(0, 3).map((f) => (

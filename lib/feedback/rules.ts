@@ -7,8 +7,10 @@ import type { LineMessage } from "../line/types";
 
 export const FEEDBACK_KINDS = ["bug", "confusing", "feature", "other"] as const;
 export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
-export const KIND_LABEL: Record<FeedbackKind, string> = { bug: "うまく動かない", confusing: "意味が分からない", feature: "こうしてほしい", other: "そのほか" };
+export const KIND_LABEL: Record<FeedbackKind, string> = { bug: "バグ報告", confusing: "分からない", feature: "要望", other: "そのほか" };
 /** 点検ループの印（docs/tenken.md の仕分け）と同じ絵 */
+/** 画面で使う線のアイコン（lib/brand.ts） */
+export const KIND_ICON = { bug: "bug", feature: "idea", confusing: "question", other: "chat" } as const;
 export const KIND_MARK: Record<FeedbackKind, string> = { bug: "🐞", confusing: "❓", feature: "💡", other: "💬" };
 /** 画面で選べる3つ（そのほか は Claude の仕分けだけ） */
 export const PICKABLE_KINDS: FeedbackKind[] = ["bug", "feature", "confusing"];
