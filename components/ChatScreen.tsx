@@ -13,7 +13,7 @@ import { LANG_INFO, type Lang } from "@/lib/i18n/langs";
 import { t } from "@/lib/i18n/ui";
 import type { ChatBubble, ChatButton } from "@/lib/inbox/view";
 import type { TeamId } from "@/lib/types";
-import ChatTools, { readSpeak, readTextSize, speakCaptain, TEXT_SIZE_PX, type TextSize } from "./ChatTools";
+import ChatTools, { primeCaptainVoice, readSpeak, readTextSize, speakCaptain, TEXT_SIZE_PX, type TextSize } from "./ChatTools";
 import FeedbackButton from "./FeedbackSheet";
 import LangPicker from "./LangPicker";
 import Mascot from "./Mascot";
@@ -104,6 +104,17 @@ export default function ChatScreen({
       alive = false;
     };
   }, []);
+  // 読み上げがオンのまま開き直したとき: 画面のどこかを最初にタップした中で、声を鳴らせる状態にする（iPhone 対策）
+  useEffect(() => {
+    if (!speakOn) return;
+    const onTap = () => primeCaptainVoice();
+    document.addEventListener("click", onTap, { capture: true, passive: true });
+    document.addEventListener("touchend", onTap, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("click", onTap, { capture: true });
+      document.removeEventListener("touchend", onTap, { capture: true });
+    };
+  }, [speakOn]);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
   const list = useRef<HTMLDivElement>(null);

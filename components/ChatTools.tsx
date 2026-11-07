@@ -1,11 +1,10 @@
 "use client";
 
 // 隊長トークの道具（spec v1.18・v1.36）: 文字の大きさ（標準／大／特大）と 🔊 読み上げ。どちらも端末に覚える。
-// 読み上げ（v1.36）: 日本語のときは隊長のかわいい声（/api/voice → VOICEVOX の mp3 を、音の入れ物で鳴らす）。
+// 読み上げ（v1.36）: 日本語のときは隊長のかわいい声（/api/voice → VOICEVOX の mp3 を、画面に1つの <audio> で鳴らす）。
 // 声を作れないとき・日本語以外のときは、ブラウザの読み上げ（Web Speech、そのことばの声）。鍵も費用も要らない。
 import { LANG_INFO, type Lang } from "@/lib/i18n/langs";
 import { t } from "@/lib/i18n/ui";
-import { getEngine, isUnlocked } from "@/lib/sound/engine";
 import { useClientValue } from "./useClientValue";
 
 export type TextSize = "m" | "l" | "xl";
@@ -47,48 +46,98 @@ export function speak(text: string, lang = "ja-JP"): void {
 }
 
 // ---- 隊長のかわいい声（VOICEVOX） ----
-/** 一度でも作れなかったら、この画面の間はブラウザの声にする（毎回失敗を待たない） */
+// 鳴らし方（11/7 本人の指摘「声でない」）: Web Audio ではなく、画面に1つの <audio> で /api/voice の mp3 を鳴らす。
+// - iPhone はマナーモード（消音スイッチ）だと Web Audio の音を消すが、<audio> の再生は消さない
+// - iPhone は「タップの中で一度 play() した <audio>」なら、あとから中身を変えても鳴らせる → primeCaptainVoice() をタップの中で呼ぶ
+// - ブラウザの読み上げも、タップの中で一度話しておくと、あとから話せる（声を作れなかったときの代わり）
+/** 一度でも「切ってある」と分かったら、この画面の間はブラウザの声にする */
 let voiceAvailable: boolean | undefined;
-let current: AudioBufferSourceNode | null = null;
+let player: HTMLAudioElement | null = null;
+let primed = false;
 let serial = 0;
+
+/** 0.05 秒の無音（WAV）。タップの中で鳴らして <audio> を使えるようにする */
+const SILENT_WAV =
+  "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAACAgICA";
+
+function getPlayer(): HTMLAudioElement | null {
+  if (typeof window === "undefined" || typeof Audio === "undefined") return null;
+  if (!player) {
+    player = new Audio();
+    player.preload = "auto";
+    player.setAttribute("playsinline", "");
+  }
+  return player;
+}
+
+/**
+ * タップの中で呼ぶ: <audio> とブラウザの読み上げを「鳴らしてよい」状態にする（iPhone 対策）。何度呼んでもよい
+ */
+export function primeCaptainVoice(): void {
+  if (primed) return;
+  const a = getPlayer();
+  if (a) {
+    try {
+      a.src = SILENT_WAV;
+      const p = a.play();
+      primed = true;
+      void p?.catch(() => {
+        primed = false; // 次のタップでもう一度
+      });
+    } catch {
+      /* 次のタップでもう一度 */
+    }
+  }
+  if (canSpeak()) {
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* 使えない端末 */
+    }
+  }
+}
 
 /** いま鳴っている隊長の声を止める */
 export function stopCaptainVoice(): void {
   serial++;
   try {
-    current?.stop();
+    player?.pause();
   } catch {
     /* もう止まっている */
   }
-  current = null;
   if (canSpeak()) window.speechSynthesis.cancel();
 }
 
-async function playVoicevox(text: string): Promise<boolean> {
-  if (voiceAvailable === false) return false;
-  const e = getEngine();
-  if (!e || !isUnlocked()) return false; // まだタップのない画面では鳴らせない（ブラウザの声も同じ）
+/** /api/voice の mp3 を <audio> で鳴らす。鳴り始めたら true、作れなかった（混んでいる・切ってある）ら false */
+function playVoicevox(text: string): Promise<boolean> {
+  const a = getPlayer();
+  if (!a || voiceAvailable === false) return Promise.resolve(false);
   const my = ++serial;
-  const res = await fetch(`/api/voice?text=${encodeURIComponent(text.slice(0, 200))}`).catch(() => null);
-  if (!res || !res.ok) {
-    if (res?.status === 404) voiceAvailable = false; // 切ってある
-    return false;
-  }
-  const buf = await e.ctx.decodeAudioData(await res.arrayBuffer()).catch(() => null);
-  if (!buf || my !== serial) return my !== serial; // 新しい読み上げが来ていたら、こちらは黙る（失敗ではない）
-  voiceAvailable = true;
-  const src = e.ctx.createBufferSource();
-  src.buffer = buf;
-  const gain = e.ctx.createGain();
-  gain.gain.value = 1.1;
-  src.connect(gain);
-  gain.connect(e.master);
-  current = src;
-  src.onended = () => {
-    if (current === src) current = null;
-  };
-  src.start();
-  return true;
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok: boolean) => {
+      if (done) return;
+      done = true;
+      a.removeEventListener("playing", onPlaying);
+      a.removeEventListener("error", onError);
+      window.clearTimeout(timer);
+      resolve(ok);
+    };
+    const onPlaying = () => {
+      voiceAvailable = true;
+      finish(true);
+    };
+    const onError = () => finish(my !== serial); // 新しい読み上げが来ていたら、こちらは黙る（失敗ではない）
+    // 声ができるまで最大 15 秒待つ（サーバーは 12 秒であきらめる）
+    const timer = window.setTimeout(() => finish(my !== serial), 15_000);
+    a.addEventListener("playing", onPlaying);
+    a.addEventListener("error", onError);
+    a.src = `/api/voice?text=${encodeURIComponent(text.slice(0, 200))}`;
+    a.volume = 1;
+    void a.play().catch(() => finish(my !== serial));
+  });
 }
 
 /**
@@ -100,8 +149,9 @@ export function speakCaptain(text: string, lang: Lang = "ja"): void {
   if (!s) return;
   stopCaptainVoice();
   if (lang === "ja" && voiceAvailable !== false) {
+    const my = serial + 1;
     void playVoicevox(s).then((ok) => {
-      if (!ok) speak(s, LANG_INFO.ja.speech);
+      if (!ok && my === serial) speak(s, LANG_INFO.ja.speech);
     });
     return;
   }
@@ -129,6 +179,7 @@ export default function ChatTools({
     } catch {}
   };
   const toggle = () => {
+    primeCaptainVoice(); // タップの中で（iPhone はここで一度鳴らした <audio> だけを、あとから鳴らせる）
     const next = !speakOn;
     onSpeak(next);
     try {
