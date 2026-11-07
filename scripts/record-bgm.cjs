@@ -1,4 +1,4 @@
-// 使い方: node scripts/record-bgm.cjs 出力.wav
+// 使い方: node scripts/record-bgm.cjs 出力.wav [曲]（曲: morning（既定。しらかばの朝＋今朝の雪の歌）／mission（出撃！ 1周））
 // 本番ビルドを起動し、BGM（しらかばの朝 50 秒＋今朝の雪の歌 22 秒）を録音して WAV にする（耳で確かめる用）。山の値も出す。
 const { spawn } = require("child_process");
 const path = require("path");
@@ -6,6 +6,8 @@ const fs = require("fs");
 const { chromium } = require("playwright");
 const PORT = 3126;
 const OUT = process.argv[2];
+const WHICH = process.argv[3] ?? "morning";
+const PLAN = WHICH === "mission" ? [["/badge?as=h1", "mission", 34000]] : [["/map", "morning", 50000], ["/", "snow", 22000]];
 (async () => {
   const server = spawn(path.join("node_modules", ".bin", "next"), ["start", "-p", String(PORT)], { stdio: "ignore", detached: true });
   try {
@@ -33,10 +35,10 @@ const OUT = process.argv[2];
       };
     });
     const parts = [];
-    for (const [url, label, wait] of [["/map", "morning", 50000], ["/", "snow", 22000]]) {
+    for (const [url, label, wait] of PLAN) {
       await page.goto(`http://localhost:${PORT}${url}`);
       await page.waitForTimeout(800);
-      await page.mouse.click(10, 10);
+      await page.keyboard.press("a"); // 人の操作（音の解放）。画面の端を押すとリンクに当たる
       await page.evaluate(() => { window.__rec.L = []; window.__rec.R = []; window.__rec.max = 0; window.__rec.on = true; });
       await page.waitForTimeout(wait);
       const r = await page.evaluate(() => {
@@ -56,7 +58,7 @@ const OUT = process.argv[2];
     // 1本の WAV に（曲の間に 1 秒の無音）
     const sr = parts[0].sr;
     const gap = Buffer.alloc(sr * 4);
-    const pcm = Buffer.concat([parts[0].pcm, gap, parts[1].pcm]);
+    const pcm = Buffer.concat(parts.flatMap((p, i) => (i ? [gap, p.pcm] : [p.pcm])));
     const h = Buffer.alloc(44);
     h.write("RIFF", 0); h.writeUInt32LE(36 + pcm.length, 4); h.write("WAVE", 8); h.write("fmt ", 12);
     h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(2, 22); h.writeUInt32LE(sr, 24); h.writeUInt32LE(sr * 4, 28); h.writeUInt16LE(4, 32); h.writeUInt16LE(16, 34);
