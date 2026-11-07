@@ -825,3 +825,4 @@
 - やったこと: `deploy/voicevox-space/`（Dockerfile は Spaces の「ユーザー ID 1000」に合わせて gosu を使わず直接起動）、`lib/speech/voicevox.ts` に `synthesizeEngine`（audio_query → 元気な調子に直す → synthesis、wav）・`wakeEngine`、`/api/voice` は wav/mp3 どちらも返す・`?wake=1`、画面は開いたときに起こす・2つ目の文が作れなければ残りをブラウザの声で。手順を `docs/setup.md` に。テスト 5 本。
 - 詰まったこと: 鍵（VOICEVOX_API_KEY）は 11/6 に本番へ入っていたが、速さは変わらなかった（サービス側の順番待ち）。
 - 次: 本人が HF に Space を作る（10〜20 分）→ `VOICEVOX_URL` を Vercel に → 声（`VOICEVOX_SPEAKER`）を聞きくらべて決める。
+- 11/7 夜 本人が8つの声を聞きくらべて「8か54」→ 既定を 8 = 春日部つむぎ に（54 = 春歌ナナ は `VOICEVOX_SPEAKER=54`）。クレジットも差しかえ。

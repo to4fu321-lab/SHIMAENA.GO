@@ -179,7 +179,7 @@ npm run dev
 ## 記録と出典
 - 仕様の正本 [`docs/spec.md`](docs/spec.md)／作業の順番 [`docs/tasks.md`](docs/tasks.md)／日々の記録 [`docs/devlog.md`](docs/devlog.md)／本人のストーリー [`docs/story.md`](docs/story.md)／デモの台本 [`docs/demo.md`](docs/demo.md)
 - 地図と建物の形: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）。天気: [Open-Meteo](https://open-meteo.com/)
-- 隊長の声（隊長トークの読み上げ、日本語）: [VOICEVOX](https://voicevox.hiroshiba.jp/) のキャラクター **VOICEVOX:満別花丸**（既定。元気でかわいい声。各キャラクターの利用規約に従う）を、Hugging Face Spaces の無料枠で動かす [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine)（`deploy/voicevox-space/`、`VOICEVOX_URL`）で合成（1〜2 秒）。ENGINE がないときは無料の [VOICEVOX Web API（api.tts.quest）](https://voicevox.su-shiki.com/su-shikiapis/)（遅い）。作れないときはブラウザの読み上げ。
+- 隊長の声（隊長トークの読み上げ、日本語）: [VOICEVOX](https://voicevox.hiroshiba.jp/) のキャラクター **VOICEVOX:春日部つむぎ**（既定。元気でかわいい声。`VOICEVOX_SPEAKER=54` で VOICEVOX:春歌ナナ。各キャラクターの利用規約に従う）を、Hugging Face Spaces の無料枠で動かす [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine)（`deploy/voicevox-space/`、`VOICEVOX_URL`）で合成（1〜2 秒）。ENGINE がないときは無料の [VOICEVOX Web API（api.tts.quest）](https://voicevox.su-shiki.com/su-shikiapis/)（遅い）。作れないときはブラウザの読み上げ。
 - フォント（カードの PNG 用）: [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic)（SIL OFL 1.1、[`assets/fonts/`](assets/fonts/)）。地図: [Leaflet](https://leafletjs.com/)（BSD-2-Clause）。SVG の PNG 化: [resvg](https://github.com/RazrFalcon/resvg)（MPL-2.0）
 - デモの町内「しらかば町内」と登場人物は架空です。建物の形だけを OpenStreetMap から借りています（`scripts/build-town.cjs`）。実在の氏名・住所・電話番号は入れず、地図に氏名を出しません。
 - 期間中（11/2〜11/8）の新規制作のみ。既存コードの流用はありません。API キーはコードに書かず、`.env*` は `.gitignore` 済みです。

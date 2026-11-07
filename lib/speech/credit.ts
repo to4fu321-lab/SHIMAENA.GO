@@ -17,6 +17,7 @@ const NAMES: Record<number, string> = {
   23: "VOICEVOX:WhiteCUL",
   69: "VOICEVOX:満別花丸",
   70: "VOICEVOX:満別花丸",
+  54: "VOICEVOX:春歌ナナ",
   72: "VOICEVOX:満別花丸",
 };
 

@@ -2,7 +2,7 @@
 // 1) VOICEVOX_URL があれば、自前の VOICEVOX ENGINE（Hugging Face Spaces の無料枠。deploy/voicevox-space/）で直接作る。wav が 1〜2 秒で返る。
 // 2) なければ、無料の VOICEVOX Web API（api.tts.quest）。鍵があっても1文に 10 秒以上かかる（11/7 本人の指摘「遅すぎて使えない」）ので、確かめ用。
 // どちらもサーバー側でだけ呼ぶ（URL や鍵を画面に出さない）。失敗したら画面はブラウザの声に戻る（止まらない）。
-// 声の主は VOICEVOX のキャラクター。使うときはクレジット「VOICEVOX:満別花丸」などを出す決まり（画面の「ことば」の紙と README に）。
+// 声の主は VOICEVOX のキャラクター。使うときはクレジット「VOICEVOX:春日部つむぎ」などを出す決まり（画面の「ことば」の紙と README に）。
 // 切るときは Vercel の環境変数 CAPTAIN_VOICE=off。
 
 /** 読む設定（環境変数の一部。確かめ用に差しかえられる） */
@@ -16,11 +16,11 @@ export interface Voice {
 }
 
 /**
- * 既定の声: 70 = VOICEVOX:満別花丸（元気）。元気でかわいい、高めの声（11/7 本人の指示「もっと元気な感じでかわいい声」。
- * 前は 10 = 雨晴はう（ふんわり）。満別は北海道の地名で、北海道の鳥シマエナガの隊長に合う）。
+ * 既定の声: 8 = VOICEVOX:春日部つむぎ（ノーマル）。元気でかわいい声（11/7 本人が8つを聞きくらべて「8か54」→ 8。
+ * 54 = 春歌ナナ にするときは VOICEVOX_SPEAKER=54。前は 70 = 満別花丸・10 = 雨晴はう）。
  * VOICEVOX_SPEAKER で変えられる（番号は VOICEVOX ENGINE のスタイル ID。api.tts.quest/v3/voicevox/speakers_array の順と同じ）
  */
-export const DEFAULT_SPEAKER = 70;
+export const DEFAULT_SPEAKER = 8;
 /** 1回に読む長さの上限（文字）。長い文は前から */
 export const VOICE_TEXT_MAX = 200;
 const API = "https://api.tts.quest/v3/voicevox/synthesis";
