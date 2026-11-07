@@ -17,7 +17,7 @@ export function xShareUrl(text: string, url?: string): string {
 /** 友だちを誘う文。参加先は LINE の友だち追加（なければ公開ページ） */
 export function inviteMessage(origin: string, joinUrl?: string): { text: string; url: string } {
   return {
-    text: "雪の朝、10分だけ町内の雪かきを一緒にしませんか？⛄\nシマエナGO は LINE でログインして30秒で参加できます。ひとりの10分で、町が変わる。",
+    text: "雪の朝、10分だけご近所の雪かきを一緒にしませんか？⛄\nシマエナGO は LINE でログインして30秒で参加できます。ひとりの10分で、町が変わる。",
     url: joinUrl ? new URL(joinUrl, origin).href : `${origin}/public/town?via=sns`,
   };
 }
@@ -25,7 +25,7 @@ export function inviteMessage(origin: string, joinUrl?: string): { text: string;
 /** 友だちに応援を頼む文。開くと公開ページの「町を応援する」へ（登録なし・1日1回）。mission を渡すと「いま◯◯に出動中」（ミッション中の「応援を呼ぶ」） */
 export function cheerRequestMessage(origin: string, mission?: string): { text: string; url: string } {
   return {
-    text: `${mission ? `いま「${mission}」に出動中！⛄` : "いま、町内の雪かきに出動しています！⛄"}\nよかったら「町を応援する」を押してください（登録なし・1日1回）。`,
+    text: `${mission ? `いま「${mission}」に出動中！⛄` : "いま、エリアの雪かきに出動しています！⛄"}\nよかったら「町を応援する」を押してください（登録なし・1日1回）。`,
     url: `${origin}/public/town?via=cheer#cheer`,
   };
 }

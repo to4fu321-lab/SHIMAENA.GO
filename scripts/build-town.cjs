@@ -1,5 +1,5 @@
 // 使い方: node scripts/build-town.cjs <Overpass の JSON>
-// OpenStreetMap の建物の形から、デモ用の架空町内 data/town.json を作る。
+// OpenStreetMap の建物の形から、デモ用の架空のエリア data/town.json を作る。
 // 実在の住所・建物名・公園名は書き出さない。拠点に割り当てる人物はすべて架空。
 // 地図データ © OpenStreetMap contributors (ODbL)
 const fs = require("fs");
@@ -102,7 +102,7 @@ helperBuildings.forEach((b, i) => {
 });
 
 const town = {
-  name: "しらかば町内（架空）",
+  name: "しらかばエリア（架空）",
   attribution: "© OpenStreetMap contributors (ODbL)",
   center: CENTER,
   radiusM: RADIUS_M,

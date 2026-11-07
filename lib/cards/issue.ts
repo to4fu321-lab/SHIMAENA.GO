@@ -124,7 +124,7 @@ export async function issueCardsForMission(
     seed: `${s.morning.rollcall.id}|${mission.id}|${completedAt}`,
     topics,
   });
-  mission.snowKg = text.snowKg; // 町内の「どけた雪の合計」に使う
+  mission.snowKg = text.snowKg; // エリアの「どけた雪の合計」に使う
   const issuedCount = s.morning.sorties.length;
   const already = await r.countCardsForRollcall(s.morning.rollcall.id);
   const cards: Card[] = [];

@@ -41,7 +41,7 @@ export function isDemoViewer(id: string): boolean {
 
 /**
  * 画面が言う「自分」を信じてよいか: デモの架空の人か、cookie で確かめた本人だけ（server action から呼ぶ）。
- * 本当に町内で使うとき（DEMO_MODE=off）は、架空の人として押すことはできない（見るだけ）。
+ * 本当にエリアで使うとき（DEMO_MODE=off）は、架空の人として押すことはできない（見るだけ）。
  */
 export async function trustedViewer(viewerId: string): Promise<string | null> {
   if (isDemoViewer(viewerId)) return demoEnabled() ? viewerId : null;

@@ -33,7 +33,7 @@ const CONFETTI = Array.from({ length: 18 }, (_, i) => ({
 }));
 const PILLARS = [
   { icon: "❄️", text: "雪の朝、点呼が届く" },
-  { icon: "👥", text: "町内ランダム3チーム" },
+  { icon: "👥", text: "エリアでランダム3チーム" },
   { icon: "🏠", text: "ひとり暮らしの家を救う" },
 ];
 

@@ -46,7 +46,7 @@ describe("ソロの完了とカード", () => {
     expect(r.ok && r.summary.snowKg).toBeFalsy();
   });
   it("kg がないソロのカードに「0kg」は出さない", () => {
-    const art: CardArt = { style: "kawaii", designName: "はじめてのソロ出動", designNameEn: "First", rarityLabel: "ひとり", stars: 1, members: [{ name: "ゆき" }], date: "2026-12-14", townName: "しらかば町内", snowKg: 0, snowKgComparison: "ソロ出動", serial: 1, issuedCount: 1, stampText: "ソロ" };
+    const art: CardArt = { style: "kawaii", designName: "はじめてのソロ出動", designNameEn: "First", rarityLabel: "ひとり", stars: 1, members: [{ name: "ゆき" }], date: "2026-12-14", townName: "しらかばエリア", snowKg: 0, snowKgComparison: "ソロ出動", serial: 1, issuedCount: 1, stampText: "ソロ" };
     expect(renderCardSvg(art)).not.toContain("0kg");
     expect(renderCardBackSvg(art, { thanks: "x", subtasks: [] })).not.toContain("0kg");
   });

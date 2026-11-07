@@ -136,7 +136,7 @@ export const MSG = {
   // ---- 登録（spec 1） ----
   welcome: () =>
     [
-      ...bubbles(["シマエナGO へようこそ！☃️", "雪の朝に、町内で少しずつ雪かきを助け合うアプリです。"]),
+      ...bubbles(["シマエナGO へようこそ！☃️", "雪の朝に、ご近所で少しずつ雪かきを助け合うアプリです。"]),
       ask("あなたはどちらですか？", [
         { label: "雪かきをお願いしたい", data: "reg:role=requester" },
         { label: "雪かきを手伝う", data: "reg:role=helper" },

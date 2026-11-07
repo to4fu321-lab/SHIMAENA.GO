@@ -6,7 +6,7 @@ const M_PER_LNG = 111320 * Math.cos((TOWN.center[0] * Math.PI) / 180);
 const dist = (a: [number, number], b: [number, number]) =>
   Math.hypot((a[0] - b[0]) * M_PER_LAT, (a[1] - b[1]) * M_PER_LNG);
 
-describe("架空の町内データ", () => {
+describe("架空のエリアデータ", () => {
   it("拠点8・依頼者8・手伝う側12", () => {
     expect(TOWN.bases).toHaveLength(8);
     expect(TOWN.participants.filter((p) => p.role === "requester")).toHaveLength(8);

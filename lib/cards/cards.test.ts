@@ -24,7 +24,7 @@ const art = (over: Partial<CardArt> = {}): CardArt => ({
     { name: "ゆうき（小5）", teamId: "salvia" },
   ],
   date: "2026-12-14",
-  townName: "しらかば町内",
+  townName: "しらかばエリア",
   snowKg: 720,
   snowKgComparison: "軽トラ1台分",
   serial: 7,

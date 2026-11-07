@@ -87,7 +87,7 @@ export async function applySchema(): Promise<number> {
   return statements.length;
 }
 
-/** 架空の町内データ（参加者・拠点）を入れる。すでにあれば上書き */
+/** 架空のエリアデータ（参加者・拠点）を入れる。すでにあれば上書き */
 export async function seedTown(): Promise<{ participants: number; bases: number }> {
   for (const p of TOWN.participants) {
     await sql().query(

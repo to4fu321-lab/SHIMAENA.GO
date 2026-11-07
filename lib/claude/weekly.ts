@@ -5,7 +5,7 @@ import { TEAMS } from "../teams";
 import { askJson, hasClaudeKey } from "./client";
 
 export const WeeklyTextSchema = z.object({
-  /** 町内みんなに送る実況（3〜5文、やさしい日本語） */
+  /** エリアのみんなに送る実況（3〜5文、やさしい日本語） */
   commentary: z.string(),
   /** 来週に向けたひとこと（1文） */
   nextWeek: z.string(),
@@ -28,7 +28,7 @@ export async function weeklyText(w: WeeklySummary): Promise<WeeklyText> {
   if (!hasClaudeKey()) return mockWeeklyText(w);
   return askJson({
     task:
-      "日曜の夜に町内みんなへ送る「今週の群れ」の実況を書いてください。commentary は3〜5文で、雪の朝の回数・終えた家の数・チーム順位（個人順位は出さない）・称号の人・週の目標を達成したチームを、やさしい日本語で。" +
+      "日曜の夜にエリアのみんなへ送る「今週の群れ」の実況を書いてください。commentary は3〜5文で、雪の朝の回数・終えた家の数・チーム順位（個人順位は出さない）・称号の人・週の目標を達成したチームを、やさしい日本語で。" +
       "口調は採点表 voice のシマエナ隊長で、最初に「シマエナ隊長だしま〜！」と名乗る。nextWeek は来週に向けた1文（チームを組み直すことに触れる）。",
     input: { ...w, teamNames: Object.fromEntries(TEAMS.map((t) => [t.id, t.name])) },
     schema: WeeklyTextSchema,

@@ -8,8 +8,8 @@ import { lineJoinUrl } from "@/lib/line/join";
 import { QUIZ_TYPES } from "@/lib/public/quiz";
 
 const PAGES = {
-  today: { title: "今日のシマエナGO 出動", description: "雪の朝、町内のシマエナが家の雪をどけています。今日の出動人数と雪解けの進み。" },
-  town: { title: "しらかば町内の雪解け", description: "町の雪解け率・助けた家・今週の活動人数。あなたの町にもシマエナを。" },
+  today: { title: "今日のシマエナGO 出動", description: "雪の朝、エリアのシマエナが家の雪をどけています。今日の出動人数と雪解けの進み。" },
+  town: { title: "しらかばエリアの雪解け", description: "町の雪解け率・助けた家・今週の活動人数。あなたの町にもシマエナを。" },
   recruit: { title: "10分だけ参加しませんか？", description: "人手が足りない家があります。あなたの10分で町が変わる。" },
   // シマエナ診断の結果（quiz-asa など）
   ...Object.fromEntries(
@@ -78,7 +78,7 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
         </div>
       </section>
       <p className="px-1 text-sm leading-snug text-ink-soft">
-        雪の朝に点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲーム。仲間がいない日も<b>ソロ出動</b>（自分の家の雪かき・道の危険の報告）で、1人の10分から。
+        雪の朝に点呼が届き、エリアの3チームがひとり暮らしの家の雪をどける雪かきゲーム。仲間がいない日も<b>ソロ出動</b>（自分の家の雪かき・道の危険の報告）で、1人の10分から。
       </p>
     </main>
   );

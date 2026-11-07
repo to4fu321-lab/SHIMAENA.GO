@@ -10,7 +10,7 @@ description: 点検ループを1回まわす。報告箱・Issues・機械の目
 ## 0. 準備
 - **定期タスクから動いているとき**（作業ディレクトリにリポジトリがない）: `mcp__claude-code-remote__add_repo`（owner `to4fu321-lab`、repo `shimaena.go`、access `push`）を呼び、返ってきた clone の手順どおりに取り、その中で作業する（push はこの取り方でないとできない）。`register_repo_root` があれば呼ぶ。
 - `node_modules` がなければ `npm ci`。
-- いまの日本時間を出す: `TZ=Asia/Tokyo date "+%m/%d %H:%M"`。**11/8 12:00 JST 以降は凍結**（直さず記録と提案だけ）。**11/8 20:00 JST 以降**は、定期タスクから動いているなら自分を止めて（`update_trigger` で `enabled: false`）終わる。
+- いまの日本時間を出す: `TZ=Asia/Tokyo date "+%m/%d %H:%M"`。**11/8 12:01 の回が直してよい最後の回。11/8 13:00 JST 以降は凍結**（直さず記録と提案だけ）。**11/8 20:00 JST 以降**は、定期タスクから動いているなら自分を止めて（`update_trigger` で `enabled: false`）終わる。
 - `git pull origin main` で最新にする。
 
 ## 1. 集める

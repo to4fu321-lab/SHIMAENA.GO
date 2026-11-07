@@ -122,7 +122,7 @@ export default function RulesPage() {
         <li>人手が足りない家（赤く点滅）に駆けつけると +10点</li>
         <li>偵察（写真1枚）やお茶の差し入れも 3点</li>
       </ul>
-      <p className="text-sm text-ink-soft">点数はお金にはなりません。町内の中だけで比べます。</p>
+      <p className="text-sm text-ink-soft">点数はお金にはなりません。エリアの中だけで比べます。</p>
     </Card>
 
     <Card title="持ちもの">

@@ -26,7 +26,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ kind: string }>
   if (kind === "quiz") {
     const type = m?.[2];
     if (!isQuizType(type)) return new Response("ありません", { status: 404 });
-    const svg = renderShareSvg(quizCardData(type, `${site}/public/diagnosis`, "しらかば町内"), format);
+    const svg = renderShareSvg(quizCardData(type, `${site}/public/diagnosis`, "しらかばエリア"), format);
     return respond(svg, ext, format, "public, max-age=86400");
   }
   if (!m || !kind || m[2] || !KINDS.includes(kind)) return new Response("ありません", { status: 404 });

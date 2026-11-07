@@ -18,7 +18,7 @@ export interface MorningRecord {
   answers: RollcallAnswer[];
   /** 司令官が書いた、割り当てられた人それぞれへの文面 */
   messages: Plan["messages"];
-  /** 前夜の予告や、町内みんなへのまとめ */
+  /** 前夜の予告や、エリアのみんなへのまとめ */
   briefing: string;
   /** デモの時計（分、0時から）。完了のたびに進む */
   clockMin: number;
