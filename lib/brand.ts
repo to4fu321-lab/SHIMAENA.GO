@@ -16,7 +16,7 @@ export const COLORS = {
 /** アイコンの中の「差し色」。描く側で好きな色に置き換える */
 export const ACCENT_TOKEN = "var(--icon-accent, currentColor)";
 
-export type IconName = "go" | "map" | "card" | "guide" | "settings" | "house" | "town" | "ask" | "chat" | "connect" | "letter" | "bug" | "idea" | "question" | "voice" | "voiceOff";
+export type IconName = "go" | "map" | "card" | "guide" | "settings" | "house" | "town" | "ask" | "chat" | "connect" | "letter" | "bug" | "idea" | "question" | "voice" | "voiceOff" | "team";
 
 /** 線の書式。w は線の太さ、fill は塗り（なしなら none） */
 const st = (w = 7, fill = "none") => `fill="${fill}" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
@@ -43,6 +43,8 @@ export const ICONS: Record<IconName, string> = {
   // 隊長に相談: ふきだし
   // つなぐ: 向かい合う2羽（シマエナガ）と、間のハート（広める・誘う・バトン・なかま）
   connect: `<circle cx="28" cy="46" r="16" ${st(6)}/><path d="M12 86 c0 -16 8 -24 16 -24 s16 8 16 24" ${st(6)}/><circle cx="72" cy="46" r="16" ${st(6)}/><path d="M56 86 c0 -16 8 -24 16 -24 s16 8 16 24" ${st(6)}/><path d="M50 36 c-5 -7 -16 -3 -12 6 l12 12 l12 -12 c4 -9 -7 -13 -12 -6 Z" ${st(5, A)}/><circle cx="24" cy="44" r="2.5" fill="currentColor"/><circle cx="76" cy="44" r="2.5" fill="currentColor"/>`,
+  // チーム: 旗
+  team: `<path d="M24 10 V90" ${st()}/><path d="M24 16 H80 L68 33 L80 50 H24 Z" ${st(7, A)}/>`,
   chat: `<path d="M16 22 H84 a6 6 0 0 1 6 6 V62 a6 6 0 0 1 -6 6 H46 L28 84 V68 H16 a6 6 0 0 1 -6 -6 V28 a6 6 0 0 1 6 -6 Z" ${st(7, A)}/><circle cx="32" cy="45" r="5" fill="currentColor"/><circle cx="50" cy="45" r="5" fill="currentColor"/><circle cx="68" cy="45" r="5" fill="currentColor"/>`,
   // 要望・バグ報告: 封筒
   letter: `<rect x="12" y="24" width="76" height="54" rx="8" ${st()}/><path d="M14 28 L50 56 L86 28" ${st(7)}/><circle cx="78" cy="26" r="11" ${st(5, A)}/>`,

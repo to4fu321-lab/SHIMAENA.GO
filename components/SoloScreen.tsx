@@ -1,6 +1,6 @@
 "use client";
 
-// ソロ出動の画面（spec v1.3）。ミッションを左右スワイプで選ぶ → 出撃！（開始の演出）→ 実施中（タイマー）
+// ソロ出動の画面（spec v1.3）。ミッションを左右スワイプで選ぶ → 雪かきGO！／お知らせGO！（開始の演出）→ 実施中（タイマー）
 // → 写真やひとことで報告 → クリア！の演出 → 羽とポイント → SNS 投稿。
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -41,6 +41,7 @@ export default function SoloScreen({
   focus,
   night = false,
   noRequests = false,
+  autoGo = false,
   q,
   shareOptions = [],
   roadAlerts,
@@ -61,6 +62,8 @@ export default function SoloScreen({
   night?: boolean;
   /** 近所のお願いが 0 軒（作戦がまだ）: 自宅の雪かき・道の危険へ誘導する */
   noRequests?: boolean;
+  /** ホームや地図の「自宅の雪かき」「道の危険」から来た: すぐ GO！で始める（11/7 本人の指示） */
+  autoGo?: boolean;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
   shareOptions?: ShareOption[];
@@ -72,7 +75,7 @@ export default function SoloScreen({
   const [clear, setClear] = useState<SoloClearSummary | null>(null);
   const [doneToday, setDoneToday] = useState<string[]>(status.doneToday);
   const [helpText, setHelpText] = useState<string | null>(null);
-  const [flash, setFlash] = useState<{ kind: "start" | "clear"; label: string } | null>(null);
+  const [flash, setFlash] = useState<{ kind: "start" | "clear"; label: string; go?: string } | null>(null);
   // 実施中のミッション（画面を開き直しても続きから。この端末だけに残す）
   const runKey = `solo-run-${viewerId}`;
   const [running, setRunningState] = useState<{ kind: string; startedAt: number } | null>(null);
@@ -123,7 +126,7 @@ export default function SoloScreen({
   const begin = (m: SoloMission) => {
     homeSignal(m.kind, true);
     setResult(null);
-    setFlash({ kind: "start", label: m.label });
+    setFlash({ kind: "start", label: m.label, go: m.kind });
     setTimeout(() => {
       setFlash(null);
       setRunning({ kind: m.kind, startedAt: Date.now() });
@@ -278,6 +281,25 @@ export default function SoloScreen({
     begin(m);
   };
 
+  // すぐ GO！（go=1）: 開いたらそのまま始める。途中のミッションがあれば続きを出すだけ。開き直しで二度始めないよう URL から外す
+  useEffect(() => {
+    if (!autoGo || !focus) return;
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("go");
+      window.history.replaceState(null, "", u.toString());
+    } catch {}
+    const m = list.find((x) => x.kind === focus);
+    if (!m || !okNow(m)) return;
+    if (m.kind !== "report_snow" && !REPEATABLE.has(m.kind) && status.doneToday.includes(m.kind)) return;
+    try {
+      if (localStorage.getItem(runKey)) return;
+    } catch {}
+    const t = setTimeout(() => begin(m), 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const missionCard = (m: SoloMission, i: number) => {
     const done = doneToday.includes(m.kind);
     // 自分の家の雪かきは1日に何回でも（降り続く日は朝と昼で）。今日の回数を出して「もう一度」
@@ -375,7 +397,7 @@ export default function SoloScreen({
             onClick={() => beginOrSwitch(m)}
             className="btn btn-lamp sticky bottom-0 mt-auto whitespace-nowrap rounded-full text-xl shadow-md"
           >
-            {done && again ? "▶ もう一度 出撃する！" : done ? "▶ もう1件 知らせる" : "▶ 出撃する！"}
+            {m.kind === "report_snow" ? (done ? "▶ もう1件 お知らせGO！" : "▶ お知らせGO！") : done && again ? "▶ もう一度 雪かきGO！" : "▶ 雪かきGO！"}
           </button>
         )}
       </div>
@@ -425,7 +447,7 @@ export default function SoloScreen({
     {/* BGM（spec v1.19）: ミッション中（出撃！の全画面から）は「出撃！」、完了は「灯りがともる」、それ以外は「しらかばの朝」 */}
     <Bgm track={clear || flash?.kind === "clear" ? "clear" : running || flash?.kind === "start" ? "mission" : "morning"} />
     <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 px-4 pb-2 pt-3">
-      {flash && <MissionFlash kind={flash.kind} label={flash.label} />}
+      {flash && <MissionFlash kind={flash.kind} label={flash.label} go={flash.go} />}
       {clear && (
         <SoloClear
           summary={clear}
@@ -475,7 +497,7 @@ export default function SoloScreen({
       {/* ゲームの HUD: 呼びかけ＋今日の成績 */}
       <div className="shrink-0 rounded-2xl bg-ink px-4 py-2 text-white shadow-md">
         <p className="text-lg font-bold leading-snug">
-          {runMission ? "🎯 遂行中！ 報告でクリア" : noRequests && !night ? "🏠 近所のお願いはなし。自宅と道の報告を！" : pickFive ? "⚡ 出動要請！ 町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
+          {runMission ? "🎯 遂行中！ 報告でクリア" : noRequests && !night ? "🏠 近所のお願いはなし。自宅と道の報告を！" : pickFive ? "⚡ 出動要請！ 町の雪に挑め" : doneCount === 0 ? "⚡ 今日の最初のGO！をきめよう" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
         </p>
         <p className="flex items-center justify-between text-sm font-bold text-white/85">
           <span>クリア {doneCount}/{list.length}</span>

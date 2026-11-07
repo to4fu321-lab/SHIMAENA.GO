@@ -4,8 +4,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
+import ChatBadge from "@/components/ChatBadge";
 import { cheersSeenAction } from "@/app/home-actions";
 import type { TeamId } from "@/lib/types";
+
+// 「寒い冬は、くっついて乗り切る。」: 隊長の横に仲間2羽。マフラーは残りの2チームの色（3羽で町内の3チーム）
+const ALL_TEAMS: TeamId[] = ["salvia", "marigold", "lupinus"];
 import { play } from "@/lib/sound/engine";
 
 const TALK_MS = 7000;
@@ -18,10 +22,13 @@ export default function CaptainStage({
   arrival = [],
   viewerId,
   chatHref = "/chat",
+  chatAs,
 }: {
   lines: string[];
   /** 吹き出しを押すと隊長トークへ（11/6 本人の指示: 「隊長」タブだけでは相談できると分かりにくい） */
   chatHref?: string;
+  /** デモの ?as=（未読の数を数える人） */
+  chatAs?: string;
   team?: TeamId;
   /** 応援・おつかれさまが届いていたら、隊長が飛んできて先に話す（聞いたらしるしを付ける） */
   arrival?: string[];
@@ -81,6 +88,7 @@ export default function CaptainStage({
       <div className="absolute left-3 top-2 z-10 max-w-[64%] short:top-1" aria-live="polite">
         <div key={`${i}-${flying}-${arriving}`} className={flying ? "speech-away" : "speech-pop"}>
           <Link href={chatHref} className="relative block rounded-3xl bg-card px-3.5 py-1.5 text-base font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
+            <ChatBadge as={chatAs} className="absolute -right-1 -top-1 min-h-6 text-sm ring-2 ring-white" />
             <span className="block text-xs font-bold text-lamp-deep">シマエナ隊長</span>
             {flying ? "いってくるしま〜！" : arriving ? "おーい！知らせがあるえな〜！" : line}
             <span className="mt-1 flex items-center gap-1 rounded-full bg-lamp px-2.5 py-0.5 text-sm font-bold text-white short:mt-0.5">
@@ -99,6 +107,25 @@ export default function CaptainStage({
         <path d="M120 19 L150 2" stroke="#7a5a44" strokeWidth="5" strokeLinecap="round" />
         <path d="M10 26 C60 18 120 14 196 4" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" fill="none" />
       </svg>
+      {/* 仲間2羽（隊長に身を寄せる） */}
+      {(() => {
+        // チーム未定の隊長はオレンジ（マリーゴールドと同じ色）なので、そのときは残りの2色
+        const others = ALL_TEAMS.filter((t) => t !== (team ?? "marigold"));
+        return (
+          <>
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-[13%] right-[42%] h-[44%] max-h-28 min-h-12">
+              <span className="captain-idle block h-full" style={{ animationDelay: "-1.3s" }}>
+                <Mascot team={others[0]} className="h-full w-auto drop-shadow-md" />
+              </span>
+            </span>
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-[14.5%] right-[25%] h-[48%] max-h-[7.5rem] min-h-12">
+              <span className="captain-idle block h-full" style={{ animationDelay: "-0.6s" }}>
+                <Mascot team={others[1]} className="h-full w-auto drop-shadow-md" />
+              </span>
+            </span>
+          </>
+        );
+      })()}
       {/* 隊長（タップで飛ぶ） */}
       <button
         type="button"

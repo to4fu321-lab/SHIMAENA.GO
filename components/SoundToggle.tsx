@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 // 音のオン・オフ（spec v1.19）。
 // - compact: ホームの見出しの 🔊／🔇（BGM を一発で止める・戻す）
 // - それ以外: 設定の「音」タブ（効果音・BGM の大きな切りかえ＋ためしに鳴らす）
@@ -27,7 +28,7 @@ function Switch({ on, label, note, onChange }: { on: boolean; label: string; not
   );
 }
 
-export default function SoundToggle({ compact = false }: { compact?: boolean }) {
+export default function SoundToggle({ compact = false, songHref }: { compact?: boolean; songHref?: string }) {
   const prefs = useSoundPrefs();
   const supported = useClientValue(true, soundSupported); // 端末にしか分からないので、画面が出たあとに読む
   if (compact) {
@@ -57,17 +58,25 @@ export default function SoundToggle({ compact = false }: { compact?: boolean }) 
       <Switch on={prefs.sfx} label="効果音" note="ボタンの音と、Android の振動" onChange={(v) => setSoundPrefs({ sfx: v })} />
       <Switch on={prefs.bgm} label="BGM" note="雪かき中は画面を消しても鳴ります" onChange={(v) => setSoundPrefs({ bgm: v })} />
       <Switch on={prefs.ownMusic} label="自分の音楽を聴く" note="Spotify などと一緒に。BGM は止まります" onChange={(v) => setSoundPrefs({ ownMusic: v })} />
-      <button
-        type="button"
-        data-sound="none"
-        onClick={() => {
-          void unlock().then(() => play("missionClear"));
-        }}
-        className="btn btn-white min-h-12 w-full text-base"
-      >
-        🎵 ためしに鳴らす
-      </button>
-      <p className="text-sm text-ink-soft">{supported ? "この端末にだけ保存。消音スイッチ中は鳴りません。" : "この端末では音が使えません。"}</p>
+      <div className={songHref ? "grid grid-cols-2 gap-2" : ""}>
+        <button
+          type="button"
+          data-sound="none"
+          onClick={() => {
+            void unlock().then(() => play("missionClear"));
+          }}
+          className="btn btn-white min-h-12 w-full text-base"
+        >
+          {songHref ? "🎵 ためす" : "🎵 ためしに鳴らす"}
+        </button>
+        {/* 今朝の雪の歌（spec v1.28）。11/7 本人の指示でホームから設定の「音」へ。小さい画面でも収まるよう横に並べる */}
+        {songHref && (
+          <Link href={songHref} className="btn btn-white min-h-12 w-full text-base">
+            ♪ 雪の歌
+          </Link>
+        )}
+      </div>
+      <p className="text-sm text-ink-soft">{supported ? "設定はこの端末だけ。消音中は鳴りません" : "この端末では音が使えません。"}</p>
     </section>
   );
 }

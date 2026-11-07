@@ -144,7 +144,7 @@ export default function AppTour({ onDone }: { onDone: () => void }) {
               ["chat", "隊長トーク", "何でも相談・お知らせ"],
               ["go", "ソロ活動", "自宅の雪かき・道の報告"],
               ["connect", "つなぐ", "友だちを誘う・バトン"],
-              ["card", "活動", "羽と、その時だけのカード"],
+              ["card", "きろく", "羽と、その時だけのカード"],
             ] as const
           ).map(([icon, label, sub], k) => (
             <li key={label} className="opening-pillar flex items-center gap-2 rounded-2xl bg-card px-2.5 py-2 shadow-md ring-1 ring-ink/10" style={{ animationDelay: `${0.15 + k * 0.2}s` }}>
