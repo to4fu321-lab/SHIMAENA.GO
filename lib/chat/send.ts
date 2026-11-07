@@ -8,7 +8,8 @@ import { withStateLock } from "../ops/lock";
 import type { Participant } from "../types";
 
 export type ChatInput =
-  | { kind: "text"; text: string }
+  /** shown: 自分の吹き出しに残す文字（本人が打った外国語の文・ボタンの訳。spec v1.33）。処理に渡すのは text（日本語） */
+  | { kind: "text"; text: string; shown?: string }
   | { kind: "postback"; data: string; label?: string }
   | { kind: "photo"; bytes: Uint8Array; mediaType: "image/jpeg" | "image/png" | "image/webp" };
 
@@ -25,7 +26,7 @@ export async function sendToCaptain(p: Participant, input: ChatInput, now = new 
   if (input.kind === "text") {
     const text = input.text.trim().slice(0, TEXT_MAX);
     if (!text) return false;
-    await appendIn(key, { text }, now);
+    await appendIn(key, { text: input.shown?.trim().slice(0, TEXT_MAX) || text }, now);
     ev = { ...base, type: "message", message: { id: `${now.getTime()}`, type: "text", text } } satisfies MessageEvent;
   } else if (input.kind === "postback") {
     if (input.label) await appendIn(key, { text: input.label }, now); // 押したボタンの文字を、本人の吹き出しとして残す（LINE の displayText と同じ）

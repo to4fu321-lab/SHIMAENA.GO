@@ -75,7 +75,7 @@
 |---|---|
 | `/` ホーム | 見る・動くところ。天気（Open-Meteo）と時間で12通りに変わる空、隊長の吹き出し、あと何軒・いま何人、今朝の雪の歌。大きなボタン「雪かきGO！」「ソロ活動」「お願いする」「仲間を増やす」。夜は「近隣の雪かきは明日6時から」 |
 | `/map` 町の地図 | 50m マスのぬりえ（Leaflet ＋ OpenStreetMap。建物の形は OSM、家の正確な場所は出さない）。白＝未対応／赤の点滅＝人手不足／チーム色＝向かっている・完了。自分の担当と隊長の理由、「行く」「終わりました（写真）」「人手が足りない」、「10分だけ助けに行く」。`?view=road` で道の危険の報告（24時間） |
-| `/chat` 隊長トーク | 知らせる・相談するところ（LINE の代わり）。予告・作戦・完了・ありがとう・カード・家族の応援が1つの流れに。写真も送れる。自由な文には**隊長エージェント**（下の「Claude の使い方」）が答える。音声入力・読み上げ・文字の大きさ3段階。端末への通知（Web Push、PWA） |
+| `/chat` 隊長トーク | 知らせる・相談するところ（LINE の代わり）。予告・作戦・完了・ありがとう・カード・家族の応援が1つの流れに。写真も送れる。自由な文には**隊長エージェント**（下の「Claude の使い方」）が答える。音声入力・読み上げ（隊長のかわいい声: VOICEVOX）・文字の大きさ3段階。🌐 で日本語／English／中文／한국어／Tiếng Việt（隊長の文は Claude が訳す）。端末への通知（Web Push、PWA） |
 | `/ask` 雪かきをお願いする | 頼み方（おまかせ／一緒にやる）と どこまで（玄関前／車庫前／道路まで）を絵つきの大きなボタンで。写真を撮ると Claude が「どこまで」を読む（写真は保存しない）。手伝う側の人も自分の家を「頼める家」にできる（お互いさま） |
 | `/thanks/<ミッション>` 声のありがとう | 家の人が声を吹き込み、手伝った人が聞く。聞けるのはその家の人と手伝った人だけ。7日で消える |
 | `/kikigaki` 雪の聞き書き | 頼む家の人に、隊長が雪の思い出を1問ずつ聞く（声でも文字でも、最大5問）。Claude が本人の語りとして180〜240字のお話と絵本の1ページの絵にする。「来てくれた人に届ける」を選ぶと、次に雪かきが終わったとき手伝った人に届く |
@@ -126,6 +126,7 @@
 | 今朝の先生 | 頼む家の人が教えてくれたコツ → 今朝の雪に合う1つを25字に（新しい知恵は作らない） | [`lib/claude/teacher.ts`](lib/claude/teacher.ts) |
 | 声を貯めて改善 | 相談から「求められていること」を要約で貯め、週に3〜5件の改善の提案（採用は人が決める） | [`lib/claude/improve.ts`](lib/claude/improve.ts) |
 | 短い文 | 前夜の予告と雪の名前／隊長のひとこと／今朝の実況／週末の実況／SNS の投稿文／招待文／休みのひとこと／ことばで答える | [`lib/claude/`](lib/claude/) |
+| ことばの橋わたし | 隊長の吹き出しとボタンの文字 → 選んだことば（English／中文／한국어／Tiếng Việt。同じ数・同じ順番、数字と番号はそのまま）。本人の外国語の文 → 日本語（今までの処理へ）。同じ文は2度訳さない | [`lib/i18n/translate.ts`](lib/i18n/translate.ts) |
 
 ### 守っていること
 - **数字は作らせない**: 得点・kg・軒数は計算した値だけを渡し、答えに入力にない数字が混ざれば定型に戻す。
@@ -177,6 +178,7 @@ npm run dev
 ## 記録と出典
 - 仕様の正本 [`docs/spec.md`](docs/spec.md)／作業の順番 [`docs/tasks.md`](docs/tasks.md)／日々の記録 [`docs/devlog.md`](docs/devlog.md)／本人のストーリー [`docs/story.md`](docs/story.md)／デモの台本 [`docs/demo.md`](docs/demo.md)
 - 地図と建物の形: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）。天気: [Open-Meteo](https://open-meteo.com/)
+- 隊長の声（隊長トークの読み上げ、日本語）: [VOICEVOX](https://voicevox.hiroshiba.jp/) のキャラクター **VOICEVOX:ずんだもん**（既定。各キャラクターの利用規約に従う）を、無料の [VOICEVOX Web API（api.tts.quest）](https://voicevox.su-shiki.com/su-shikiapis/) で合成。作れないときはブラウザの読み上げ。
 - フォント（カードの PNG 用）: [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic)（SIL OFL 1.1、[`assets/fonts/`](assets/fonts/)）。地図: [Leaflet](https://leafletjs.com/)（BSD-2-Clause）。SVG の PNG 化: [resvg](https://github.com/RazrFalcon/resvg)（MPL-2.0）
 - デモの町内「しらかば町内」と登場人物は架空です。建物の形だけを OpenStreetMap から借りています（`scripts/build-town.cjs`）。実在の氏名・住所・電話番号は入れず、地図に氏名を出しません。
 - 期間中（11/2〜11/8）の新規制作のみ。既存コードの流用はありません。API キーはコードに書かず、`.env*` は `.gitignore` 済みです。

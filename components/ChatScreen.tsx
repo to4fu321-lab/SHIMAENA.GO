@@ -2,12 +2,19 @@
 
 // 隊長トークの画面（spec v1.17）。流れ（吹き出し・カード・画像・大きなボタン）と、下の入力欄（文・写真）。
 // 押したボタン・送った文はすぐ自分の吹き出しとして出し、返事が入ったら流れを読み直す。数秒ごとに新しい文面（点呼など）も取りに行く。
+// ことば（spec v1.33）: 🌐 で選ぶ。決まった文字は辞書（lib/i18n/ui.ts）、隊長の吹き出しはサーバーで訳したものが届く。
+// 読み上げは隊長のかわいい声（日本語は VOICEVOX、ほかはブラウザのそのことばの声）。
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { chatPhotoAction, chatPollAction, chatPostbackAction, chatTextAction, type ChatResult } from "@/app/chat/actions";
+import { setLangAction } from "@/app/chat/lang-actions";
+import { LANG_INFO, type Lang } from "@/lib/i18n/langs";
+import { t } from "@/lib/i18n/ui";
 import type { ChatBubble, ChatButton } from "@/lib/inbox/view";
 import type { TeamId } from "@/lib/types";
-import ChatTools, { readSpeak, readTextSize, speak, TEXT_SIZE_PX, type TextSize } from "./ChatTools";
+import ChatTools, { readSpeak, readTextSize, speakCaptain, TEXT_SIZE_PX, type TextSize } from "./ChatTools";
+import LangPicker from "./LangPicker";
 import Mascot from "./Mascot";
 import MicButton from "./MicButton";
 import { shrink } from "./shrink";
@@ -28,11 +35,11 @@ function stamp(at: string, prev?: string): string | null {
   return sameDay ? hm : `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${hm}`;
 }
 
-/** まだ何も届いていないときの、相談のきっかけ（押すとその文を送る） */
-const STARTERS: ChatButton[] = [
-  { kind: "say", label: "🏠 雪かきに出たい", text: "雪かきに出たい", tone: "soft" },
-  { kind: "say", label: "👋 近所の人と知り合いたい", text: "近所の人と知り合いたい", tone: "soft" },
-  { kind: "say", label: "❓ 使い方を教えて", text: "使い方を教えて", tone: "soft" },
+/** まだ何も届いていないときの、相談のきっかけ（押すとその文を送る。text は日本語のまま＝今までの処理が動く） */
+const starters = (lang: Lang): ChatButton[] => [
+  { kind: "say", label: t(lang, "starterGo"), text: "雪かきに出たい", tone: "soft" },
+  { kind: "say", label: t(lang, "starterMeet"), text: "近所の人と知り合いたい", tone: "soft" },
+  { kind: "say", label: t(lang, "starterHowto"), text: "使い方を教えて", tone: "soft" },
 ];
 
 const TONE: Record<ChatButton["tone"], string> = {
@@ -53,6 +60,7 @@ function Avatar({ team }: { team?: TeamId }) {
 /**
  * headerBg: 題名の帯の色（チームの淡い色）。extra: 題名の帯の右に置く小さいもの（🔔 通知オン など）。
  * 上段は1行だけ（11/6 本人の指摘「メインのチャット部分を大きく、最上段をコンパクトに」）。
+ * lang: 選んだことば（cookie）。canTranslate: 隊長の文を訳せるか（Claude の鍵があるか）。voiceName: 日本語の声の名前（クレジット）
  */
 export default function ChatScreen({
   viewerId,
@@ -61,6 +69,9 @@ export default function ChatScreen({
   readOnly = false,
   headerBg,
   extra,
+  lang: initialLang = "ja",
+  canTranslate = false,
+  voiceName,
 }: {
   viewerId: string;
   initial: ChatBubble[];
@@ -68,7 +79,12 @@ export default function ChatScreen({
   readOnly?: boolean;
   headerBg?: string;
   extra?: ReactNode;
+  lang?: Lang;
+  canTranslate?: boolean;
+  voiceName?: string;
 }) {
+  const router = useRouter();
+  const [lang, setLang] = useState<Lang>(initialLang);
   const [bubbles, setBubbles] = useState<ChatBubble[]>(initial);
   const [draft, setDraft] = useState("");
   const [size, setSize] = useState<TextSize>("m");
@@ -105,7 +121,7 @@ export default function ChatScreen({
     }
     if (speakOn && last && last.from === "captain" && last.id !== spoken.current) {
       const fresh = bubbles.slice(bubbles.findIndex((b) => b.id === spoken.current) + 1).filter((b) => b.from === "captain");
-      speak(fresh.map((b) => b.text ?? b.lines?.filter((l) => !l.steps).map((l) => l.text).join("。") ?? "").join("。")); // 「隊長が調べた」札（絵文字の並び）は読まない
+      speakCaptain(fresh.map((b) => b.text ?? b.lines?.filter((l) => !l.steps).map((l) => l.text).join("。") ?? "").join("。"), lang); // 「隊長が調べた」札（絵文字の並び）は読まない
     }
     spoken.current = last?.id ?? "";
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,9 +143,19 @@ export default function ChatScreen({
     return () => clearInterval(t);
   }, [viewerId, pending, readOnly]);
 
+  /** ことばを選ぶ: すぐ画面の文字を変え、cookie に覚えて、訳した流れで開き直す（page が key={lang} で描き直す） */
+  const pickLang = (l: Lang) => {
+    if (l === lang) return;
+    setLang(l);
+    start(async () => {
+      await setLangAction(l).catch(() => undefined);
+      router.refresh();
+    });
+  };
+
   const apply = (r: ChatResult) => {
     if (!r.ok) {
-      setError(r.text ?? "うまくいきませんでした。もう一度どうぞ。");
+      setError(r.text ?? t(lang, "failed"));
       play("error");
     } else if (r.bubbles) {
       setBubbles(r.bubbles);
@@ -153,8 +179,10 @@ export default function ChatScreen({
     // ありがとう点呼・応援のボタンは「ぽわん」、ほかは「シュッ」
     if (b.kind !== "photo") play(/ありがとう|助かりました|お茶どうぞ|おつかれさま|あったかく|拍手/.test(b.label) ? "thanks" : "send");
     if (b.kind === "say") {
-      optimistic(b.text);
-      start(async () => apply(await chatTextAction(viewerId, b.text).catch(() => ({ ok: false }))));
+      // 日本語なら今までどおり文そのもの。ほかのことばでは押した文字（訳）を自分の吹き出しに（送る中身は日本語のまま）
+      const shown = lang === "ja" ? b.text : b.label;
+      optimistic(shown);
+      start(async () => apply(await chatTextAction(viewerId, b.text, { shown }).catch(() => ({ ok: false }))));
     } else if (b.kind === "postback") {
       optimistic(b.label);
       start(async () => apply(await chatPostbackAction(viewerId, b.data, b.label).catch(() => ({ ok: false }))));
@@ -175,7 +203,7 @@ export default function ChatScreen({
         fd.set("photo", new File([blob], "done.jpg", { type: "image/jpeg" }));
         apply(await chatPhotoAction(fd));
       } catch (e) {
-        setError(e instanceof Error ? e.message : "写真を送れませんでした。");
+        setError(e instanceof Error ? e.message : t(lang, "photoFailed"));
       }
     });
   };
@@ -204,30 +232,31 @@ export default function ChatScreen({
   const quick = [...bubbles].reverse().find((x) => x.quick.length > 0)?.quick ?? [];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" style={{ fontSize: TEXT_SIZE_PX[size] }}>
-      {/* 上段は1行: 隊長・題名・（通知オン）・文字の大きさ・読み上げ。流れをできるだけ大きく */}
+    <div className="flex min-h-0 flex-1 flex-col" style={{ fontSize: TEXT_SIZE_PX[size] }} lang={LANG_INFO[lang].speech}>
+      {/* 上段は1行: 隊長・題名・（通知オン）・文字の大きさ・読み上げ・🌐。流れをできるだけ大きく */}
       <header className="flex shrink-0 items-center gap-1.5 bg-ice-soft py-1 pl-3 pr-2" style={headerBg ? { background: headerBg } : undefined}>
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-card shadow-sm">
           <Mascot size={30} team={teamId} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-lg font-bold leading-tight" title="雪の朝のお知らせと、なんでも相談">
-          隊長トーク
+        <h1 className="min-w-0 flex-1 truncate text-lg font-bold leading-tight" title={t(lang, "subtitle")}>
+          {t(lang, "title")}
         </h1>
         {extra}
-        {!readOnly && <ChatTools size={size} onSize={setSize} speakOn={speakOn} onSpeak={setSpeakOn} />}
+        {!readOnly && <ChatTools size={size} onSize={setSize} speakOn={speakOn} onSpeak={setSpeakOn} lang={lang} />}
+        <LangPicker lang={lang} onPick={pickLang} canTranslate={canTranslate} voiceName={voiceName} />
       </header>
       {/* 流れ（この中だけがスクロールする） */}
-      <div ref={list} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label="隊長とのやりとり">
+      <div ref={list} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label={t(lang, "thread")}>
         {bubbles.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-2 text-center">
             <Mascot size={96} team={teamId} className="captain-idle drop-shadow-md" />
             <p className="text-lg font-bold leading-snug">
-              シマエナ隊長だしま〜！
-              <span className="block text-base font-normal text-ink-soft">雪の朝のお知らせや作戦はここに届くえな。なんでも聞いてね。</span>
+              {t(lang, "hello")}
+              <span className="block text-base font-normal text-ink-soft">{t(lang, "helloSub")}</span>
             </p>
             {!readOnly && (
-              <div className="flex w-full max-w-xs flex-col gap-2" aria-label="相談のきっかけ">
-                {STARTERS.map((b) => (
+              <div className="flex w-full max-w-xs flex-col gap-2" aria-label={t(lang, "starters")}>
+                {starters(lang).map((b) => (
                   <button key={b.label} type="button" onClick={() => press(b)} disabled={pending} className="min-h-12 rounded-full bg-card px-4 text-base font-bold shadow-sm ring-1 ring-ink/15 active:scale-95">
                     {b.label}
                   </button>
@@ -241,7 +270,7 @@ export default function ChatScreen({
           // 続けて届いた隊長の吹き出しは、まとまりの最後にだけ顔を出す（LINE と同じ。見た目がすっきりする）
           const nextSame = bubbles[i + 1]?.from === "captain" && !stamp(bubbles[i + 1].at, b.at);
           const time = label && (
-            <p key={`${b.id}-t`} className="pt-1 text-center text-xs font-bold text-ink-soft" aria-label={`時刻 ${label}`}>
+            <p key={`${b.id}-t`} className="pt-1 text-center text-xs font-bold text-ink-soft" aria-label={`${t(lang, "time")} ${label}`}>
               {label}
             </p>
           );
@@ -249,7 +278,7 @@ export default function ChatScreen({
           b.from === "me" ? (
             <div key={b.id} className="flex justify-end">
               {b.photo ? (
-                <p className="rounded-2xl rounded-br-md bg-[#b8e994] px-3 py-1.5 text-base font-bold shadow-sm">📷 写真を送りました</p>
+                <p className="rounded-2xl rounded-br-md bg-[#b8e994] px-3 py-1.5 text-base font-bold shadow-sm">{t(lang, "photoSent")}</p>
               ) : (
                 <p className="max-w-[80%] whitespace-pre-line rounded-2xl rounded-br-md bg-[#b8e994] px-3 py-1.5 text-[1em] font-bold leading-snug text-ink shadow-sm">{b.text}</p>
               )}
@@ -276,7 +305,7 @@ export default function ChatScreen({
                       {b.lines?.map((l, i) =>
                         l.steps ? (
                           <div key={i} className="flex flex-wrap items-center gap-1" aria-label={l.text}>
-                            <span className="text-[0.75em] text-ink-soft">隊長が調べた</span>
+                            <span className="text-[0.75em] text-ink-soft">{t(lang, "captainChecked")}</span>
                             {l.steps.map((s, j) => (
                               <span key={j} className="agent-step rounded-full bg-ice-soft px-2 py-0.5 text-[0.75em] font-bold text-ink" style={{ animationDelay: `${j * 0.25}s` }}>
                                 {s}
@@ -317,7 +346,7 @@ export default function ChatScreen({
       {error && <p className="shrink-0 bg-alert-soft px-4 py-1 text-center text-sm text-alert">{error}</p>}
       {/* 入力欄 */}
       {readOnly ? (
-        <p className="shrink-0 border-t border-ink/10 bg-card px-4 py-3 text-center text-sm text-ink-soft">ご家族の家の知らせが、ここに届きます。</p>
+        <p className="shrink-0 border-t border-ink/10 bg-card px-4 py-3 text-center text-sm text-ink-soft">{t(lang, "familyNote")}</p>
       ) : (
       <form
         className="flex shrink-0 items-center gap-2 border-t border-ink/10 bg-card px-2 py-2 pb-[max(8px,env(safe-area-inset-bottom))]"
@@ -326,11 +355,12 @@ export default function ChatScreen({
           send();
         }}
       >
-        <button type="button" aria-label="写真を撮る" onClick={() => fileCamera.current?.click()} disabled={pending} className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-2xl">
+        <button type="button" aria-label={t(lang, "takePhoto")} onClick={() => fileCamera.current?.click()} disabled={pending} className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-2xl">
           📷
         </button>
         <MicButton
           disabled={pending}
+          lang={lang}
           onText={(text, final) => {
             setDraft(text);
             setListening(!final);
@@ -339,13 +369,13 @@ export default function ChatScreen({
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={listening ? "聞いています…" : "隊長に話す"}
+          placeholder={listening ? t(lang, "listening") : t(lang, "placeholder")}
           maxLength={300}
           enterKeyHint="send"
           className="min-h-12 min-w-0 flex-1 rounded-full bg-paper px-4 text-base ring-1 ring-ink/15 focus:outline-none focus:ring-2 focus:ring-lamp"
         />
         <button type="submit" disabled={pending || !draft.trim()} className="btn btn-lamp min-h-12 shrink-0 px-4 text-base">
-          送る
+          {t(lang, "send")}
         </button>
         <input ref={fileCamera} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void onPhoto(e.target.files?.[0])} />
         <input ref={fileRoll} type="file" accept="image/*" className="hidden" onChange={(e) => void onPhoto(e.target.files?.[0])} />

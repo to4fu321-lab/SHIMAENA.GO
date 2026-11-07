@@ -1,10 +1,14 @@
 "use server";
 
 // 隊長トーク（spec v1.17）の操作。画面の「自分」は trustedViewer で確かめる（cookie か、デモの架空の人）。
+// ことば（spec v1.33）: 返す流れは選んだことば（cookie）に訳す。本人が打った文は日本語に直してから今までの処理へ。
 import { revalidatePath } from "next/cache";
 import { takeChatQuota, type ChatKind } from "@/lib/chat/quota";
 import { sendToCaptain, type ChatInput } from "@/lib/chat/send";
 import { withMockClaude } from "@/lib/claude/client";
+import { localizeBubbles } from "@/lib/i18n/bubbles";
+import { currentLang } from "@/lib/i18n/cookie";
+import { toJapanese } from "@/lib/i18n/translate";
 import { sniffImageType } from "@/lib/image";
 import { inboxKeyOf } from "@/lib/inbox/key";
 import { listThread, markRead } from "@/lib/inbox/store";
@@ -31,17 +35,29 @@ async function sendWithQuota(p: NonNullable<Awaited<ReturnType<typeof me>>>, kin
   else await withMockClaude(run);
 }
 
-/** いまの流れを読み直す（返事が入ったあと） */
+/** いまの流れを読み直す（返事が入ったあと）。選んだことばに訳して返す */
 async function refreshed(viewerId: string, key: string): Promise<ChatBubble[]> {
   const as = isDemoViewer(viewerId) ? viewerId : undefined;
   await markRead(key);
-  return toBubbles(await listThread(key), as);
+  return localizeBubbles(toBubbles(await listThread(key), as), await currentLang());
 }
 
-export async function chatTextAction(viewerId: string, text: string): Promise<ChatResult> {
+/**
+ * 文を送る。opts.shown は自分の吹き出しに残す文字（ボタンの訳など）。shown があれば text は日本語（ボタンの中身）なので訳さない。
+ * なければ本人が打った文: 日本語以外を選んでいれば日本語に直してから処理する（打った文そのものを自分の吹き出しに残す）
+ */
+export async function chatTextAction(viewerId: string, text: string, opts: { shown?: string } = {}): Promise<ChatResult> {
   const p = await me(viewerId);
   if (!p) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
-  await sendWithQuota(p, "text", { kind: "text", text });
+  let input: ChatInput = { kind: "text", text, shown: opts.shown };
+  if (!opts.shown) {
+    const lang = await currentLang();
+    if (lang !== "ja") {
+      const ja = await toJapanese(text, lang);
+      if (ja !== text) input = { kind: "text", text: ja, shown: text };
+    }
+  }
+  await sendWithQuota(p, "text", input);
   revalidatePath("/chat");
   return { ok: true, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
 }

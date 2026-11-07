@@ -10,6 +10,11 @@ import StormBanner from "@/components/StormBanner";
 import TabBar from "@/components/TabBar";
 import { PENDING_COOKIE, readPending } from "@/lib/auth/pending";
 import PushSetup from "@/components/PushSetup";
+import { hasClaudeKey } from "@/lib/claude/client";
+import { localizeBubbles } from "@/lib/i18n/bubbles";
+import { LANG_COOKIE, parseLang } from "@/lib/i18n/langs";
+import { t } from "@/lib/i18n/ui";
+import { captainVoiceName } from "@/lib/speech/credit";
 import { inboxKeyOf } from "@/lib/inbox/key";
 import { publicVapidKey } from "@/lib/push/keys";
 import { repo } from "@/lib/repo";
@@ -26,11 +31,13 @@ export const metadata: Metadata = { title: "隊長トーク ・ シマエナGO" 
 /**
  * 隊長トーク（spec v1.17）: 届くもの（予告・点呼・作戦・完了・ありがとう・なかま…）と、本人の文・ボタンの答えが1つの流れで並ぶ。
  * 文面とボタンは今までの LINE の文面のまま。ページは1画面（流れの中だけがスクロールする。LINE と同じ）。
+ * ことば（spec v1.33）: cookie `lang` のことばで。決まった文字は辞書、隊長の吹き出しは Claude の訳（キャッシュつき）。
  */
 async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
+  const lang = parseLang(cookieStore.get(LANG_COOKIE)?.value);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
@@ -48,23 +55,26 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
         <Mascot size={32} team={myTeam?.team.id} />
       </span>
       <div className="min-w-0 flex-1 leading-tight">
-        <h1 className="text-xl font-bold">隊長トーク</h1>
-        <p className="truncate text-sm text-ink-soft">雪の朝のお知らせと、なんでも相談</p>
+        <h1 className="text-xl font-bold">{t(lang, "title")}</h1>
+        <p className="truncate text-sm text-ink-soft">{t(lang, "subtitle")}</p>
       </div>
     </header>
   );
 
   if (!key) {
     return (
-      <Screen header={header} footer={<TabBar active="chat" q={q} />}>
+      <Screen header={header} footer={<TabBar active="chat" q={q} lang={lang} />}>
         <section className="m-4 space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
-          <p className="text-lg font-bold">隊長トークは、登録した人の画面です。</p>
-          <p className="text-base">雪の朝のお知らせや、来てくれる人のお知らせがここに届きます。文で相談もできます。</p>
+          <p className="text-lg font-bold">{t(lang, "notRegistered")}</p>
+          <p className="text-base">{t(lang, "notRegisteredBody")}</p>
           <Link href="/start" className="btn btn-lamp btn-big w-full">
-            はじめる（30秒で登録）
+            {t(lang, "start")}
           </Link>
           <p className="text-sm text-ink-soft">
-            デモ: <Link href="/chat?as=h3" className="underline">架空の手伝う側として開く</Link>
+            {t(lang, "demo")}{" "}
+            <Link href="/chat?as=h3" className="underline">
+              {t(lang, "demoLink")}
+            </Link>
           </p>
         </section>
       </Screen>
@@ -73,18 +83,22 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
 
   const items = await listThread(key);
   await markRead(key);
-  const bubbles = toBubbles(items, demoAs);
+  const bubbles = await localizeBubbles(toBubbles(items, demoAs), lang);
   const viewer = me?.id ?? "";
   return (
-    <Screen header={<StormBanner />} footer={<TabBar active="chat" q={q} />}>
-      {/* 通知の案内（まだ許可していない人にだけ出る）。許可ずみなら上段に小さく「🔔 通知オン」 */}
+    <Screen header={<StormBanner />} footer={<TabBar active="chat" q={q} lang={lang} />}>
+      {/* 通知の案内（まだ許可していない人にだけ出る）。許可ずみなら上段に小さく「🔔 通知オン」。key={lang}: ことばを変えたら訳した流れで描き直す */}
       <ChatScreen
+        key={lang}
         viewerId={viewer}
         initial={bubbles}
         teamId={myTeam?.team.id}
         readOnly={!me}
         headerBg={myTeam?.soft}
         extra={!demoAs ? <PushSetup viewerId={viewer} publicKey={publicVapidKey()} compact /> : undefined}
+        lang={lang}
+        canTranslate={hasClaudeKey()}
+        voiceName={captainVoiceName()}
       />
     </Screen>
   );
