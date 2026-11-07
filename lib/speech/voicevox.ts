@@ -5,6 +5,8 @@
 // 声の主は VOICEVOX のキャラクター。使うときはクレジット「VOICEVOX:春歌ナナ」などを出す決まり（画面の「ことば」の紙と README に）。
 // 切るときは Vercel の環境変数 CAPTAIN_VOICE=off。
 
+import { aivisEnabled, synthesizeAivis } from "./aivis";
+
 /** 読む設定（環境変数の一部。確かめ用に差しかえられる） */
 export type VoiceEnv = Readonly<Record<string, string | undefined>>;
 
@@ -157,7 +159,11 @@ export async function synthesizeQuest(text: string, fetchFn: typeof fetch = fetc
   return mp3.byteLength > 0 ? { audio: mp3, type: "audio/mpeg", speakerName: j.speakerName } : null;
 }
 
-/** 文を声に。VOICEVOX_URL があれば自前の ENGINE、なければ Web API。できなければ null（画面はブラウザの声に戻る） */
+/**
+ * 文を声に。AIVIS_API_KEY があれば Aivis Cloud API（spec v1.38。いちばん速い）、
+ * VOICEVOX_URL があれば自前の ENGINE、どちらもなければ VOICEVOX Web API。できなければ null（画面はブラウザの声に戻る）
+ */
 export async function synthesize(text: string, fetchFn: typeof fetch = fetch, env: VoiceEnv = process.env): Promise<Voice | null> {
+  if (aivisEnabled(env)) return synthesizeAivis(voiceText(text), env, fetchFn);
   return engineUrl(env) ? synthesizeEngine(text, env, fetchFn) : synthesizeQuest(text, fetchFn, env);
 }

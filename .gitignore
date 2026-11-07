@@ -54,3 +54,4 @@ next-env.d.ts
 
 # 点検ループの結果（npm run tenken の書き出し）
 /.tenken
+.voice-samples/

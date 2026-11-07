@@ -1,5 +1,6 @@
 // 声の主の名前（spec v1.36）: VOICEVOX のキャラクターはクレジットを出す決まり。画面の「ことば」の紙に出す。
 // 番号と名前の対応は api.tts.quest/v3/voicevox/speakers_array の順（よく使うものだけ。ほかは「VOICEVOX」）。
+import { aivisEnabled, aivisVoiceName } from "./aivis";
 import { speakerId, voiceEnabled, type VoiceEnv } from "./voicevox";
 
 const NAMES: Record<number, string> = {
@@ -24,5 +25,6 @@ const NAMES: Record<number, string> = {
 /** 隊長の声の名前（切ってあれば undefined） */
 export function captainVoiceName(env: VoiceEnv = process.env): string | undefined {
   if (!voiceEnabled(env)) return undefined;
+  if (aivisEnabled(env)) return aivisVoiceName(env);
   return NAMES[speakerId(env)] ?? "VOICEVOX";
 }
