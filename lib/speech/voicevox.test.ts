@@ -3,13 +3,13 @@ import { captainVoiceName } from "./credit";
 import { DEFAULT_SPEAKER, speakerId, synthesize, synthesisUrl, VOICE_TEXT_MAX, voiceEnabled, voiceText } from "./voicevox";
 
 describe("隊長の声（VOICEVOX）", () => {
-  it("設定: 既定はオン・雨晴はう。CAPTAIN_VOICE=off で切れる。VOICEVOX_SPEAKER で声を変える", () => {
+  it("設定: 既定はオン・満別花丸（元気）。CAPTAIN_VOICE=off で切れる。VOICEVOX_SPEAKER で声を変える", () => {
     expect(voiceEnabled({})).toBe(true);
     expect(voiceEnabled({ CAPTAIN_VOICE: "off" })).toBe(false);
     expect(speakerId({})).toBe(DEFAULT_SPEAKER);
     expect(speakerId({ VOICEVOX_SPEAKER: "8" })).toBe(8);
     expect(speakerId({ VOICEVOX_SPEAKER: "abc" })).toBe(DEFAULT_SPEAKER);
-    expect(captainVoiceName({})).toBe("VOICEVOX:雨晴はう");
+    expect(captainVoiceName({})).toBe("VOICEVOX:満別花丸");
     expect(captainVoiceName({ VOICEVOX_SPEAKER: "8" })).toBe("VOICEVOX:春日部つむぎ");
     expect(captainVoiceName({ VOICEVOX_SPEAKER: "999" })).toBe("VOICEVOX");
     expect(captainVoiceName({ CAPTAIN_VOICE: "off" })).toBeUndefined();
@@ -50,6 +50,14 @@ describe("隊長の声（VOICEVOX）", () => {
 
     const busy = (async () => new Response(JSON.stringify({ success: false, errorMessage: "points", retryAfter: 60 }))) as typeof fetch;
     expect(await synthesize("こんにちは", busy)).toBeNull();
+    // 「あと少し待って」（retryAfter が短い）は待って頼み直す（2つ目の文が止まらないように）
+    let tries = 0;
+    const soon = (async (input: string | URL | Request) => {
+      if (String(input).includes("/synthesis") && ++tries === 1) return new Response(JSON.stringify({ success: false, errorMessage: 429, retryAfter: 0.01 }));
+      return fakeFetch(input);
+    }) as typeof fetch;
+    expect((await synthesize("こんにちは", soon))?.mp3).toEqual(new Uint8Array([1, 2, 3]));
+    expect(tries).toBe(2);
     const down = (async () => new Response("", { status: 503 })) as typeof fetch;
     expect(await synthesize("こんにちは", down)).toBeNull();
     expect(await synthesize("🎉", fakeFetch)).toBeNull();

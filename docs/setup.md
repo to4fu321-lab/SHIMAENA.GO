@@ -23,7 +23,7 @@ npm run dev
 - `/admin` には、保存や通知の失敗が赤い「問題」として出る。「声」タブに今週の声と改善の提案が出る。
 - 人手が足りない家の最後の連絡先（町内会役員役のサポーター）: `SUPPORTER_LINE_USER_IDS`（LINE のアカウント ID をカンマ区切り）。
 - カードの絵を描くモデルを上げたいとき: `CARD_ART_MODEL`（既定は Claude Opus 5.5）。
-- 隊長の声（spec v1.36、隊長トークの日本語の読み上げ）: 既定でオン（無料の VOICEVOX Web API、鍵なし）。`CAPTAIN_VOICE=off` で切る（ブラウザの声に戻る）。`VOICEVOX_SPEAKER` で声を変える（番号は https://api.tts.quest/v3/voicevox/speakers_array の順。既定 10 = 雨晴はう）。**鍵なしの枠は小さい**（1分に数回。超えると 429 で、その回はブラウザの声に戻る）ので、本番・撮影の前に api.tts.quest（su-shiki.com）で無料の鍵を作って `VOICEVOX_API_KEY` に入れる。
+- 隊長の声（spec v1.36、隊長トークの日本語の読み上げ）: 既定でオン（無料の VOICEVOX Web API、鍵なし）。`CAPTAIN_VOICE=off` で切る（ブラウザの声に戻る）。`VOICEVOX_SPEAKER` で声を変える（番号は https://api.tts.quest/v3/voicevox/speakers_array の順。既定 70 = 満別花丸（元気））。**鍵なしの枠は小さい**（1分に数回。超えると 429 で、その回はブラウザの声に戻る）ので、本番・撮影の前に api.tts.quest（su-shiki.com）で無料の鍵を作って `VOICEVOX_API_KEY` に入れる。
 - ことば（spec v1.36）: 隊長トークの 🌐 で選ぶ。隊長の文の訳は `ANTHROPIC_API_KEY` があるときだけ（なければ日本語のまま）。訳は `translations` 表に貯まる（`/admin` の「DB を準備する」で作る。なくても最初に使うとき自動で作る）。
 - 隊長トークで Claude を呼ぶ回数の1人1日の上限（公開中のお金の守り。架空の人 `?as=h1` などだけ。LINE でログインした人は上限なし）: `CHAT_TEXT_PER_DAY`（文。既定 20）・`CHAT_PHOTO_PER_DAY`（写真。既定 5）。超えた分は鍵がないときと同じモック応答になる。`/api/song?date=` で作れる歌は今日と過去7日だけ。
 

@@ -33,14 +33,18 @@ export function readSpeak(): boolean {
 /** この端末でブラウザの読み上げが使えるか */
 export const canSpeak = () => typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
 
+/** 隊長がブラウザの声で話すときの調子: 少し高く・少し速く（11/7 本人の指示「もっと元気な感じでかわいい声」） */
+const CAPTAIN_TONE = { rate: 1.08, pitch: 1.35 } as const;
+
 /** 文をブラウザの声で読む（前の読み上げは止める）。lang は BCP 47（既定は日本語）。使えない端末では何もしない */
-export function speak(text: string, lang = "ja-JP"): void {
+export function speak(text: string, lang = "ja-JP", tone: { rate: number; pitch: number } = { rate: 0.95, pitch: 1 }): void {
   if (!canSpeak() || !text.trim()) return;
   const synth = window.speechSynthesis;
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/[☃️🎉📷🔔💡🗺📍🪪🎓👟]/g, "").replace(/しま〜/g, "しまー").replace(/えな〜/g, "えなー"));
   u.lang = lang;
-  u.rate = 0.95;
+  u.rate = tone.rate;
+  u.pitch = tone.pitch;
   const short = lang.slice(0, 2);
   const voice = synth.getVoices().find((v) => v.lang.startsWith(short));
   if (voice) u.voice = voice;
@@ -186,11 +190,18 @@ async function playVoicevox(text: string): Promise<boolean> {
   for (let i = 0; i < parts.length; i++) {
     const blob = await next;
     if (my !== serial) return true; // 新しい読み上げが来ていたら、こちらは黙る（失敗ではない）
-    if (!blob) return i > 0; // 最初の部分を作れなければブラウザの声へ。2つ目なら、そこで終わる
+    if (!blob) {
+      // 最初の部分を作れなければ全部ブラウザの声へ。2つ目以降なら、残りだけをブラウザの声で読む（途中で黙らない）
+      if (i > 0) speak(parts.slice(i).join(""), LANG_INFO.ja.speech, CAPTAIN_TONE);
+      return i > 0;
+    }
     if (i + 1 < parts.length) next = fetchVoice(parts[i + 1]); // 鳴らしている間に次を作る
     const ok = await playBlob(a, blob, my);
     if (my !== serial) return true;
-    if (!ok) return i > 0;
+    if (!ok) {
+      if (i > 0) speak(parts.slice(i).join(""), LANG_INFO.ja.speech, CAPTAIN_TONE);
+      return i > 0;
+    }
   }
   return true;
 }
@@ -206,11 +217,11 @@ export function speakCaptain(text: string, lang: Lang = "ja"): void {
   if (lang === "ja" && voiceAvailable !== false) {
     const my = serial + 1;
     void playVoicevox(s).then((ok) => {
-      if (!ok && my === serial) speak(s, LANG_INFO.ja.speech);
+      if (!ok && my === serial) speak(s, LANG_INFO.ja.speech, CAPTAIN_TONE);
     });
     return;
   }
-  speak(s, LANG_INFO[lang].speech);
+  speak(s, LANG_INFO[lang].speech, CAPTAIN_TONE);
 }
 
 export default function ChatTools({
