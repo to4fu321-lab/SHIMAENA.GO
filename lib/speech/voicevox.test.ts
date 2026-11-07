@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { captainVoiceName } from "./credit";
-import { DEFAULT_SPEAKER, speakerId, synthesize, synthesisUrl, VOICE_TEXT_MAX, voiceEnabled, voiceText } from "./voicevox";
+import { CAPTAIN_STYLE, DEFAULT_SPEAKER, engineUrl, speakerId, synthesize, synthesisUrl, VOICE_TEXT_MAX, voiceEnabled, voiceText, wakeEngine } from "./voicevox";
 
 describe("隊長の声（VOICEVOX）", () => {
-  it("設定: 既定はオン・満別花丸（元気）。CAPTAIN_VOICE=off で切れる。VOICEVOX_SPEAKER で声を変える", () => {
+  it("設定: 既定はオン・春歌ナナ。CAPTAIN_VOICE=off で切れる。VOICEVOX_SPEAKER で声を変える", () => {
     expect(voiceEnabled({})).toBe(true);
     expect(voiceEnabled({ CAPTAIN_VOICE: "off" })).toBe(false);
     expect(speakerId({})).toBe(DEFAULT_SPEAKER);
     expect(speakerId({ VOICEVOX_SPEAKER: "8" })).toBe(8);
     expect(speakerId({ VOICEVOX_SPEAKER: "abc" })).toBe(DEFAULT_SPEAKER);
-    expect(captainVoiceName({})).toBe("VOICEVOX:満別花丸");
+    expect(captainVoiceName({})).toBe("VOICEVOX:春歌ナナ");
     expect(captainVoiceName({ VOICEVOX_SPEAKER: "8" })).toBe("VOICEVOX:春日部つむぎ");
     expect(captainVoiceName({ VOICEVOX_SPEAKER: "999" })).toBe("VOICEVOX");
     expect(captainVoiceName({ CAPTAIN_VOICE: "off" })).toBeUndefined();
@@ -44,7 +44,8 @@ describe("隊長の声（VOICEVOX）", () => {
       return new Response(new Uint8Array([1, 2, 3]), { headers: { "content-type": "audio/mpeg" } });
     }) as typeof fetch;
     const r = await synthesize("こんにちは", fakeFetch);
-    expect(r?.mp3).toEqual(new Uint8Array([1, 2, 3]));
+    expect(r?.audio).toEqual(new Uint8Array([1, 2, 3]));
+    expect(r?.type).toBe("audio/mpeg");
     expect(r?.speakerName).toContain("ずんだもん");
     expect(calls.filter((c) => c.endsWith("status.json"))).toHaveLength(2);
 
@@ -56,10 +57,39 @@ describe("隊長の声（VOICEVOX）", () => {
       if (String(input).includes("/synthesis") && ++tries === 1) return new Response(JSON.stringify({ success: false, errorMessage: 429, retryAfter: 0.01 }));
       return fakeFetch(input);
     }) as typeof fetch;
-    expect((await synthesize("こんにちは", soon))?.mp3).toEqual(new Uint8Array([1, 2, 3]));
+    expect((await synthesize("こんにちは", soon))?.audio).toEqual(new Uint8Array([1, 2, 3]));
     expect(tries).toBe(2);
     const down = (async () => new Response("", { status: 503 })) as typeof fetch;
     expect(await synthesize("こんにちは", down)).toBeNull();
     expect(await synthesize("🎉", fakeFetch)).toBeNull();
+  });
+
+  it("自前の ENGINE（VOICEVOX_URL）: 読み方をもらい → 元気な調子に直して → wav。眠っていれば null", async () => {
+    const env = { VOICEVOX_URL: "https://x.hf.space/", VOICEVOX_SPEAKER: "8" };
+    expect(engineUrl(env)).toBe("https://x.hf.space");
+    expect(engineUrl({})).toBeUndefined();
+    const calls: { url: string; body?: string }[] = [];
+    const fakeFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, body: typeof init?.body === "string" ? init.body : undefined });
+      if (url.includes("/audio_query")) return new Response(JSON.stringify({ accent_phrases: [], speedScale: 1, pitchScale: 0, outputSamplingRate: 24000 }));
+      if (url.includes("/synthesis")) return new Response(new Uint8Array([9, 8]), { headers: { "content-type": "audio/wav" } });
+      if (url.endsWith("/version")) return new Response(JSON.stringify("0.26.1"));
+      return new Response("", { status: 404 });
+    }) as typeof fetch;
+    const r = await synthesize("こんにちは〜", fakeFetch, env);
+    expect(r?.type).toBe("audio/wav");
+    expect(r?.audio).toEqual(new Uint8Array([9, 8]));
+    expect(calls[0].url).toBe("https://x.hf.space/audio_query?text=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF%E3%83%BC&speaker=8");
+    expect(calls[1].url).toBe("https://x.hf.space/synthesis?speaker=8");
+    const sent = JSON.parse(calls[1].body!);
+    expect(sent.speedScale).toBe(CAPTAIN_STYLE.speedScale);
+    expect(sent.outputSamplingRate).toBe(24000);
+    expect(await wakeEngine(env, fakeFetch)).toBe(true);
+    expect(await wakeEngine({}, fakeFetch)).toBe(false);
+
+    const asleep = (async () => new Response("<html>starting</html>", { status: 503 })) as typeof fetch;
+    expect(await synthesize("こんにちは", asleep, env)).toBeNull();
+    expect(await wakeEngine(env, asleep)).toBe(false);
   });
 });

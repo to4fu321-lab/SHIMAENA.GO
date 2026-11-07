@@ -887,3 +887,17 @@
 - やったこと: `scripts/demo-video/`（`narration.py` 仮の声＝gTTS・隊長と娘さん役は声の高さを変える／`record.cjs` 本番ビルドを Playwright で録画: ホーム→お願い登録→隊長トーク「行く」→地図に2チーム→写真で完了→カード→声のありがとう（吹き込み→届く→聞く）→相談→🌐 English→聞き書き・絵本／`timeline.cjs` 180秒の設計図／`compose.html` 1920×1080 の合成ページ（イラスト: 雪かき・ソファー・3羽・図・本当のコミット記録・未来の朝）／`compose.cjs` コマ出し→撮影→音のミックス（声の間は BGM を小さく、ありがとうの場面は無音）→MP4）。出力 `docs/video/demo3min-v2.mp4`。作り方と声の差し替え方は `docs/video/howto.md`。
 - 詰まったこと: 夜（JST 3時）に録画すると防犯ルールで「行く」が断られる → `faketime -f '+4h'` でサーバーとブラウザの時計を朝にずらした。Playwright の録画は 2 倍解像度にならない（390×844 のまま）→ 合成で 1.1 倍に収めて実用上は十分。edge-tts は WebSocket がプロキシを通らず不可 → gTTS。
 - 次: 本人がナレーションを自分の声で録って差し替え（`howto.md` の手順）。実写（雪かき・ソファー・未来）を重ねるかは本人の判断。
+
+## 11/7 夜 隊長の声を自前の VOICEVOX に（本人の指摘「声、可愛くない。2個目の。で止まった。遅すぎて使えない」）
+- これから: 無料の Web API は鍵があっても1文 10〜16 秒（本番で測った）→ 本人の選択で、Hugging Face Spaces の無料枠に VOICEVOX ENGINE を置いて 1〜2 秒にする。
+- やったこと: `deploy/voicevox-space/`（Dockerfile は Spaces の「ユーザー ID 1000」に合わせて gosu を使わず直接起動）、`lib/speech/voicevox.ts` に `synthesizeEngine`（audio_query → 元気な調子に直す → synthesis、wav）・`wakeEngine`、`/api/voice` は wav/mp3 どちらも返す・`?wake=1`、画面は開いたときに起こす・2つ目の文が作れなければ残りをブラウザの声で。手順を `docs/setup.md` に。テスト 5 本。
+- 詰まったこと: 鍵（VOICEVOX_API_KEY）は 11/6 に本番へ入っていたが、速さは変わらなかった（サービス側の順番待ち）。
+- 次: 本人が HF に Space を作る（10〜20 分）→ `VOICEVOX_URL` を Vercel に → 声（`VOICEVOX_SPEAKER`）を聞きくらべて決める。
+- 11/7 夜 本人が8つの声を聞きくらべて「8か54」→ 既定を 8 = 春日部つむぎ に（54 = 春歌ナナ は `VOICEVOX_SPEAKER=54`）。クレジットも差しかえ。
+- 続き: 本人「54の方がシマエナガっぽい」→ 既定を 54 = 春歌ナナ に（8 = 春日部つむぎ は `VOICEVOX_SPEAKER=8`）。
+
+## 11/7 夜 隊長の声を Aivis Cloud API に（HF の Docker Space が有料だった）
+- やったこと: `lib/speech/aivis.ts`（鍵があれば最初に Aivis、mp3、少し速く・感情つよめ）、クレジットを「AivisSpeech: ○○」に。候補はライセンス ACML 1.0 の4つ（まお・コハク・みちのくあいり・六弦エレキ）、既定はコハク。テスト 2 本。
+- 詰まったこと: この作業環境に入れてもらった鍵が「アクセストークンが不正」（401）で、こちらで試せていない。
+- 次: 本人が鍵を確かめて Vercel の `AIVIS_API_KEY` に → 声を試聴して決める → 本番で速さを測る。
+- 続き: 鍵は Vercel（本番・プレビュー）に入り、プレビューで Aivis の mp3 が返るのを確かめた。本人が試聴して声を雪降白華（ゆきふりしろか）に決定。著作権表示「Tαkoe:AivisSpeech:雪降白華」が必須なので画面のクレジットと README に。
