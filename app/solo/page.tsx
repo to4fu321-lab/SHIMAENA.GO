@@ -61,11 +61,16 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
     );
   }
 
-  const status = await soloStatus(me.id, new Date());
   const planned = record.morning.rollcall.status === "planned";
   const canHelpHouse = planned && onTeam(me);
   const shorts = listShort(record, roster);
-  const [stats, meStats, roadAlerts] = await Promise.all([loadPublicStats(), loadMeStats(me.id), getAlertPref(me.id).catch(() => undefined)]);
+  // 本人の記録・町の集計・道の設定は互いに関係ないので、まとめて同時に読む（11/7: 画面を待たせない）
+  const [status, stats, meStats, roadAlerts] = await Promise.all([
+    soloStatus(me.id, new Date()),
+    loadPublicStats(),
+    loadMeStats(me.id),
+    getAlertPref(me.id).catch(() => undefined),
+  ]);
   const texts = await shareTextsFor(stats);
   const site = baseUrl();
   const v = `v=${status.totalFeathers}`; // 羽が増えたら画像を取り直す

@@ -38,6 +38,7 @@ import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 import Bgm from "@/components/Bgm";
 import SnowSongChip from "@/components/SnowSongChip";
+import GoButton, { type GoReason } from "@/components/GoButton";
 import { loadSnowSong, warmSnowSong } from "@/lib/song/day";
 import { hasClaudeKey } from "@/lib/claude/client";
 import { runLater } from "@/lib/ops/later";
@@ -86,17 +87,18 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
+  // 地図に行けないときの理由（押したら案内の紙を出してからソロへ。11/7 本人の指摘）
+  const goReason: GoReason = !planned ? "no-plan" : !me ? "guest" : "no-team";
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
   const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
   // 左上の鳥は、マイページ（spec v1.32）のアイコン。押すとマイページ（アイコン・紹介・なかま帳）
-  const myIcon = me ? await getProfile(me.id).catch(() => undefined) : undefined;
-  // 本人の記録・夜の人数・応援は互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
+  // 本人の記録・夜の人数・応援・アイコンは互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
   const now = new Date();
   const night = !open;
-  const [st, homeToday, cheerBtn, news] = await Promise.all([
+  const [st, homeToday, cheerBtn, news, myIcon] = await Promise.all([
     me ? soloStatus(me.id, now).catch(() => undefined) : undefined,
     // 夜（19時〜6時）は、よその家の数字（あと何軒）の代わりに、今日 自分の家の雪かきを終えた人の数も
     night
@@ -108,6 +110,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     // 応援・おつかれさま（11/4）: 送るボタンの数と、自分に届いた知らせ（隊長が飛んできて話す）
     me ? cheerButtons(me.id, now).catch(() => undefined) : undefined,
     me ? myCheerNews(me.id, now).catch(() => undefined) : undefined,
+    me ? getProfile(me.id).catch(() => undefined) : undefined,
   ]);
   // 隊長のひとこと（spec v1.6）: 状態は計算、文は朝に1回だけ書いたもの（なければ定型）
   const last = st?.recent[0]?.date;
@@ -335,7 +338,13 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         ) : (
           // 昼も夜と同じ形（11/6 本人の指示）: 左に雪かきGO！、右にソロ活動。半分ずつ1行
           <div className="grid grid-cols-2 gap-2">
-            <Link href={goHref} className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md">
+            <GoButton
+              href={goHref}
+              direct={canHelpHouse}
+              reason={goReason}
+              soloHref={`/solo${q}`}
+              className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md"
+            >
               <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-lamp">
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                   <path d="M8 5 L19 12 L8 19 Z" fill="currentColor" />
@@ -345,7 +354,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">{MENU.go.label}</span>
                 <span className="block whitespace-nowrap text-xs font-bold">{bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
               </span>
-            </Link>
+            </GoButton>
             <Link href={fiveHref} className="flex min-h-14 items-center gap-2 rounded-full bg-card px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink shadow-md ring-1 ring-ink/15">
               <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" className="shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="9" />
