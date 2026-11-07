@@ -3,14 +3,14 @@ import { captainVoiceName } from "./credit";
 import { CAPTAIN_STYLE, DEFAULT_SPEAKER, engineUrl, speakerId, synthesize, synthesisUrl, VOICE_TEXT_MAX, voiceEnabled, voiceText, wakeEngine } from "./voicevox";
 
 describe("隊長の声（VOICEVOX）", () => {
-  it("設定: 既定はオン・春日部つむぎ。CAPTAIN_VOICE=off で切れる。VOICEVOX_SPEAKER で声を変える", () => {
+  it("設定: 既定はオン・春歌ナナ。CAPTAIN_VOICE=off で切れる。VOICEVOX_SPEAKER で声を変える", () => {
     expect(voiceEnabled({})).toBe(true);
     expect(voiceEnabled({ CAPTAIN_VOICE: "off" })).toBe(false);
     expect(speakerId({})).toBe(DEFAULT_SPEAKER);
     expect(speakerId({ VOICEVOX_SPEAKER: "8" })).toBe(8);
     expect(speakerId({ VOICEVOX_SPEAKER: "abc" })).toBe(DEFAULT_SPEAKER);
-    expect(captainVoiceName({})).toBe("VOICEVOX:春日部つむぎ");
-    expect(captainVoiceName({ VOICEVOX_SPEAKER: "8" })).toBe("VOICEVOX:春日部つむぎ");
+    expect(captainVoiceName({})).toBe("VOICEVOX:春歌ナナ");
+    expect(captainVoiceName({ VOICEVOX_SPEAKER: "8" })).toBe("VOICEVOX:春歌ナナ");
     expect(captainVoiceName({ VOICEVOX_SPEAKER: "999" })).toBe("VOICEVOX");
     expect(captainVoiceName({ CAPTAIN_VOICE: "off" })).toBeUndefined();
   });
