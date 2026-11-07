@@ -46,7 +46,7 @@ const JA = {
   demo: "デモ:",
   demoLink: "架空の手伝う側として開く",
   tabHome: "ホーム",
-  tabMap: "地図",
+  tabMap: "マップ",
   tabTeam: "チーム",
   tabConnect: "つなぐ",
   tabCard: "きろく",
