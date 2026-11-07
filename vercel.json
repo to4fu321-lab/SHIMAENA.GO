@@ -6,9 +6,9 @@
   ],
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/:path((?!api/).*)",
       "has": [{ "type": "host", "value": "yukikaki-karano-kaihou.vercel.app" }],
-      "destination": "https://shimaena-go.vercel.app/:path*",
+      "destination": "https://shimaena-go.vercel.app/:path",
       "permanent": false
     }
   ]
