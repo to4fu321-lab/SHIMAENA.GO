@@ -20,6 +20,7 @@ import {
   type Wave,
 } from "./rules";
 import { resetMypageMemory } from "./store";
+import { defaultLook } from "./rules";
 
 const NOW = new Date("2026-12-14T01:00:00Z"); // 10:00 JST
 
@@ -116,7 +117,7 @@ describe("マイページ（メモリ）", () => {
     expect(v!.stats.cards).toBe(1);
   });
 
-  it("プロフィールは点検して保存し、仲間に見える。初期値はシマエナガ", async () => {
+  it("プロフィールは点検して保存し、仲間に見える。初期値は人ごとにランダム（ID で決まる）", async () => {
     const r = await saveProfile("h2", { icon: "cat", intro: "ねこと暮らしています。田中さんの隣です。", likes: "ねこ、編み物", interests: ["温泉"], talk: "ねこの話" }, NOW);
     expect(r.ok).toBe(true);
     expect(r.profile?.icon).toBe("cat");
@@ -125,11 +126,23 @@ describe("マイページ（メモリ）", () => {
     const h2 = v!.companions.find((c) => c.participantId === "h2")!;
     expect(h2.hasProfile).toBe(true);
     expect(h2.profile.likes).toEqual(["ねこ", "編み物"]);
-    expect(v!.companions.find((c) => c.participantId === "h3")!.profile.icon).toBe("bird");
+    expect(v!.companions.find((c) => c.participantId === "h3")!.profile.icon).toBe(defaultLook("h3").icon);
     // 知らないアイコンは前のまま
     const r2 = await saveProfile("h2", { icon: "unknown" }, NOW);
     expect(r2.profile?.icon).toBe("cat");
     expect(r2.profile?.likes).toEqual(["ねこ", "編み物"]);
+    // 写真: 縮めた data URL だけ。undefined は前のまま、null でやめる
+    const photo = "data:image/jpeg;base64,AAAA";
+    expect((await saveProfile("h2", { photo }, NOW)).profile?.photo).toBe(photo);
+    expect((await saveProfile("h2", { intro: "よろしく" }, NOW)).profile?.photo).toBe(photo);
+    expect((await saveProfile("h2", { photo: null }, NOW)).profile?.photo).toBeUndefined();
+    expect((await saveProfile("h2", { photo: "javascript:alert(1)" }, NOW)).profile?.photo).toBeUndefined();
+  });
+
+  it("初期アイコンは ID ごとに決まり、いつも同じ。人によってばらばら", () => {
+    expect(defaultLook("p-abc")).toEqual(defaultLook("p-abc"));
+    const icons = new Set(["a", "b", "c", "d", "e", "f", "g", "h"].map((x) => defaultLook(`p-${x}`).icon));
+    expect(icons.size).toBeGreaterThan(3);
   });
 
   it("手をふれるのは仲間だけ。1回だけ知らせる。おたがいなら候補の先に", async () => {

@@ -15,8 +15,8 @@ import type { TeamId } from "../types";
 import {
   cleanIntro,
   cleanTags,
-  DEFAULT_BG,
-  DEFAULT_ICON,
+  cleanPhoto,
+  defaultLook,
   hasContent,
   INTRO_MAX,
   isIconBgId,
@@ -34,15 +34,17 @@ import { getProfile, getProfiles, listWavesFor, putProfile, putWave } from "./st
 export interface PublicProfile {
   icon: MyProfile["icon"];
   iconBg: MyProfile["iconBg"];
+  photo?: string;
   intro: string;
   likes: string[];
   interests: string[];
   talk: string;
 }
 
-export const toPublic = (p: MyProfile | undefined): PublicProfile => ({
-  icon: p?.icon ?? DEFAULT_ICON,
-  iconBg: p?.iconBg ?? DEFAULT_BG,
+export const toPublic = (p: MyProfile | undefined, participantId = ""): PublicProfile => ({
+  icon: p?.icon ?? defaultLook(participantId).icon,
+  iconBg: p?.iconBg ?? defaultLook(participantId).iconBg,
+  ...(p?.photo ? { photo: p.photo } : {}),
   intro: p?.intro ?? "",
   likes: p?.likes ?? [],
   interests: p?.interests ?? [],
@@ -69,6 +71,8 @@ export interface MypageView {
   nickname: string;
   teamId?: TeamId;
   profile: MyProfile | undefined;
+  /** 自分のアイコン（まだ選んでいなければ、ID で決まるランダムなアイコン） */
+  look: Pick<PublicProfile, "icon" | "iconBg" | "photo">;
   companions: Companion[];
   /** 手をふってくれた人の数（まだふり返していない） */
   wavesForMe: number;
@@ -132,7 +136,7 @@ export async function mypageView(participantId: string, now: Date): Promise<Mypa
         participantId: id,
         nickname: p.nickname,
         teamId: onTeam(p) ? p.teamId : undefined,
-        profile: toPublic(prof),
+        profile: toPublic(prof, id),
         hasProfile: hasContent(prof),
         times: l.times,
         last: shortDate(l.lastAt),
@@ -155,6 +159,7 @@ export async function mypageView(participantId: string, now: Date): Promise<Mypa
     nickname: me.nickname,
     teamId: onTeam(me) ? me.teamId : undefined,
     profile,
+    look: toPublic(profile, me.id),
     companions,
     wavesForMe: companions.filter((c) => c.wave.theirs && !c.wave.mine).length,
     stats: {
@@ -173,6 +178,8 @@ export async function mypageView(participantId: string, now: Date): Promise<Mypa
 export interface ProfileInput {
   icon?: string;
   iconBg?: string;
+  /** 写真の data URL。null = 写真をやめる、undefined = 前のまま */
+  photo?: string | null;
   intro?: string;
   likes?: unknown;
   interests?: unknown;
@@ -186,10 +193,12 @@ export async function saveProfile(participantId: string, input: ProfileInput, no
   const before = await getProfile(me.id).catch(() => undefined);
   const intro = cleanIntro(input.intro ?? before?.intro ?? "", INTRO_MAX);
   const talk = cleanIntro(input.talk ?? before?.talk ?? "", TALK_MAX);
+  const photo = input.photo === undefined ? before?.photo : cleanPhoto(input.photo);
   const p: MyProfile = {
     participantId: me.id,
-    icon: isIconId(input.icon) ? input.icon : (before?.icon ?? DEFAULT_ICON),
-    iconBg: isIconBgId(input.iconBg) ? input.iconBg : (before?.iconBg ?? DEFAULT_BG),
+    icon: isIconId(input.icon) ? input.icon : (before?.icon ?? defaultLook(me.id).icon),
+    iconBg: isIconBgId(input.iconBg) ? input.iconBg : (before?.iconBg ?? defaultLook(me.id).iconBg),
+    ...(photo ? { photo } : {}),
     intro,
     likes: input.likes === undefined ? (before?.likes ?? []) : cleanTags(input.likes),
     interests: input.interests === undefined ? (before?.interests ?? []) : cleanTags(input.interests),

@@ -1,3 +1,4 @@
+import { defaultLook } from "@/lib/mypage/rules";
 import { MENU } from "@/lib/brand";
 import type { Metadata } from "next";
 import StormBanner from "@/components/StormBanner";
@@ -93,6 +94,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
   // 左上の鳥は、マイページ（spec v1.32）のアイコン。押すとマイページ（アイコン・紹介・なかま帳）
   const myIcon = me ? await getProfile(me.id).catch(() => undefined) : undefined;
+  // まだ選んでいない人は、ID で決まるランダムなアイコン（11/7 本人の指示）。写真があれば写真
+  const myLook = { ...(me ? defaultLook(me.id) : { icon: "bird" as const, iconBg: "ice" as const }), ...(myIcon ? { icon: myIcon.icon, iconBg: myIcon.iconBg, photo: myIcon.photo } : {}) };
   // 本人の記録・夜の人数・応援は互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
   const now = new Date();
   const night = !open;
@@ -164,7 +167,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       <header className="flex shrink-0 flex-wrap items-center gap-x-2 bg-ice-soft px-4 pt-3 short:pt-1.5" style={myTeam ? { background: myTeam.soft } : undefined}>
         {me ? (
           <Link href={`/me${q}`} aria-label="マイページ（アイコン・紹介・なかま帳）" className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
-            {myIcon && myIcon.icon !== "bird" ? <Avatar icon={myIcon.icon} bg={myIcon.iconBg} size={44} ring={false} /> : <Mascot size={40} team={myTeam?.team.id} />}
+            {myLook.photo || myLook.icon !== "bird" ? <Avatar icon={myLook.icon} bg={myLook.iconBg} photo={myLook.photo} size={44} ring={false} /> : <Mascot size={40} team={myTeam?.team.id} />}
           </Link>
         ) : (
           <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">

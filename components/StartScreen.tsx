@@ -1,7 +1,7 @@
 "use client";
 
 // はじめる（spec v1.17）。LINE でログイン → 画面で30秒の登録 → そのままソロ出動へ。
-// 登録は1画面ずつ大きなボタンで: ①手伝う／手伝ってほしい／家族の代わりに ②家の場所 ③2問 → 「はじめる！」。
+// 登録は1画面ずつ大きなボタンで: ①手伝う／手伝ってほしい（両方選べる。11/7 本人の指示）／家族の代わりに ②家の場所 ③2問ずつ（絵つき） → 「はじめる！」。
 // 家族の代わりの登録は、最後に6桁の連携コードを出す（ご本人・ほかの家族が「連携コードを入れる」で紐づく）。
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,25 +14,30 @@ import Mascot from "./Mascot";
 import { play } from "@/lib/sound/engine";
 import SnowScene from "./SnowScene";
 import WelcomeOpening from "./WelcomeOpening";
+import { AreaArt, RoleArt, StyleArt } from "./AskArt";
+import type { ClearArea, HelpStyle } from "@/lib/types";
 
 const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
 
 /** guest = ログインしていない、pending = ログイン済みで未登録、member = 登録済み、redo = 登録のやり直し */
 export type StartStatus = "guest" | "pending" | "member" | "redo";
 type Phase = "role" | "place" | "questions" | "saving" | "code" | "done";
-type Role = "helper" | "requester" | "family";
+type Role = "helper" | "requester" | "both" | "family";
 
-const Q: Record<"helper" | "requester", { q1: { title: string; options: [string, string][] }; q2: { title: string; options: [string, string][] } }> = {
-  helper: {
-    q1: { title: "雪の朝、何分くらい動けますか？", options: [["15", "15分"], ["30", "30分"], ["60", "60分"]] },
-    q2: { title: "スコップなどの道具はありますか？", options: [["yes", "ある"], ["no", "ない"]] },
-  },
-  requester: {
-    // spec v1.20: 頼み方を登録で分ける（おまかせ／一緒にやる）。毎朝の質問はしない
-    q1: { title: "家の人も一緒に雪かきしますか？", options: [["omakase", "おまかせしたい"], ["together", "一緒にやる"]] },
-    q2: { title: "どこまで雪かきが要りますか？", options: [["entrance", "玄関前まで"], ["garage", "車庫前まで"], ["road", "道路まで"]] },
-  },
-};
+const HELPER_Q = {
+  q1: { title: "雪の朝、何分くらい動けますか？", options: [["15", "⏱", "15分"], ["30", "⏱", "30分"], ["60", "⏱", "60分"]] },
+  q2: { title: "スコップなどの道具はありますか？", options: [["yes", "🧹", "ある"], ["no", "🙌", "ない"]] },
+} as const;
+// spec v1.20: 頼み方を登録で分ける（おまかせ／一緒にやる）。毎朝の質問はしない。絵は「雪かきをお願いする」と同じ（AskArt）
+const STYLE_OPTIONS: [HelpStyle, string, string][] = [
+  ["omakase", "おまかせしたい", "家の人は雪かきできない"],
+  ["together", "一緒にやる", "家の人も一緒に雪かき"],
+];
+const AREA_OPTIONS: [ClearArea, string][] = [
+  ["entrance", "玄関前まで"],
+  ["garage", "車庫前まで"],
+  ["road", "道路まで"],
+];
 
 export default function StartScreen({ status, name, center, next, opening = false }: { status: StartStatus; name: string; center: LatLng; next: string; opening?: boolean }) {
   const router = useRouter();
@@ -42,10 +47,17 @@ export default function StartScreen({ status, name, center, next, opening = fals
   const [joined, setJoined] = useState(false);
   const [phase, setPhase] = useState<Phase>("role");
   const [role, setRole] = useState<Role>();
+  // 役割の選択（手伝う・手伝ってほしいは両方選べる）
+  const [wantHelp, setWantHelp] = useState(false);
+  const [wantAsk, setWantAsk] = useState(false);
+  // 質問のページ（両方のときは「手伝う側の2問」→「お願いする側の2問」）
+  const [qPage, setQPage] = useState(0);
   const [place, setPlace] = useState<LatLng>();
   const [picking, setPicking] = useState<LatLng>();
   const [q1, setQ1] = useState<string>();
   const [q2, setQ2] = useState<string>();
+  const [q3, setQ3] = useState<string>();
+  const [q4, setQ4] = useState<string>();
   const [msg, setMsg] = useState<string>();
   const [locating, setLocating] = useState(false);
   const [code, setCode] = useState("");
@@ -74,9 +86,9 @@ export default function StartScreen({ status, name, center, next, opening = fals
   };
 
   const save = async () => {
-    if (!role || !place || !q1 || !q2) return;
+    if (!role || !place || !q1 || !q2 || (role === "both" && (!q3 || !q4))) return;
     setPhase("saving");
-    const r = await registerAction({ role, location: place, q1, q2 }).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
+    const r = await registerAction({ role, location: place, q1, q2, q3, q4 }).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
     if (r.ok) {
       play("welcome");
       play("cardStamp", { delay: 0.35 });
@@ -108,8 +120,26 @@ export default function StartScreen({ status, name, center, next, opening = fals
     if (whoAmI === "self") setTimeout(() => router.replace("/"), 1500);
   };
 
-  const big = "min-h-20 w-full rounded-3xl px-4 text-left text-xl font-bold ring-2";
-  const qRole = role === "helper" ? "helper" : "requester";
+  // 質問のページ: helper = 手伝う側の2問、requester = お願いする側の2問
+  const qPages: ("helper" | "requester")[] = role === "both" ? ["helper", "requester"] : role === "helper" ? ["helper"] : ["requester"];
+  const qKind = qPages[Math.min(qPage, qPages.length - 1)];
+  const lastQ = qPage >= qPages.length - 1;
+  // 両方のときの答えの置き場所: 手伝う側 = q1/q2、お願いする側 = q3/q4
+  const useLater = role === "both" && qKind === "requester";
+  const [a1, setA1, a2, setA2] = useLater ? ([q3, setQ3, q4, setQ4] as const) : ([q1, setQ1, q2, setQ2] as const);
+  const pickRole = () => {
+    const r: Role | undefined = wantHelp && wantAsk ? "both" : wantHelp ? "helper" : wantAsk ? "requester" : undefined;
+    if (!r) return;
+    if (r !== role) {
+      setQ1(undefined);
+      setQ2(undefined);
+      setQ3(undefined);
+      setQ4(undefined);
+    }
+    setRole(r);
+    setQPage(0);
+    setPhase("place");
+  };
   const registering = status === "pending" || status === "redo";
 
   if (status === "guest") {
@@ -211,18 +241,50 @@ export default function StartScreen({ status, name, center, next, opening = fals
 
         {registering && phase === "role" && (
           <>
-            <h2 className="text-xl font-bold">{status === "redo" ? "もう一度、どちらですか？" : "あなたはどちらですか？"}</h2>
-            <button onClick={() => (setRole("helper"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.1s` }}>
-              🧤 手伝う
-              <span className="block text-base font-normal text-ink-soft">近所の雪かきを10分から</span>
+            <h2 className="text-xl font-bold leading-snug">
+              {status === "redo" ? "もう一度、どちらですか？" : "あなたはどちらですか？"}
+              <span className="block text-base font-normal text-ink-soft">両方えらべます</span>
+            </h2>
+            <div className="grid shrink-0 grid-cols-2 gap-2" role="group" aria-label="手伝う・手伝ってほしい">
+              {(
+                [
+                  ["helper", "手伝う", "近所の雪かきを10分から", wantHelp, setWantHelp],
+                  ["requester", "手伝ってほしい", "10cm 積もった朝、応援が届く", wantAsk, setWantAsk],
+                ] as const
+              ).map(([k, label, sub, on, set], i) => (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => set(!on)}
+                  className={`opening-pillar relative flex flex-col rounded-3xl px-2 pb-2 pt-1 text-center ring-2 ${on ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}
+                  style={{ animationDelay: `${0.1 + i * 0.12}s` }}
+                >
+                  <span className={`absolute right-2 top-2 grid size-7 place-items-center rounded-full text-base font-black ring-2 ${on ? "bg-white text-lamp ring-white" : "bg-card text-transparent ring-ink/20"}`} aria-hidden="true">
+                    ✓
+                  </span>
+                  <RoleArt role={k} active={on} />
+                  <span className="block whitespace-nowrap text-xl font-bold leading-tight max-[400px]:text-lg">{label}</span>
+                  <span className={`mt-0.5 block text-sm leading-snug ${on ? "text-white/90" : "text-ink-soft"}`}>{sub}</span>
+                </button>
+              ))}
+            </div>
+            <p className="shrink-0 text-center text-base font-bold leading-snug text-ink-soft" aria-live="polite">
+              {wantHelp && wantAsk ? "🤝 お互いさま: 手伝いつつ、うちも頼めます" : wantHelp || wantAsk ? "もう一方も選べます" : "どちらかを押してください"}
+            </p>
+            <button disabled={!wantHelp && !wantAsk} onClick={pickRole} className="btn btn-lamp btn-big w-full shrink-0 disabled:opacity-40">
+              つぎへ
             </button>
-            <button onClick={() => (setRole("requester"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.22s` }}>
-              🏠 手伝ってほしい
-              <span className="block text-base font-normal text-ink-soft">10cm 積もった朝、近所に応援が届く（自分も手伝えます）</span>
-            </button>
-            <button onClick={() => (setRole("family"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.33999999999999997s` }}>
-              👪 家族の代わりに登録
-              <span className="block text-base font-normal text-ink-soft">離れて住む親の家を登録。終わると知らせが届きます</span>
+            <button
+              onClick={() => (setRole("family"), setQPage(0), setPhase("place"))}
+              className="opening-pillar flex min-h-16 w-full shrink-0 items-center gap-3 rounded-3xl bg-card px-4 text-left ring-2 ring-ink/15"
+              style={{ animationDelay: "0.34s" }}
+            >
+              <span className="text-3xl" aria-hidden="true">👪</span>
+              <span className="min-w-0 text-lg font-bold leading-tight">
+                家族の代わりに登録
+                <span className="block text-sm font-normal text-ink-soft">離れて住む親の家を登録。終わると知らせが届きます</span>
+              </span>
             </button>
             <button onClick={() => setPhase("code")} className="mt-auto text-base underline">
               連携コード（6桁）をお持ちの方はこちら
@@ -250,33 +312,79 @@ export default function StartScreen({ status, name, center, next, opening = fals
 
         {registering && (phase === "questions" || phase === "saving") && role && (
           <>
-            {(["q1", "q2"] as const).map((k) => {
-              const q = Q[qRole][k];
-              const val = k === "q1" ? q1 : q2;
-              const set = k === "q1" ? setQ1 : setQ2;
-              return (
-                <section key={k} className="shrink-0 space-y-2">
-                  <h2 className="text-lg font-bold leading-snug">{role === "family" ? q.title.replace("家の人も", "ご本人も") : q.title}</h2>
-                  <div className={`grid gap-2 ${q.options.length === 4 ? "grid-cols-2" : q.options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
-                    {q.options.map(([v, label]) => (
-                      <button
-                        key={v}
-                        aria-pressed={val === v}
-                        onClick={() => set(v)}
-                        className={`min-h-14 rounded-2xl px-1 text-lg font-bold ring-2 ${val === v ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+            {role === "both" && (
+              <p className="shrink-0 text-base font-bold text-ink-soft">
+                {qKind === "helper" ? "🧤 手伝うとき" : "🏠 うちを頼むとき"}（{qPage + 1}/2）
+              </p>
+            )}
+            {qKind === "helper" ? (
+              (["q1", "q2"] as const).map((k) => {
+                const q = HELPER_Q[k];
+                const val = k === "q1" ? a1 : a2;
+                const set = k === "q1" ? setA1 : setA2;
+                return (
+                  <section key={k} className="shrink-0 space-y-2">
+                    <h2 className="text-lg font-bold leading-snug">{q.title}</h2>
+                    <div className={`grid gap-2 ${q.options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                      {q.options.map(([v, emoji, label]) => (
+                        <button
+                          key={v}
+                          aria-pressed={val === v}
+                          onClick={() => set(v)}
+                          className={`flex min-h-20 flex-col items-center justify-center rounded-2xl px-1 text-lg font-bold leading-tight ring-2 ${val === v ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}
+                        >
+                          <span className="text-3xl" aria-hidden="true">{emoji}</span>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })
+            ) : (
+              <>
+                <section className="shrink-0 space-y-2">
+                  <h2 className="text-lg font-bold leading-snug">{role === "family" ? "ご本人も一緒に雪かきしますか？" : "家の人も一緒に雪かきしますか？"}</h2>
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="頼み方">
+                    {STYLE_OPTIONS.map(([v, label, sub]) => {
+                      const on = a1 === v;
+                      return (
+                        <button key={v} type="button" role="radio" aria-checked={on} onClick={() => setA1(v)} className={`rounded-2xl px-2 pb-1.5 pt-1 text-left ring-2 ${on ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}>
+                          <StyleArt style={v} active={on} />
+                          <span className="block text-lg font-bold leading-tight">{label}</span>
+                          <span className={`block text-xs font-bold ${on ? "text-white/90" : "text-ink-soft"}`}>{role === "family" ? sub.replace("家の人", "ご本人") : sub}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </section>
-              );
-            })}
-            <button disabled={!q1 || !q2 || phase === "saving"} onClick={save} className="btn btn-lamp btn-big mt-auto w-full disabled:opacity-40">
-              {phase === "saving" ? "登録しています…" : role === "family" ? "登録する" : "はじめる！"}
-            </button>
-            <button onClick={() => setPhase("place")} className="text-base underline">
-              ‹ 家の場所を選び直す
+                <section className="shrink-0 space-y-2">
+                  <h2 className="text-lg font-bold leading-snug">どこまで雪かきが要りますか？</h2>
+                  <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="どこまで">
+                    {AREA_OPTIONS.map(([v, label]) => {
+                      const on = a2 === v;
+                      return (
+                        <button key={v} type="button" role="radio" aria-checked={on} onClick={() => setA2(v)} className={`rounded-2xl px-1.5 pb-1.5 pt-1 ring-2 ${on ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}>
+                          <AreaArt area={v} active={on} />
+                          <span className="block text-base font-bold leading-tight">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              </>
+            )}
+            {lastQ ? (
+              <button disabled={!a1 || !a2 || phase === "saving"} onClick={save} className="btn btn-lamp btn-big mt-auto w-full disabled:opacity-40">
+                {phase === "saving" ? "登録しています…" : role === "family" ? "登録する" : "はじめる！"}
+              </button>
+            ) : (
+              <button disabled={!a1 || !a2} onClick={() => setQPage(qPage + 1)} className="btn btn-lamp btn-big mt-auto w-full disabled:opacity-40">
+                つぎへ
+              </button>
+            )}
+            <button onClick={() => (qPage > 0 ? setQPage(qPage - 1) : setPhase("place"))} className="text-base underline">
+              {qPage > 0 ? "‹ もどる" : "‹ 家の場所を選び直す"}
             </button>
           </>
         )}

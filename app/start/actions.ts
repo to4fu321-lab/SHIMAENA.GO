@@ -12,12 +12,17 @@ import type { ClearArea, HelpStyle, LatLng, MorningMinutes, SoloMinutes } from "
 import { readViewer, signViewer, VIEWER_COOKIE } from "@/lib/viewer";
 
 export interface StartForm {
-  role: "helper" | "requester" | "family";
+  /** both = 手伝うし、うちも頼みたい（11/7 本人の指示「どちらも登録できるように」） */
+  role: "helper" | "requester" | "both" | "family";
   location: LatLng;
   /** 手伝う側: 朝は何分動ける？（15/30/60）。お願いする側・家族: 頼み方（omakase=おまかせ／together=一緒にやる。spec v1.20） */
   q1: string;
   /** 手伝う側: 道具はある？（yes/no）。お願いする側・家族: どこまで？（entrance/garage/road） */
   q2: string;
+  /** both のとき: お願いする側の頼み方（q1/q2 は手伝う側の答え） */
+  q3?: string;
+  /** both のとき: お願いする側のどこまで */
+  q4?: string;
 }
 
 export interface StartResult {
@@ -46,23 +51,34 @@ export async function registerAction(f: StartForm): Promise<StartResult> {
     const [lat, lng] = Array.isArray(f.location) ? f.location.map(Number) : [NaN, NaN];
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return { ok: false, text: "家の場所を選んでください。" };
 
-    let reg: Registration;
-    if (f.role === "helper") {
-      const mm = ({ "15": 15, "30": 30, "60": 60 } as Record<string, MorningMinutes>)[f.q1];
-      if (!mm || !["yes", "no"].includes(f.q2)) return { ok: false, text: "2つの質問に答えてください。" };
-      reg = { role: "helper", location: [lat, lng], morningMinutes: mm, hasTools: f.q2 === "yes" };
-    } else if (f.role === "requester" || f.role === "family") {
-      const style = (["omakase", "together"] as HelpStyle[]).find((x) => x === f.q1);
-      const area = (["entrance", "garage", "road"] as ClearArea[]).find((a) => a === f.q2);
-      if (!style || !area) return { ok: false, text: "2つの質問に答えてください。" };
+    const helperReg = (a: string, b: string): Registration | undefined => {
+      const mm = ({ "15": 15, "30": 30, "60": 60 } as Record<string, MorningMinutes>)[a];
+      if (!mm || !["yes", "no"].includes(b)) return undefined;
+      return { role: "helper", location: [lat, lng], morningMinutes: mm, hasTools: b === "yes" };
+    };
+    const requesterReg = (a: string | undefined, b: string | undefined, proxy: boolean): Registration | undefined => {
+      const style = (["omakase", "together"] as HelpStyle[]).find((x) => x === a);
+      const area = (["entrance", "garage", "road"] as ClearArea[]).find((x) => x === b);
+      if (!style || !area) return undefined;
       // おまかせ = ひとりではできない家として、一緒に = ひとりで 30分くらいの家としてレベルを決める
       const sm: SoloMinutes = style === "omakase" ? "unknown" : 30;
-      reg = { role: "requester", proxy: f.role === "family", location: [lat, lng], soloMinutes: sm, clearArea: area, helpStyle: style };
-    } else {
-      return { ok: false, text: "手伝う側か、お願いする側かを選んでください。" };
-    }
+      return { role: "requester", proxy, location: [lat, lng], soloMinutes: sm, clearArea: area, helpStyle: style };
+    };
 
-    const messages = await finishRegistration(me.lineUserId, reg, me.displayName);
+    // 両方: 先に手伝う側で登録し、そのあと「うちも頼める家」にする（手伝う側の答えとチームはそのまま残る。spec v1.20 お互いさま）
+    const regs: (Registration | undefined)[] =
+      f.role === "helper"
+        ? [helperReg(f.q1, f.q2)]
+        : f.role === "requester" || f.role === "family"
+          ? [requesterReg(f.q1, f.q2, f.role === "family")]
+          : f.role === "both"
+            ? [helperReg(f.q1, f.q2), requesterReg(f.q3, f.q4, false)]
+            : [];
+    if (regs.length === 0) return { ok: false, text: "手伝う側か、お願いする側かを選んでください。" };
+    if (regs.some((x) => !x)) return { ok: false, text: "質問に答えてください。" };
+
+    let messages: Awaited<ReturnType<typeof finishRegistration>> = [];
+    for (const reg of regs as Registration[]) messages = await finishRegistration(me.lineUserId, reg, me.displayName);
     await repo().setSession(me.lineUserId, null); // トークで登録の途中だったら、それは終わりにする
     const jar = await cookies();
     if (f.role === "family") {
