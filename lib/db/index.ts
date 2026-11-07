@@ -17,8 +17,41 @@ function sql(): NeonQueryFunction<false, false> {
   return sqlFn;
 }
 
+/**
+ * あとから足した列（db/schema.sql の `alter table … add column if not exists`）。
+ * schema.sql は /admin にしか同梱されないので、ここにも書く（db.test.ts で schema.sql と同じかを確かめる）。
+ * 列を足したら、schema.sql とここの両方に書く。
+ */
+export const ADDED_COLUMNS: readonly { table: string; column: string; type: string }[] = [
+  { table: "cards", column: "back_svg", type: "text" },
+  { table: "solo_logs", column: "strokes", type: "integer" },
+];
+
+let columnsReady: Promise<void> | undefined;
+/**
+ * サーバーが起きて最初の問い合わせの前に1回だけ、足りない列を入れる（T114: /admin の「DB を準備する」を押し忘れても落ちない）。
+ * 表がまだない列は飛ばす（表は「DB を準備する」で作る）。失敗しても問い合わせは止めず、次の起動でもう一度試す。
+ */
+function ensureColumns(): Promise<void> {
+  columnsReady ??= (async () => {
+    const rows = (await sql().query(
+      "select table_name as t, column_name as c from information_schema.columns where table_schema = 'public'",
+    )) as { t: string; c: string }[];
+    const tables = new Set(rows.map((r) => r.t));
+    const have = new Set(rows.map((r) => `${r.t}.${r.c}`));
+    for (const a of ADDED_COLUMNS) {
+      if (!tables.has(a.table) || have.has(`${a.table}.${a.column}`)) continue;
+      await sql().query(`alter table ${a.table} add column if not exists ${a.column} ${a.type}`);
+    }
+  })().catch(() => {
+    columnsReady = undefined;
+  });
+  return columnsReady;
+}
+
 /** 1つの SQL を実行して行を返す */
 export async function query<T = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> {
+  await ensureColumns();
   return (await sql().query(text, params)) as T[];
 }
 
