@@ -2,10 +2,13 @@
 // 道具はどれも読むだけ（町の様子・天気・近くの家・道の報告・本人の記録・今できること）。
 // 最後に answer で、返事と「1つの提案」を出す。提案は本人がボタンを押したときだけ、今までの決まった処理で実行する（AI が勝手に動かさない）。
 // 調べた道具は「隊長が調べたこと」として吹き出しに出す（何を見て決めたかが分かる）。
+// 速さ（spec v1.42。11/8 本人の指摘「チャットが遅い。今の5倍は速く」）: 前は Opus が道具を1つずつ呼んで最大6往復していた（1回 15〜30 秒）。
+// いまは道具（どれも読むだけで速い）をサーバーで全部いっしょに調べてから、速いモデル（Haiku）に1回だけ聞く。
+// 隊長は事実の中から使ったものを used で返し、それを「隊長が調べたこと」に出す。CAPTAIN_CHAT_MODEL=main で Opus に戻せる。
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { COLORS } from "../brand";
-import { CLAUDE_MODEL, getClaudeClient, hasClaudeKey, SYSTEM_PROMPT } from "../claude/client";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_MODEL, getClaudeClient, hasClaudeKey, SYSTEM_PROMPT } from "../claude/client";
 import { conciergeContext, conciergeWeather } from "../concierge/run";
 import { optionAction } from "../concierge/messages";
 import { buildOptions, BODY_WORDS } from "../concierge/options";
@@ -40,6 +43,9 @@ export const TOOL_LABEL: Record<string, string> = {
   list_activities: "📋 今できること",
 };
 
+/** 先にまとめて調べる事実（どれも読むだけ）。answer 以外の道具の名前 */
+const FACT_NAMES = ["look_town", "find_houses", "check_weather", "road_reports", "my_record", "list_activities"];
+
 const TOOLS: Anthropic.Beta.BetaTool[] = [
   { name: "look_town", description: "今日の町の雪かきの全体（点呼の状態・家の数・終わった家・人手不足の家・今日の話題・夜か・警報で止まっているか）", input_schema: { type: "object", properties: {}, additionalProperties: false } },
   {
@@ -63,8 +69,9 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
         activityId: { type: "string", description: "activity のとき、list_activities の id" },
         button: { type: "string", description: "ボタンの文字（16字まで）" },
         why: { type: "string", description: "なぜこの提案か（40字まで、事実だけ）" },
+        used: { type: "array", items: { type: "string", enum: FACT_NAMES }, description: "返事と提案に使った事実の名前（1〜4個）" },
       },
-      required: ["text", "kind"],
+      required: ["text", "kind", "used"],
       additionalProperties: false,
     },
   },
@@ -77,6 +84,7 @@ const AnswerSchema = z.object({
   activityId: z.string().optional(),
   button: z.string().optional(),
   why: z.string().optional(),
+  used: z.array(z.string()).optional(),
 });
 type Answer = z.infer<typeof AnswerSchema>;
 
@@ -206,55 +214,56 @@ export function whoLine(p: Pick<Participant, "role" | "teamId">): string {
 }
 
 const TASK =
-  "あなたは隊長トークでの「シマエナ隊長」です。本人の文に、まず道具で事実を調べてから答えてください（2〜4個の道具。同じ道具は1回まで）。" +
-  "雪かき・見回り・町の様子・天気・道の危険・自分の記録・何をしたらいいか、の相談なら、調べた事実をもとに、いまのその人にいちばん合う1つを提案します。" +
+  "あなたは隊長トークでの「シマエナ隊長」です。下の「調べた事実」（アプリの道具の結果）をもとに、本人の文に answer で答えてください。" +
+  "雪かき・見回り・町の様子・天気・道の危険・自分の記録・何をしたらいいか、の相談なら、事実をもとに、いまのその人にいちばん合う1つを提案します。" +
   "夜（night）や警報（stormStopped）のときは、よその家をすすめません。体調・医療の判断はしません（体のことは「無理しないで」と家族や医療に）。" +
-  "人の名前・住所は出しません（拠点の番号と距離だけ）。最後に必ず answer を呼びます。answer の text は120字まで、事実の数字を入れ、採点表 voice の口調で。";
+  "人の名前・住所は出しません（拠点の番号と距離だけ）。answer の text は120字まで、事実の数字を入れ、採点表 voice の口調で。used には使った事実の名前を入れます。";
+
+/** 隊長トークに使うモデル。既定は速い Haiku、CAPTAIN_CHAT_MODEL=main で Opus */
+export function captainChatModel(env: Readonly<Record<string, string | undefined>> = process.env): string {
+  return env.CAPTAIN_CHAT_MODEL?.trim() === "main" ? CLAUDE_MODEL : CLAUDE_LIGHT_MODEL;
+}
+
+/** 道具を全部いっしょに調べる（どれも読むだけ）。失敗した道具は error を入れて続ける */
+export async function gatherFacts(p: Participant, now: Date): Promise<Record<string, unknown>> {
+  const outs = await Promise.all(
+    FACT_NAMES.map((n) =>
+      runTool(n, {}, p, now)
+        .then((o) => JSON.parse(o) as unknown)
+        .catch((e) => ({ error: e instanceof Error ? e.message : String(e) })),
+    ),
+  );
+  return Object.fromEntries(FACT_NAMES.map((n, i) => [n, outs[i]]));
+}
 
 /** 隊長エージェントで答える。失敗したら例外（呼ぶ側が今までのコンシェルジュに切りかえる） */
 export async function captainAgent(p: Participant, text: string, now = new Date()): Promise<AgentResult> {
   const client = getClaudeClient();
-  const history = await recentTalk(p, text);
-  const messages: Anthropic.Beta.BetaMessageParam[] = [
-    { role: "user", content: `${whoLine(p)}\n${TASK}\n\n直近のやり取り:\n${history || "（なし）"}\n\n本人の文: ${text.slice(0, 300)}` },
-  ];
-  const used: string[] = [];
-  let answer: Answer | undefined;
-  for (let turn = 0; turn < 6 && !answer; turn++) {
-    const res = await client.beta.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 8000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      output_config: { effort: "medium" },
-      tools: TOOLS,
-      messages,
-    });
-    if (res.stop_reason === "refusal") throw new Error("Claude がこの依頼を断りました");
-    const calls = res.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use");
-    if (calls.length === 0) {
-      const t = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("").trim();
-      answer = { text: t || "ごめんなさい、うまく調べられませんでした。もう一度送ってください。", kind: "none" };
-      break;
-    }
-    messages.push({ role: "assistant", content: res.content });
-    const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
-    for (const c of calls) {
-      if (c.name === "answer") {
-        const a = AnswerSchema.safeParse(c.input);
-        if (a.success) answer = a.data;
-        results.push({ type: "tool_result", tool_use_id: c.id, content: a.success ? "ok" : "形がちがいます", ...(a.success ? {} : { is_error: true }) });
-        continue;
-      }
-      if (!used.includes(c.name)) used.push(c.name);
-      const out = await runTool(c.name, (c.input ?? {}) as Record<string, unknown>, p, now).catch((e) => JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
-      results.push({ type: "tool_result", tool_use_id: c.id, content: out });
-    }
-    if (!answer) messages.push({ role: "user", content: results });
-  }
-  if (!answer) throw new Error("隊長エージェントが答えを出せませんでした");
-  return { messages: await renderAnswer(p, answer, used, now), used };
+  const [history, facts] = await Promise.all([recentTalk(p, text), gatherFacts(p, now)]);
+  const model = captainChatModel();
+  const main = model === CLAUDE_MODEL;
+  const res = await client.beta.messages.create({
+    model,
+    max_tokens: 2000,
+    // 安全のための自動判定で断られたときに別のモデルで続ける仕組みは Opus だけ
+    ...(main ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
+    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+    output_config: { effort: "low" },
+    tools: TOOLS.filter((x) => x.name === "answer"),
+    tool_choice: { type: "tool", name: "answer" },
+    messages: [
+      {
+        role: "user",
+        content: `${whoLine(p)}\n${TASK}\n\n調べた事実（JSON）:\n${JSON.stringify(facts)}\n\n直近のやり取り:\n${history || "（なし）"}\n\n本人の文: ${text.slice(0, 300)}`,
+      },
+    ],
+  });
+  if (res.stop_reason === "refusal") throw new Error("Claude がこの依頼を断りました");
+  const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use" && b.name === "answer");
+  const a = AnswerSchema.safeParse(call?.input);
+  if (!a.success) throw new Error("隊長エージェントが答えを出せませんでした");
+  const used = (a.data.used ?? []).filter((u, i, all) => FACT_NAMES.includes(u) && all.indexOf(u) === i).slice(0, 4);
+  return { messages: await renderAnswer(p, a.data, used, now), used };
 }
 
 /** 答えを吹き出しに。提案は確かめてから（家が今も手伝いを待っているか・夜でないか・候補の中にあるか）ボタンにする */
