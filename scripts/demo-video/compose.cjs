@@ -5,9 +5,10 @@
 //   node scripts/demo-video/compose.cjs render               … 全コマを撮る（.video/out/%05d.jpg）
 //   node scripts/demo-video/compose.cjs audio                … .video/mix.wav（ナレーション・隊長・娘さんの声 ＋ BGM）
 //   node scripts/demo-video/compose.cjs mux [出力.mp4]       … 画と音を1本に（既定 docs/video/demo3min-v2.mp4）
+//   node scripts/demo-video/compose.cjs reaudio [出力.mp4]   … 画はそのまま、音だけ作り直して入れ替える（声を差し替えたとき）
 //   node scripts/demo-video/compose.cjs all [出力.mp4]
 const { chromium } = require("playwright");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawnSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -86,12 +87,18 @@ function audio() {
   parts.push(`[0:a]atrim=0:${T.seconds},asetpts=PTS-STARTPTS,volume='${vol}':eval=frame[bgm0]`);
   parts.push(`[bgm0][sc]sidechaincompress=threshold=0.03:ratio=6:attack=40:release=600:makeup=1[bgm]`);
   parts.push(`[bgm][voice]amix=inputs=2:normalize=0:dropout_transition=0,alimiter=limit=0.95[out]`);
-  ff([...inputs, "-filter_complex", parts.join(";"), "-map", "[out]", "-t", String(T.seconds), "-ar", "48000", "-ac", "2", path.join(V, "mix.wav")]);
-  console.log("mix.wav を書いた");
+  const raw = path.join(V, "mix-raw.wav");
+  ff([...inputs, "-filter_complex", parts.join(";"), "-map", "[out]", "-t", String(T.seconds), "-ar", "48000", "-ac", "2", raw]);
+  // 仕上げ: 音量をネット動画の標準（-14 LUFS）にそろえる（1回目で測り、2回目でその値を使って一様に上げる）
+  const LN = "I=-14:TP=-1.5:LRA=11";
+  const log = spawnSync("ffmpeg", ["-hide_banner", "-i", raw, "-af", `loudnorm=${LN}:print_format=json`, "-f", "null", "-"], { encoding: "utf8" }).stderr;
+  const m = JSON.parse(log.slice(log.lastIndexOf("{"), log.lastIndexOf("}") + 1));
+  ff(["-i", raw, "-af", `loudnorm=${LN}:linear=true:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}`, "-ar", "48000", "-ac", "2", path.join(V, "mix.wav")]);
+  console.log(`mix.wav を書いた（音量 ${m.input_i} → -14 LUFS）`);
 }
 
 function mux(out = path.join(ROOT, "docs/video/demo3min-v2.mp4")) {
-  ff(["-framerate", String(T.fps), "-i", path.join(V, "out/%05d.jpg"), "-i", path.join(V, "mix.wav"), "-t", String(T.seconds), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "medium", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out]);
+  ff(["-framerate", String(T.fps), "-i", path.join(V, "out/%05d.jpg"), "-i", path.join(V, "mix.wav"), "-t", String(T.seconds), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "medium", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out]);
   console.log("できた:", out);
 }
 
@@ -101,5 +108,11 @@ function mux(out = path.join(ROOT, "docs/video/demo3min-v2.mp4")) {
   else if (cmd === "render") await render();
   else if (cmd === "audio") audio();
   else if (cmd === "mux") mux(process.argv[3]);
+  else if (cmd === "reaudio") { // 画はそのまま、音だけ作り直して入れ替える
+    audio();
+    const out = process.argv[3] || path.join(ROOT, "docs/video/demo3min-v2.mp4"), tmp = out + ".tmp.mp4";
+    ff(["-i", out, "-i", path.join(V, "mix.wav"), "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", String(T.seconds), "-movflags", "+faststart", tmp]);
+    fs.renameSync(tmp, out); console.log("音を入れ替えた:", out);
+  }
   else { prep(); await render(); audio(); mux(process.argv[3]); }
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -52,7 +52,7 @@ node scripts/demo-video/compose.cjs all                      # コマ出し → 
    - 隊長の声（`c01`・`c02`）と娘さん役（`d01`）はそのままでもよいし、娘さんに本当に吹き込んでもらうなら `d01.wav` を差し替えます。
 3. `narration.py` を**動かさずに**、`.video/narration/narration.json` の `seconds` をそれぞれの長さに直します（`ffprobe -i n01.wav` で秒がわかる）。
 4. 1行が長くなったら、`scripts/demo-video/timeline.cjs` のその場面の `end` と、次の場面以降の `start`/`end` を同じ秒数だけ後ろにずらします。合計は **180 秒以内**に。
-5. `node scripts/demo-video/compose.cjs all` で作り直し。
+5. 秒数を変えていなければ `node scripts/demo-video/compose.cjs reaudio`（画はそのまま、音だけ入れ替える・1分）。秒数を変えたら `node scripts/demo-video/compose.cjs all`（全部作り直す・10分）。
 
 ## 実写に差し替える（任意）
 
@@ -63,6 +63,7 @@ node scripts/demo-video/compose.cjs all                      # コマ出し → 
 
 `docs/video/bgm.mp3`（`scripts/make-music.py` でプログラムだけで作った 3 分の曲。0〜1分 静か／1〜2分 にぎやか／2〜2:40 あたたか／最後 ゆかい）。
 ナレーションの間は自動で小さくなり、**声のありがとうの場面（1:29〜1:51）は無音**、最後はフェードアウトします。
+最後に全体の音量をネット動画の標準（-14 LUFS）にそろえます（11/8 本人「音が出ない」→ 前は -19 LUFS で、スマホのスピーカーでは小さすぎた）。
 
 ## 提出のときの注意
 
