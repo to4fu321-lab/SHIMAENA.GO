@@ -226,6 +226,8 @@
   完了条件: 町の人に見える文と画像から「7:00」が消え、「6〜19時のあいだに」にそろう（テストの 7:00 も直す）。
 - [ ] **T108 🔍 新しい列が本番の DB に自動で入らない** — `db/schema.sql` の `alter table … add column if not exists`（例: v1.31 の `solo_logs.strokes`）は /admin「データベースを準備」を押したときだけ流れるので、コードを先に出すと本番で select/insert が失敗する（11/7 14:20 の点検で本番の Neon に `strokes` 列がないことを確認。lib/repo/index.ts の SOLO_COLS は `strokes` を読む）。
   完了条件: 起動時か最初の読みで alter が流れる（lib/mypage/store.ts の `ensure()` と同じ形）か、列がなくても落ちない。まずは本人が本番 /admin で「データベースを準備」を押す。
+- [ ] **T109 🔍 報告箱の Issue をログインなしの架空の人からも立てられる** — 本番は DEMO_MODE 既定「on」で README が `/chat?as=h1` を公開しているので、誰でも架空の人（h1…h11・r1…）ごとに 1 日 5 件、Claude を呼んで公開リポジトリに Issue を立てられる（lib/viewer.ts trustedViewer・app/chat/feedback-actions.ts・lib/feedback/ops.ts の上限は人ごと。点検 11/7 18:20）。
+  完了条件: 架空の人の報告は DB と /admin「声」に置くだけで Issue にしない（か、全体の 1 日の上限、か cookie の本人だけ Issue に）。どれにするかは本人の判断。
 - 点検で見つかった大きい 🐞 は、ここに `- [ ] **T9x 🔍 …**` で足していく（通常のループが上から拾う）。
 
 ## 第25段: ありがとうは声で（11/6 本人の決定、spec v1.29）
