@@ -3,7 +3,8 @@ import Link from "next/link";
 // 音のオン・オフ（spec v1.19）。
 // - compact: ホームの見出しの 🔊／🔇（BGM を一発で止める・戻す）
 // - それ以外: 設定の「音」タブ（効果音・BGM の大きな切りかえ＋ためしに鳴らす）
-import { play, setSoundPrefs, soundSupported, unlock, useSoundPrefs } from "@/lib/sound/engine";
+import { useEffect, useState } from "react";
+import { onUnlocked, play, setSoundPrefs, soundSupported, unlock, useSoundPrefs } from "@/lib/sound/engine";
 import { useClientValue } from "./useClientValue";
 
 function Switch({ on, label, note, onChange }: { on: boolean; label: string; note: string; onChange: (v: boolean) => void }) {
@@ -31,22 +32,26 @@ function Switch({ on, label, note, onChange }: { on: boolean; label: string; not
 export default function SoundToggle({ compact = false, songHref }: { compact?: boolean; songHref?: string }) {
   const prefs = useSoundPrefs();
   const supported = useClientValue(true, soundSupported); // 端末にしか分からないので、画面が出たあとに読む
+  // スマホはタップするまで音を出せない。オンなのにまだ鳴らせないときは「タップで♪」と知らせ、押したら止めずに鳴らす（11/8 本人の指摘）
+  const [unlocked, setUnlocked] = useState(false);
+  useEffect(() => onUnlocked(() => setUnlocked(true)), []);
   if (compact) {
     const on = prefs.bgm && !prefs.ownMusic; // 「自分の音楽を聴く」の間は BGM は鳴らない
+    const waiting = on && !unlocked && supported;
     return (
       <button
         type="button"
         onClick={() => {
           void unlock();
-          setSoundPrefs({ bgm: !on, ownMusic: false });
+          if (!waiting) setSoundPrefs({ bgm: !on, ownMusic: false });
         }}
-        aria-label={on ? "BGM を止める" : "BGM を鳴らす"}
-        aria-pressed={on}
+        aria-label={waiting ? "BGM を鳴らす（タップで音が出ます）" : on ? "BGM を止める" : "BGM を鳴らす"}
+        aria-pressed={on && !waiting}
         data-sound="tap"
         className="flex min-h-12 min-w-11 shrink-0 flex-col items-center justify-center px-1 text-xs font-bold"
       >
-        <span className="text-2xl leading-none" aria-hidden="true">
-          {on ? "🔊" : "🔇"}
+        <span className={`text-2xl leading-none ${waiting ? "animate-pulse" : ""}`} aria-hidden="true">
+          {waiting ? "🎵" : on ? "🔊" : "🔇"}
         </span>
         BGM
       </button>
