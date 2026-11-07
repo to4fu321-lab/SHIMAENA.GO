@@ -71,7 +71,7 @@ export default function WelcomeOpening({ name, onDone }: { name: string; onDone:
 
       {stage === "cover" ? (
         <div className="relative flex min-h-0 flex-1 flex-col items-center px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-[12dvh] text-center">
-          <p className="opening-rise rounded-full bg-white/15 px-4 py-1 text-sm font-bold ring-1 ring-white/30" style={{ animationDelay: "0.1s" }}>
+          <p className={`opening-rise rounded-full bg-white/15 px-4 py-1 text-sm font-bold ring-1 ring-white/30 ${name ? "" : "invisible"}`} style={{ animationDelay: "0.1s" }}>
             ✓ LINE でログインできました
           </p>
           <h1 className="opening-logo mt-4 whitespace-nowrap text-5xl font-black tracking-tight max-[380px]:text-4xl">
@@ -80,9 +80,11 @@ export default function WelcomeOpening({ name, onDone }: { name: string; onDone:
           <p className="opening-rise mt-2 text-lg font-bold text-white/90 [text-shadow:0_1px_6px_rgba(12,28,46,0.9)]" style={{ animationDelay: "0.5s" }}>
             寒い冬は、くっついて乗り切る。
           </p>
-          <Mascot size={132} className="captain-idle mt-[5dvh] drop-shadow-[0_6px_16px_rgba(0,0,0,0.35)] short:mt-3 short:size-28" />
+          {/* 真ん中: 隊長と「ようこそ」を上下の余白のまん中に（11/7 UI 点検: 下に大きな空きがあった） */}
+          <Mascot size={132} className="captain-idle mt-auto drop-shadow-[0_6px_16px_rgba(0,0,0,0.35)] short:size-28" />
           <p className="opening-rise mt-3 text-2xl font-bold leading-snug" style={{ animationDelay: "0.9s" }}>
             {name ? `${name}さん、` : ""}ようこそ
+            <span className="block text-base font-bold text-white/85">雪の朝、ご近所と10分の雪かき</span>
           </p>
           <p className="opening-rise mt-auto rounded-full bg-ink/50 px-3 py-0.5 text-sm font-bold text-white" style={{ animationDelay: "1.2s" }}>
             🔊 音が出ます

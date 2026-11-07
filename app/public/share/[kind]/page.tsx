@@ -3,6 +3,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Mascot from "@/components/Mascot";
 import { lineJoinUrl } from "@/lib/line/join";
 import { QUIZ_TYPES } from "@/lib/public/quiz";
 
@@ -40,37 +41,45 @@ export default async function SharePage({ params }: { params: Promise<{ kind: st
   if (!p) notFound();
   const join = lineJoinUrl();
   return (
-    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-4 py-6 text-ink">
-      <header className="text-center">
-        <h1 className="text-3xl font-bold">
-          シマエナ<span className="text-camellia-deep">GO</span>
-        </h1>
-        <p className="text-base text-ink-soft">寒い冬は、くっついて乗り切る。</p>
+    // SNS から来た人が最初に見る画面: 画像 → 「はじめる」をスクロールなしで（11/7 UI 点検: 前は説明が長くてボタンが下に隠れていた）
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-3 bg-paper px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-4 text-ink">
+      <header className="flex items-center gap-3">
+        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
+          <Mascot size={40} />
+        </span>
+        <div className="min-w-0 leading-tight">
+          <p className="text-2xl font-bold">
+            シマエナ<span className="text-lamp-deep">GO</span>
+          </p>
+          <p className="truncate text-sm font-bold text-ink-soft">寒い冬は、くっついて乗り切る。</p>
+        </div>
       </header>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/api/share/${kind}.png?format=square`} alt={p.title} className="aspect-square w-full rounded-3xl shadow-sm ring-1 ring-ink/10" />
-      <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
-        <h2 className="text-xl font-bold">{p.title}</h2>
-        <p>{p.description}</p>
-        <p>
-          雪の朝に点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲームです。仲間がいない日も、
-          <b>ソロ出動</b>（自分の家の雪かき・道の危険の報告）で、1人の10分から参加できます。
-        </p>
-        <Link href={join} className="btn btn-big bg-lamp text-white">
-            はじめる（30秒で登録）
-          </Link>
-        {kind.startsWith("quiz-") && (
-          <Link href="/public/diagnosis" className="btn btn-ink btn-big">
-            あなたも診断する
-          </Link>
-        )}
-        <Link href="/public/town?via=sns" className="btn btn-ink btn-big">
-          町の雪解けを見る
+      <img src={`/api/share/${kind}.png?format=square`} alt={p.title} className="mx-auto aspect-square w-full max-w-[min(100%,42dvh)] rounded-3xl shadow-md ring-1 ring-ink/10" />
+      <section className="space-y-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10">
+        <h1 className="text-xl font-bold leading-tight">{p.title}</h1>
+        <p className="text-base leading-snug text-ink-soft">{p.description}</p>
+        <Link href={join} className="btn btn-lamp btn-big w-full">
+          はじめる（30秒で登録）
         </Link>
-        <Link href="/rules" className="btn btn-white text-base">
-          使い方
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          {kind.startsWith("quiz-") ? (
+            <Link href="/public/diagnosis" className="btn btn-ink whitespace-nowrap text-sm">
+              あなたも診断する
+            </Link>
+          ) : (
+            <Link href="/rules" className="btn btn-white whitespace-nowrap text-sm">
+              使い方
+            </Link>
+          )}
+          <Link href="/public/town?via=sns" className="btn btn-ink whitespace-nowrap text-sm">
+            町の雪解けを見る
+          </Link>
+        </div>
       </section>
+      <p className="px-1 text-sm leading-snug text-ink-soft">
+        雪の朝に点呼が届き、町内の3チームがひとり暮らしの家の雪をどける雪かきゲーム。仲間がいない日も<b>ソロ出動</b>（自分の家の雪かき・道の危険の報告）で、1人の10分から。
+      </p>
     </main>
   );
 }

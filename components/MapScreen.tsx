@@ -126,25 +126,28 @@ export default function MapScreen({
   const [focus, setFocus] = useState<string | undefined>(focusRoad);
   const roadHref = `/solo?pick=10&focus=report_snow${q ? `&as=${state.viewerId}` : ""}`;
 
+  // 畳んでも見える1行: 雪の名前は切らずに見せ、右は「3/7軒 あと4」と短く（11/7 UI 点検: 名前が「もっち…」と切れていた）
   const peekNode = (
     <div aria-label="今朝の雪のこり">
-      <div className="flex items-baseline justify-between gap-2 text-sm">
-        <span className="truncate font-bold">今朝の雪{state.rollcall.snowName ? <>『{state.rollcall.snowName}』</> : null}</span>
-        <span className="shrink-0 tabular-nums">
+      <p className="truncate text-base font-bold leading-tight">
+        今朝の雪{state.rollcall.snowName ? <span className="text-lamp-deep">『{state.rollcall.snowName}』</span> : null}
+      </p>
+      <div className="mt-1 flex items-center gap-2">
+        <span className="block h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-ice-soft">
+          <span className="block h-full rounded-full bg-ice transition-[width] duration-700" style={{ width: `${hpPct}%` }} />
+        </span>
+        <span className="shrink-0 whitespace-nowrap text-sm leading-tight tabular-nums">
           {prog.total === 0 ? (
             "作戦はまだ"
           ) : prog.allDone ? (
             <b>{prog.defeatedAt ? `${prog.defeatedAt} ` : ""}すべて完了！</b>
           ) : (
             <>
-              <b className="text-base">{prog.done}</b> / {prog.total} 軒 ・ あと <b className="text-base">{prog.left}</b> 軒
+              <b className="text-base">{prog.done}</b>/{prog.total}軒 ・ あと<b className="text-base">{prog.left}</b>軒
             </>
           )}
         </span>
       </div>
-      <span className="mt-1 block h-2.5 overflow-hidden rounded-full bg-ice-soft">
-        <span className="block h-full rounded-full bg-ice transition-[width] duration-700" style={{ width: `${hpPct}%` }} />
-      </span>
     </div>
   );
 
