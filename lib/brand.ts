@@ -46,8 +46,8 @@ export const ICONS: Record<IconName, string> = {
   chat: `<path d="M16 22 H84 a6 6 0 0 1 6 6 V62 a6 6 0 0 1 -6 6 H46 L28 84 V68 H16 a6 6 0 0 1 -6 -6 V28 a6 6 0 0 1 6 -6 Z" ${st(7, A)}/><circle cx="32" cy="45" r="5" fill="currentColor"/><circle cx="50" cy="45" r="5" fill="currentColor"/><circle cx="68" cy="45" r="5" fill="currentColor"/>`,
   // 要望・バグ報告: 封筒
   letter: `<rect x="12" y="24" width="76" height="54" rx="8" ${st()}/><path d="M14 28 L50 56 L86 28" ${st(7)}/><circle cx="78" cy="26" r="11" ${st(5, A)}/>`,
-  // バグ報告: 小さな虫
-  bug: `<ellipse cx="50" cy="58" rx="22" ry="26" ${st(7, A)}/><path d="M50 36 V84" ${st(5)}/><circle cx="50" cy="26" r="10" ${st(6)}/><path d="M42 18 L34 8 M58 18 L66 8 M28 50 H14 M72 50 H86 M30 68 L16 78 M70 68 L84 78" ${st(6)}/>`,
+  // バグ報告: 注意の三角
+  bug: `<path d="M50 12 L90 82 a4 4 0 0 1 -4 6 H14 a4 4 0 0 1 -4 -6 Z" ${st(7, A)}/><path d="M50 38 V60" ${st(8)}/><circle cx="50" cy="73" r="5" fill="currentColor"/>`,
   // 要望: 電球
   idea: `<path d="M50 12 c-17 0 -28 12 -28 27 c0 11 7 17 11 24 c2 3 3 6 3 9 H64 c0 -3 1 -6 3 -9 c4 -7 11 -13 11 -24 c0 -15 -11 -27 -28 -27 Z" ${st(7, A)}/><path d="M38 82 H62 M42 92 H58" ${st(7)}/>`,
   // 分からない: 吹き出しのはてな
