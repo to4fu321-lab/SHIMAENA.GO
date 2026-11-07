@@ -13,6 +13,7 @@ import { CHILD_NOTE, TODAY_MODES, type TodayMode } from "@/lib/nakama/rules";
 import { cheerRequestMessage, inviteMessage, lineShareUrl } from "@/lib/share-links";
 import { play } from "@/lib/sound/engine";
 import BatonFeed from "./BatonFeed";
+import HelpButton from "./HelpPopup";
 import Mascot from "./Mascot";
 import Pager from "./Pager";
 import SnsShare, { type ShareOption } from "./SnsShare";
@@ -185,7 +186,11 @@ export default function ConnectScreen({
               {incoming > 0 ? `📩 届いた誘いが ${incoming}件 ›` : `🎉 決まった合流が ${matched}件 ›`}
             </Link>
           )}
-          <h2 className="shrink-0 pt-1 text-lg font-bold">今日はどうする？</h2>
+          <div className="flex shrink-0 items-center justify-between pt-1">
+            <h2 className="text-lg font-bold">今日はどうする？</h2>
+            {/* 「なかまとは？」の説明（ポップアップ。11/7） */}
+            <HelpButton topic="nakama" label="なかまとは" />
+          </div>
           <div className="grid shrink-0 grid-cols-2 gap-2">
             {TODAY_MODES.map((m) => {
               const on = nakama.mode === m.id && (nakama.active || m.id === "solo");
