@@ -9,6 +9,7 @@ import { push } from "../line/client";
 import { MSG } from "../line/messages";
 import { loadMorning } from "../morning/store";
 import { loadRoster, type Roster } from "../morning/roster";
+import { mutualWavesOf } from "../mypage/ops";
 import { appToday } from "../morning/today";
 import { isNight, nightRefusal } from "../night";
 import { repo } from "../repo";
@@ -188,7 +189,7 @@ export async function nakamaView(participantId: string, now: Date): Promise<Naka
   const blocked = await blockedNow(now);
   const mode = activeMode(pref, today, now);
   const nameOf = (id: string) => roster.participants.find((p) => p.id === id)?.nickname ?? "仲間";
-  const companions = await companionsOf(me.id, history);
+  const [companions, mutualWaves] = await Promise.all([companionsOf(me.id, history), mutualWavesOf(me.id, now)]);
 
   let candidates: NakamaView["candidates"] = [];
   let nudge: string | undefined;
@@ -211,9 +212,15 @@ export async function nakamaView(participantId: string, now: Date): Promise<Naka
       companions,
       meets,
       excluded: excludedFor(me.id, history, today, now, addDays(today, -7)),
+      mutualWaves,
     });
     // 呼び名は「前回の仲間」だけ（もうカードで知っている）。新しい人は成立するまで出さない
-    candidates = picked.map((c) => ({ participantId: c.participantId, kind: c.kind, label: c.label, ...(c.kind === "reunion" ? { name: nameOf(c.participantId) } : {}) }));
+    candidates = picked.map((c) => ({
+      participantId: c.participantId,
+      kind: c.kind,
+      label: c.kind === "reunion" && mutualWaves.has(c.participantId) ? "おたがいに「また一緒に」と手をふった仲間" : c.label,
+      ...(c.kind === "reunion" ? { name: nameOf(c.participantId) } : {}),
+    }));
     nudge = oftenNudge(mode, picked, meets);
     if (pref?.nextWish === "reunion" && picked.some((c) => c.kind === "reunion")) wishLine = "前回「また一緒に」を選びました。前回の仲間が、今日も参加しています。";
     if (pref?.nextWish === "new" && picked.some((c) => c.kind !== "reunion")) wishLine = "前回「新しい人と」を選びました。今日は新しい仲間と活動してみませんか？";

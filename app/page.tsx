@@ -9,6 +9,8 @@ import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import Icon from "@/components/Icon";
 import Mascot from "@/components/Mascot";
+import Avatar from "@/components/Avatar";
+import { getProfile } from "@/lib/mypage/store";
 import CaptainStage from "@/components/CaptainStage";
 import SkyBackdrop from "@/components/SkyBackdrop";
 import TabBar from "@/components/TabBar";
@@ -89,6 +91,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
+  // 左上の鳥は、マイページ（spec v1.31）のアイコン。押すとマイページ（アイコン・紹介・なかま帳）
+  const myIcon = me ? await getProfile(me.id).catch(() => undefined) : undefined;
   // 本人の記録・夜の人数・応援は互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
   const now = new Date();
   const night = !open;
@@ -158,9 +162,15 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       <StormBanner />
       {/* 上: ロゴ・ひとこと・くわしく */}
       <header className="flex shrink-0 flex-wrap items-center gap-x-2 bg-ice-soft px-4 pt-3 short:pt-1.5" style={myTeam ? { background: myTeam.soft } : undefined}>
-        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
-          <Mascot size={40} team={myTeam?.team.id} />
-        </span>
+        {me ? (
+          <Link href={`/me${q}`} aria-label="マイページ（アイコン・紹介・なかま帳）" className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
+            {myIcon && myIcon.icon !== "bird" ? <Avatar icon={myIcon.icon} bg={myIcon.iconBg} size={44} ring={false} /> : <Mascot size={40} team={myTeam?.team.id} />}
+          </Link>
+        ) : (
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
+            <Mascot size={40} team={myTeam?.team.id} />
+          </span>
+        )}
         <div className="min-w-0 flex-1 leading-tight">
           <h1 className="whitespace-nowrap text-2xl font-bold max-[400px]:text-xl">
             シマエナ<span className="text-lamp-deep">GO</span>

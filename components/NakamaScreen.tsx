@@ -44,6 +44,9 @@ export default function NakamaScreen({ viewerId, view, q, initialTab }: { viewer
           仲間 {view.companions}人・合流 {view.meets}回・ありがとう {view.thanksForMe}
         </p>
       </div>
+      <Link href={`/me?tab=1${q ? `&${q.slice(1)}` : ""}`} className="btn btn-white ml-auto min-h-10 shrink-0 px-3 text-sm">
+        📒 なかま帳
+      </Link>
     </div>
   );
 

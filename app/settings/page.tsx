@@ -91,6 +91,9 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
             {me.clearArea && <Row label="雪かきが必要なところ" value={AREA[me.clearArea]} />}
             {me.soloMinutes && <Row label="ひとりでかかる時間" value={me.soloMinutes === "unknown" ? "わからない" : `${me.soloMinutes}分くらい`} />}
           </dl>
+          <Link href={`/me${q}`} className="btn btn-white mt-2 w-full text-lg">
+            🐦 マイページ（アイコン・紹介・なかま帳）
+          </Link>
           <p className="mt-2 text-sm text-ink-soft">家の場所は、地図には 50m のマスでしか出ません。名前や住所は出ません。</p>
         </section>
       ) : (
