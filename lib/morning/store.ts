@@ -1,6 +1,7 @@
 // 「今朝の状態」の保存先。DATABASE_URL があれば Neon の morning_state 表に JSON でまるごと置く。
 // ない間はサーバーのメモリに持つ（開発用。Vercel ではリクエストごとに別のサーバーになるので DB が要る）。
 import { hasDb, query } from "../db";
+import { memoClear, memoPut, memoRead } from "../db/memo";
 import { isDeployed } from "../env";
 import { recordProblem } from "../ops/problems";
 import type { MorningRecord } from "./flow";
@@ -35,12 +36,19 @@ function fallback(e: unknown): void {
   console.error("[morning/store] DB に保存できないのでメモリで続けます:", e instanceof Error ? e.message : e);
 }
 
+/** 同じリクエストの中では1回だけ DB から読む（lib/db/memo.ts）。保存すれば置き換え、claimPlanning のあとは読み直す */
+const MEMO = "morning:current";
+
 /** いまの状態を読む。DB に行がなければ見本の状態を入れて返す */
 export async function loadMorning(): Promise<MorningRecord> {
   if (!hasDb()) {
     g.__shimaenaMorning ??= initial();
     return g.__shimaenaMorning;
   }
+  return memoRead(MEMO, loadMorningFromDb);
+}
+
+async function loadMorningFromDb(): Promise<MorningRecord> {
   try {
     const rows = await query<{ state: MorningRecord }>("select state from morning_state where key = $1", [KEY]);
     if (rows[0]) return rows[0].state;
@@ -65,6 +73,7 @@ export async function saveMorning(next: MorningRecord): Promise<void> {
        on conflict (key) do update set state = excluded.state, updated_at = now()`,
       [KEY, JSON.stringify(next)],
     );
+    memoPut(MEMO, next);
   } catch (e) {
     fallback(e);
     g.__shimaenaMorning = next;
@@ -88,6 +97,7 @@ export async function claimPlanning(): Promise<boolean> {
        where key = $1 and state #>> '{morning,rollcall,status}' = 'open' returning key`,
       [KEY],
     );
+    memoClear(MEMO); // DB を直接変えたので、同じリクエストの次の loadMorning は読み直す
     return rows.length > 0;
   } catch (e) {
     fallback(e);

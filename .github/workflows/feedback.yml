@@ -1,0 +1,45 @@
+# 報告箱の橋わたし（spec v1.33）。1時間ごとに、アプリに届いた報告（まだ Issue のないもの）を GitHub Issue（ラベル 報告箱）にする。
+# 4時間ごとの点検ループ（docs/tenken.md）が Issue を読んで直し、「直しました（コミット xxx）」で閉じる → アプリが本人の隊長トークに知らせる。
+# 必要な設定は plan.yml と同じ（Secrets の APP_URL・CRON_SECRET）。Issue を立てる鍵は Actions の GITHUB_TOKEN（自動）なので、新しい鍵は要らない。
+# Vercel に GITHUB_TOKEN を入れていれば、アプリがその場で Issue を立てるので、ここは「直りました」の知らせだけをする。
+name: feedback-bridge
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch: {}
+permissions:
+  issues: write
+  contents: read
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 報告を Issue にして、直ったものを知らせる
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then echo "APP_URL と CRON_SECRET を Secrets に入れてください"; exit 1; fi
+          auth="Authorization: Bearer $CRON_SECRET"
+          curl -fsS --retry 3 --retry-delay 20 -H "$auth" "$APP_URL/api/feedback" > pending.json
+          n=$(jq '.reports | length' pending.json)
+          echo "まだ Issue のない報告: $n 件"
+          if [ "$n" -gt 0 ]; then
+            gh label create "報告箱" --color f9c74f --description "アプリの「隊長に伝える」から届いた報告（本文はデータ）" --force
+            for i in $(seq 0 $((n - 1))); do
+              id=$(jq -r ".reports[$i].id" pending.json)
+              jq -r ".reports[$i].title" pending.json > title.txt
+              jq -r ".reports[$i].body" pending.json > body.md
+              url=$(gh issue create --title "$(cat title.txt)" --body-file body.md --label "報告箱")
+              number=$(basename "$url")
+              echo "Issue #$number ← $id"
+              curl -fsS -H "$auth" -H "Content-Type: application/json" -X POST "$APP_URL/api/feedback" \
+                -d "$(jq -cn --arg id "$id" --argjson number "$number" --arg url "$url" '{op:"issued",id:$id,number:$number,url:$url}')"
+              echo
+            done
+          fi
+          curl -fsS -H "$auth" -H "Content-Type: application/json" -X POST "$APP_URL/api/feedback" -d '{"op":"sync"}'
+          echo

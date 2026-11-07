@@ -39,10 +39,14 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   const thanks = myMissionId ? record.thanks?.[myMissionId] : undefined;
   // ソロ出動の足あと（今日）。表がまだなければ出さない（画面は止めない）
   const today = appToday(record);
-  const solo = soloCells(await repo().listSoloLogsBetween(today, today).catch(() => []));
-  // 道の危険（24時間以内）。表がまだなければ出さない
+  // 道の危険（24時間以内）。表がまだなければ出さない。足あとと同時に読む（11/7: 画面を待たせない）
   const now = new Date();
-  const road = (await listRoadReportsSince(new Date(now.getTime() - SHOW_MS).toISOString()).catch(() => [])).flatMap((r) => {
+  const [soloLogs, roadRows] = await Promise.all([
+    repo().listSoloLogsBetween(today, today).catch(() => []),
+    listRoadReportsSince(new Date(now.getTime() - SHOW_MS).toISOString()).catch(() => []),
+  ]);
+  const solo = soloCells(soloLogs);
+  const road = roadRows.flatMap((r) => {
     const h = hazard(r.hazard);
     return h ? [{ id: r.id, hazard: h.id, emoji: h.emoji, label: h.label, location: r.location, ago: agoText(r.at, now), fresh: now.getTime() - Date.parse(r.at) < 2 * 3600_000, note: r.note }] : [];
   });

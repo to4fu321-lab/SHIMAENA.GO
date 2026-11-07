@@ -40,11 +40,13 @@ export default function NakamaScreen({ viewerId, view, q, initialTab }: { viewer
       </Link>
       <div className="min-w-0">
         <h1 className="text-2xl font-bold leading-tight">👥 なかま</h1>
-        <p className="truncate text-sm text-ink-soft">
-          仲間 {view.companions}人・合流 {view.meets}回・ありがとう {view.thanksForMe}
+        <p className="text-sm leading-tight text-ink-soft">
+          <span className="inline-block">仲間 {view.companions}・</span>
+          <span className="inline-block">合流 {view.meets}・</span>
+          <span className="inline-block">ありがとう {view.thanksForMe}</span>
         </p>
       </div>
-      <Link href={`/me?tab=1${q ? `&${q.slice(1)}` : ""}`} className="btn btn-white ml-auto min-h-10 shrink-0 px-3 text-sm">
+      <Link href={`/me?tab=1${q ? `&${q.slice(1)}` : ""}`} className="btn btn-white ml-auto min-h-10 shrink-0 px-2 text-sm">
         📒 なかま帳
       </Link>
     </div>
