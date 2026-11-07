@@ -12,6 +12,11 @@ export const AIVIS_VOICES: Readonly<Record<string, string>> = {
   "22e8ed77-94fe-4ef2-871f-a86f94e9a579": "AivisSpeech: コハク",
   "1b2830f4-8cf1-4184-a0d9-3a1bace3a844": "AivisSpeech: みちのくあいり",
   "ed0f793d-786c-4fde-8561-e8bbac7bfe1d": "AivisSpeech: 六弦エレキ",
+  "e9339137-2ae3-4d41-9394-fb757a7e61e6": "AivisSpeech: まい",
+  "a670e6b8-0852-45b2-8704-1bc9862f2fe6": "AivisSpeech: 花音",
+  "f5017410-fbb5-49e1-97cb-e785f42e15f5": "AivisSpeech: 凛音エル",
+  "4f281e78-eba6-495a-8e50-5c322d02b5b1": "AivisSpeech: るな",
+  "3328da9a-8124-4619-a853-f7fc2f37889f": "AivisSpeech: 桜音",
 };
 
 /** 既定の声: コハク（子猫のような甘い声）。本人が試聴して決めたら差しかえる */
