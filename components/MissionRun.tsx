@@ -1,12 +1,15 @@
 "use client";
 
 // ミッション実施中の画面: タイマーで進みを見せ、写真やひとことで報告してからクリアにする。
+// v1.31（スマートウォッチ）: 現地のミッションには「動きを数える」（スコップカウンター）と、対応の時計の心拍の札。
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { SoloMission } from "@/lib/solo/missions";
 import { shrink } from "./shrink";
 import { play } from "@/lib/sound/engine";
 import CheerCall from "./CheerCall";
+import HeartRateChip from "./HeartRateChip";
+import ShovelMeter from "./ShovelMeter";
 
 const HINT: Record<string, string> = {
   patrol: "例: 角の道が凍っていた",
@@ -29,6 +32,7 @@ export default function MissionRun({
   onBefore,
   onReport,
   onQuit,
+  strokesKey,
 }: {
   mission: SoloMission;
   startedAt: number;
@@ -37,9 +41,21 @@ export default function MissionRun({
   /** Before 写真（自分の家の雪かき）。data URL */
   before?: string;
   onBefore?: (dataUrl: string) => void;
-  onReport: (file: File | undefined, note: string) => void;
+  onReport: (file: File | undefined, note: string, strokes?: number) => void;
   onQuit: () => void;
+  /** v1.31: スコップカウンターの回数を覚える鍵（現地のミッションだけ出す） */
+  strokesKey?: string;
 }) {
+  const [strokes, setStrokes] = useState(0);
+  // 動きを数える行＋心拍の札（現地だけ。道の報告は別の画面）
+  const watchRow = mission.onsite && strokesKey ? (
+    <div className="flex items-stretch gap-2">
+      <div className="min-w-0 flex-1">
+        <ShovelMeter storageKey={strokesKey} startedAt={startedAt} onChange={setStrokes} />
+      </div>
+      <HeartRateChip />
+    </div>
+  ) : null;
   const [now, setNow] = useState(() => Date.now());
   const [file, setFile] = useState<File | undefined>();
   const [preview, setPreview] = useState<string | null>(null);
@@ -95,6 +111,7 @@ export default function MissionRun({
         <b className="text-3xl tabular-nums" aria-label={`経過 ${mmss}`}>{mmss}</b>
         <span className="text-sm font-bold leading-snug text-ink-soft">時間は自由。<br />終わるまでやろう！</span>
       </div>
+      {watchRow}
       <p className="text-base font-bold">
         {!before ? "① まずは今の雪を撮ろう（積もった姿を記録）" : !file ? "② 終わったら、キレイになった所を撮ろう" : "③ 報告してクリア！"}
       </p>
@@ -127,7 +144,7 @@ export default function MissionRun({
       </div>
       <button
         disabled={pending || !ready}
-        onClick={() => onReport(file, note.trim())}
+        onClick={() => onReport(file, note.trim(), strokes)}
         className={`btn btn-lamp w-full whitespace-nowrap rounded-full text-lg ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
       >
         {pending ? "報告中…" : ready ? "報告してクリア！" : !before ? "Before を撮ろう" : "終わったら After を撮ろう"}
@@ -161,6 +178,7 @@ export default function MissionRun({
         </p>
       </div>
 
+      {watchRow}
       {/* ② 報告 */}
       <p className="text-sm font-bold">② {canPhoto ? "写真かひとことで報告" : "ひとことで報告"}</p>
       <div className="flex items-center gap-2">
@@ -190,7 +208,7 @@ export default function MissionRun({
       </div>
       <button
         disabled={pending || !ready}
-        onClick={() => onReport(file, note.trim())}
+        onClick={() => onReport(file, note.trim(), strokes)}
         className={`btn btn-lamp w-full whitespace-nowrap rounded-full text-lg ${ready && !pending ? "ready-pulse" : "opacity-50"}`}
       >
         {pending ? "報告中…" : ready ? "報告してクリア！" : canPhoto ? "写真かひとことを入れてね" : "ひとことを入れてね"}

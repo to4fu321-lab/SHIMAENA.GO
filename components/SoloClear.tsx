@@ -169,6 +169,13 @@ export default function SoloClear({
             {s.snowKgBasis && <p className="text-xs text-ink-soft">推定: {s.snowKgBasis}</p>}
           </div>
         )}
+        {s.strokes !== undefined && s.strokes > 0 && (
+          // v1.31 スコップカウンター（スマホのセンサーで数えた回数。得点には入れない）
+          <p className="pop-late text-center text-base font-bold">
+            ⛏ スコップ <span className="text-2xl tabular-nums">{s.strokes}</span>回
+            <span className="block text-xs font-normal text-ink-soft">スマホのセンサーで数えた「ザクッ」の回数</span>
+          </p>
+        )}
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
           <div className="rounded-2xl bg-card px-2 py-1.5 ring-1 ring-ink/10">
             <p className="font-bold">今日</p>

@@ -210,9 +210,10 @@ interface SoloLogRow {
   photo_checked: boolean | null;
   cell_key: string | null;
   mission_id: string | null;
+  strokes: number | null;
   at: string;
 }
-const SOLO_COLS = "id, participant_id, date, kind, onsite, feathers, note, hitokoto, photo_checked, cell_key, mission_id, at";
+const SOLO_COLS = "id, participant_id, date, kind, onsite, feathers, note, hitokoto, photo_checked, cell_key, mission_id, strokes, at";
 function rowToSoloLog(r: SoloLogRow): SoloLog {
   const l: SoloLog = {
     id: r.id,
@@ -228,6 +229,7 @@ function rowToSoloLog(r: SoloLogRow): SoloLog {
   if (r.photo_checked != null) l.photoChecked = r.photo_checked;
   if (r.cell_key) l.cellKey = r.cell_key;
   if (r.mission_id) l.missionId = r.mission_id;
+  if (r.strokes != null) l.strokes = Number(r.strokes);
   return l;
 }
 
@@ -239,12 +241,12 @@ const dbSoloMethods: Pick<Repo, "countCards" | "insertSoloLog" | "listSoloLogsBy
   async insertSoloLog(log) {
     // 一意 index（solo_logs_once）に当たれば入らない → false
     const rows = await query<{ id: string }>(
-      `insert into solo_logs (id, participant_id, date, kind, onsite, feathers, note, hitokoto, photo_checked, cell_key, mission_id, at)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `insert into solo_logs (id, participant_id, date, kind, onsite, feathers, note, hitokoto, photo_checked, cell_key, mission_id, strokes, at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        on conflict do nothing returning id`,
       [
         log.id, log.participantId, log.date, log.kind, log.onsite, log.feathers, log.note ?? null, log.hitokoto ?? null,
-        log.photoChecked ?? null, log.cellKey ?? null, log.missionId ?? null, log.at,
+        log.photoChecked ?? null, log.cellKey ?? null, log.missionId ?? null, log.strokes ?? null, log.at,
       ],
     );
     return rows.length > 0;
