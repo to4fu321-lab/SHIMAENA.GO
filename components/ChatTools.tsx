@@ -76,13 +76,16 @@ function getPlayer(): HTMLAudioElement | null {
 export function primeCaptainVoice(): void {
   if (primed) return;
   const a = getPlayer();
-  if (a) {
+  if (a && !a.paused) {
+    primed = true; // もう鳴っている（声の途中）: 止めない
+  } else if (a) {
     try {
       a.src = SILENT_WAV;
       const p = a.play();
       primed = true;
-      void p?.catch(() => {
-        primed = false; // 次のタップでもう一度
+      void p?.catch((e: unknown) => {
+        // 中身を替えて中断された（AbortError）のは「鳴らせた」のと同じ。許されなかったときだけ次のタップでもう一度
+        if ((e as { name?: string })?.name === "NotAllowedError") primed = false;
       });
     } catch {
       /* 次のタップでもう一度 */
@@ -110,11 +113,30 @@ export function stopCaptainVoice(): void {
   if (canSpeak()) window.speechSynthesis.cancel();
 }
 
-/** /api/voice の mp3 を <audio> で鳴らす。鳴り始めたら true、作れなかった（混んでいる・切ってある）ら false */
-function playVoicevox(text: string): Promise<boolean> {
+/** 前に作った声の URL（端末の中の blob）。新しい声に替えたら捨てる */
+let blobUrl: string | null = null;
+
+/**
+ * /api/voice の mp3 を <audio> で鳴らす。鳴り始めたら true、作れなかった（混んでいる・切ってある）ら false。
+ * mp3 は fetch で丸ごと受け取り、端末の中の URL（blob）にしてから <audio> に渡す（11/7 本人の指摘「機械音しか出ない」）:
+ * iPhone の Safari は <audio> にサーバーの URL を渡すと、ファイルを少しずつ分けて取りに行く。毎回作る新しい声ではそれに答えられず、
+ * 再生をあきらめてブラウザの声に回っていた。丸ごと受け取れば、分けた頼み方は起きない
+ */
+async function playVoicevox(text: string): Promise<boolean> {
   const a = getPlayer();
-  if (!a || voiceAvailable === false) return Promise.resolve(false);
+  if (!a || voiceAvailable === false) return false;
   const my = ++serial;
+  const res = await fetch(`/api/voice?text=${encodeURIComponent(text.slice(0, 200))}`, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
+  if (my !== serial) return true; // 新しい読み上げが来ていたら、こちらは黙る（失敗ではない）
+  if (!res || !res.ok) {
+    if (res?.status === 404) voiceAvailable = false; // 切ってある
+    return false;
+  }
+  const blob = await res.blob().catch(() => null);
+  if (my !== serial) return true;
+  if (!blob || blob.size === 0) return false;
+  if (blobUrl) URL.revokeObjectURL(blobUrl);
+  blobUrl = URL.createObjectURL(new Blob([blob], { type: "audio/mpeg" }));
   return new Promise((resolve) => {
     let done = false;
     const finish = (ok: boolean) => {
@@ -129,12 +151,11 @@ function playVoicevox(text: string): Promise<boolean> {
       voiceAvailable = true;
       finish(true);
     };
-    const onError = () => finish(my !== serial); // 新しい読み上げが来ていたら、こちらは黙る（失敗ではない）
-    // 声ができるまで最大 15 秒待つ（サーバーは 12 秒であきらめる）
-    const timer = window.setTimeout(() => finish(my !== serial), 15_000);
+    const onError = () => finish(my !== serial);
+    const timer = window.setTimeout(() => finish(my !== serial), 5_000);
     a.addEventListener("playing", onPlaying);
     a.addEventListener("error", onError);
-    a.src = `/api/voice?text=${encodeURIComponent(text.slice(0, 200))}`;
+    a.src = blobUrl!;
     a.volume = 1;
     void a.play().catch(() => finish(my !== serial));
   });

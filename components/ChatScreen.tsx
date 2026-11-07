@@ -20,6 +20,7 @@ import Mascot from "./Mascot";
 import MicButton from "./MicButton";
 import { shrink } from "./shrink";
 import { play } from "@/lib/sound/engine";
+import { freshCaptainText } from "@/lib/chat/speak";
 import type { ReactNode } from "react";
 
 const POLL_SECONDS = 6;
@@ -91,7 +92,8 @@ export default function ChatScreen({
   const [size, setSize] = useState<TextSize>("m");
   const [speakOn, setSpeakOn] = useState(false);
   const [listening, setListening] = useState(false);
-  const spoken = useRef<string | undefined>(undefined);
+  /** すでに見た隊長の吹き出しの id（新しく届いた分だけを読むため。lib/chat/speak.ts） */
+  const seenCaptain = useRef<Set<string> | undefined>(undefined);
   useEffect(() => {
     // 端末に覚えた設定は、画面が出たあとに読む
     let alive = true;
@@ -126,16 +128,9 @@ export default function ChatScreen({
   useEffect(() => {
     const el = list.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    const last = bubbles.at(-1);
-    if (spoken.current === undefined) {
-      spoken.current = last?.id ?? "";
-      return;
-    }
-    if (speakOn && last && last.from === "captain" && last.id !== spoken.current) {
-      const fresh = bubbles.slice(bubbles.findIndex((b) => b.id === spoken.current) + 1).filter((b) => b.from === "captain");
-      speakCaptain(fresh.map((b) => b.text ?? b.lines?.filter((l) => !l.steps).map((l) => l.text).join("。") ?? "").join("。"), lang); // 「隊長が調べた」札（絵文字の並び）は読まない
-    }
-    spoken.current = last?.id ?? "";
+    const r = freshCaptainText(bubbles, seenCaptain.current);
+    seenCaptain.current = r.seen;
+    if (speakOn && r.text) speakCaptain(r.text, lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastId]);
 
