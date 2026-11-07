@@ -6,55 +6,74 @@
 <title>撮影ステージ</title>
 <!--
   デモ動画の撮影用: 仮想スマホを横に並べて、画面収録で1度に撮る。
-  使い方: このファイルをパソコンの Chrome で開く（ダブルクリック）。各スマホの上のボタンで画面を切りかえる。
-  ?as=h1 のような架空の人の画面なので、ログインは要らない（公開版は DEMO_MODE が on のとき）。
+  使い方: このファイルをパソコンの Chrome で開く（ダブルクリック）。
+  - 各スマホの上のボタン、または「全部」の列で画面を切りかえる。
+  - キーボード: 1〜4 で全部のスマホを切りかえ（1 隊長トーク・2 地図・3 ホーム・4 つなぐ）、H でボタンを隠す／戻す、R で全部読み直す。
+  - ?as=h1 のような架空の人の画面なので、ログインは要らない（公開版は DEMO_MODE が on のとき）。
 -->
 <style>
-  :root { --bg: #29445C; --ink: #F4F7FA; --lamp: #D9825B; --card: #F5EEE5; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1b2d3d; } }
-  :root[data-theme="dark"] { --bg: #1b2d3d; }
+  :root { --bg: #1e3346; --bg2: #29445c; --ink: #f4f7fa; --soft: #b7c7d6; --lamp: #d9825b; --card: #f5eee5; --frame: #0d1620; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16283a; --bg2: #1e3346; } }
+  :root[data-theme="dark"] { --bg: #16283a; --bg2: #1e3346; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; }
-  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; }
-  header h1 { font-size: 18px; margin: 0; }
-  header input { width: 320px; max-width: 100%; font-size: 14px; padding: 4px 8px; border-radius: 6px; border: 0; }
-  header label { font-size: 14px; }
-  .hide-ui header, .hide-ui .bar { display: none; }
-  .stage { display: flex; gap: 20px; justify-content: center; align-items: flex-start; padding: 8px 16px 16px; flex-wrap: wrap; }
-  .phone { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .name { font-size: 18px; font-weight: bold; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: radial-gradient(120% 90% at 50% 0%, var(--bg2) 0%, var(--bg) 70%); color: var(--ink); font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 16px; background: rgba(0,0,0,.18); backdrop-filter: blur(6px); }
+  header h1 { font-size: 17px; margin: 0 6px 0 0; letter-spacing: .04em; }
+  header label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--soft); }
+  header input[type=text] { width: 300px; max-width: 100%; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 0; background: #fff; color: #29445c; }
+  header input[type=range] { width: 120px; accent-color: var(--lamp); }
+  .all { display: inline-flex; gap: 4px; align-items: center; margin-left: auto; }
+  .all span { font-size: 13px; color: var(--soft); margin-right: 2px; }
+  .btn { font-size: 13px; padding: 6px 10px; border-radius: 999px; border: 0; background: var(--card); color: #29445c; cursor: pointer; font-weight: 700; line-height: 1; }
+  .btn:hover { filter: brightness(.96); }
+  .btn.on, .btn.lamp { background: var(--lamp); color: #fff; }
+  .btn.ghost { background: rgba(255,255,255,.12); color: var(--ink); }
+  kbd { font: 700 11px/1 ui-monospace, monospace; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,.18); margin-left: 4px; }
+  .hide-ui header, .hide-ui .bar, .hide-ui .hint { display: none; }
+  .hide-ui .stage { padding-top: 20px; }
+  .stage { display: flex; gap: 22px; justify-content: center; align-items: flex-start; padding: 14px 16px 24px; flex-wrap: wrap; }
+  .phone { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .name { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; padding: 5px 12px 5px 8px; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); }
+  .name .tag { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 13px; font-weight: 900; color: #fff; background: var(--team, #4a6076); }
+  .name small { font-weight: 400; color: var(--soft); font-size: 12px; }
   .bar { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 390px; }
-  .bar button { font-size: 13px; padding: 4px 8px; border-radius: 999px; border: 0; background: var(--card); color: #29445C; cursor: pointer; }
-  .bar button.on { background: var(--lamp); color: #fff; }
-  .frame { box-sizing: content-box; width: calc(390px * var(--s)); height: calc(844px * var(--s)); border-radius: calc(36px * var(--s)); overflow: hidden; border: 6px solid #0d1620; background: #fff; }
-  iframe { width: 390px; height: 844px; border: 0; transform: scale(var(--s)); transform-origin: 0 0; }
+  .frame { position: relative; box-sizing: content-box; width: calc(390px * var(--s)); height: calc(844px * var(--s)); border-radius: calc(44px * var(--s)); overflow: hidden; border: calc(8px * var(--s)) solid var(--frame); background: #fff; box-shadow: 0 24px 50px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08); }
+  iframe { width: 390px; height: 844px; border: 0; transform: scale(var(--s)); transform-origin: 0 0; background: #f4f7fa; }
+  .hint { text-align: center; font-size: 12px; color: var(--soft); padding: 0 16px 16px; }
 </style>
 </head>
-<body style="--s: 0.9">
+<body style="--s: 0.8">
 <header>
   <h1>🎬 撮影ステージ</h1>
-  <label>アプリの URL <input id="base" value="https://shimaena-go.vercel.app"></label>
-  <label>大きさ <input id="scale" type="range" min="0.6" max="1" step="0.05" value="0.9" style="width:120px"></label>
-  <button id="hide">ボタンを隠す（撮影用。Esc で戻す）</button>
+  <label>アプリの URL <input id="base" type="text" value="https://shimaena-go.vercel.app"></label>
+  <label>大きさ <input id="scale" type="range" min="0.6" max="1" step="0.05" value="0.8"></label>
+  <button class="btn ghost" id="reload" title="全部読み直す（R）">↻ 読み直す<kbd>R</kbd></button>
+  <div class="all" id="all"><span>全部:</span></div>
+  <button class="btn lamp" id="hide" title="H でも切りかえ">ボタンを隠す<kbd>H</kbd></button>
 </header>
 <div class="stage" id="stage"></div>
+<p class="hint">キーボード: <b>1</b> 隊長トーク ・ <b>2</b> 地図 ・ <b>3</b> ホーム ・ <b>4</b> つなぐ（全部まとめて切りかえ） ・ <b>H</b> ボタンを隠す／戻す ・ <b>R</b> 読み直す</p>
 <script>
   // 4台: A・B は別のチームの手伝う人、C はお願いする家の人、右端は町の地図。
   // 配役は lib/demo-cast.ts と同じにする（C の家＝拠点7 は A・B の両方に最初の「助けて」が届く距離。/admin の 4・5 はこの3人を動かさない）
+  // 札の色はチーム色（data/teams.json: サルビア #2F6FE4・マリーゴールド #FF8A3D・ルピナス #9B5DE5）。
   const PHONES = [
-    { name: "A 田中さん（手伝う・サルビア）", as: "h1", start: "/chat" },
-    { name: "B そうたさん（手伝う・マリーゴールド）", as: "h11", start: "/chat" },
-    { name: "C 小林さん（お願いする家・拠点7）", as: "r7", start: "/chat" },
-    { name: "町の地図", as: "h1", start: "/map" },
+    { tag: "A", name: "田中さん", sub: "手伝う・サルビア", team: "#2F6FE4", as: "h1", start: "/chat" },
+    { tag: "B", name: "そうたさん", sub: "手伝う・マリーゴールド", team: "#FF8A3D", as: "h11", start: "/chat" },
+    { tag: "C", name: "小林さん", sub: "お願いする家・拠点7", team: "#7d4f68", as: "r7", start: "/chat" },
+    { tag: "町", name: "町の地図", sub: "全員の動き", team: "#29445c", as: "h1", start: "/map" },
   ];
   const PAGES = [["隊長トーク", "/chat"], ["地図", "/map"], ["ホーム", "/"], ["お願いする", "/ask"], ["声のありがとう", "/thanks/m-base7"], ["カード", "/cards"], ["つなぐ", "/connect"]];
+  const KEYS = { "1": "/chat", "2": "/map", "3": "/", "4": "/connect" };
   const stage = document.getElementById("stage");
   const base = () => document.getElementById("base").value.replace(/\/$/, "");
   const url = (p, path) => `${base()}${path}${path.includes("?") ? "&" : "?"}as=${p.as}`;
   PHONES.forEach((p) => {
     const el = document.createElement("div");
     el.className = "phone";
-    el.innerHTML = `<div class="name">${p.name}</div><div class="bar"></div><div class="frame"><iframe allow="microphone; camera; autoplay; clipboard-write"></iframe></div>`;
+    el.style.setProperty("--team", p.team);
+    el.innerHTML = `<div class="name"><span class="tag">${p.tag}</span>${p.name}<small>${p.sub}</small></div><div class="bar"></div><div class="frame"><iframe allow="microphone; camera; autoplay; clipboard-write" title="${p.tag} ${p.name}"></iframe></div>`;
     const frame = el.querySelector("iframe");
     const bar = el.querySelector(".bar");
     const go = (path) => {
@@ -63,19 +82,43 @@
     };
     PAGES.forEach(([label, path]) => {
       const b = document.createElement("button");
+      b.className = "btn";
       b.textContent = label;
       b.dataset.path = path;
       b.onclick = () => go(path);
       bar.append(b);
     });
     p.go = go;
+    p.current = () => (frame.src || "").replace(base(), "").split("?")[0] || p.start;
+    p.reload = () => { frame.src = frame.src; };
     go(p.start);
     stage.append(el);
   });
+  // 「全部:」の列: 4台まとめて切りかえ（地図のスマホは地図のまま）
+  const all = document.getElementById("all");
+  const goAll = (path) => PHONES.forEach((p) => p.go(p.start === "/map" && path !== "/map" ? "/map" : path));
+  [["隊長トーク", "/chat"], ["地図", "/map"], ["ホーム", "/"], ["つなぐ", "/connect"]].forEach(([label, path], i) => {
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.innerHTML = `${label}<kbd>${i + 1}</kbd>`;
+    b.onclick = () => goAll(path);
+    all.append(b);
+  });
+  const toggleUi = () => {
+    const on = document.body.classList.toggle("hide-ui");
+    document.getElementById("hide").textContent = on ? "ボタンを戻す" : "ボタンを隠す";
+  };
   document.getElementById("base").addEventListener("change", () => PHONES.forEach((p) => p.go(p.start)));
   document.getElementById("scale").addEventListener("input", (e) => document.body.style.setProperty("--s", e.target.value));
-  document.getElementById("hide").onclick = () => document.body.classList.add("hide-ui");
-  addEventListener("keydown", (e) => e.key === "Escape" && document.body.classList.remove("hide-ui"));
+  document.getElementById("hide").onclick = toggleUi;
+  document.getElementById("reload").onclick = () => PHONES.forEach((p) => p.reload());
+  addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT") return;
+    if (e.key === "Escape") document.body.classList.remove("hide-ui");
+    else if (e.key === "h" || e.key === "H") toggleUi();
+    else if (e.key === "r" || e.key === "R") PHONES.forEach((p) => p.reload());
+    else if (KEYS[e.key]) goAll(KEYS[e.key]);
+  });
 </script>
 </body>
 </html>

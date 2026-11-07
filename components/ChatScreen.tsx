@@ -16,6 +16,25 @@ import type { ReactNode } from "react";
 
 const POLL_SECONDS = 6;
 
+/** 時刻の札: 前の吹き出しから 20分以上あいたら出す（日が変わったら日付も）。JST */
+function stamp(at: string, prev?: string): string | null {
+  const t = Date.parse(at);
+  if (Number.isNaN(t)) return null;
+  const p = prev ? Date.parse(prev) : NaN;
+  if (!Number.isNaN(p) && t - p < 20 * 60_000) return null;
+  const d = new Date(t + 9 * 3600_000);
+  const sameDay = !Number.isNaN(p) && new Date(p + 9 * 3600_000).toISOString().slice(0, 10) === d.toISOString().slice(0, 10);
+  const hm = `${d.getUTCHours()}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+  return sameDay ? hm : `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${hm}`;
+}
+
+/** まだ何も届いていないときの、相談のきっかけ（押すとその文を送る） */
+const STARTERS: ChatButton[] = [
+  { kind: "say", label: "🏠 雪かきに出たい", text: "雪かきに出たい", tone: "soft" },
+  { kind: "say", label: "👋 近所の人と知り合いたい", text: "近所の人と知り合いたい", tone: "soft" },
+  { kind: "say", label: "❓ 使い方を教えて", text: "使い方を教えて", tone: "soft" },
+];
+
 const TONE: Record<ChatButton["tone"], string> = {
   main: "bg-lamp text-white",
   soft: "bg-ice-soft text-ink",
@@ -200,11 +219,33 @@ export default function ChatScreen({
       {/* 流れ（この中だけがスクロールする） */}
       <div ref={list} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label="隊長とのやりとり">
         {bubbles.length === 0 && (
-          <p className="mx-auto max-w-xs rounded-2xl bg-card/80 px-4 py-3 text-center text-base text-ink-soft">
-            まだ何も届いていません。雪の朝のお知らせや作戦はここに届きます。下の欄から、隊長に何でも聞けます。
-          </p>
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-2 text-center">
+            <Mascot size={96} team={teamId} className="captain-idle drop-shadow-md" />
+            <p className="text-lg font-bold leading-snug">
+              シマエナ隊長だしま〜！
+              <span className="block text-base font-normal text-ink-soft">雪の朝のお知らせや作戦はここに届くえな。なんでも聞いてね。</span>
+            </p>
+            {!readOnly && (
+              <div className="flex w-full max-w-xs flex-col gap-2" aria-label="相談のきっかけ">
+                {STARTERS.map((b) => (
+                  <button key={b.label} type="button" onClick={() => press(b)} disabled={pending} className="min-h-12 rounded-full bg-card px-4 text-base font-bold shadow-sm ring-1 ring-ink/15 active:scale-95">
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
-        {bubbles.map((b) =>
+        {bubbles.map((b, i) => {
+          const label = stamp(b.at, bubbles[i - 1]?.at);
+          // 続けて届いた隊長の吹き出しは、まとまりの最後にだけ顔を出す（LINE と同じ。見た目がすっきりする）
+          const nextSame = bubbles[i + 1]?.from === "captain" && !stamp(bubbles[i + 1].at, b.at);
+          const time = label && (
+            <p key={`${b.id}-t`} className="pt-1 text-center text-xs font-bold text-ink-soft" aria-label={`時刻 ${label}`}>
+              {label}
+            </p>
+          );
+          return [time,
           b.from === "me" ? (
             <div key={b.id} className="flex justify-end">
               {b.photo ? (
@@ -215,7 +256,7 @@ export default function ChatScreen({
             </div>
           ) : (
             <div key={b.id} className="flex items-end gap-1.5">
-              <Avatar team={teamId} />
+              {nextSame ? <span className="size-8 shrink-0" aria-hidden="true" /> : <Avatar team={teamId} />}
               {b.text !== undefined ? (
                 <p className="max-w-[82%] whitespace-pre-line rounded-2xl rounded-bl-md bg-card px-3 py-2 text-[1em] leading-snug shadow-sm">{b.text}</p>
               ) : (
@@ -256,8 +297,8 @@ export default function ChatScreen({
                 </div>
               )}
             </div>
-          ),
-        )}
+          )];
+        })}
         {pending && last?.from === "me" && (
           <div className="flex items-end gap-1.5">
             <Avatar team={teamId} />

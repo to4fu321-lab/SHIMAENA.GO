@@ -117,7 +117,7 @@ export default function SoloClear({
         </div>
       }
       hero={
-        <div className="relative mb-2 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-7 pt-3 [@media(max-height:700px)]:mb-1 [@media(max-height:700px)]:pb-5 [@media(max-height:700px)]:pt-2">
+        <div className="relative mb-2 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-7 pt-3 [@media(max-height:700px)]:mb-1 [@media(max-height:700px)]:pb-6 [@media(max-height:700px)]:pt-1.5">
           <p className="eyebrow">ソロ出動 完了・{s.label}</p>
           <div className="flex items-center gap-2">
             <Mascot size={72} mood="happy" className="lamp-glow shrink-0" />
@@ -127,7 +127,7 @@ export default function SoloClear({
               町の力になりました！
             </h2>
           </div>
-          <SnowTown className="absolute inset-x-0 bottom-0 h-7 w-full" />
+          <SnowTown className="absolute inset-x-0 bottom-0 h-7 w-full [@media(max-height:700px)]:h-5" />
         </div>
       }
       heroOn={tab === 0}

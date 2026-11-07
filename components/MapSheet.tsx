@@ -48,8 +48,8 @@ export default function MapSheet({ peek, children, footer, startClosed = false }
         <span className="mx-auto mb-1.5 block h-1.5 w-14 rounded-full bg-ink/25" aria-hidden="true" />
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">{peek}</div>
-          <span className="shrink-0 text-sm font-bold text-ink-soft" aria-hidden="true">
-            {open ? "▼ 畳む" : "▲ ひらく"}
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink/5 text-sm font-bold text-ink-soft" aria-hidden="true">
+            {open ? "▼" : "▲"}
           </span>
         </div>
       </div>

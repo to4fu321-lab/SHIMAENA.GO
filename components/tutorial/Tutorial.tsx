@@ -5,7 +5,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { inviteMessage, lineShareUrl } from "@/lib/share-links";
-import { TEAMS } from "@/lib/teams";
 import Mascot, { SnowTown } from "../Mascot";
 import LineChat, { type ChatMsg } from "./LineChat";
 import { play } from "@/lib/sound/engine";
@@ -186,7 +185,6 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
     }
   };
 
-  const team = TEAMS[0];
   const practiced = [when !== null, going, snow === 0, photo];
 
   /* --- 隊長トークの会話（押したボタンから組み立てる。spec v1.20: 10cm 積もった朝 6:30 に自動で届く） --- */
@@ -214,7 +212,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
   if (photo) {
     report.push({ id: "ph", from: "me", photo: true });
     report.push({ id: "d1", from: "bot", text: "拠点3 完了だしま〜！🎉\nあなたの10分で、1軒が助かりました。" });
-    report.push({ id: "d2", from: "bot", text: `${team.name}に +15 点。\nありがとうカードは後で届きます。` });
+    report.push({ id: "d2", from: "bot", text: "あなたのチームに +15 点。\nありがとうカードは後で届きます。" });
   }
   const takePhoto = () => {
     play("shutter");
