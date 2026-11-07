@@ -12,7 +12,7 @@ export default function SongPlay({ song }: { song: SnowSong }) {
   const unlockedAtOpen = useClientValue(false, isUnlocked);
   const [unlockedNow, setUnlockedNow] = useState(false);
   useEffect(() => onUnlocked(() => setUnlockedNow(true)), []);
-  const playing = (unlockedAtOpen || unlockedNow) && prefs.bgm;
+  const playing = (unlockedAtOpen || unlockedNow) && prefs.bgm && !prefs.ownMusic;
   useEffect(() => {
     setSnowSong(song);
     return requestBgm("snow");
@@ -22,7 +22,7 @@ export default function SongPlay({ song }: { song: SnowSong }) {
       type="button"
       onClick={() => {
         void unlock();
-        setSoundPrefs({ bgm: !playing });
+        setSoundPrefs({ bgm: !playing, ownMusic: false });
       }}
       className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-lamp px-4 text-xl font-bold text-ink shadow-md"
     >

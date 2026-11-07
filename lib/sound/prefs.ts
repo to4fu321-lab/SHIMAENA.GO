@@ -4,10 +4,12 @@
 export interface SoundPrefs {
   sfx: boolean;
   bgm: boolean;
+  /** 自分の音楽（Spotify など）を聴きながら使う: BGM を止め、効果音はほかのアプリの音に重ねる（spec v1.38） */
+  ownMusic: boolean;
 }
 
 export const SOUND_PREFS_KEY = "shimaena-sound";
-export const DEFAULT_SOUND_PREFS: SoundPrefs = { sfx: true, bgm: true };
+export const DEFAULT_SOUND_PREFS: SoundPrefs = { sfx: true, bgm: true, ownMusic: false };
 
 /** 保存した文字列から設定へ。足りない項目・壊れた JSON は初期値で埋める */
 export function parseSoundPrefs(raw: string | null | undefined): SoundPrefs {
@@ -18,6 +20,7 @@ export function parseSoundPrefs(raw: string | null | undefined): SoundPrefs {
     return {
       sfx: typeof o.sfx === "boolean" ? o.sfx : DEFAULT_SOUND_PREFS.sfx,
       bgm: typeof o.bgm === "boolean" ? o.bgm : DEFAULT_SOUND_PREFS.bgm,
+      ownMusic: typeof o.ownMusic === "boolean" ? o.ownMusic : DEFAULT_SOUND_PREFS.ownMusic,
     };
   } catch {
     return { ...DEFAULT_SOUND_PREFS };
@@ -25,7 +28,7 @@ export function parseSoundPrefs(raw: string | null | undefined): SoundPrefs {
 }
 
 export function serializeSoundPrefs(p: SoundPrefs): string {
-  return JSON.stringify({ sfx: p.sfx, bgm: p.bgm });
+  return JSON.stringify({ sfx: p.sfx, bgm: p.bgm, ownMusic: p.ownMusic });
 }
 
 export function readSoundPrefs(): SoundPrefs {
