@@ -1,8 +1,11 @@
 "use client";
 
-// 隊長トークの音声入力（spec v1.18）: ブラウザの音声認識（日本語）で、話した言葉を入力欄に入れる。送る前に直せる。
+// 隊長トークの音声入力（spec v1.18）: ブラウザの音声認識で、話した言葉を入力欄に入れる。送る前に直せる。
 // 使えない端末（古いブラウザ・権限なし）ではボタンを出さず、キーボードのマイクを案内する。
+// ことば（spec v1.36）: 選んだことばで聞き取る（既定は日本語）。
 import { useEffect, useRef, useState } from "react";
+import { LANG_INFO, type Lang } from "@/lib/i18n/langs";
+import { t } from "@/lib/i18n/ui";
 import { useClientValue } from "./useClientValue";
 
 type Rec = {
@@ -24,7 +27,7 @@ function recognizer(): RecCtor | undefined {
 }
 const hasRecognizer = () => Boolean(recognizer());
 
-export default function MicButton({ onText, disabled }: { onText: (text: string, final: boolean) => void; disabled?: boolean }) {
+export default function MicButton({ onText, disabled, lang = "ja" }: { onText: (text: string, final: boolean) => void; disabled?: boolean; lang?: Lang }) {
   const supported = useClientValue(false, hasRecognizer);
   const [listening, setListening] = useState(false);
   const [hint, setHint] = useState<string>();
@@ -35,7 +38,7 @@ export default function MicButton({ onText, disabled }: { onText: (text: string,
     const Ctor = recognizer();
     if (!Ctor) return;
     const r = new Ctor();
-    r.lang = "ja-JP";
+    r.lang = LANG_INFO[lang].speech;
     r.interimResults = true;
     r.continuous = false;
     r.onresult = (e) => {
@@ -50,7 +53,7 @@ export default function MicButton({ onText, disabled }: { onText: (text: string,
     r.onend = () => setListening(false);
     r.onerror = (e) => {
       setListening(false);
-      setHint(e.error === "not-allowed" ? "マイクの許可が必要です（ブラウザの設定で許可できます）。" : "聞き取れませんでした。もう一度どうぞ。");
+      setHint(e.error === "not-allowed" ? t(lang, "micDenied") : t(lang, "micFailed"));
     };
     rec.current = r;
     setHint(undefined);
@@ -67,7 +70,7 @@ export default function MicButton({ onText, disabled }: { onText: (text: string,
         onClick={listening ? stop : start}
         disabled={disabled}
         aria-pressed={listening}
-        aria-label={listening ? "聞き取りをやめる" : "声で入力"}
+        aria-label={listening ? t(lang, "stopListening") : t(lang, "voiceInput")}
         className={`grid size-12 shrink-0 place-items-center rounded-full text-2xl ${listening ? "bg-lamp text-white animate-pulse" : "bg-ice-soft"}`}
       >
         🎤

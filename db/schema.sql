@@ -295,6 +295,16 @@ create table if not exists feedback_reports (
 );
 create index if not exists feedback_reports_status on feedback_reports (status, created_at);
 
+-- 隊長のことばの訳（spec v1.36）。lang は 'en' のような訳先（本人の文を日本語に直したものは 'en>ja'）。hash は元の文の SHA-256 の先頭 32 文字
+create table if not exists translations (
+  lang text not null,
+  hash text not null,
+  src text not null,
+  dst text not null,
+  at timestamptz not null default now(),
+  primary key (lang, hash)
+);
+
 
 insert into teams (id, name, color) values
   ('salvia', 'サルビア', '#2F6FE4'),
