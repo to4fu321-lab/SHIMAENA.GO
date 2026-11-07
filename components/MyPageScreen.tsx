@@ -219,8 +219,8 @@ export default function MyPageScreen({ viewerId, view, q, initialTab }: { viewer
       </Link>
       <Avatar icon={view.look.icon} bg={view.look.iconBg} photo={view.look.photo} size={44} team={view.teamId} />
       <div className="min-w-0 flex-1 leading-tight">
-        <h1 className="truncate text-xl font-bold">{view.nickname}さん</h1>
-        <p className="truncate text-sm text-ink-soft">マイページ</p>
+        <h1 className="truncate text-xl font-bold">マイページ</h1>
+        <p className="truncate text-sm text-ink-soft">{view.nickname}さん</p>
       </div>
       <TeamChip teamId={view.teamId} />
     </div>

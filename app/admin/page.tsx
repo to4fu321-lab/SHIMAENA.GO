@@ -32,6 +32,7 @@ import {
   nudgeNow,
   seedRoadReportsDemo,
   seedKikigakiDemo,
+  syncFeedbackNow,
   writeImprovementsNow,
   writeRecapNow,
   writeShareTextsNow,
@@ -48,6 +49,9 @@ import { MOTIVE_LABEL } from "@/lib/concierge/profile";
 import { weekStart } from "@/lib/game/week";
 import { appToday } from "@/lib/morning/today";
 import { countByCategory, listVoicesBetween, loadLatestImprovement, VOICE_LABEL } from "@/lib/voice/store";
+import { listRecentFeedback } from "@/lib/feedback/store";
+import { KIND_LABEL, KIND_MARK, STATUS_LABEL } from "@/lib/feedback/rules";
+import { hasGithubToken } from "@/lib/feedback/github";
 import { loginAction, logoutAction } from "./auth-actions";
 import Pager, { Screen } from "@/components/Pager";
 import PagedNodes from "./PagedNodes";
@@ -130,7 +134,8 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
   const [s, db, roster, problems, notices] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), countOutSince(monthStartIso()).catch(() => 0)]);
   // 声と改善（spec v1.17）: 今週の声の数と、いちばん新しい提案
   const today = appToday(s);
-  const [voices, improvement] = await Promise.all([listVoicesBetween(weekStart(today), today).catch(() => []), loadLatestImprovement().catch(() => undefined)]);
+  const [voices, improvement, feedback] = await Promise.all([listVoicesBetween(weekStart(today), today).catch(() => []), loadLatestImprovement().catch(() => undefined), listRecentFeedback(12).catch(() => [])]);
+  const feedbackOpen = feedback.filter((f) => f.status === "open" || f.status === "issued").length;
   const voiceCounts = countByCategory(voices);
   const names = makeNameMasker(roster.participants);
   const m = s.morning;
@@ -273,7 +278,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           { key: "view", label: "様子" },
           { key: "houses", label: "家" },
           { key: "ops", label: "運営", badge: problems.length + (db.kind !== "none" && db.kind !== "ready" ? 1 : 0) },
-          { key: "voice", label: "声", badge: voices.length },
+          { key: "voice", label: "声", badge: voices.length + feedbackOpen },
         ]}
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -412,6 +417,35 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
               {(Object.keys(VOICE_LABEL) as (keyof typeof VOICE_LABEL)[]).map((k) => `${VOICE_LABEL[k]} ${voiceCounts[k]}`).join(" ・ ")}
             </p>
             <p className="text-sm text-ink-soft">相談から Claude が読み取った「求められていること」の要約だけ（原文・名前は残しません）。</p>
+          </section>
+          {/* 報告箱（spec v1.33）: 町の人の「隊長に伝える」。AI（点検ループ）が直して閉じる */}
+          <section className={`${card} space-y-1`} aria-label="報告箱">
+            <h2 className="font-bold">
+              報告箱（確かめ中 {feedbackOpen} 件）<span className="text-sm font-normal text-ink-soft"> ・ Issue: {hasGithubToken() ? "その場で" : "Actions が1時間ごとに"}</span>
+            </h2>
+            {feedback.length === 0 ? (
+              <p className="text-sm text-ink-soft">まだありません。隊長トークの 📮 か設定の「隊長に伝える」から届きます。</p>
+            ) : (
+              <ul className="space-y-0.5 text-sm">
+                {feedback.slice(0, 3).map((f) => (
+                  <li key={f.id} className="line-clamp-2">
+                    {KIND_MARK[f.triagedKind ?? f.kind]} <b>{STATUS_LABEL[f.status]}</b> {f.summary ?? f.text}
+                    {f.issueUrl && (
+                      <>
+                        {" "}
+                        <a href={f.issueUrl} target="_blank" rel="noopener" className="underline">
+                          #{f.issueNumber}
+                        </a>
+                      </>
+                    )}
+                    <span className="text-ink-soft">（{KIND_LABEL[f.kind]}・{f.page}）</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <form action={syncFeedbackNow}>
+              <button className={link}>GitHub を見て、直った報告を本人に知らせる</button>
+            </form>
           </section>
           <PagedNodes
             nodes={[...voices].reverse().map((v) => (

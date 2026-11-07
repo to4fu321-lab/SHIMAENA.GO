@@ -25,6 +25,13 @@ spec v1.17 から、LINE は **ログイン（本人の確認）だけ** に使�
 
 鍵がない間は、通知は届かず隊長トークにたまるだけです（動きは止まりません）。
 
+## 2.5 報告箱 → GitHub（spec v1.33。新しい鍵は要らない）
+町の人が「隊長に伝える」で送った報告は、GitHub の Issue（ラベル `報告箱`）になって、4時間ごとの点検ループが直します。Issue を立てる方法は2つ（どちらか動けばよい）。
+1. **GitHub Actions（おすすめ・鍵なし）**: `.github/workflows/feedback.yml` が1時間ごとに動きます。必要なのは plan.yml と同じ Secrets（`APP_URL`・`CRON_SECRET`）だけ。Issue を立てる鍵は Actions の自動のものです。
+2. **その場で立てる（任意）**: Vercel の環境変数に `GITHUB_TOKEN`（GitHub → Settings → Developer settings → Fine-grained tokens。このリポジトリだけ・Issues: Read and write だけ・期限 30日）。`GITHUB_REPO` は省略可（`to4fu321-lab/shimaena.go`）。
+
+直ったかどうかは、本人が隊長トークを開いたとき（30分に1回）・Actions（1時間ごと）・/admin の「声」タブのボタンで GitHub を見て、閉じた Issue の最初のコメントの1行目を本人の隊長トークに届けます。
+
 ## 3. 使わなくなった環境変数（消してよい）
 `LINE_CHANNEL_SECRET`（AUTH_SECRET を入れるまでは署名の予備として残してもよい）・`LINE_CHANNEL_ACCESS_TOKEN`・`NEXT_PUBLIC_LIFF_ID`・`NEXT_PUBLIC_LINE_ADD_FRIEND_URL`・`NEXT_PUBLIC_LINE_BOT_ID`・`LINE_DRY_RUN`・`SUPPORTER_LINE_USER_IDS`（サポーターへの連絡は、その人の LINE のアカウント ID を入れれば隊長トークに届く）
 

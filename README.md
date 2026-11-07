@@ -125,6 +125,7 @@
 | 今朝の雪の歌 | 雪の量・雪の名前・気温・風・話題 → その日だけのループ曲（音符データ。プログラムが点検し、Web Audio で鳴らす） | [`lib/song/day.ts`](lib/song/day.ts) |
 | 今朝の先生 | 頼む家の人が教えてくれたコツ → 今朝の雪に合う1つを25字に（新しい知恵は作らない） | [`lib/claude/teacher.ts`](lib/claude/teacher.ts) |
 | 声を貯めて改善 | 相談から「求められていること」を要約で貯め、週に3〜5件の改善の提案（採用は人が決める） | [`lib/claude/improve.ts`](lib/claude/improve.ts) |
+| 報告箱（AI が直す） | 町の人の「隊長に伝える」（不具合・要望）→ 要約・名前と住所を除いた本文・隊長の返事 → GitHub Issue → 4時間ごとの点検ループ（Claude Code）が直してコミット → 本人の隊長トークに「直しました」 | [`lib/feedback/`](lib/feedback/)・[`docs/tenken.md`](docs/tenken.md) |
 | 短い文 | 前夜の予告と雪の名前／隊長のひとこと／今朝の実況／週末の実況／SNS の投稿文／招待文／休みのひとこと／ことばで答える | [`lib/claude/`](lib/claude/) |
 
 ### 守っていること
