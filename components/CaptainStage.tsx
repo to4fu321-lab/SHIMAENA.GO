@@ -6,6 +6,9 @@ import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import { cheersSeenAction } from "@/app/home-actions";
 import type { TeamId } from "@/lib/types";
+
+// 「寒い冬は、くっついて乗り切る。」: 隊長の横に仲間2羽。マフラーは残りの2チームの色（3羽で町内の3チーム）
+const ALL_TEAMS: TeamId[] = ["salvia", "marigold", "lupinus"];
 import { play } from "@/lib/sound/engine";
 
 const TALK_MS = 7000;
@@ -99,6 +102,25 @@ export default function CaptainStage({
         <path d="M120 19 L150 2" stroke="#7a5a44" strokeWidth="5" strokeLinecap="round" />
         <path d="M10 26 C60 18 120 14 196 4" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" fill="none" />
       </svg>
+      {/* 仲間2羽（隊長に身を寄せる） */}
+      {(() => {
+        // チーム未定の隊長はオレンジ（マリーゴールドと同じ色）なので、そのときは残りの2色
+        const others = ALL_TEAMS.filter((t) => t !== (team ?? "marigold"));
+        return (
+          <>
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-[13%] right-[42%] h-[44%] max-h-28 min-h-12">
+              <span className="captain-idle block h-full" style={{ animationDelay: "-1.3s" }}>
+                <Mascot team={others[0]} className="h-full w-auto drop-shadow-md" />
+              </span>
+            </span>
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-[14.5%] right-[25%] h-[48%] max-h-[7.5rem] min-h-12">
+              <span className="captain-idle block h-full" style={{ animationDelay: "-0.6s" }}>
+                <Mascot team={others[1]} className="h-full w-auto drop-shadow-md" />
+              </span>
+            </span>
+          </>
+        );
+      })()}
       {/* 隊長（タップで飛ぶ） */}
       <button
         type="button"
