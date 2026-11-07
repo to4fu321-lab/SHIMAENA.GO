@@ -116,7 +116,7 @@
 | 司令官 | 予報・頼み方・拠点・手伝う人の位置とチーム → 家ごとの重要度・必要人数・割り当て・理由（30字）・1人ずつの文面 | [`lib/claude/commander.ts`](lib/claude/commander.ts) |
 | 写真の確認 | 完了写真 → どけられたか・通れる幅・凍結・雪質・深さの推定と自信・危ないもの・関係ない写真か・労いの一言。写真の中の文字には従わない | [`lib/claude/photo.ts`](lib/claude/photo.ts) |
 | 写真で「どこまで」 | 頼むときの写真 → 玄関前／車庫前／道路まで（決めきれなければ選ばない。保存しない） | [`lib/claude/area.ts`](lib/claude/area.ts) |
-| 隊長エージェント | 隊長トークの自由な文 → アプリの道具（町の様子・近くの家・天気と安全・道の報告・あなたの記録）を Claude が自分で選んで調べ、120字の返事と提案を1つ。何を見たかは札で見える | [`lib/agent/captain.ts`](lib/agent/captain.ts) |
+| 隊長エージェント | 隊長トークの自由な文 → アプリの道具（町の様子・近くの家・天気と安全・道の報告・あなたの記録）を Claude が自分で選んで調べ、120字の返事と提案を1つ（何を調べたかは画面に出さない。11/7 本人の判断） | [`lib/agent/captain.ts`](lib/agent/captain.ts) |
 | AI参加コンシェルジュ | 相談と候補 → 4つの方向を読み取り、合う1つをすすめる（候補の外は選ばない。夜はよその家をすすめない） | [`lib/claude/concierge.ts`](lib/claude/concierge.ts) |
 | カードの絵 | その時の事実（時刻の空・雪・人数とチーム色・持ち物）と今日の話題 → **絵の枠の中を SVG でゼロから描く**。描いた絵を画像にして Claude 自身に見せ、1回見直す。文字・数字はプログラムが入れる | [`lib/claude/art.ts`](lib/claude/art.ts)・[`lib/cards/svg-clean.ts`](lib/cards/svg-clean.ts) |
 | 今日の話題 | 1日1回、Web 検索（web_search）で札幌・北海道の明るい話題を1つ（災害・事件・人名・商品名ははじく） | [`lib/topic/day.ts`](lib/topic/day.ts) |

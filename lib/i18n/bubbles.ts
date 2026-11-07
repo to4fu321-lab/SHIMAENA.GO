@@ -1,5 +1,5 @@
 // 隊長トークの吹き出しをそのことばに（spec v1.36）。純粋な部分（文字の集め方・はめ方）と、訳す部分（translateTexts）を分ける。
-// 訳すのは隊長の吹き出しだけ（文・カードの行・大きなボタンの文字・小さなボタンの文字・「調べた」札）。
+// 訳すのは隊長の吹き出しだけ（文・カードの行・大きなボタンの文字・小さなボタンの文字）。「調べた」札は画面に出さないので訳さない。
 // 本人の吹き出しは本人のことばなので触らない。ボタンの中身（postback の data・say の text・href）は日本語のまま（今までの処理がそのまま動く）。
 import type { ChatBubble } from "../inbox/view";
 import type { Lang } from "./langs";
@@ -15,8 +15,8 @@ export function collectStrings(bubbles: ChatBubble[], last = LOCALIZE_LAST): str
     if (b.from !== "captain") continue;
     if (b.text) out.add(b.text);
     for (const l of b.lines ?? []) {
-      if (l.steps) l.steps.forEach((s) => out.add(s));
-      else if (l.text) out.add(l.text);
+      if (l.steps) continue; // 「隊長が調べた」札は画面に出さないので訳さない
+      if (l.text) out.add(l.text);
     }
     for (const x of [...b.buttons, ...b.quick]) if (x.label) out.add(x.label);
   }

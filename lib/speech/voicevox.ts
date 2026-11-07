@@ -65,7 +65,7 @@ interface StatusResponse {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** 文を mp3 に。できなければ null（画面はブラウザの声に戻る）。全体で 12 秒まで待つ */
+/** 文を mp3 に。できなければ null（画面はブラウザの声に戻る）。全体で 25 秒まで待つ（鍵なしは長い文ほど遅い。11/7 本人の指摘「読み上げない」） */
 export async function synthesize(text: string, fetchFn: typeof fetch = fetch): Promise<{ mp3: Uint8Array; speakerName?: string } | null> {
   const t = voiceText(text);
   if (!t) return null;
@@ -79,7 +79,7 @@ export async function synthesize(text: string, fetchFn: typeof fetch = fetch): P
     for (;;) {
       const s = await fetchFn(j.audioStatusUrl, { signal: AbortSignal.timeout(5000) }).then((r) => (r.ok ? (r.json() as Promise<StatusResponse>) : null)).catch(() => null);
       if (s?.isAudioReady) break;
-      if (s?.isAudioError || Date.now() - started > 12_000) return null;
+      if (s?.isAudioError || Date.now() - started > 25_000) return null;
       await sleep(400);
     }
   }
