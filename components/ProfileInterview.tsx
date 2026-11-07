@@ -1,6 +1,6 @@
 "use client";
 
-// マイページのインタビュー（spec v1.31）: 隊長が決まった5問を1つずつ聞く（読み上げ・声で答える・とばせる）→ Claude が整える。
+// マイページのインタビュー（spec v1.32）: 隊長が決まった5問を1つずつ聞く（読み上げ・声で答える・とばせる）→ Claude が整える。
 // 答えは画面が持ち、整えるときに1回だけ送る。できた下書きは親（MyPageScreen）が見せて、本人が直してから保存する。
 import { useEffect, useState } from "react";
 import { tidyProfileAction } from "@/app/me/actions";

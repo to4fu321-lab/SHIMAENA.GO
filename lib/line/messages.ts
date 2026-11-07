@@ -192,7 +192,7 @@ export const MSG = {
   helperDone: (teamId: TeamId, term: TeamTerm): LineMessage[] => [
     text("登録できました！🎉"),
     ...teamAnnounce(teamId, term, "first"),
-    text("雪の朝 6:30 に、ここへ1問だけ届きます。ボタンを1回押すだけです。"),
+    text("10cm 以上積もった朝 6:30 に、雪かき応援のお知らせがここへ届きます。答える必要はありません。"),
   ],
   /** 登録のすぐあと: 雪の朝を待たずに、まずはひとりで10分（spec v1.3） */
   soloInvite: (_url: string, role: "helper" | "requester") =>
@@ -403,7 +403,7 @@ export const MSG = {
     ];
   },
   cheerToHelper: (requesterName: string, label: string, baseNumber: number | string) =>
-    bubbles([`拠点${baseNumber}（${requesterName}さん）のご家族から、応援「${label}」が届きました。📣`, "遠くからも見ていてくれています。"]),
+    bubbles([`拠点${baseNumber}（${san(requesterName)}）のご家族から、応援「${label}」が届きました。📣`, "遠くからも見ていてくれています。"]),
   cheerSent: (label: string, count: number) => bubbles([count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。`]),
   cheerNotFound: () => bubbles(["今朝の雪かきの記録が見つかりませんでした。", "少し時間をおいて、もう一度押してみてください。"]),
   lateRequesterFine: () => bubbles(["よかったです。今朝の依頼は取り下げました。", "ゆっくりどうぞ。"]),
@@ -469,7 +469,7 @@ export const MSG = {
   /** 日曜の夜の組み直し: 派手めのチーム発表（画像＋文＋チームの画面を開くボタン） */
   weeklyNewTeam: (teamId: TeamId, term: TeamTerm): LineMessage[] => teamAnnounce(teamId, term, "weekly"),
   weeklyFamily: (count: number) => bubbles([`今週は、ご家族の家の雪かきを ${count} 回手伝ってもらいました。`]),
-  linkedSelf: () => bubbles(["紐づけができました。", "雪の朝 6:30 に「今朝、玄関から外に出られそうですか？」と1回だけ聞きます。"]),
+  linkedSelf: () => bubbles(["紐づけができました。", "積もった朝、来てくれる人が決まったら、ここにお知らせが届きます。答える必要はありません。"]),
   linkedFamily: () => bubbles(["家族として紐づけました。", "雪かきが終わったときや、点呼に返事がないときにお知らせします。"]),
   // ---- 隊長の声かけ（spec v1.18） ----
   nudgeQuiet: () => bubbles(["わかりました。しばらく声をかけずにおきますね。", "やりたくなったら、いつでもここからどうぞ。"], [B.solo]),
@@ -514,7 +514,7 @@ export const MSG = {
       [open("合流を見る", "/nakama")],
     ),
   ],
-  /** なかま帳の「また一緒に」の手ふり（spec v1.31）。相手に1回だけ。返事はいらない */
+  /** なかま帳の「また一緒に」の手ふり（spec v1.32）。相手に1回だけ。返事はいらない */
   nakamaWave: (o: { fromName: string; mutual: boolean }): LineMessage[] => [
     withButtons(
       o.mutual

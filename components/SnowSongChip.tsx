@@ -13,7 +13,7 @@ export default function SnowSongChip({ song, q = "" }: { song: SnowSong; q?: str
     return requestBgm("snow");
   }, [song]);
   return (
-    <div className="absolute bottom-2 left-2 z-20 flex max-w-[78%] flex-col-reverse items-start">
+    <div className="absolute bottom-5 left-2 z-20 flex max-w-[78%] flex-col-reverse items-start">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

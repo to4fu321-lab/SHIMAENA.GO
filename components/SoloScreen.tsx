@@ -17,6 +17,7 @@ import { clearMessage } from "@/lib/share-links";
 import SoloClear from "./SoloClear";
 import MissionFlash from "./MissionFlash";
 import MissionRun from "./MissionRun";
+import { strokesStorageKey } from "./ShovelMeter";
 import RoadReportRun from "./RoadReportRun";
 import Bgm from "./Bgm";
 import BragShare from "./BragShare";
@@ -88,7 +89,10 @@ export default function SoloScreen({
     if (!r) setBefore(undefined);
     try {
       if (r) localStorage.setItem(runKey, JSON.stringify(r));
-      else localStorage.removeItem(runKey);
+      else {
+        localStorage.removeItem(runKey);
+        localStorage.removeItem(strokesStorageKey(viewerId)); // スコップカウンターの続きも消す
+      }
     } catch {}
   };
   useEffect(() => {
@@ -124,7 +128,7 @@ export default function SoloScreen({
     }, 1500);
   };
 
-  const submit = (kind: string, file?: File, note?: string, minutes?: number) => {
+  const submit = (kind: string, file?: File, note?: string, minutes?: number, strokes?: number) => {
     const shot = before;
     start(async () => {
       try {
@@ -132,6 +136,7 @@ export default function SoloScreen({
         fd.set("viewerId", viewerId);
         fd.set("kind", kind);
         if (note) fd.set("note", note);
+        if (strokes) fd.set("strokes", String(strokes)); // v1.31 スコップカウンター
         if (file) fd.set("photo", new File([await shrink(file)], "solo.jpg", { type: "image/jpeg" }));
         const r = await completeSoloAction(fd);
         setResult(r);
@@ -296,6 +301,24 @@ export default function SoloScreen({
               ))}
             </ul>
           </>
+        ) : m.beforeAfter ? (
+          // 自分の家の雪かき: 流れを3つの札で（11/7 UI 点検: カードの下半分が空いていた）
+          <>
+            <p className="text-base leading-snug short:hidden">{m.description}</p>
+            <ol className="grid grid-cols-3 gap-1.5 text-center text-xs font-bold leading-tight" aria-label="流れ">
+              {[
+                ["📷", "雪を撮る"],
+                ["🧹", "雪かき"],
+                ["✨", "撮って報告"],
+              ].map(([icon, text], i) => (
+                <li key={text} className="relative rounded-2xl bg-ice-soft px-1 py-2">
+                  <span className="absolute left-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-ink text-[12px] text-white" aria-hidden="true">{i + 1}</span>
+                  <span className="block text-2xl" aria-hidden="true">{icon}</span>
+                  {text}
+                </li>
+              ))}
+            </ol>
+          </>
         ) : (
           <p className="text-base leading-snug">{m.description}</p>
         )}
@@ -424,17 +447,18 @@ export default function SoloScreen({
           }
         />
       )}
-      <header hidden={Boolean(running)} className="snowfield relative -mx-4 -mt-3 h-20 shrink-0 overflow-hidden px-4 pt-2">
-        <SnowTown className="absolute inset-x-0 bottom-0 h-[55%] w-full" />
-        <Link href={`/${q}`} aria-label="ホームへ戻る" className="absolute left-3 top-2 z-10 grid size-11 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
+      {/* 見出し: 家並みは下に薄く、題名は白い札の上に（文字と家が重ならないように。11/7 UI 点検） */}
+      <header hidden={Boolean(running)} className="snowfield relative -mx-4 -mt-3 flex h-20 shrink-0 items-center justify-center overflow-hidden px-4">
+        <SnowTown className="absolute inset-x-0 bottom-0 h-[45%] w-full opacity-70" />
+        <Link href={`/${q}`} aria-label="ホームへ戻る" className="absolute left-3 top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-card text-2xl font-bold shadow-md">
           ‹
         </Link>
-        <div className="relative z-10 px-14 text-center">
-          <p className="text-sm font-bold">シマエナ<span className="text-lamp-deep">GO</span></p>
-          <h1 className="whitespace-nowrap text-[26px] font-bold leading-tight">ソロミッション</h1>
+        <div className="relative z-10 rounded-2xl bg-card/85 px-4 py-0.5 text-center leading-tight shadow-sm ring-1 ring-white backdrop-blur">
+          <p className="text-xs font-bold leading-tight">シマエナ<span className="text-lamp-deep">GO</span></p>
+          <h1 className="whitespace-nowrap text-[22px] font-bold leading-tight">ソロミッション</h1>
           <p className="sr-only">{nickname}さん</p>
         </div>
-        <Mascot size={52} className="absolute bottom-0 right-2 z-10 drop-shadow-md" />
+        <Mascot size={52} className="captain-idle absolute bottom-0 right-5 z-10 drop-shadow-md" />
       </header>
 
       {/* ゲームの HUD: 呼びかけ＋今日の成績 */}
@@ -450,7 +474,8 @@ export default function SoloScreen({
         {!runMission && (
           // なかま（spec v1.13）: 任意。ひとりでの出動はこのままワンタップ
           <Link href={`/nakama${q}`} className="mt-1 flex min-h-10 items-center justify-between rounded-xl bg-white/15 px-3 text-base font-bold">
-            <span className="truncate">👥 だれかと一緒に・バトン（任意）</span>
+            <span className="truncate">👥 だれかと一緒に・バトン</span>
+            <span className="ml-auto mr-1 shrink-0 text-xs font-bold text-white/70">任意</span>
             <span aria-hidden="true">›</span>
           </Link>
         )}
@@ -492,7 +517,8 @@ export default function SoloScreen({
                     q={q}
                     before={before}
                     onBefore={setBefore}
-                    onReport={(file, note) => submit(m.kind, file, note, Math.max(1, Math.round((Date.now() - running.startedAt) / 60000)))}
+                    strokesKey={strokesStorageKey(viewerId)}
+                    onReport={(file, note, strokes) => submit(m.kind, file, note, Math.max(1, Math.round((Date.now() - running.startedAt) / 60000)), strokes)}
                     onQuit={() => {
                       homeSignal(m.kind, false);
                       setRunning(null);

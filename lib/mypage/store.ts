@@ -1,4 +1,4 @@
-// マイページの保存先（spec v1.31）。DATABASE_URL があれば Neon、なければメモリ（開発用）。
+// マイページの保存先（spec v1.32）。DATABASE_URL があれば Neon、なければメモリ（開発用）。
 // 表は足すだけ: my_profiles（1人1行）・nakama_waves（「また一緒に」の手ふり。2人の組で1行）。最初に使うときに作る。
 import { hasDb, query } from "../db";
 import { DEFAULT_BG, DEFAULT_ICON, isIconBgId, isIconId, type MyProfile, type Wave } from "./rules";

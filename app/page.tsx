@@ -91,7 +91,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
-  // 左上の鳥は、マイページ（spec v1.31）のアイコン。押すとマイページ（アイコン・紹介・なかま帳）
+  // 左上の鳥は、マイページ（spec v1.32）のアイコン。押すとマイページ（アイコン・紹介・なかま帳）
   const myIcon = me ? await getProfile(me.id).catch(() => undefined) : undefined;
   // 本人の記録・夜の人数・応援は互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
   const now = new Date();
@@ -238,7 +238,13 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                     あと<span className="mx-1 text-4xl tabular-nums text-lamp">{prog.left}</span>軒で完了！
                   </p>
                   <p className="text-sm font-bold">
-                    {next ? `！ 拠点${next.baseNumber}は あと${next.missing}人` : "今朝の雪をどけきれます"}
+                    {next ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-alert-soft px-2.5 py-0.5 text-alert ring-1 ring-alert/30">
+                        ！ 拠点{next.baseNumber}は あと{next.missing}人
+                      </span>
+                    ) : (
+                      "今朝の雪をどけきれます"
+                    )}
                   </p>
                 </>
               ) : prog.allDone && prog.total > 0 ? (

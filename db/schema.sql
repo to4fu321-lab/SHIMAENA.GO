@@ -100,6 +100,7 @@ create table if not exists solo_logs (
   at timestamptz not null default now()
 );
 create unique index if not exists solo_logs_once on solo_logs (participant_id, date, kind, coalesce(mission_id, ''));
+alter table solo_logs add column if not exists strokes integer; -- v1.31 スコップカウンターの回数（数えていないときは null）
 
 -- SNS 閲覧者の「町を応援する」の数（日付ごと）。得点にも羽にも入れない。
 create table if not exists town_cheers (
@@ -252,7 +253,7 @@ create table if not exists voice_logs (
   created_at timestamptz not null default now()
 );
 create index if not exists voice_logs_date on voice_logs (date);
--- マイページ（spec v1.31）: アイコン・ひとこと・好きなこと・興味。見えるのは一緒に活動した仲間だけ
+-- マイページ（spec v1.32）: アイコン・ひとこと・好きなこと・興味。見えるのは一緒に活動した仲間だけ
 create table if not exists my_profiles (
   participant_id text primary key,
   icon text not null,
@@ -264,7 +265,7 @@ create table if not exists my_profiles (
   updated_at timestamptz not null default now()
 );
 
--- なかま帳の「また一緒に」の手ふり（spec v1.31）。2人の組で1行。30日で古くなる
+-- なかま帳の「また一緒に」の手ふり（spec v1.32）。2人の組で1行。30日で古くなる
 create table if not exists nakama_waves (
   from_id text not null,
   to_id text not null,

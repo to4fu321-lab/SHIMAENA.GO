@@ -101,6 +101,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
         ))}
         {clear.myPoints !== undefined && clear.myPoints > 0 && <span className="rounded-full bg-paper px-3 py-1 font-bold ring-1 ring-ink/15">あなたの今朝 {clear.myPoints} 点</span>}
       </div>
+      {people > 0 && <p className="border-t border-ink/10 pt-2 text-sm text-ink-soft">来た人: {clear.members.map((m) => `${m}さん`).join("・")}</p>}
     </div>,
     ...(hasPhoto
       ? [
@@ -144,7 +145,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
       }
       hero={
         // 喜ぶシマエナガと「あなたの10分で、1軒が助かりました！」（イメージの完了カード）
-        <div className="relative mb-2 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-7 pt-3 [@media(max-height:700px)]:mb-1 [@media(max-height:700px)]:pb-5 [@media(max-height:700px)]:pt-2">
+        <div className="relative mb-2 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-7 pt-3 [@media(max-height:700px)]:mb-1 [@media(max-height:700px)]:pb-6 [@media(max-height:700px)]:pt-1.5">
           <p className="eyebrow">雪かき 完了</p>
           <div className="flex items-center gap-2">
             <Mascot size={72} mood="happy" className="lamp-glow shrink-0" />
@@ -154,7 +155,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
               <span className="text-3xl text-lamp-deep">1軒</span>が助かりました！
             </h2>
           </div>
-          <SnowTown className="absolute inset-x-0 bottom-0 h-7 w-full" />
+          <SnowTown className="absolute inset-x-0 bottom-0 h-7 w-full [@media(max-height:700px)]:h-5" />
         </div>
       }
       heroOn={tab === 0}
@@ -186,7 +187,19 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
             初出撃おめでとう！ 今日からあなたも、町内の群れの一員です。最初のカードが届きます。
           </p>
         )}
-        {people > 0 && <p className="text-center text-sm text-ink-soft">来た人: {clear.members.map((m) => `${m}さん`).join("・")}</p>}
+        {/* 入った点はここで見える（11/7 UI 点検: 「詳しく」を開かないと点が分からなかった） */}
+        <div className="flex flex-wrap items-center justify-center gap-2" aria-label="入った点">
+          <span className="rounded-full bg-lamp px-4 py-1 text-xl font-bold text-white shadow-sm tabular-nums">+{clear.totalPoints}点</span>
+          {teams.map((t) => (
+            <span key={t.id} className="rounded-full bg-card px-3 py-1 text-sm font-bold ring-2" style={{ "--tw-ring-color": t.color } as React.CSSProperties}>
+              <span className="mr-1 inline-block size-2.5 rounded-full align-middle" style={{ background: t.color }} aria-hidden="true" />
+              {t.name} {clear.teamTotals[t.id]}点
+            </span>
+          ))}
+        </div>
+        {clear.items.length > 1 && (
+          <p className="-mt-1 text-center text-sm text-ink-soft">{clear.items.map((i) => `${i.label} +${i.points}`).join(" ・ ")}</p>
+        )}
         {clear.hazards && clear.hazards.length > 0 && (
           <ul className="space-y-1 rounded-2xl bg-alert-soft px-3 py-2 text-base font-bold" aria-label="気をつけること">
             {clear.hazards.map((h) => (
@@ -198,8 +211,8 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
         <div className="rounded-2xl bg-card px-4 py-2 ring-1 ring-ink/10">
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="truncate font-bold">{clear.snowName ? `今朝の雪『${clear.snowName}』` : "今朝の雪"}</span>
-            <span className="shrink-0 tabular-nums">
-              {clear.hpBefore} → <b>{clear.hpAfter}</b> / {clear.hpMax}
+            <span className="shrink-0 whitespace-nowrap tabular-nums" aria-label={`雪のこり ${clear.hpBefore} から ${clear.hpAfter}、全部で ${clear.hpMax}`}>
+              <b className="text-base">{clear.hpAfter}</b>/{clear.hpMax}
             </span>
           </div>
           <span className="relative mt-1 block h-3 overflow-hidden rounded-full bg-ice-soft">
@@ -209,7 +222,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
               style={{ width: `${pct(clear.hpAfter)}%`, "--from": `${pct(clear.hpBefore)}%` } as React.CSSProperties}
             />
           </span>
-          <p className="mt-1 text-sm">
+          <p className="mt-1 text-sm short:hidden">
             {clear.allDone ? (
               <b>{clear.defeatedAt ? `${clear.defeatedAt} ` : ""}今朝の家はすべて完了。町じゅうに灯りがともりました。</b>
             ) : (
@@ -232,7 +245,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
       )}
 
       <Panel>
-        <PagedList items={details} label="くわしく" render={(node) => node} />
+        <PagedList items={details} label="くわしく" render={(node, i) => <div key={i} className="flex min-h-0 flex-1 flex-col justify-center">{node}</div>} />
       </Panel>
 
       {/* つなぐ: 共有／誘う／次の人へバトン・次は？（spec v1.13。任意） */}

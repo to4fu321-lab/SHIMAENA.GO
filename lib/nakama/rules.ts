@@ -102,7 +102,7 @@ export interface CandidateInput {
   meets: Map<string, number>;
   /** 出さない相手（今日見送られた・7日で2回見送られた・提案中） */
   excluded: Set<string>;
-  /** おたがいに「また一緒に」と手をふった仲間（なかま帳、spec v1.31）。再会の候補で先に */
+  /** おたがいに「また一緒に」と手をふった仲間（なかま帳、spec v1.32）。再会の候補で先に */
   mutualWaves?: Set<string>;
 }
 

@@ -57,6 +57,8 @@ export interface SoloClearSummary {
   photoNote?: string;
   /** 写真を Claude が確認できたか（バトンの「写真で確認済み」に使う。spec v1.13） */
   photoChecked?: boolean;
+  /** v1.31: スコップカウンターの回数（数えたときだけ） */
+  strokes?: number;
   /** v1.7: チームに入った点（現地の活動だけ。オンラインとチームのない人は 0） */
   teamPoints: number;
   teamName?: string;
@@ -76,7 +78,7 @@ export type SoloResult =
 export async function completeSolo(
   participantId: string,
   kind: string,
-  opts: { photo?: PhotoInput; note?: string; now: Date },
+  opts: { photo?: PhotoInput; note?: string; strokes?: number; now: Date },
 ): Promise<SoloResult> {
   const r = repo();
   const p = await r.findParticipant(participantId);
@@ -148,6 +150,7 @@ export async function completeSolo(
   };
   if (opts.note) log.note = opts.note.slice(0, 60);
   if (photoChecked !== undefined) log.photoChecked = photoChecked;
+  if (mission.onsite && opts.strokes) log.strokes = opts.strokes; // v1.31 スコップカウンター（現地だけ。得点には入れない）
   if (mission.onsite) log.cellKey = cellKey(p.location); // 50m マス。正確な位置は持たない
 
   const cards = await r.listCardsByRecipient(p.id);
@@ -248,6 +251,7 @@ export async function completeSolo(
     nextCard: nextCard(card ? [...cards, card] : cards, streak),
     photoNote,
     photoChecked,
+    strokes: log.strokes,
     teamPoints,
     teamName: p.teamId ? getTeam(p.teamId).name : undefined,
     teamCapped,

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MSG } from "../line/messages";
-import { buildNotice, noticeKind, quietHours } from "./notice";
+import { buildNotice, noticeActions, noticeKind, quietHours } from "./notice";
 
 const morning = new Date("2026-12-14T07:00:00+09:00");
 const night = new Date("2026-12-14T23:30:00+09:00");
@@ -47,6 +47,31 @@ describe("通知の中身", () => {
     expect(buildNotice(MSG.thanksToHelper("花子", "ありがとう", 3, "助かりました", "https://x"), night).payload.silent).toBe(true);
     expect(buildNotice(MSG.stormStop("暴風雪警報", ["a", "b", "c"]), night).payload.silent).toBeUndefined();
     expect(buildNotice(MSG.helpRequest("m1", 3, 1, ["偵察"]), morning).payload.silent).toBeUndefined();
+  });
+});
+
+describe("通知のボタン（v1.31 スマートウォッチ: 手首で答える）", () => {
+  it("手伝う側の点呼は「朝」と「今日は休む」の 2 つ（4 つから選ぶ）", () => {
+    const a = noticeActions(MSG.rollcallHelper(12));
+    expect(a).toEqual([
+      { action: "pb:rc:ans=am", title: "朝（〜9時）" },
+      { action: "pb:rc:ans=0", title: "今日は休む" },
+    ]);
+    expect(buildNotice(MSG.rollcallHelper(12), morning).payload.actions).toEqual(a);
+  });
+  it("お願いする側の点呼は「はい」「いいえ」", () => {
+    expect(noticeActions(MSG.rollcallRequester(12)).map((a) => a.title)).toEqual(["はい", "いいえ"]);
+  });
+  it("人手が足りない家は「行く」「今は無理」。絵文字は外す。地図を開くリンクは付けない", () => {
+    const a = noticeActions(MSG.helpRequest("m1", 3, 1, ["偵察（10分）"]));
+    expect(a).toEqual([
+      { action: "pb:help:go=m1", title: "行く（10分でも）" },
+      { action: "pb:help:no", title: "今は無理" },
+    ]);
+  });
+  it("答えのボタンがない知らせ（行き先・カード）には付けない", () => {
+    expect(buildNotice(MSG.planForHelper("拠点3へ"), morning).payload.actions).toBeUndefined();
+    expect(noticeActions(MSG.requesterDoneNotice(["ゆき"], "m1"))).toEqual([]);
   });
 });
 

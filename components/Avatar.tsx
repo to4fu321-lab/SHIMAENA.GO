@@ -1,4 +1,4 @@
-// マイページのアイコン（spec v1.31）。画像ファイルなし: 絵文字をうすい色の丸に。「bird」はシマエナガの絵（Mascot）。
+// マイページのアイコン（spec v1.32）。画像ファイルなし: 絵文字をうすい色の丸に。「bird」はシマエナガの絵（Mascot）。
 // マフラーの色は今週のチーム（Mascot と同じ）。
 import { iconBgColor, iconEmoji, type IconBgId, type IconId } from "@/lib/mypage/rules";
 import type { TeamId } from "@/lib/types";

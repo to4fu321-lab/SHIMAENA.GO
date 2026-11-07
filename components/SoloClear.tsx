@@ -117,7 +117,7 @@ export default function SoloClear({
         </div>
       }
       hero={
-        <div className="relative mb-2 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-7 pt-3 [@media(max-height:700px)]:mb-1 [@media(max-height:700px)]:pb-5 [@media(max-height:700px)]:pt-2">
+        <div className="relative mb-2 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pb-7 pt-3 [@media(max-height:700px)]:mb-1 [@media(max-height:700px)]:pb-6 [@media(max-height:700px)]:pt-1.5">
           <p className="eyebrow">ソロ出動 完了・{s.label}</p>
           <div className="flex items-center gap-2">
             <Mascot size={72} mood="happy" className="lamp-glow shrink-0" />
@@ -127,7 +127,7 @@ export default function SoloClear({
               町の力になりました！
             </h2>
           </div>
-          <SnowTown className="absolute inset-x-0 bottom-0 h-7 w-full" />
+          <SnowTown className="absolute inset-x-0 bottom-0 h-7 w-full [@media(max-height:700px)]:h-5" />
         </div>
       }
       heroOn={tab === 0}
@@ -168,6 +168,13 @@ export default function SoloClear({
             <p className="text-base font-bold">{s.snowKgComparison}</p>
             {s.snowKgBasis && <p className="text-xs text-ink-soft">推定: {s.snowKgBasis}</p>}
           </div>
+        )}
+        {s.strokes !== undefined && s.strokes > 0 && (
+          // v1.31 スコップカウンター（スマホのセンサーで数えた回数。得点には入れない）
+          <p className="pop-late text-center text-base font-bold">
+            ⛏ スコップ <span className="text-2xl tabular-nums">{s.strokes}</span>回
+            <span className="block text-xs font-normal text-ink-soft">スマホのセンサーで数えた「ザクッ」の回数</span>
+          </p>
         )}
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
           <div className="rounded-2xl bg-card px-2 py-1.5 ring-1 ring-ink/10">

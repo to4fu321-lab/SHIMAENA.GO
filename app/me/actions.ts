@@ -1,6 +1,6 @@
 "use server";
 
-// マイページ（spec v1.31）の操作。「自分」は trustedViewer で確かめる（LINE でログインした本人か、デモの架空の人だけ）。
+// マイページ（spec v1.32）の操作。「自分」は trustedViewer で確かめる（LINE でログインした本人か、デモの架空の人だけ）。
 // インタビューの答えは画面が持ち、整えるときに1回だけ送る。サーバーは答えの原文を残さない（整えたプロフィールだけ保存）。
 import { revalidatePath } from "next/cache";
 import { tidyProfile, type TidyProfile } from "@/lib/claude/profile";
