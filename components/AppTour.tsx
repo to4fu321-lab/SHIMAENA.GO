@@ -121,7 +121,7 @@ export default function AppTour({ onDone }: { onDone: () => void }) {
     {
       key: "photo",
       title: "終わったら写真で完了",
-      text: "地図のマスがチーム色に。その時だけのカードと羽が届きます。",
+      text: "地図の家がチームの色に。カードと羽（あなたの点）が届きます。",
       scene: (
         <div className="relative h-full">
           <YardScene />
