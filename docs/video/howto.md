@@ -59,6 +59,12 @@ node scripts/demo-video/compose.cjs all                      # コマ出し → 
 イラストの3場面（0:00 雪かき・0:13 ソファー・2:38 未来）は、本人の実写（顔なし: 手元・足元・後ろ姿）に差し替えると強くなります。
 動画編集アプリ（iPhone なら iMovie）で `demo3min-v2.mp4` を読み込み、その秒だけ上に実写を重ねるのがいちばん簡単です（音はそのまま残す）。
 
+## イラストの人物
+
+`scripts/demo-video/compose.html` の `person()` が人物を描きます（帽子・髪・マフラー・ミトン・顔。ポーズは shovel／back／cane／blower／wave／cup、kind は adult／child／elder）。
+色や並びを変えたいときは、`snow()`（冒頭）と `future()`（未来の朝）の `person({...})` の行を直して `compose.cjs preview 3,160` で確かめます。
+操作画面のタップ位置は `record.cjs` が記録し、合成で指と波紋を出します。
+
 ## 音楽
 
 `docs/video/bgm.mp3`（`scripts/make-music.py` でプログラムだけで作った 3 分の曲。0〜1分 静か／1〜2分 にぎやか／2〜2:40 あたたか／最後 ゆかい）。

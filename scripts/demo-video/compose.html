@@ -46,6 +46,9 @@
   .titlecard .sub.captain span::before { left:-28px; top:50%; margin:-16px 0 0 0; border:16px solid transparent; border-right-color:var(--salvia); border-left:0; }
   .titlecard .sub.captain span::after { left:-19px; top:50%; margin:-12px 0 0 0; border:12px solid transparent; border-right-color:#fff; border-left:0; }
   .ochi-bird { position:absolute; left:1300px; top:230px; }
+  .cardzoom { position:absolute; left:1330px; top:230px; width:530px; height:640px; overflow:hidden; border-radius:28px; box-shadow:0 30px 60px rgba(0,0,0,.5); transform-origin:50% 50%; opacity:0; }
+  .cardzoom img { position:absolute; left:0; top:-56px; width:530px; }
+  .finishscene .telops { width:600px; }
   .sub.daughter span { background:rgba(125,79,104,.92); }
   /* カード共通 */
   .card { background:#1b2e41; }
@@ -55,22 +58,22 @@
   .title-main { top:430px; font-size:150px; color:var(--ink); letter-spacing:.02em; text-shadow:0 6px 0 #fff; }
   .title-tag { top:610px; font-size:56px; color:var(--lamp-deep); font-weight:700; }
   .title-small { top:700px; font-size:38px; color:#4a6076; font-weight:700; }
-  .birds { position:absolute; left:0; width:1920px; top:60px; display:flex; justify-content:center; align-items:flex-end; gap:0; }
+  .birds { position:absolute; left:0; width:1920px; top:112px; display:flex; justify-content:center; align-items:flex-end; gap:0; }
   .branch { position:absolute; left:560px; top:410px; width:800px; height:14px; background:#6b4a33; border-radius:8px; }
   /* 図 */
-  .cols { position:absolute; left:160px; top:230px; width:1600px; display:grid; grid-template-columns:1fr 1fr; gap:60px; }
+  .cols { position:absolute; left:160px; top:320px; width:1600px; display:grid; grid-template-columns:1fr 1fr; gap:60px; }
   .col { background:rgba(255,255,255,.08); border-radius:40px; padding:40px 50px; border:3px solid rgba(255,255,255,.15); }
   .col h2 { margin:0 0 18px; font-size:42px; color:#fff; }
   .col h2 small { display:block; font-size:28px; color:var(--ink-soft); font-weight:700; margin-top:6px; }
-  .col li { font-size:33px; line-height:1.5; font-weight:700; list-style:none; }
+  .col li { font-size:36px; line-height:1.5; font-weight:700; list-style:none; }
   .col.ai { border-color:var(--ice); } .col.ai h2 { color:#bfe0ee; }
   .col.human { border-color:var(--lamp); } .col.human h2 { color:#ffd0b5; }
   .col .no { color:#ffd0b5; }
   /* 作り方 */
   .mk-phone { position:absolute; left:150px; top:62px; width:430px; height:930px; border:12px solid #0d1620; border-radius:54px; background:#fff; overflow:hidden; color:var(--ink); }
   .mk-head { position:absolute; left:0; top:0; right:0; z-index:2; background:var(--ink); color:#fff; font-size:22px; font-weight:700; padding:18px 20px 12px; }
-  .mk-clip { position:absolute; left:0; top:92px; right:0; bottom:0; overflow:hidden; }
-  .mk-head small { display:block; font-size:16px; color:var(--ink-soft); font-weight:500; }
+  .mk-clip { position:absolute; left:0; top:92px; right:0; bottom:0; overflow:hidden; padding-top:8px; }
+  .mk-head small { display:block; font-size:14px; color:var(--ink-soft); font-weight:500; }
   .mk-list { padding:14px 16px; display:flex; flex-direction:column; gap:10px; will-change:transform; }
   .mk-item { background:var(--ice-soft); border-radius:18px 18px 18px 4px; padding:10px 14px 10px 40px; font-family:"Noto Sans JP",sans-serif; font-size:16px; line-height:1.4; font-weight:500; position:relative; }
   .mk-item svg { position:absolute; left:8px; top:8px; }
@@ -149,8 +152,9 @@ function person(o) {
     arms = `<g class="arm">${shovel(child ? 130 : 180)}${arm(`M${100 + 26 * H} ${sh} Q180 ${sh + 4} 203 ${sh + 24}`, 203, sh + 24)}${arm(`M${100 - 6 * H} ${sh + 26} Q150 ${sh + 90} 243 ${sh + 68}`, 243, sh + 68)}</g>`;
   } else if (pose === "back") { // 腰に手（痛い）: ひじを外に張って、手は腰の後ろ（体の後ろに描く）
     behind = arm(`M${100 + 28 * H} ${sh} Q${100 + 78 * H} ${sh + 40} ${100 + 30 * H} ${bodyBot - 30}`, 100 + 24 * H, bodyBot - 30) + arm(`M${100 - 28 * H} ${sh} Q${100 - 78 * H} ${sh + 40} ${100 - 30 * H} ${bodyBot - 30}`, 100 - 24 * H, bodyBot - 30);
-    tool = `<g transform="rotate(18 150 ${bodyBot})"><rect x="150" y="${sh - 10}" width="11" height="${292 - sh}" rx="5" fill="#8b5a2b"/><path d="M135 ${270} l44 0 l10 30 l-64 0Z" fill="#6b7f92"/></g>`;
-    extra = `<g class="ouch"><path d="M${100 + 62 * H} ${bodyBot - 56} l6 -16 l6 14 l14 -8 l-8 14 l16 2 l-16 6 l8 14 l-14 -8 l-6 14 l-6 -16 l-14 8 l8 -14 l-16 -2 l16 -6 l-8 -14Z" fill="#ffd27a" stroke="#c0392b" stroke-width="2"/><text x="${100 + 84 * H}" y="${bodyBot - 70}" font-size="30" font-weight="900" fill="#c0392b" font-family="Zen Maru Gothic">ズキッ</text></g>`;
+    tool = `<g transform="rotate(-62 160 286)"><rect x="154" y="${110}" width="11" height="176" rx="5" fill="#8b5a2b"/><path d="M139 ${270} l44 0 l10 30 l-64 0Z" fill="#6b7f92"/></g>`;
+    front = `<circle cx="${100 - 44 * H}" cy="${bodyBot - 34}" r="13" fill="${mitt}"/><circle cx="${100 + 44 * H}" cy="${bodyBot - 34}" r="13" fill="${mitt}"/>`;
+    extra = `<g class="ouch"><path d="M${100 - 74 * H} ${bodyBot - 52} l6 -16 l6 14 l14 -8 l-8 14 l16 2 l-16 6 l8 14 l-14 -8 l-6 14 l-6 -16 l-14 8 l8 -14 l-16 -2 l16 -6 l-8 -14Z" fill="#ffd27a" stroke="#c0392b" stroke-width="2"/><text x="${100 - 92 * H}" y="${bodyBot - 66}" font-size="30" font-weight="900" fill="#c0392b" font-family="Zen Maru Gothic" text-anchor="end">ズキッ</text></g>`;
   } else if (pose === "cane") {
     arms = arm(`M${100 + 28 * H} ${sh} Q${100 + 54} ${sh + 40} ${100 + 50} ${sh + 86}`, 150, sh + 90) + arm(`M${100 - 28 * H} ${sh} Q${100 - 56} ${sh + 30} ${100 - 60} ${sh + 70}`, 40, sh + 74);
     tool = `<rect x="146" y="${sh + 90}" width="9" height="${292 - sh - 92}" rx="4" fill="#8b5a2b"/><rect x="134" y="${sh + 84}" width="30" height="12" rx="6" fill="#8b5a2b"/>`;
@@ -206,7 +210,7 @@ const CARDS = {
         <rect x="260" y="520" width="1200" height="300" rx="70" fill="#7d4f68"/><rect x="300" y="420" width="1120" height="200" rx="60" fill="#8f6179"/>
         <rect x="220" y="560" width="120" height="260" rx="50" fill="#6c4259"/><rect x="1380" y="560" width="120" height="260" rx="50" fill="#6c4259"/>
         <path d="M400 560 C600 480 1100 500 1300 560 L1300 700 C1100 760 600 740 400 700 Z" fill="#c8a7b8"/>
-        <g id="feet"><g transform="rotate(-10 1000 570)"><rect x="965" y="360" width="70" height="220" rx="35" fill="#f4e4d0"/><rect x="965" y="300" width="70" height="90" rx="35" fill="#c0392b"/><rect x="990" y="300" width="100" height="62" rx="31" fill="#c0392b"/><rect x="975" y="372" width="50" height="10" rx="5" fill="#fff" opacity=".45"/></g><g transform="rotate(10 1130 570)"><rect x="1095" y="340" width="70" height="240" rx="35" fill="#f4e4d0"/><rect x="1095" y="280" width="70" height="90" rx="35" fill="#c0392b"/><rect x="1120" y="280" width="100" height="62" rx="31" fill="#c0392b"/><rect x="1105" y="352" width="50" height="10" rx="5" fill="#fff" opacity=".45"/></g><path d="M900 560 q110 -40 300 0 l0 40 l-300 0Z" fill="#c8a7b8"/></g>
+        <g id="feet"><g transform="rotate(-10 1000 570)"><rect x="965" y="360" width="70" height="220" rx="35" fill="#f4e4d0"/><rect x="965" y="300" width="70" height="90" rx="35" fill="#8fb8c9"/><rect x="990" y="300" width="100" height="62" rx="31" fill="#8fb8c9"/><rect x="975" y="372" width="50" height="10" rx="5" fill="#fff" opacity=".45"/></g><g transform="rotate(10 1130 570)"><rect x="1095" y="340" width="70" height="240" rx="35" fill="#f4e4d0"/><rect x="1095" y="280" width="70" height="90" rx="35" fill="#8fb8c9"/><rect x="1120" y="280" width="100" height="62" rx="31" fill="#8fb8c9"/><rect x="1105" y="352" width="50" height="10" rx="5" fill="#fff" opacity=".45"/></g><path d="M900 560 q110 -40 300 0 l0 40 l-300 0Z" fill="#c8a7b8"/></g>
         <g id="phone"><circle cx="620" cy="520" r="170" fill="#bfe0ee" opacity=".16"/><g transform="rotate(-18 620 530)"><rect x="556" y="424" width="128" height="212" rx="20" fill="#0d1620"/><clipPath id="scr"><rect x="566" y="434" width="108" height="192" rx="12"/></clipPath><image href="../../.video/rec/still-home.png" x="566" y="434" width="108" height="234" clip-path="url(#scr)" preserveAspectRatio="xMidYMin slice"/></g></g>
         <g><rect x="1560" y="740" width="180" height="70" rx="12" fill="#6b4a33"/><rect x="1610" y="660" width="80" height="80" rx="14" fill="#f4f7fa"/><ellipse cx="1650" cy="660" rx="40" ry="10" fill="#d9825b"/>
           <g id="steam" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".7"><path d="M1630 640 C1620 620 1640 610 1630 590"/><path d="M1660 640 C1650 620 1670 610 1660 590"/></g></g>
@@ -235,19 +239,19 @@ const CARDS = {
     const el = document.createElement("div"); el.className = "scene card low";
     el.innerHTML = `<div style="position:absolute;inset:0;background:linear-gradient(180deg,#0f1c2b 0%,#1b2e41 60%,#29445c 100%)"></div>
       <div class="branch" style="top:470px;left:520px;width:880px;background:#4a3324"></div>
-      <div class="birds" style="top:90px"><div id="b1" style="transform:translate(60px,70px) scale(1.05)">${mascot(SCARF.marigold, 280)}</div><div id="b2" style="transform:translate(20px,95px) scale(1.0)">${mascot(SCARF.lupinus, 280)}</div><div style="transform:translate(-30px,30px) scale(1.1)">${mascot(SCARF.salvia, 330)}</div></div>
+      <div class="birds" style="top:128px"><div id="b1" style="transform:translate(60px,70px) scale(1.05)">${mascot(SCARF.marigold, 280)}</div><div id="b2" style="transform:translate(20px,95px) scale(1.0)">${mascot(SCARF.lupinus, 280)}</div><div style="transform:translate(-30px,30px) scale(1.1)">${mascot(SCARF.salvia, 330)}</div></div>
       <div style="position:absolute;left:0;width:1920px;top:1030px;text-align:center;font-size:20px;color:#8fa9bd;font-weight:700">出典: 2020年国勢調査／令和8年版高齢社会白書／内閣府「人々のつながりに関する基礎調査」（令和7年）</div>`;
     const snow = snowLayer(5, 120, { alpha: 0.8 }); el.append(snow);
     const birds = el.querySelector(".birds"), b1 = el.querySelector("#b1"), b2 = el.querySelector("#b2");
     // 最初は青い1羽だけ（ひとり）。6秒から2羽がそっと寄ってくる（「くっついて乗り切る」の伏線）
-    el.update = (lt) => { snow.update(lt); birds.style.transform = `translateY(${Math.sin(lt * 1.6) * 5}px) scale(${1 + lt * 0.006})`; const k = ease((lt - 6) / 1.4); b1.style.opacity = k; b1.style.transform = `translate(${60 - (1 - k) * 220}px,70px) scale(1.05)`; b2.style.opacity = k; b2.style.transform = `translate(${20 - (1 - k) * 120}px,95px) scale(1.0)`; };
+    el.update = (lt) => { snow.update(lt); birds.style.transform = `translateY(${Math.sin(lt * 1.6) * 5}px) scale(${1 + lt * 0.006})`; const k = ease((lt - 3.5) / 1.4); b1.style.opacity = k; b1.style.transform = `translate(${60 - (1 - k) * 220}px,70px) scale(1.05)`; b2.style.opacity = k; b2.style.transform = `translate(${20 - (1 - k) * 120}px,95px) scale(1.0)`; };
     return el;
   },
   diagram() {
     const el = document.createElement("div"); el.className = "scene card";
     el.innerHTML = `<div class="cols">
-      <div class="col ai"><h2>Claude（AI）に任せる<small>段取り</small></h2><ul style="padding:0;margin:0"><li>🧭 家ごとに人数・担当・理由を決める</li><li>📷 写真1枚で「通れるか」を確かめる</li><li>💬 相談にのり、合う参加の仕方をすすめる</li><li>📖 聞き書きから絵本を書く・カードを描く</li></ul></div>
-      <div class="col human"><h2>AI に任せない<small>気持ちと安全（人とプログラム）</small></h2><ul style="padding:0;margin:0"><li>🔢 得点・雪の kg・夜のルール</li><li>🛡 安全の注意・名前と場所は AI に渡さない</li><li>🩺 体調や医療は判断しない</li><li class="no">🎤 「ありがとう」は、本人の声で</li></ul></div>
+      <div class="col ai"><h2>Claude（AI）に任せる<small>段取り</small></h2><ul style="padding:0;margin:0"><li>🧭 家ごとに人数・担当・理由を決める</li><li>📷 写真1枚で「通れるか」を確かめる</li><li>💬 相談にのり、参加の仕方をすすめる</li><li>📖 絵本を書く・カードを描く</li></ul></div>
+      <div class="col human"><h2>AI に任せない<small>気持ちと安全（人とプログラム）</small></h2><ul style="padding:0;margin:0"><li>🔢 得点・雪の kg・夜のルール</li><li>🛡 名前と場所は AI に渡さない</li><li>🩺 体調や医療は判断しない</li><li class="no">🎤 「ありがとう」は、本人の声で</li></ul></div>
     </div>
     <div class="big" style="top:80px;font-size:72px;color:#fff">AI は段取りを。<span style="color:#ffd0b5">人は、会いに行く。</span></div>`;
     el.update = () => {};
@@ -256,7 +260,7 @@ const CARDS = {
   making() {
     const el = document.createElement("div"); el.className = "scene";
     const items = (T.commits || []).map((c, i) => `<div class="mk-item ${i % 3 === 0 ? "me" : ""}">${i % 3 === 0 ? "🛋" : mascot(SCARF.lamp, 26)}${c.replace(/</g, "&lt;")}</div>`).join("");
-    el.innerHTML = `<div class="mk-phone"><div class="mk-head">Claude Code（スマホから）<small>日本語で頼む → 作る → 確かめる → コミット。6日間。</small></div><div class="mk-clip"><div class="mk-list" id="mk">${items}</div></div></div>
+    el.innerHTML = `<div class="mk-phone"><div class="mk-head">Claude Code（スマホから）<small>日本語で頼む → 作る → 確かめる → コミット（6日間）</small></div><div class="mk-clip"><div class="mk-list" id="mk">${items}</div></div></div>
       <div class="mk-birds"><svg width="520" height="300" viewBox="0 0 520 300"><rect x="20" y="236" width="480" height="12" rx="6" fill="#6b4a33"/>${mascot(SCARF.marigold, 150).replace("<svg", '<svg x="60" y="110"')}${mascot(SCARF.lupinus, 150).replace("<svg", '<svg x="190" y="104"')}${mascot(SCARF.salvia, 190, "happy").replace("<svg", '<svg x="310" y="70"')}</svg></div>
       <div style="position:absolute;left:150px;top:1004px;width:454px;text-align:center;font-size:24px;font-weight:700;color:#b7c7d6">このリポジトリの本当のコミット記録</div>`;
     const list = el.querySelector("#mk");
@@ -276,14 +280,13 @@ const CARDS = {
         <ellipse cx="420" cy="880" rx="300" ry="60" fill="#e3eef3"/><ellipse cx="1500" cy="890" rx="320" ry="64" fill="#e3eef3"/>
         <rect x="952" y="300" width="14" height="450" fill="#4a6076"/><rect x="700" y="300" width="266" height="12" rx="6" fill="#4a6076"/><rect x="930" y="250" width="58" height="56" rx="10" fill="#4a6076"/><rect x="940" y="260" width="38" height="36" rx="6" fill="#ffe9a8"/>
         <g id="birds">${mascot(SCARF.marigold, 90).replace("<svg", '<svg x="700" y="214"')}${mascot(SCARF.lupinus, 90).replace("<svg", '<svg x="790" y="206"')}${mascot(SCARF.salvia, 110, "happy").replace("<svg", '<svg x="880" y="186"')}</g>
-        ${person({ x: 60, y: 480, s: 1.3, pose: "shovel", coat: "#29445c", hat: "#2F6FE4", face: "happy" })}
-        ${person({ x: 330, y: 600, s: 0.9, pose: "shovel", kind: "child", coat: "#9B5DE5", hat: "#ffd27a", face: "happy" })}
-        ${person({ x: 560, y: 480, s: 1.3, pose: "blower", coat: "#FF8A3D", hat: "#1e3346", face: "open" })}
+        ${person({ x: -30, y: 480, s: 1.3, pose: "shovel", coat: "#29445c", hat: "#2F6FE4", face: "happy" })}
+        ${person({ x: 360, y: 600, s: 0.9, pose: "shovel", kind: "child", coat: "#9B5DE5", hat: "#ffd27a", face: "happy" })}
+        ${person({ x: 620, y: 480, s: 1.3, pose: "blower", coat: "#FF8A3D", hat: "#1e3346", face: "open" })}
         ${person({ x: 1060, y: 500, s: 1.25, pose: "cane", kind: "elder", coat: "#7d4f68", beanie: false, face: "happy", mitt: "#f3d9c6" })}
         ${person({ x: 1290, y: 500, s: 1.25, pose: "cup", kind: "elder", coat: "#c8a7b8", face: "happy" })}
-        ${person({ x: 1500, y: 490, s: 1.3, pose: "wave", coat: "#2F6FE4", beanie: false, hair: "#5b3b2a", face: "happy", flip: true })}
-        ${person({ x: 1700, y: 480, s: 1.3, pose: "shovel", coat: "#4a6076", hat: "#9B5DE5", face: "smile", flip: true })}
-        ${bubble(1180, 462, "おはよう", 180)}${bubble(1470, 440, "ありがとう", 200)}${bubble(210, 440, "♪", 70)}
+        ${person({ x: 1540, y: 490, s: 1.3, pose: "wave", coat: "#2F6FE4", beanie: false, hair: "#5b3b2a", face: "happy", flip: true })}
+        ${bubble(1120, 462, "おはよう", 180)}${bubble(1360, 440, "ありがとう", 200)}${bubble(715, 440, "♪", 70)}
         <text x="1890" y="54" font-size="24" font-weight="700" fill="rgba(74,96,118,.7)" text-anchor="end" font-family="Zen Maru Gothic">※イメージ（見たい未来の朝）</text>
       </svg>`;
     const snow = snowLayer(3, 50, { alpha: 0.8 }); el.append(snow);
@@ -298,17 +301,20 @@ const built = T.scenes.map((s) => {
   let el;
   if (s.kind === "card") { el = CARDS[s.card](); }
   else {
-    el = document.createElement("div"); el.className = "scene app";
-    el.innerHTML = `<div class="phone"><img></div><div class="label">${({ home: "A 手伝う人（田中さん）", ask: "C お願いする家（小林さん）", chat: "A 手伝う人・隊長トーク", map: "A 手伝う人・町の地図", finish: "A 手伝う人・写真で完了", thanks: "C お願いする家・声のありがとう", listen: "A 手伝う人・届いた声", consult: "A 手伝う人・隊長に相談", book: "聞き書き → 町の週刊絵本", "home-end": "" })[s.scene] || ""}</div>${s.id === "ochi" ? `<div class="ochi-bird">${mascot(SCARF.salvia, 380, "happy")}</div>` : ""}`;
+    el = document.createElement("div"); el.className = "scene app" + (s.id === "finish" ? " finishscene" : "");
+    el.innerHTML = `<div class="phone"><img></div><div class="label">${({ home: "手伝う人の画面（田中さん）", ask: "お願いする家の画面（小林さん）", chat: "手伝う人・隊長トーク", map: "手伝う人・町の地図", finish: "手伝う人・写真で完了", thanks: "お願いする家・声のありがとう", listen: "手伝う人・届いた声", consult: "手伝う人・隊長に相談", book: "聞き書き → 町の週刊絵本", "home-end": "" })[s.scene] || ""}</div>${s.id === "ochi" ? `<div class="ochi-bird">${mascot(SCARF.salvia, 380, "happy")}</div>` : ""}${s.id === "finish" ? `<div class="cardzoom"><img></div>` : ""}`;
+    const zoom = el.querySelector(".cardzoom");
+    if (zoom) { const m = T.rec?.finish?.marks?.card; const idx = Math.min(T.frames.finish || 1, Math.round(((m ? m.t : 9) + 2.2) * T.fps)); zoom.querySelector("img").src = `../../.video/frames/finish/${String(idx).padStart(5, "0")}.jpg`; }
     const snow = snowLayer(11, 50, { alpha: 0.35, speed: 0.6 }); el.prepend(snow);
     const img = el.querySelector("img"); const count = T.frames[s.scene] || 1;
     const phone = el.querySelector(".phone"); const fx = document.createElement("div"); fx.className = "tapfx"; const fg = document.createElement("div"); fg.className = "finger"; phone.append(fx, fg);
     const taps = Object.values((T.rec && T.rec[s.scene] && T.rec[s.scene].marks) || {}).filter((m) => m && m.x != null).map((m) => ({ t: m.t - s.from, x: m.x * 430 / 390, y: m.y * 930 / 844 }));
-    el.update = (lt) => { snow.update(lt);
+    el.update = (lt, t) => { snow.update(lt);
       let on = null; for (const tp of taps) { const d = lt - tp.t; if (d > -0.45 && d < 0.7) on = { ...tp, d }; }
       if (on) { const k = clamp((on.d + 0.45) / 0.45); fg.style.left = on.x + "px"; fg.style.top = on.y + "px"; fg.style.opacity = on.d < 0 ? k * 0.9 : Math.max(0, 0.9 - on.d * 2); fg.style.transform = `scale(${on.d < 0 ? 1.3 - k * 0.3 : 1})`;
         const r = clamp(on.d / 0.7); fx.style.left = on.x + "px"; fx.style.top = on.y + "px"; fx.style.opacity = on.d < 0 ? 0 : 1 - r; fx.style.transform = `scale(${0.3 + r * 1.4})`; }
       else { fg.style.opacity = 0; fx.style.opacity = 0; }
+      if (zoom) { const k = ease((t - 83.3) / 0.5); zoom.style.opacity = k; zoom.style.transform = `scale(${0.8 + k * 0.2}) rotate(${-3 + k * 3}deg)`; }
       const idx = clamp(Math.floor((s.from + lt) * T.fps) + 1, 1, count); const src = `../../.video/frames/${s.scene}/${String(idx).padStart(5, "0")}.jpg`; if (img.getAttribute("src") !== src) img.src = src; el.pending = img.decode().catch(() => {}); };
   }
   const telops = document.createElement("div"); telops.className = "telops";
