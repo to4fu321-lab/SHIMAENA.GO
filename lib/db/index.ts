@@ -109,6 +109,15 @@ export async function dbStatus(): Promise<DbStatus> {
       "select conname from pg_constraint where conrelid = 'cards'::regclass and conname in ('cards_rollcall_id_fkey', 'cards_mission_id_fkey')",
     ).catch(() => []);
     for (const c of oldFks) missing.push(`cards の古い制約 ${c.conname} を外す`);
+    // あとから足した列（schema.sql の alter table … add column）も見る。表があっても列がないと読み書きが失敗する（11/7 点検: solo_logs.strokes）
+    const cols = await query<{ t: string; c: string }>(
+      "select table_name as t, column_name as c from information_schema.columns where table_schema = 'public'",
+    ).catch(() => []);
+    const haveCol = new Set(cols.map((r) => `${r.t}.${r.c}`));
+    for (const st of await schemaStatements()) {
+      const m = /alter table\s+(\w+)\s+add column if not exists\s+(\w+)/i.exec(st);
+      if (m && existing.has(m[1]) && !haveCol.has(`${m[1]}.${m[2]}`)) missing.push(`${m[1]}.${m[2]}（列）`);
+    }
     if (missing.length > 0) return { kind: "unprepared", missing };
     const cnt = await query<{ n: string }>("select count(*)::text as n from participants");
     return { kind: "ready", participants: Number(cnt[0]?.n ?? 0) };
