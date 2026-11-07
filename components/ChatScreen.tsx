@@ -134,14 +134,21 @@ export default function ChatScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastId]);
 
+  /** 送った回数と、返事を待っている数（数秒ごとの取りに行きが、送ったばかりの吹き出しを古い流れで上書きしないように） */
+  const sendSeq = useRef(0);
+  const sending = useRef(0);
   // 数秒ごとに、届いた文面（点呼・作戦・なかまの誘い…）を取りに行く
   useEffect(() => {
     if (readOnly) return;
     const t = setInterval(async () => {
-      if (pending) return;
+      if (pending || sending.current > 0) return;
+      const seq = sendSeq.current;
       const r = await chatPollAction(viewerId).catch(() => undefined);
+      // 取りに行っている間に文を送っていたら、この結果は古い（自分の吹き出しが消えてしまう。11/7 本人の指摘「しばらく表示されない」）
+      if (seq !== sendSeq.current || sending.current > 0) return;
       if (r?.ok && r.bubbles)
         setBubbles((cur) => {
+          if (cur.some((x) => x.id.startsWith("tmp-"))) return cur; // まだ届いていない自分の吹き出しがあるあいだは上書きしない
           const changed = r.bubbles!.length !== cur.length || r.bubbles!.at(-1)?.id !== cur.at(-1)?.id;
           if (changed && r.bubbles!.at(-1)?.from === "captain" && cur.length > 0) play("message"); // 隊長から新しい文「ポロン」
           return changed ? r.bubbles! : cur;
@@ -160,10 +167,22 @@ export default function ChatScreen({
     });
   };
 
+  /** 送って返事を待つ（待っている間は、取りに行きの結果で上書きしない） */
+  const waitFor = async (job: () => Promise<ChatResult>) => {
+    sendSeq.current++;
+    sending.current++;
+    try {
+      apply(await job().catch(() => ({ ok: false })));
+    } finally {
+      sending.current--;
+    }
+  };
+
   const apply = (r: ChatResult) => {
     if (!r.ok) {
       setError(r.text ?? t(lang, "failed"));
       play("error");
+      setBubbles((cur) => cur.filter((x) => !x.id.startsWith("tmp-"))); // 届かなかった仮の吹き出しは消す（残ると数秒ごとの更新が止まる）
     } else if (r.bubbles) {
       setBubbles(r.bubbles);
       if (r.bubbles.at(-1)?.from === "captain") play("message", { delay: 0.15 });
@@ -178,7 +197,7 @@ export default function ChatScreen({
     setDraft("");
     optimistic(text);
     play("send");
-    start(async () => apply(await chatTextAction(viewerId, text).catch(() => ({ ok: false }))));
+    start(() => waitFor(() => chatTextAction(viewerId, text)));
   };
   const press = (b: ChatButton) => {
     if (pending) return;
@@ -189,10 +208,10 @@ export default function ChatScreen({
       // 日本語なら今までどおり文そのもの。ほかのことばでは押した文字（訳）を自分の吹き出しに（送る中身は日本語のまま）
       const shown = lang === "ja" ? b.text : b.label;
       optimistic(shown);
-      start(async () => apply(await chatTextAction(viewerId, b.text, { shown }).catch(() => ({ ok: false }))));
+      start(() => waitFor(() => chatTextAction(viewerId, b.text, { shown })));
     } else if (b.kind === "postback") {
       optimistic(b.label);
-      start(async () => apply(await chatPostbackAction(viewerId, b.data, b.label).catch(() => ({ ok: false }))));
+      start(() => waitFor(() => chatPostbackAction(viewerId, b.data, b.label)));
     } else if (b.kind === "photo") {
       (b.capture ? fileCamera : fileRoll).current?.click();
     }
@@ -202,17 +221,19 @@ export default function ChatScreen({
     setError(undefined);
     play("shutter");
     setBubbles((cur) => [...cur, { id: `tmp-${Date.now()}`, from: "me", at: new Date().toISOString(), photo: true, buttons: [], quick: [] }]);
-    start(async () => {
-      try {
-        const blob = await shrink(file);
-        const fd = new FormData();
-        fd.set("viewerId", viewerId);
-        fd.set("photo", new File([blob], "done.jpg", { type: "image/jpeg" }));
-        apply(await chatPhotoAction(fd));
-      } catch (e) {
-        setError(e instanceof Error ? e.message : t(lang, "photoFailed"));
-      }
-    });
+    start(() =>
+      waitFor(async () => {
+        try {
+          const blob = await shrink(file);
+          const fd = new FormData();
+          fd.set("viewerId", viewerId);
+          fd.set("photo", new File([blob], "done.jpg", { type: "image/jpeg" }));
+          return await chatPhotoAction(fd);
+        } catch (e) {
+          return { ok: false, text: e instanceof Error ? e.message : t(lang, "photoFailed") };
+        }
+      }),
+    );
   };
 
   const Button = ({ b, big }: { b: ChatButton; big: boolean }) => {
@@ -313,16 +334,8 @@ export default function ChatScreen({
                   {(b.lines?.length || b.buttons.length) ? (
                     <div className="space-y-2 p-3">
                       {b.lines?.map((l, i) =>
-                        l.steps ? (
-                          <div key={i} className="flex flex-wrap items-center gap-1" aria-label={l.text}>
-                            <span className="text-[0.75em] text-ink-soft">{t(lang, "captainChecked")}</span>
-                            {l.steps.map((s, j) => (
-                              <span key={j} className="agent-step rounded-full bg-ice-soft px-2 py-0.5 text-[0.75em] font-bold text-ink" style={{ animationDelay: `${j * 0.25}s` }}>
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
+                        // 「隊長が調べた」札は出さない（11/7 本人の指摘「表示不要では？」）
+                        l.steps ? null : (
                         <p key={i} className={`whitespace-pre-line leading-snug ${l.strong ? "text-[1.1em] font-bold" : l.accent ? "text-[0.85em] text-lamp-deep" : "text-[1em]"}`}>
                           {l.text}
                         </p>
