@@ -1,6 +1,6 @@
 // 隊長の声（spec v1.36）: 無料の VOICEVOX Web API（api.tts.quest。鍵なしでも少しずつ使える）で、かわいい声の mp3 を作る。
 // サーバー側でだけ呼ぶ（任意の API キー VOICEVOX_API_KEY を画面に出さない）。失敗したら画面はブラウザの声に戻る（止まらない）。
-// 声の主は VOICEVOX のキャラクター。使うときはクレジット「VOICEVOX:雨晴はう」などを出す決まり（画面の「ことば」の紙と README に）。
+// 声の主は VOICEVOX のキャラクター。使うときはクレジット「VOICEVOX:満別花丸」などを出す決まり（画面の「ことば」の紙と README に）。
 // 鍵なしの枠は小さい（1分に数回。超えると 429）→ その回はブラウザの声に戻る。本番で使うなら無料の鍵を VOICEVOX_API_KEY に。
 // 切るときは Vercel の環境変数 CAPTAIN_VOICE=off。
 
@@ -8,11 +8,11 @@
 export type VoiceEnv = Readonly<Record<string, string | undefined>>;
 
 /**
- * 既定の声: 10 = VOICEVOX:雨晴はう（ノーマル）。シマエナガらしい、小さくてふんわり高めの声（11/7 本人の指示「ずんだもん以外で、シマエナガっぽいやつで」。
- * 候補9つを同じ文で合成して測り、高め（基本周波数の中央値 393Hz）で声の大きさの揺れがやさしいものを選んだ）。
+ * 既定の声: 70 = VOICEVOX:満別花丸（元気）。元気でかわいい、高めの声（11/7 本人の指示「もっと元気な感じでかわいい声」。
+ * 前は 10 = 雨晴はう（ふんわり）。満別は北海道の地名で、北海道の鳥シマエナガの隊長に合う）。
  * VOICEVOX_SPEAKER で変えられる（番号は api.tts.quest/v3/voicevox/speakers_array の順）
  */
-export const DEFAULT_SPEAKER = 10;
+export const DEFAULT_SPEAKER = 70;
 /** 1回に読む長さの上限（文字）。長い文は前から */
 export const VOICE_TEXT_MAX = 200;
 const API = "https://api.tts.quest/v3/voicevox/synthesis";
@@ -63,6 +63,9 @@ interface StatusResponse {
   isAudioError?: boolean;
 }
 
+/** 429 で待ってよい長さ（ここまでに頼み直せるなら待つ）。全体は 25 秒であきらめる */
+const RETRY_BUDGET_MS = 18_000;
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** 文を mp3 に。できなければ null（画面はブラウザの声に戻る）。全体で 25 秒まで待つ（鍵なしは長い文ほど遅い。11/7 本人の指摘「読み上げない」） */
@@ -70,9 +73,17 @@ export async function synthesize(text: string, fetchFn: typeof fetch = fetch): P
   const t = voiceText(text);
   if (!t) return null;
   const started = Date.now();
-  const res = await fetchFn(synthesisUrl(t), { signal: AbortSignal.timeout(8000) });
-  if (!res.ok) return null;
-  const j = (await res.json()) as SynthResponse;
+  // 鍵なしは「前の声を作ってすぐ」だと 429 と「あと何秒」（retryAfter）が返る。隊長の返事は2つに分けて続けて頼むので、
+  // 2つ目がいつもここで断られ、読み上げが最初の「。」で止まっていた（11/7 本人の指摘）→ 言われた秒数だけ待ってもう一度
+  let j: SynthResponse;
+  for (;;) {
+    const res = await fetchFn(synthesisUrl(t), { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    j = (await res.json()) as SynthResponse;
+    const wait = (j.retryAfter ?? 0) * 1000 + 300;
+    if (j.success || !j.retryAfter || Date.now() - started + wait > RETRY_BUDGET_MS) break;
+    await sleep(wait);
+  }
   if (!j.success || !j.mp3DownloadUrl) return null;
   // できあがりを待つ（短い文なら 1〜2 秒）
   if (j.audioStatusUrl) {

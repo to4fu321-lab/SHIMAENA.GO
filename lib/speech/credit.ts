@@ -15,6 +15,9 @@ const NAMES: Record<number, string> = {
   20: "VOICEVOX:もち子さん",
   22: "VOICEVOX:ずんだもん",
   23: "VOICEVOX:WhiteCUL",
+  69: "VOICEVOX:満別花丸",
+  70: "VOICEVOX:満別花丸",
+  72: "VOICEVOX:満別花丸",
 };
 
 /** 隊長の声の名前（切ってあれば undefined） */
