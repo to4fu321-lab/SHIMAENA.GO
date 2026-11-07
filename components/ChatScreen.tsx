@@ -264,7 +264,7 @@ export default function ChatScreen({
                     {b.label}
                   </button>
                 ))}
-                <p className="pt-1 text-sm text-ink-soft">困ったこと・こうしてほしいことは、右上の 📮 から隊長に伝えられます。</p>
+                <p className="pt-1 text-sm text-ink-soft">要望やバグ報告は、上の封筒のボタンから送れます。</p>
               </div>
             )}
           </div>
