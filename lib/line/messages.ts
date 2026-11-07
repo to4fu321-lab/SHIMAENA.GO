@@ -403,7 +403,7 @@ export const MSG = {
     ];
   },
   cheerToHelper: (requesterName: string, label: string, baseNumber: number | string) =>
-    bubbles([`拠点${baseNumber}（${requesterName}さん）のご家族から、応援「${label}」が届きました。📣`, "遠くからも見ていてくれています。"]),
+    bubbles([`拠点${baseNumber}（${san(requesterName)}）のご家族から、応援「${label}」が届きました。📣`, "遠くからも見ていてくれています。"]),
   cheerSent: (label: string, count: number) => bubbles([count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。`]),
   cheerNotFound: () => bubbles(["今朝の雪かきの記録が見つかりませんでした。", "少し時間をおいて、もう一度押してみてください。"]),
   lateRequesterFine: () => bubbles(["よかったです。今朝の依頼は取り下げました。", "ゆっくりどうぞ。"]),
