@@ -5,8 +5,9 @@ import type { LineMessage } from "../line/types";
 import { actionsOf, textOf } from "../line/flex";
 import { memoryRepo } from "../repo";
 import { DEMO_DATE, fillAnswers } from "./flow";
-import { announce, applyThanks, applyVoiceThanks, completeWithPhoto, plan, ring, sendThanks, voiceThanksTarget } from "./ops";
-import { canListen, findThanksVoice, readThanksVoice, resetThanksVoices } from "../thanks/voice";
+import { announce, applyThanks, applyVoiceThanks, completeWithPhoto, familyVoiceRequester, plan, ring, sendThanks, voiceThanksTarget } from "./ops";
+import { canListen, familyVoiceId, findThanksVoice, readThanksVoice, resetThanksVoices, voiceFromName } from "../thanks/voice";
+import { repo } from "../repo";
 import { thanksSentence } from "../claude/thanks";
 import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
@@ -135,5 +136,31 @@ describe("ありがとうは声で（spec v1.29）", () => {
     const old = new Date(Date.now() - 8 * 86400_000);
     expect((await applyVoiceThanks(missionId, base.requesterId, audio, old)).ok).toBe(true);
     expect(await findThanksVoice(missionId)).toBeUndefined();
+  });
+
+  it("離れて暮らす家族の声は別の枠に入り、家の人の声を上書きしない。紐づいた家族だけが吹き込める（11/7）", async () => {
+    resetThanksVoices();
+    const { missionId, participantId } = await morningWithOneDone();
+    const roster = await loadRoster();
+    const s = await loadMorning();
+    const base = roster.bases.find((b) => b.id === s.morning.missions.find((m) => m.id === missionId)!.baseId)!;
+    // 紐づいていない人は家族として受け付けない
+    expect(await familyVoiceRequester(missionId, "U-stranger")).toBeUndefined();
+    await repo().addFamilyLink({ familyLineUserId: "U-grandchild", requesterId: base.requesterId, linkCode: "FAM123" });
+    expect(await familyVoiceRequester(missionId, "U-grandchild")).toBe(base.requesterId);
+
+    expect((await applyVoiceThanks(missionId, base.requesterId, audio)).ok).toBe(true);
+    const fam = { ...audio, bytes: new Uint8Array([26, 69, 223, 163, 9, 9]), seconds: 5 };
+    expect((await applyVoiceThanks(missionId, base.requesterId, fam, new Date(), { family: true })).ok).toBe(true);
+    // 家の人の声はそのまま、家族の声は <ID>-family に
+    expect((await readThanksVoice(missionId, participantId))?.audio).toEqual(audio.bytes);
+    expect((await readThanksVoice(familyVoiceId(missionId), participantId))?.audio).toEqual(fam.bytes);
+    expect((await findThanksVoice(familyVoiceId(missionId)))?.seconds).toBe(5);
+    expect(voiceFromName("小林さん", true)).toBe("小林さんのご家族");
+    expect(voiceFromName("高橋", true)).toBe("高橋さんのご家族");
+    expect(t(MSG.voiceToHelper(voiceFromName("高橋", true), 2, familyVoiceId(missionId)))).toContain("高橋さんのご家族（拠点2）から");
+    // 家族への「終わりました」に「🎤 声でありがとう」
+    const done = MSG.familyDone(["田中"], missionId);
+    expect(actionsOf(done.at(-1)!).map((a) => a.label)).toEqual(["🎤 声でありがとう"]);
   });
 });

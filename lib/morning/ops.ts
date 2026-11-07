@@ -8,7 +8,7 @@ import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
-import { okVoiceMime, saveThanksVoice, VOICE_MAX_BYTES, VOICE_MAX_SECONDS } from "../thanks/voice";
+import { familyVoiceId, okVoiceMime, saveThanksVoice, voiceFromName, VOICE_MAX_BYTES, VOICE_MAX_SECONDS } from "../thanks/voice";
 import { planMorning } from "../claude/commander";
 import { checkPhoto, decidePhoto, hazardLines, SNOW_TYPE_LABEL, WIDTH_LABEL, type PhotoInput } from "../claude/photo";
 import { photoFingerprint, photoSeen, rememberPhoto } from "../ops/photo-seen";
@@ -688,34 +688,54 @@ export async function voiceThanksTarget(
   return { baseNumber: base.number, helperIds };
 }
 
-/** 家の人の声を保存して、手伝った人の隊長トークに「▶ 声を聞く」を届ける。声は文字にしない・AI に渡さない */
+/**
+ * 離れて暮らす家族が、その家の雪かきに声を吹き込めるか（11/7 本人の指示）。
+ * 終わったミッションの家に、連携コードで紐づいた家族のときだけ、その家の人の ID を返す。
+ */
+export async function familyVoiceRequester(missionId: string, familyLineUserId: string): Promise<string | undefined> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  const base = m && roster.bases.find((b) => b.id === m.baseId);
+  if (!m || !base || m.status !== "done" || !familyLineUserId) return undefined;
+  const links = await repo().listFamilyLinksByRequester(base.requesterId);
+  return links.some((l) => l.familyLineUserId === familyLineUserId) ? base.requesterId : undefined;
+}
+
+/**
+ * 家の人の声を保存して、手伝った人の隊長トークに「▶ 声を聞く」を届ける。声は文字にしない・AI に渡さない。
+ * family: 離れて暮らす家族の声（家の人の声とは別の枠。呼ぶ側で、その家の家族かを確かめてから requesterId に家の人の ID を渡す）
+ */
 export async function applyVoiceThanks(
   missionId: string,
   requesterId: string,
   audio: { bytes: Uint8Array; mime: string; seconds: number },
   now = new Date(),
+  opts: { family?: boolean } = {},
 ): Promise<{ ok: boolean; text: string; sentTo?: number }> {
   const target = await voiceThanksTarget(missionId, requesterId);
   if (!target) return { ok: false, text: "今朝の雪かきの記録が見つかりませんでした。" };
   if (!okVoiceMime(audio.mime)) return { ok: false, text: "この録音の形は受け取れませんでした。" };
   if (audio.bytes.length === 0 || audio.bytes.length > VOICE_MAX_BYTES) return { ok: false, text: "録音が空か、長すぎます（30秒まで）。" };
   const seconds = Math.min(VOICE_MAX_SECONDS, Math.max(0, Math.round(audio.seconds)));
+  const voiceId = opts.family ? familyVoiceId(missionId) : missionId;
   await saveThanksVoice(
-    { missionId, requesterId, helperIds: target.helperIds, mime: audio.mime, seconds, at: now.toISOString() },
+    { missionId: voiceId, requesterId, helperIds: target.helperIds, mime: audio.mime, seconds, at: now.toISOString() },
     audio.bytes,
     now,
   );
   const roster = await loadRoster();
   const requester = roster.participants.find((p) => p.id === requesterId);
+  const fromName = voiceFromName(requester?.nickname, opts.family);
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
   let sentTo = 0;
   for (const id of target.helperIds) {
     const k = inboxKeyOf(byId.get(id));
-    if (k && (await push(k, MSG.voiceToHelper(requester?.nickname ?? "お願いした人", target.baseNumber, missionId)))) sentTo++;
+    if (k && (await push(k, MSG.voiceToHelper(fromName, target.baseNumber, voiceId)))) sentTo++;
   }
   const s = await loadMorning();
-  s.thanksVoice = { ...(s.thanksVoice ?? {}), [missionId]: { at: now.toISOString(), seconds, sentTo } };
-  s.log.push(`拠点${target.baseNumber}: 声のありがとう（${seconds}秒）→ ${target.helperIds.length} 人（トーク ${sentTo} 人）`);
+  s.thanksVoice = { ...(s.thanksVoice ?? {}), [voiceId]: { at: now.toISOString(), seconds, sentTo } };
+  s.log.push(`拠点${target.baseNumber}: ${opts.family ? "家族の" : ""}声のありがとう（${seconds}秒）→ ${target.helperIds.length} 人（トーク ${sentTo} 人）`);
   await saveMorning(s);
   return { ok: true, text: target.helperIds.length > 0 ? `来てくれた${target.helperIds.length}人に、声を届けました。` : "声を受け取りました。", sentTo };
 }

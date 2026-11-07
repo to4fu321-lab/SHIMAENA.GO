@@ -129,7 +129,7 @@ function placeNote(r?: RequestNote): string {
 }
 
 /** 「さん」を付ける（デモの名前のように、もう付いていれば足さない） */
-export const san = (n: string) => (/(さん|様|さま|ちゃん|くん)$/.test(n) ? n : `${n}さん`);
+export const san = (n: string) => (/(さん|様|さま|ちゃん|くん|ご家族)$/.test(n) ? n : `${n}さん`);
 const names = (ns: string[]) => ns.map(san).join("、");
 
 export const MSG = {
@@ -400,6 +400,8 @@ export const MSG = {
         { label: "あったかくして", data: `cheer:${missionId}=2` },
         { label: "遠くから拍手", data: `cheer:${missionId}=3` },
       ]),
+      // 離れて暮らす家族も、声でありがとう（11/7 本人の指示。家の人の声とは別に届く）
+      ...bubbles(["離れていても、声で「ありがとう」を届けられます（30秒まで）。"], [open("🎤 声でありがとう", `/thanks/${missionId}`)]),
     ];
   },
   cheerToHelper: (requesterName: string, label: string, baseNumber: number | string) =>

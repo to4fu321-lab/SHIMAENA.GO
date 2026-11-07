@@ -28,7 +28,10 @@ async function morningWithOneDone() {
 
 describe("家族の応援スタンプ（spec v1.2）", () => {
   it("家族への完了通知に3つのボタンが付く。データの読み取り", () => {
-    const m = MSG.familyDone(["田中"], "m-x").at(-1)!; // ボタンは最後の吹き出しに付く
+    const all = MSG.familyDone(["田中"], "m-x");
+    const m = all.find((x) => actionsOf(x).length === 3)!; // 応援の3択の吹き出し
+    // 最後の吹き出しは「🎤 声でありがとう」（11/7 離れて暮らす家族も吹き込める）
+    expect(actionsOf(all.at(-1)!).map((a) => a.label)).toEqual(["🎤 声でありがとう"]);
     expect(actionsOf(m).map((a) => a.label)).toEqual(["お疲れさま", "あったかくして", "遠くから拍手"]);
     expect(MSG.familyDone(["田中"]).some((x) => actionsOf(x).length > 0)).toBe(false);
     expect(parseCheer("cheer:m-x=2")).toEqual({ missionId: "m-x", choice: "2" });

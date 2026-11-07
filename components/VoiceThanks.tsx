@@ -10,7 +10,7 @@ import { play } from "@/lib/sound/engine";
 const MAX_SECONDS = 30;
 
 type Props =
-  | { mode: "record"; viewerId: string; missionId: string; helperCount: number; savedSrc?: string }
+  | { mode: "record"; viewerId: string; missionId: string; helperCount: number; savedSrc?: string; family?: boolean }
   | { mode: "listen"; missionId: string; fromName: string; savedSrc: string; seconds?: number };
 
 function pickMime(): string | undefined {
@@ -37,7 +37,7 @@ export default function VoiceThanks(props: Props) {
   return <Recorder {...props} />;
 }
 
-function Recorder({ viewerId, missionId, helperCount, savedSrc }: Extract<Props, { mode: "record" }>) {
+function Recorder({ viewerId, missionId, helperCount, savedSrc, family }: Extract<Props, { mode: "record" }>) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "recording" | "recorded" | "sent">(savedSrc ? "sent" : "idle");
   const [left, setLeft] = useState(MAX_SECONDS);
@@ -109,6 +109,7 @@ function Recorder({ viewerId, missionId, helperCount, savedSrc }: Extract<Props,
     const fd = new FormData();
     fd.set("viewerId", viewerId);
     fd.set("missionId", missionId);
+    if (family) fd.set("family", "1");
     fd.set("seconds", String(Math.round(seconds.current)));
     fd.set("audio", new File([b], "thanks", { type: b.type }));
     start(async () => {
@@ -128,7 +129,9 @@ function Recorder({ viewerId, missionId, helperCount, savedSrc }: Extract<Props,
       <p className="text-lg leading-snug">
         {state === "sent"
           ? "声のありがとうを届けました。"
-          : `来てくれた${helperCount > 0 ? `${helperCount}人` : "人"}に、あなたの声で「ありがとう」を届けます（30秒まで）。`}
+          : family
+            ? `離れていても大丈夫。ご家族の家に来てくれた${helperCount > 0 ? `${helperCount}人` : "人"}に、あなたの声で「ありがとう」を届けます（30秒まで）。`
+            : `来てくれた${helperCount > 0 ? `${helperCount}人` : "人"}に、あなたの声で「ありがとう」を届けます（30秒まで）。`}
       </p>
 
       {state === "recorded" && url ? (

@@ -64,7 +64,7 @@
     { tag: "C", name: "小林さん", sub: "お願いする家・拠点7", team: "#7d4f68", as: "r7", start: "/chat" },
     { tag: "町", name: "町の地図", sub: "全員の動き", team: "#29445c", as: "h1", start: "/map" },
   ];
-  const PAGES = [["隊長トーク", "/chat"], ["地図", "/map"], ["ホーム", "/"], ["お願いする", "/ask"], ["声のありがとう", "/thanks/m-base7"], ["カード", "/cards"], ["つなぐ", "/connect"]];
+  const PAGES = [["隊長トーク", "/chat"], ["地図", "/map"], ["ホーム", "/"], ["お願いする", "/ask"], ["声のありがとう", "/thanks/m-base7"], ["家族の声", "/thanks/m-base7?family=1"], ["カード", "/cards"], ["つなぐ", "/connect"]];
   const KEYS = { "1": "/chat", "2": "/map", "3": "/", "4": "/connect" };
   const stage = document.getElementById("stage");
   const base = () => document.getElementById("base").value.replace(/\/$/, "");

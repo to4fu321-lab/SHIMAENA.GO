@@ -6,6 +6,27 @@ export const VOICE_MAX_SECONDS = 30;
 export const VOICE_MAX_BYTES = 2 * 1024 * 1024; // 30秒なら十分（opus で数百KB）
 export const VOICE_KEEP_DAYS = 7;
 
+// 離れて暮らす家族の声（11/7 本人の指示「離れて暮らす家族も吹き込める」）: 家の人の声とは別の枠に置き、上書きしない。
+// 枠の名前は「ミッションの ID ＋ -family」。聞けるのは家の人の声と同じ（その家の人と、手伝った人）。
+const FAMILY_SUFFIX = "-family";
+export function familyVoiceId(missionId: string): string {
+  return `${missionId}${FAMILY_SUFFIX}`;
+}
+export function isFamilyVoiceId(id: string): boolean {
+  return id.endsWith(FAMILY_SUFFIX);
+}
+/** 声の枠の名前から、ミッションの ID */
+export function missionIdOfVoice(id: string): string {
+  return isFamilyVoiceId(id) ? id.slice(0, -FAMILY_SUFFIX.length) : id;
+}
+/** 届いた声の「だれから」（家族の声は「○○さんのご家族」） */
+export function voiceFromName(nickname: string | undefined, family = false): string {
+  const n = nickname ?? "お願いした人";
+  if (!family) return n;
+  // 呼び名に「さん」を付けてから（lib/line/messages.ts の san と同じ決まり。san は「ご家族」で終わる名前にさんを足さない）
+  return `${/(さん|様|さま|ちゃん|くん|人)$/.test(n) ? n : `${n}さん`}のご家族`;
+}
+
 export interface ThanksVoice {
   missionId: string;
   requesterId: string;
