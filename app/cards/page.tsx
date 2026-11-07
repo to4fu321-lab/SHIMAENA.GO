@@ -15,16 +15,17 @@ import { soloStatus } from "@/lib/solo/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import LoginButton from "@/components/LoginButton";
 import Bgm from "@/components/Bgm";
+import RecentRecords from "@/components/RecentRecords";
 
 export const metadata: Metadata = { title: "活動カード ・ シマエナGO" };
 
-/** 丸い進み具合（カードの枚数 / 次のご褒美まで） */
-function Ring({ value, goal }: { value: number; goal: number }) {
+/** 丸い進み具合（カードの枚数。輪は次のご褒美までの進み）。カードは毎回1枚で上限なしなので「/10」は出さない。タップで図鑑へ */
+function Ring({ value, goal, href }: { value: number; goal: number; href: string }) {
   const r = 52;
   const len = 2 * Math.PI * r;
   const pct = goal > 0 ? Math.min(1, value / goal) : 1;
   return (
-    <div className="relative mx-auto size-44 shrink-0 short:size-32">
+    <Link href={href} aria-label={`集めたカード ${value}枚。図鑑を開く`} className="relative mx-auto block size-44 shrink-0 rounded-full active:scale-95 short:size-32">
       <svg viewBox="0 0 120 120" className="size-full -rotate-90" aria-hidden="true">
         <circle cx="60" cy="60" r={r} fill="#ffffff" stroke="#e3eef3" strokeWidth="10" />
         {pct > 0 && <circle cx="60" cy="60" r={r} fill="none" stroke="var(--lamp)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${len * pct} ${len}`} />}
@@ -36,11 +37,11 @@ function Ring({ value, goal }: { value: number; goal: number }) {
         </svg>
         <p>
           <span className="text-4xl font-bold tabular-nums short:text-3xl">{value}</span>
-          <span className="text-2xl font-bold"> / {goal}</span>
+          <span className="text-2xl font-bold"> 枚</span>
         </p>
-        <p className="text-sm font-bold">集めたカード</p>
+        <p className="text-sm font-bold">集めたカード ›</p>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -95,7 +96,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden bg-gradient-to-b from-ice-soft to-paper px-4 pt-2">
-        <Ring value={cards.length} goal={reward?.at ?? cards.length} />
+        <Ring value={cards.length} goal={reward?.at ?? cards.length} href={`/cards/book${q}`} />
 
         <div className="flex items-center gap-2 rounded-3xl bg-card px-3 py-2 shadow-sm ring-1 ring-ink/10">
           <Mascot size={60} team={onTeam(me) ? me?.teamId : undefined} className="shrink-0" />
@@ -130,30 +131,30 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
           </div>
         )}
 
-        <section aria-label="最近の活動" className="flex min-h-0 flex-1 flex-col">
+        <section aria-label="最近の記録" className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-bold">最近の活動</h2>
+            <h2 className="text-lg font-bold">最近の記録</h2>
             <Link href={`/cards/book${q}`} className="text-sm font-bold underline">
               すべて見る ›
             </Link>
           </div>
           {recent.length > 0 ? (
-            // 入りきらない行は丸ごと右へ折り返して見えなくする（下の町の絵と文字が重ならないように。11/6 本人の指摘）
-            <ul className="mt-1 flex min-h-0 flex-1 flex-col flex-wrap content-start gap-2 overflow-hidden">
-              {recent.map((l) => (
-                <li key={l.id} className="flex w-full items-center gap-3 rounded-2xl bg-card px-3 py-1.5 shadow-sm ring-1 ring-ink/10">
-                  <Icon name="house" size={34} accent="var(--lamp)" className="shrink-0 text-ink" />
-                  <span className="min-w-0 flex-1 leading-tight">
-                    <span className="block text-xs">{when(l.at)}</span>
-                    <span className="block truncate text-base font-bold">{l.label}</span>
-                  </span>
-                  <b className="shrink-0 text-lg tabular-nums text-lamp-deep">+{l.feathers}羽</b>
-                </li>
-              ))}
-            </ul>
+            <RecentRecords
+              items={recent.map((l) => ({
+                id: l.id,
+                when: when(l.at),
+                label: l.label,
+                feathers: l.feathers,
+                hitokoto: l.hitokoto,
+                note: l.note,
+                photoChecked: l.photoChecked,
+                strokes: l.strokes,
+                onsite: l.onsite,
+              }))}
+            />
           ) : (
             <div className="mt-1 space-y-2 rounded-2xl bg-card px-3 py-3 ring-1 ring-ink/10">
-              <p className="text-base">まだ活動がありません。10分だけでも、町の力になります。</p>
+              <p className="text-base">まだ記録がありません。10分だけでも、町の力になります。</p>
               <Link href={`/solo${q}`} className="btn btn-lamp text-lg">
                 雪かきGO！
               </Link>
