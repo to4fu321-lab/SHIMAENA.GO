@@ -8,7 +8,7 @@ export function isDeployed(): boolean {
 
 /**
  * デモの操作（`?as=h3` で架空の人として押す・見本の状態に戻す）を許すか。
- * 既定は許す（審査・撮影用）。本当に町内で使うときは Vercel に DEMO_MODE=off を入れる。
+ * 既定は許す（審査・撮影用）。本当にエリアで使うときは Vercel に DEMO_MODE=off を入れる。
  */
 export function demoEnabled(): boolean {
   return (process.env.DEMO_MODE ?? "on").trim().toLowerCase() !== "off";

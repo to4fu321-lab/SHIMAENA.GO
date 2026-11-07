@@ -1,7 +1,7 @@
 import townJson from "@/data/town.json";
 import type { Base, Building, LatLng, Participant } from "./types";
 
-/** デモ用の架空町内（建物の形は OpenStreetMap、人物と町内名は架空） */
+/** デモ用の架空のエリア（建物の形は OpenStreetMap、人物とエリア名は架空） */
 export interface Town {
   name: string;
   attribution: string;

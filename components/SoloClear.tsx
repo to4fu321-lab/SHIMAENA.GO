@@ -219,7 +219,7 @@ export default function SoloClear({
       <Panel center>
         {s.firstEver && (
           <p className="rounded-2xl bg-camellia-soft px-3 py-2 text-center text-base font-bold ring-1 ring-camellia">
-            初出撃おめでとう！今日からあなたも、しらかば町内の群れの一員です。
+            初出撃おめでとう！今日からあなたも、しらかばエリアの群れの一員です。
           </p>
         )}
         <p className="rounded-2xl bg-warm px-3 py-2 text-center text-lg">

@@ -314,7 +314,7 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   }
   // 1人1回のプッシュにまとめる。1つの吹き出しに1つの話題（v1.4）:
   // 隊長カード（おはよう・今朝の雪）→（手伝う側）「助けてほしい家が○軒」「10分だけでも大歓迎！」→ 個別の文面（ボタンは最後）
-  // 町内へのまとめ（s.briefing、シマエナ隊長の文）は /admin と記録に残す。LINE は短くする
+  // エリアへのまとめ（s.briefing、シマエナ隊長の文）は /admin と記録に残す。LINE は短くする
   const houses = s.morning.missions.filter((m) => m.status !== "no_answer").length;
   let sent = 0;
   let failed = 0;
@@ -789,7 +789,7 @@ export async function writeRecap(now = new Date()): Promise<string> {
 
 // ---- ヘルプ通知と見守り（spec 4） ----
 
-/** サポーター（町内会役員役）の LINE。環境変数 SUPPORTER_LINE_USER_IDS にカンマ区切りで */
+/** サポーター（エリアの世話役）の LINE。環境変数 SUPPORTER_LINE_USER_IDS にカンマ区切りで */
 function supporterIds(): string[] {
   return (process.env.SUPPORTER_LINE_USER_IDS ?? "").split(",").map((x) => x.trim()).filter(Boolean);
 }

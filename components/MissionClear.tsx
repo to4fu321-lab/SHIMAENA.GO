@@ -184,7 +184,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
         </p>
         {clear.firstFlight && (
           <p className="rounded-2xl bg-camellia-soft px-3 py-1.5 text-base font-bold ring-1 ring-camellia">
-            初出撃おめでとう！ 今日からあなたも、町内の群れの一員です。最初のカードが届きます。
+            初出撃おめでとう！ 今日からあなたも、エリアの群れの一員です。最初のカードが届きます。
           </p>
         )}
         {/* 入った点はここで見える（11/7 UI 点検: 「詳しく」を開かないと点が分からなかった） */}

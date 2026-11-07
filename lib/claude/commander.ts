@@ -43,7 +43,7 @@ export const PlanSchema = z.object({
   ),
   /** 割り当てられた人それぞれへの LINE の文面 */
   messages: z.array(z.object({ participantId: z.string(), text: z.string() })),
-  /** 町内みんなに出す今朝のまとめ（2〜3文） */
+  /** エリアのみんなに出す今朝のまとめ（2〜3文） */
   briefing: z.string(),
 });
 export type Plan = z.infer<typeof PlanSchema>;
@@ -180,7 +180,7 @@ export async function planMorning(input: CommanderInput): Promise<Plan> {
       "雪の朝の点呼が終わりました。採点表の importance・requiredPeople・assignment の規則で、家ごとの重要度・必要人数・割り当てを決めてください。" +
       "「はい」と答えた家はミッションにしません。家ごとに reason（30字まで）を書きます: なぜその重要度・人数・その人たちなのかを、レベル・答え・距離・人数などの事実だけで。体調や医療の話は書きません。" +
       "割り当てた人それぞれに LINE の文面（3文以内、やさしい日本語、開始時刻と家の番号と依頼者の呼び名と一緒に行く人を含む。名乗らない）を書き、" +
-      "町内みんなへのまとめ（2〜3文。採点表 voice のシマエナ隊長の口調で、最初に「シマエナ隊長だしま〜！」）も書いてください。",
+      "エリアのみんなへのまとめ（2〜3文。採点表 voice のシマエナ隊長の口調で、最初に「シマエナ隊長だしま〜！」）も書いてください。",
     input,
     schema: PlanSchema,
     effort: "medium",

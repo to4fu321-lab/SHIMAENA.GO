@@ -19,7 +19,7 @@ describe("隊長トークの鍵", () => {
     expect(demoParticipantId("U-1")).toBeUndefined();
     expect(demoParticipantId("demo:p-xyz")).toBeUndefined();
   });
-  it("本当に町内で使うとき（DEMO_MODE=off）は、架空の人には届けない", () => {
+  it("本当にエリアで使うとき（DEMO_MODE=off）は、架空の人には届けない", () => {
     vi.stubEnv("DEMO_MODE", "off");
     expect(inboxKeyOf({ id: "h3" })).toBeUndefined();
     expect(demoParticipantId("demo:h3")).toBeUndefined();

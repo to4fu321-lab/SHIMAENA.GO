@@ -43,7 +43,7 @@ async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string 
       </section>
       <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
         <h2 className="text-xl font-bold">ソロ出動で、さっそく10分</h2>
-        <p>シマエナGO は、雪の朝に町内でくっついて雪をどける雪かきゲームです。仲間がいない日も、1人の10分（ソロ出動）から参加できます。</p>
+        <p>シマエナGO は、雪の朝にご近所でくっついて雪をどける雪かきゲームです。仲間がいない日も、1人の10分（ソロ出動）から参加できます。</p>
         <Link href={join} className="btn btn-big bg-lamp text-white">
             はじめる（30秒で登録）
           </Link>

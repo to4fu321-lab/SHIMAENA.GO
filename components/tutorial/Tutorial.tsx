@@ -246,7 +246,7 @@ export default function Tutorial({ joinUrl, rules }: { joinUrl?: string; rules: 
       </div>
       <div className="shrink-0 rounded-3xl bg-card px-4 py-3 text-center shadow-sm ring-1 ring-ink/10 short:py-2">
         <p className="text-lg font-bold">寒い冬は、くっついて乗り切る。</p>
-        <p className="text-base leading-snug">町内のみんなで、ひとり暮らしの家の雪かきを助け合うゲームです。</p>
+        <p className="text-base leading-snug">エリアのみんなで、ひとり暮らしの家の雪かきを助け合うゲームです。</p>
       </div>
       <button type="button" onClick={() => go(1)} className="btn btn-lamp btn-big shrink-0 rounded-full">
         さあ、はじめましょう！ ›

@@ -54,11 +54,11 @@ export function collection(cards: Card[]): Collection {
   return { styles, ribbons, total: cards.length };
 }
 
-/** ご褒美（想定）: 枚数で町内会から。デモは架空。実在の店ではない */
+/** ご褒美（想定）: 枚数でエリアの世話役から。デモは架空。実在の店ではない */
 export const REWARDS = [
   { at: 10, label: "銭湯券", from: "架空の銭湯「しらかば湯」" },
-  { at: 20, label: "あったかい一杯", from: "架空の町内のお店" },
-  { at: 30, label: "春の感謝状", from: "町内会（架空）" },
+  { at: 20, label: "あったかい一杯", from: "架空のエリアのお店" },
+  { at: 30, label: "春の感謝状", from: "エリアの世話役（架空）" },
 ] as const;
 
 export function nextReward(total: number): { at: number; label: string; from: string; left: number } | null {
