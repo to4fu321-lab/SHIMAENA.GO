@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { Suspense } from "react";
 import ChatScreen from "@/components/ChatScreen";
 import Mascot from "@/components/Mascot";
@@ -14,6 +14,7 @@ import { inboxKeyOf } from "@/lib/inbox/key";
 import { publicVapidKey } from "@/lib/push/keys";
 import { repo } from "@/lib/repo";
 import { listThread, markRead } from "@/lib/inbox/store";
+import { syncIfDue } from "@/lib/feedback/ops";
 import { toBubbles } from "@/lib/inbox/view";
 import { onTeam } from "@/lib/member";
 import { loadRoster } from "@/lib/morning/roster";
@@ -71,6 +72,8 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
     );
   }
 
+  // 報告箱（spec v1.33）: 直った報告があれば、開いたついでに GitHub を見て知らせを入れる（30分に1回。待たせない）
+  if (me) after(() => syncIfDue());
   const items = await listThread(key);
   await markRead(key);
   const bubbles = toBubbles(items, demoAs);

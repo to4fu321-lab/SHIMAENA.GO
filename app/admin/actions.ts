@@ -37,6 +37,7 @@ import { writeImprovements } from "@/lib/voice/improve";
 import { nudgeInactive } from "@/lib/nudge/ops";
 import { seedDemoStory } from "@/lib/kikigaki/ops";
 import { seedDemoTalk } from "@/lib/morning/demo-talk";
+import { syncWithGithub } from "@/lib/feedback/ops";
 import { STAGE_IDS } from "@/lib/demo-cast";
 import { DEMO_PREFIX, inboxKeyOf } from "@/lib/inbox/key";
 import { clearThread } from "@/lib/inbox/store";
@@ -320,6 +321,19 @@ export async function writeImprovementsNow() {
       await update((s) => void s.log.push(`改善の提案を書きました（声 ${imp.total} 件 → 提案 ${imp.proposals.length} 件${imp.byClaude ? "・Claude" : "・定型"}）`));
     } catch (e) {
       await update((s) => void s.log.push(`改善の提案に失敗: ${e instanceof Error ? e.message : String(e)}`));
+    }
+    revalidatePath("/admin");
+  });
+}
+
+/** 報告箱（spec v1.33）: GitHub の Issue が閉じていないか今すぐ見て、直った報告を本人に知らせる */
+export async function syncFeedbackNow() {
+  return guarded("syncFeedback", async () => {
+    try {
+      const r = await syncWithGithub({ force: true });
+      await update((s) => void s.log.push(`報告箱: GitHub を ${r.checked} 件見て、${r.told} 人に「直しました」を届けました`));
+    } catch (e) {
+      await update((s) => void s.log.push(`報告箱の確認に失敗: ${e instanceof Error ? e.message : String(e)}`));
     }
     revalidatePath("/admin");
   });

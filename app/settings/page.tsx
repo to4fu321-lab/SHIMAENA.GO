@@ -14,6 +14,7 @@ import NudgeSwitch from "@/components/NudgeSwitch";
 import RedoRegistration from "@/components/RedoRegistration";
 import SoundToggle from "@/components/SoundToggle";
 import WatchSettings from "@/components/WatchSettings";
+import FeedbackButton from "@/components/FeedbackSheet";
 import { loadNudge } from "@/lib/nudge/store";
 import { loadRoster } from "@/lib/morning/roster";
 import { TEAMS } from "@/lib/teams";
@@ -119,15 +120,17 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
         </Link>
       </section>
 
-      <section className="space-y-2 rounded-3xl bg-warm p-4 ring-1 ring-ink/10" aria-label="お知らせについて">
+      <section className="space-y-1.5 rounded-3xl bg-warm p-4 ring-1 ring-ink/10" aria-label="お知らせについて">
         <h2 className="text-lg font-bold">お知らせの届き方</h2>
         <ul className="list-disc space-y-1 pl-5 text-base">
-          <li>雪が降りそうな前の夜に「明日の朝」のお知らせ。</li>
+          <li>雪が降りそうな前の夜に、予告のお知らせ。</li>
           <li>10cm 以上積もった朝 6:30 に、近所の雪かき応援のお知らせが届きます。答える必要はありません。</li>
-          <li>どれも下のタブ「隊長」（隊長トーク）に届きます。LINE は本人の確認（ログイン）にだけ使います。</li>
+          <li>どれも下のタブ「隊長」に届きます（LINE はログインだけ）。</li>
         </ul>
         {me && nudgeOn !== undefined && <NudgeSwitch viewerId={me.id} initial={nudgeOn} />}
         <p className="text-sm text-ink-soft">お知らせを止めたいときは、スマホの通知をオフにしてください。いつでも戻せます。</p>
+        {/* 報告箱（spec v1.33） */}
+        {me && <FeedbackButton viewerId={me.id} page="/settings" q={q} />}
       </section>
 
       <SoundToggle />

@@ -8,6 +8,7 @@ import { chatPhotoAction, chatPollAction, chatPostbackAction, chatTextAction, ty
 import type { ChatBubble, ChatButton } from "@/lib/inbox/view";
 import type { TeamId } from "@/lib/types";
 import ChatTools, { readSpeak, readTextSize, speak, TEXT_SIZE_PX, type TextSize } from "./ChatTools";
+import FeedbackButton from "./FeedbackSheet";
 import Mascot from "./Mascot";
 import MicButton from "./MicButton";
 import { shrink } from "./shrink";
@@ -214,6 +215,8 @@ export default function ChatScreen({
           隊長トーク
         </h1>
         {extra}
+        {/* 報告箱（spec v1.33）: 不具合・要望を隊長に伝える。返事はすぐ流れに入る */}
+        {!readOnly && viewerId && <FeedbackButton viewerId={viewerId} page="/chat" variant="icon" inChat onSent={(r) => r.bubbles && setBubbles(r.bubbles)} />}
         {!readOnly && <ChatTools size={size} onSize={setSize} speakOn={speakOn} onSpeak={setSpeakOn} />}
       </header>
       {/* 流れ（この中だけがスクロールする） */}
@@ -232,6 +235,7 @@ export default function ChatScreen({
                     {b.label}
                   </button>
                 ))}
+                <p className="pt-1 text-sm text-ink-soft">困ったこと・こうしてほしいことは、右上の 📮 から隊長に伝えられます。</p>
               </div>
             )}
           </div>
