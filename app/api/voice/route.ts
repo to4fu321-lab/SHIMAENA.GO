@@ -26,11 +26,24 @@ export async function GET(req: Request): Promise<Response> {
       return NextResponse.json({ ok: false, reason: "error" }, { status: 503, headers: { "cache-control": "no-store" } });
     }
   }
-  return new Response(new Uint8Array(mp3), {
-    headers: {
-      "content-type": "audio/mpeg",
-      "content-length": String(mp3.byteLength),
-      "cache-control": "public, max-age=86400, s-maxage=604800",
-    },
-  });
+  const headers = {
+    "content-type": "audio/mpeg",
+    "accept-ranges": "bytes",
+    "cache-control": "public, max-age=86400, s-maxage=604800",
+  };
+  // 分けて取りに来たとき（Safari の <audio> など）は、その部分だけを 206 で返す
+  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get("range") ?? "");
+  if (range && (range[1] || range[2])) {
+    const size = mp3.byteLength;
+    let start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+    let end = range[1] && range[2] ? Number(range[2]) : size - 1;
+    end = Math.min(end, size - 1);
+    if (start > end || start >= size) {
+      return new Response(null, { status: 416, headers: { ...headers, "content-range": `bytes */${size}` } });
+    }
+    start = Math.max(0, start);
+    const part = mp3.slice(start, end + 1);
+    return new Response(part, { status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(part.byteLength) } });
+  }
+  return new Response(new Uint8Array(mp3), { headers: { ...headers, "content-length": String(mp3.byteLength) } });
 }
