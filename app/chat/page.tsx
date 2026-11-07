@@ -64,7 +64,7 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
 
   if (!key) {
     return (
-      <Screen header={header} footer={<TabBar q={q} lang={lang} />}>
+      <Screen header={header} footer={<TabBar q={q} lang={lang} fab={false} />}>
         <section className="m-4 space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">{t(lang, "notRegistered")}</p>
           <p className="text-base">{t(lang, "notRegisteredBody")}</p>
@@ -89,7 +89,7 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
   const bubbles = await localizeBubbles(toBubbles(items, demoAs), lang);
   const viewer = me?.id ?? "";
   return (
-    <Screen header={<StormBanner />} footer={<TabBar q={q} lang={lang} />}>
+    <Screen header={<StormBanner />} footer={<TabBar q={q} lang={lang} fab={false} />}>
       {/* 通知の案内（まだ許可していない人にだけ出る）。許可ずみなら上段に小さく「🔔 通知オン」。key={lang}: ことばを変えたら訳した流れで描き直す */}
       <ChatScreen
         key={lang}
