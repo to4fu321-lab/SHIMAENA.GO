@@ -4,7 +4,6 @@
 // 1画面（11/5 本人の指示）: タブ「あなた／3チーム／しくみ」を横スワイプ。縦にはスクロールしない。
 import type { Metadata } from "next";
 import { onTeam } from "@/lib/member";
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -12,6 +11,7 @@ import Avatar from "@/components/Avatar";
 import CountUp from "@/components/CountUp";
 import Mascot from "@/components/Mascot";
 import Pager, { Screen } from "@/components/Pager";
+import TabBar from "@/components/TabBar";
 import { addDays } from "@/lib/jst";
 import { weekStart, weeklySummary } from "@/lib/game/week";
 import { loadRoster } from "@/lib/morning/roster";
@@ -70,16 +70,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
 
   return (
     <Screen
-      footer={
-        <nav className="grid grid-cols-2 gap-3 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
-          <Link href={`/map${q}`} className="btn btn-white text-lg">
-            町の地図
-          </Link>
-          <Link href={`/${q}`} className="btn btn-lamp text-lg">
-            ホームへ
-          </Link>
-        </nav>
-      }
+      footer={<TabBar active="team" q={q} />}
     >
       <div className="pt-3" />
       <Pager tabs={[{ key: "mine", label: mine ? "あなた" : "今週" }, { key: "three", label: "3チーム" }, { key: "how", label: "しくみ" }]}>

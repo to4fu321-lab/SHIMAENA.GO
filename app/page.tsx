@@ -215,7 +215,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       <div className="relative min-h-10 flex-1 overflow-hidden">
         <SkyBackdrop sky={sky} />
         {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
-        <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} />
+        <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} chatAs={demoAs} />
       </div>
 
       <main className="relative -mt-3 shrink-0 space-y-2 px-4 pb-2.5 short:space-y-1.5 short:pb-1.5">
@@ -270,12 +270,14 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           </div>
           {/* 数字2つと「声かけ」（応援・おつかれさまはポップアップで選ぶ。11/7 本人の指示） */}
           <div className="mt-1.5 flex items-center gap-2 border-t border-ink/10 pt-1.5 short:mt-1 short:pt-1">
-          <div className="grid min-w-0 flex-1 grid-cols-2 divide-x divide-ink/15 text-base font-bold">
-            <p className="whitespace-nowrap px-1.5 text-center max-[380px]:text-sm">
-              雪かき中 <b className="text-2xl tabular-nums">{night ? homeNow : activeNow + homeNow}</b>人
+          <div className="grid min-w-0 flex-1 grid-cols-2 divide-x divide-ink/15 font-bold leading-tight">
+            <p className="text-center">
+              <span className="block text-sm">雪かき中</span>
+              <b className="text-2xl tabular-nums">{night ? homeNow : activeNow + homeNow}</b>人
             </p>
-            <p className="whitespace-nowrap px-1.5 text-center max-[380px]:text-sm">
-              {night ? "終えた人" : "達成"} <b className="text-2xl tabular-nums">{night ? homeToday : prog.done}</b>
+            <p className="text-center">
+              <span className="block text-sm">{night ? "終えた人" : "達成"}</span>
+              <b className="text-2xl tabular-nums">{night ? homeToday : prog.done}</b>
               {night ? "人" : "軒"}
             </p>
           </div>

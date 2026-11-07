@@ -46,10 +46,10 @@ const JA = {
   demo: "デモ:",
   demoLink: "架空の手伝う側として開く",
   tabHome: "ホーム",
-  tabMap: "地図",
-  tabChat: "隊長",
+  tabMap: "マップ",
+  tabTeam: "チーム",
   tabConnect: "つなぐ",
-  tabCard: "活動",
+  tabCard: "きろく",
   time: "時刻",
 } as const;
 
@@ -100,9 +100,9 @@ const EN: Dict = {
   demoLink: "open as a fictional helper",
   tabHome: "Home",
   tabMap: "Map",
-  tabChat: "Captain",
+  tabTeam: "Team",
   tabConnect: "Connect",
-  tabCard: "Activity",
+  tabCard: "Records",
   time: "Time",
 };
 
@@ -150,9 +150,9 @@ const ZH: Dict = {
   demoLink: "以虚构的帮手身份打开",
   tabHome: "首页",
   tabMap: "地图",
-  tabChat: "队长",
+  tabTeam: "队伍",
   tabConnect: "联系",
-  tabCard: "活动",
+  tabCard: "记录",
   time: "时间",
 };
 
@@ -200,9 +200,9 @@ const KO: Dict = {
   demoLink: "가상의 도우미로 열기",
   tabHome: "홈",
   tabMap: "지도",
-  tabChat: "대장",
+  tabTeam: "팀",
   tabConnect: "연결",
-  tabCard: "활동",
+  tabCard: "기록",
   time: "시각",
 };
 
@@ -250,9 +250,9 @@ const VI: Dict = {
   demoLink: "mở với vai người giúp giả định",
   tabHome: "Trang chủ",
   tabMap: "Bản đồ",
-  tabChat: "Đội trưởng",
+  tabTeam: "Đội",
   tabConnect: "Kết nối",
-  tabCard: "Hoạt động",
+  tabCard: "Nhật ký",
   time: "Giờ",
 };
 

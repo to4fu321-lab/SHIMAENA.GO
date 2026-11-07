@@ -125,7 +125,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
         <ul className="list-disc space-y-1 pl-5 text-base">
           <li>雪が降りそうな前の夜に、予告のお知らせ。</li>
           <li>10cm 以上積もった朝 6:30 に、近所の雪かき応援のお知らせが届きます。答える必要はありません。</li>
-          <li>どれも下のタブ「隊長」に届きます（LINE はログインだけ）。</li>
+          <li>どれも隊長トーク（ホームの吹き出し「隊長に相談する」）に届きます（LINE はログインだけ）。</li>
         </ul>
         {me && nudgeOn !== undefined && <NudgeSwitch viewerId={me.id} initial={nudgeOn} />}
         <p className="text-sm text-ink-soft">お知らせを止めたいときは、スマホの通知をオフにしてください。いつでも戻せます。</p>
@@ -133,7 +133,13 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
         {me && <FeedbackButton viewerId={me.id} page="/settings" q={q} />}
       </section>
 
-      <SoundToggle />
+      <div className="space-y-2">
+        <SoundToggle />
+        {/* 今朝の雪の歌（spec v1.28）。11/7 本人の指示でホームから設定の「音」へ */}
+        <Link href={`/song${q}`} className="btn btn-white min-h-14 w-full text-lg">
+          ♪ 今朝の雪の歌を聞く
+        </Link>
+      </div>
 
       <WatchSettings />
 
