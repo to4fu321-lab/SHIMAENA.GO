@@ -5,6 +5,8 @@
 // 声を作れないとき・日本語以外のときは、ブラウザの読み上げ（Web Speech、そのことばの声）。鍵も費用も要らない。
 import { LANG_INFO, type Lang } from "@/lib/i18n/langs";
 import { t } from "@/lib/i18n/ui";
+import { splitForVoice } from "@/lib/speech/split";
+import Icon from "./Icon";
 import { useClientValue } from "./useClientValue";
 
 export type TextSize = "m" | "l" | "xl";
@@ -116,49 +118,81 @@ export function stopCaptainVoice(): void {
 /** 前に作った声の URL（端末の中の blob）。新しい声に替えたら捨てる */
 let blobUrl: string | null = null;
 
-/**
- * /api/voice の mp3 を <audio> で鳴らす。鳴り始めたら true、作れなかった（混んでいる・切ってある）ら false。
- * mp3 は fetch で丸ごと受け取り、端末の中の URL（blob）にしてから <audio> に渡す（11/7 本人の指摘「機械音しか出ない」）:
- * iPhone の Safari は <audio> にサーバーの URL を渡すと、ファイルを少しずつ分けて取りに行く。毎回作る新しい声ではそれに答えられず、
- * 再生をあきらめてブラウザの声に回っていた。丸ごと受け取れば、分けた頼み方は起きない
- */
-async function playVoicevox(text: string): Promise<boolean> {
-  const a = getPlayer();
-  if (!a || voiceAvailable === false) return false;
-  const my = ++serial;
-  const res = await fetch(`/api/voice?text=${encodeURIComponent(text.slice(0, 200))}`, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
-  if (my !== serial) return true; // 新しい読み上げが来ていたら、こちらは黙る（失敗ではない）
+/** 声を作るのを待つ長さ（サーバーは 25 秒であきらめる） */
+const VOICE_FETCH_MS = 30_000;
+
+/** /api/voice から1つ分の mp3 を丸ごと受け取る。作れなかったら null（status 404 は「切ってある」） */
+async function fetchVoice(text: string): Promise<Blob | null> {
+  const res = await fetch(`/api/voice?text=${encodeURIComponent(text.slice(0, 200))}`, { signal: AbortSignal.timeout(VOICE_FETCH_MS) }).catch(() => null);
   if (!res || !res.ok) {
-    if (res?.status === 404) voiceAvailable = false; // 切ってある
-    return false;
+    if (res?.status === 404) voiceAvailable = false;
+    return null;
   }
   const blob = await res.blob().catch(() => null);
-  if (my !== serial) return true;
-  if (!blob || blob.size === 0) return false;
+  return blob && blob.size > 0 ? blob : null;
+}
+
+/**
+ * 受け取った mp3 を <audio> で最後まで鳴らす。鳴り始めたら true（鳴り終わるまで待つ）。
+ * mp3 は端末の中の URL（blob）にしてから <audio> に渡す（11/7 本人の指摘「機械音しか出ない」）:
+ * iPhone の Safari は <audio> にサーバーの URL を渡すと、ファイルを少しずつ分けて取りに行き、毎回作る新しい声ではあきらめていた
+ */
+function playBlob(a: HTMLAudioElement, blob: Blob, my: number): Promise<boolean> {
   if (blobUrl) URL.revokeObjectURL(blobUrl);
   blobUrl = URL.createObjectURL(new Blob([blob], { type: "audio/mpeg" }));
   return new Promise((resolve) => {
+    let started = false;
     let done = false;
     const finish = (ok: boolean) => {
       if (done) return;
       done = true;
       a.removeEventListener("playing", onPlaying);
+      a.removeEventListener("ended", onEnded);
       a.removeEventListener("error", onError);
+      a.removeEventListener("pause", onEnded);
       window.clearTimeout(timer);
       resolve(ok);
     };
     const onPlaying = () => {
+      started = true;
       voiceAvailable = true;
-      finish(true);
+      window.clearTimeout(timer);
     };
+    const onEnded = () => finish(started || my !== serial);
     const onError = () => finish(my !== serial);
-    const timer = window.setTimeout(() => finish(my !== serial), 5_000);
+    const timer = window.setTimeout(() => finish(my !== serial), 5_000); // 5 秒たっても鳴り始めない
     a.addEventListener("playing", onPlaying);
+    a.addEventListener("ended", onEnded);
     a.addEventListener("error", onError);
+    a.addEventListener("pause", onEnded); // 止められた（新しい読み上げ・オフ）
     a.src = blobUrl!;
     a.volume = 1;
     void a.play().catch(() => finish(my !== serial));
   });
+}
+
+/**
+ * 隊長の声で読む。文は2つに分け（lib/speech/split.ts）、最初の短い部分ができたらすぐ鳴らし、残りはその間に作る
+ * （11/7 本人の指摘「読み上げない」: 長い返事は声ができるまで 10 秒以上かかっていた）。
+ * 最初の部分を鳴らせたら true。作れなかったら false（呼ぶ側がブラウザの声に回す）
+ */
+async function playVoicevox(text: string): Promise<boolean> {
+  const a = getPlayer();
+  if (!a || voiceAvailable === false) return false;
+  const my = ++serial;
+  const parts = splitForVoice(text);
+  if (parts.length === 0) return true;
+  let next: Promise<Blob | null> = fetchVoice(parts[0]);
+  for (let i = 0; i < parts.length; i++) {
+    const blob = await next;
+    if (my !== serial) return true; // 新しい読み上げが来ていたら、こちらは黙る（失敗ではない）
+    if (!blob) return i > 0; // 最初の部分を作れなければブラウザの声へ。2つ目なら、そこで終わる
+    if (i + 1 < parts.length) next = fetchVoice(parts[i + 1]); // 鳴らしている間に次を作る
+    const ok = await playBlob(a, blob, my);
+    if (my !== serial) return true;
+    if (!ok) return i > 0;
+  }
+  return true;
 }
 
 /**
@@ -228,8 +262,9 @@ export default function ChatTools({
         ))}
       </div>
       {ok && (
-        <button onClick={toggle} aria-pressed={speakOn} aria-label={speakOn ? t(lang, "readingAloud") : t(lang, "readAloud")} className={`grid size-9 place-items-center rounded-full text-base ring-1 ring-ink/20 ${speakOn ? "bg-lamp text-white" : "bg-card text-ink"}`}>
-          {speakOn ? "🔊" : "🔈"}
+        <button onClick={toggle} aria-pressed={speakOn} aria-label={speakOn ? t(lang, "readingAloud") : t(lang, "readAloud")} className={`grid size-9 place-items-center rounded-full ring-1 ${speakOn ? "bg-ink text-white ring-ink" : "bg-card text-ink-soft ring-ink/20"}`}>
+          {/* 線のアイコン（封筒・虫と同じ描き方）。オンは音の波をランプ色で */}
+          <Icon name={speakOn ? "voice" : "voiceOff"} size={22} accent={speakOn ? "var(--color-lamp)" : undefined} />
         </button>
       )}
     </div>

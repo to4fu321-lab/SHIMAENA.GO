@@ -49,9 +49,9 @@ describe("吹き出しの訳", () => {
     }),
   ];
 
-  it("集めるのは隊長の文・行・ボタンの文字・調べた札だけ（重複なし）。本人の文は集めない", () => {
+  it("集めるのは隊長の文・行・ボタンの文字だけ（重複なし）。本人の文と「調べた」札は集めない", () => {
     const s = collectStrings(bubbles);
-    expect(s).toEqual(["今朝は 12cm 積もったしま〜！", "拠点3へ", "🗺 町の様子", "☁ 天気と安全", "行く", "使い方を教えて"]);
+    expect(s).toEqual(["今朝は 12cm 積もったしま〜！", "拠点3へ", "行く", "使い方を教えて"]);
     expect(s).not.toContain("こんにちは");
     expect(collectStrings([captain("a", "x"), captain("b", "x")])).toEqual(["x"]);
   });
@@ -61,7 +61,7 @@ describe("吹き出しの訳", () => {
     expect(out[0].text).toBe("こんにちは");
     expect(out[1].text).toBe("EN(今朝は 12cm 積もったしま〜！)");
     expect(out[2].lines?.[0]).toEqual({ text: "EN(拠点3へ)", strong: true });
-    expect(out[2].lines?.[1].steps).toEqual(["EN(🗺 町の様子)", "EN(☁ 天気と安全)"]);
+    expect(out[2].lines?.[1].steps).toEqual(["🗺 町の様子", "☁ 天気と安全"]);
     expect(out[2].buttons[0]).toEqual({ kind: "postback", label: "EN(行く)", data: "go:yes", tone: "main" });
     expect(out[2].quick[0]).toMatchObject({ label: "EN(使い方を教えて)", text: "使い方を教えて" });
     expect(bubbles[1].text).toBe("今朝は 12cm 積もったしま〜！"); // 元は触らない

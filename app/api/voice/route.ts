@@ -4,6 +4,9 @@
 import { NextResponse } from "next/server";
 import { synthesize, voiceEnabled, voiceText } from "@/lib/speech/voicevox";
 
+/** 声ができるまで待てる長さ（秒）。lib/speech/voicevox.ts は 25 秒であきらめる */
+export const maxDuration = 30;
+
 const g = globalThis as { __shimaenaVoiceCache?: Map<string, Uint8Array> };
 const cache = () => (g.__shimaenaVoiceCache ??= new Map());
 const CACHE_MAX = 200;
