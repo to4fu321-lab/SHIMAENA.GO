@@ -9,7 +9,7 @@ const WALL = "#f5eee5";
 const ROOF = "#c9d8e4";
 
 /** 人（頭と体）。shovel で雪かきスコップを持つ */
-function Person({ x, y, color, shovel = false, s = 1 }: { x: number; y: number; color: string; shovel?: boolean; s?: number }) {
+export function Person({ x, y, color, shovel = false, s = 1 }: { x: number; y: number; color: string; shovel?: boolean; s?: number }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${s})`}>
       <circle cx="0" cy="-22" r="7" fill="#f3e2c8" stroke={INK} strokeWidth="1.5" />
@@ -25,7 +25,7 @@ function Person({ x, y, color, shovel = false, s = 1 }: { x: number; y: number; 
   );
 }
 
-function House({ x = 0, y = 0, w = 60 }: { x?: number; y?: number; w?: number }) {
+export function House({ x = 0, y = 0, w = 60 }: { x?: number; y?: number; w?: number }) {
   const h = w * 0.75;
   return (
     <g transform={`translate(${x} ${y})`}>
@@ -83,6 +83,41 @@ export function AreaArt({ area, active }: { area: ClearArea; active: boolean }) 
       {/* 雪かきする範囲 */}
       <rect x="4" y="38" width={len} height="14" rx="3" fill={fill} opacity={active ? 0.9 : 0.85} />
       <path d={`M8 45 H${len}`} stroke={active ? LAMP : "#fff"} strokeWidth="2" strokeDasharray="3 3" />
+    </svg>
+  );
+}
+
+/** 登録の「手伝う／手伝ってほしい」の絵（11/7 本人の指示「もっと視覚的に」）。
+ *  helper = スコップを持って近所の家へ向かう人／requester = 雪に埋もれた家に、応援が2人やってくる */
+export function RoleArt({ role, active }: { role: "helper" | "requester"; active: boolean }) {
+  const me = active ? "#fff" : LAMP;
+  const team = active ? "#fff" : "#8fb8c9";
+  return (
+    <svg viewBox="0 0 120 80" className="h-24 w-full short:h-16" aria-hidden="true">
+      <rect x="0" y="64" width="120" height="16" rx="4" fill={active ? "rgba(255,255,255,0.35)" : "#eef3f7"} />
+      {role === "helper" ? (
+        <>
+          <House x={66} y={22} w={48} />
+          {/* 家の前の雪 */}
+          <path d="M60 66 Q72 54 86 62 Q100 52 116 64 Z" fill={SNOW} stroke={active ? "rgba(255,255,255,0.6)" : "#c9d8e4"} strokeWidth="1.5" />
+          <Person x={28} y={50} color={me} shovel s={1.2} />
+          {/* 向かう矢印 */}
+          <path d="M44 30 H56 M51 25 L57 30 L51 35" fill="none" stroke={active ? "#fff" : INK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      ) : (
+        <>
+          <House x={6} y={14} w={56} />
+          {/* 窓に家の人 */}
+          <rect x="18" y="38" width="12" height="10" rx="1" fill="#f3c48a" />
+          <circle cx="24" cy="44" r="3" fill="#f3e2c8" stroke={INK} strokeWidth="1" />
+          {/* 家のまわりの雪 */}
+          <path d="M0 66 Q14 50 30 60 Q46 48 66 64 Z" fill={SNOW} stroke={active ? "rgba(255,255,255,0.6)" : "#c9d8e4"} strokeWidth="1.5" />
+          <Person x={84} y={52} color={team} shovel />
+          <Person x={108} y={52} color={team} shovel />
+          {/* ハート（応援が届く） */}
+          <path d="M96 14 C96 10 90 10 90 14 C90 18 96 21 96 23 C96 21 102 18 102 14 C102 10 96 10 96 14 Z" fill={active ? "#fff" : "#e7a3b8"} />
+        </>
+      )}
     </svg>
   );
 }

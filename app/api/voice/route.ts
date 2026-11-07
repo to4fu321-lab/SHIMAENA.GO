@@ -1,4 +1,4 @@
-// 隊長の声（spec v1.33）: GET /api/voice?text=… で、VOICEVOX のかわいい声の mp3 を返す。
+// 隊長の声（spec v1.36）: GET /api/voice?text=… で、VOICEVOX のかわいい声の mp3 を返す。
 // 画面（components/ChatTools.tsx の speakCaptain）が隊長の新しい吹き出しを読むときに呼ぶ。同じ文は CDN に1週間残す（同じ点呼の文は町じゅう同じ）。
 // できないとき（切ってある・外のサービスが混んでいる）は 503 → 画面はブラウザの声に戻る。
 import { NextResponse } from "next/server";

@@ -1,6 +1,6 @@
 "use server";
 
-// ことばの切りかえ（spec v1.33）: 隊長トークの 🌐 で選んだことばを cookie に覚える（端末ごと。登録の情報には入れない）。
+// ことばの切りかえ（spec v1.36）: 隊長トークの 🌐 で選んだことばを cookie に覚える（端末ごと。登録の情報には入れない）。
 import { revalidatePath } from "next/cache";
 import { writeLangCookie } from "@/lib/i18n/cookie";
 import { isLang, type Lang } from "@/lib/i18n/langs";

@@ -1,3 +1,4 @@
+import { defaultLook } from "@/lib/mypage/rules";
 import { MENU } from "@/lib/brand";
 import type { Metadata } from "next";
 import StormBanner from "@/components/StormBanner";
@@ -38,6 +39,7 @@ import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 import Bgm from "@/components/Bgm";
 import SnowSongChip from "@/components/SnowSongChip";
+import GoButton, { type GoReason } from "@/components/GoButton";
 import { loadSnowSong, warmSnowSong } from "@/lib/song/day";
 import { hasClaudeKey } from "@/lib/claude/client";
 import { runLater } from "@/lib/ops/later";
@@ -86,17 +88,22 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
+  // 近所のお願いがない（作戦がまだ・頼む家が 0 軒）: はっきり伝えて、自宅の雪かきと道の危険を知らせるへ誘導（11/7 本人の指示）
+  const noRequests = asks === 0 && prog.total === 0;
+  const ownHouseHref = `/solo?pick=10&focus=own_house${demoAs ? `&as=${demoAs}` : ""}`;
+  const roadHref = `/solo?pick=10&focus=report_snow${demoAs ? `&as=${demoAs}` : ""}`;
+  // 地図に行けないときの理由（押したら案内の紙を出してからソロへ。11/7 本人の指摘）
+  const goReason: GoReason = !planned ? "no-plan" : !me ? "guest" : "no-team";
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
   const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
   // 左上の鳥は、マイページ（spec v1.32）のアイコン。押すとマイページ（アイコン・紹介・なかま帳）
-  const myIcon = me ? await getProfile(me.id).catch(() => undefined) : undefined;
-  // 本人の記録・夜の人数・応援は互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
+  // 本人の記録・夜の人数・応援・アイコンは互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
   const now = new Date();
   const night = !open;
-  const [st, homeToday, cheerBtn, news] = await Promise.all([
+  const [st, homeToday, cheerBtn, news, myIcon] = await Promise.all([
     me ? soloStatus(me.id, now).catch(() => undefined) : undefined,
     // 夜（19時〜6時）は、よその家の数字（あと何軒）の代わりに、今日 自分の家の雪かきを終えた人の数も
     night
@@ -108,7 +115,10 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     // 応援・おつかれさま（11/4）: 送るボタンの数と、自分に届いた知らせ（隊長が飛んできて話す）
     me ? cheerButtons(me.id, now).catch(() => undefined) : undefined,
     me ? myCheerNews(me.id, now).catch(() => undefined) : undefined,
+    me ? getProfile(me.id).catch(() => undefined) : undefined,
   ]);
+  // まだ選んでいない人は、ID で決まるランダムなアイコン（11/7 本人の指示）。写真があれば写真
+  const myLook = { ...(me ? defaultLook(me.id) : { icon: "bird" as const, iconBg: "ice" as const }), ...(myIcon ? { icon: myIcon.icon, iconBg: myIcon.iconBg, photo: myIcon.photo } : {}) };
   // 隊長のひとこと（spec v1.6）: 状態は計算、文は朝に1回だけ書いたもの（なければ定型）
   const last = st?.recent[0]?.date;
   const daysSinceLast = st && last ? Math.round((Date.parse(st.today) - Date.parse(last)) / 86400000) : st && st.cards > 0 ? 7 : undefined;
@@ -164,7 +174,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       <header className="flex shrink-0 flex-wrap items-center gap-x-2 bg-ice-soft px-4 pt-3 short:pt-1.5" style={myTeam ? { background: myTeam.soft } : undefined}>
         {me ? (
           <Link href={`/me${q}`} aria-label="マイページ（アイコン・紹介・なかま帳）" className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
-            {myIcon && myIcon.icon !== "bird" ? <Avatar icon={myIcon.icon} bg={myIcon.iconBg} size={44} ring={false} /> : <Mascot size={40} team={myTeam?.team.id} />}
+            {myLook.photo || myLook.icon !== "bird" ? <Avatar icon={myLook.icon} bg={myLook.iconBg} photo={myLook.photo} size={44} ring={false} /> : <Mascot size={40} team={myTeam?.team.id} />}
           </Link>
         ) : (
           <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card shadow-sm">
@@ -251,9 +261,19 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 <p className="text-lg font-bold">{prog.total}軒すべて完了！<span className="block text-sm">町じゅうに灯りがともりました。</span></p>
               ) : (
                 <p className="text-lg font-bold">
-                  {asks > 0 ? `雪かきのお願い ${asks}軒` : rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
+                  {asks > 0 ? (
+                    `雪かきのお願い ${asks}軒`
+                  ) : (
+                    // 近所のお願いがない: 理由をはっきり、やれることへ誘導（11/7 本人の指示）
+                    <>
+                      近所のお願いは いまなし
+                      {rc.status !== "closed" && rc.forecastCm > 0 && (
+                        <span className="ml-2 inline-block rounded-full bg-ice-soft px-2 py-0.5 align-middle text-sm font-bold whitespace-nowrap">今日の雪 {rc.forecastCm}cm</span>
+                      )}
+                    </>
+                  )}
                   <span className="block text-sm">
-                    {asks > 0 ? "地図の待っている家へ。10分だけでも大歓迎" : rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "10cm 積もったら、朝6:30に近所へお知らせ"}
+                    {asks > 0 ? "地図の待っている家へ。10分だけでも大歓迎" : "頼む家のお願いが出ると地図に出ます。それまでは下の2つをどうぞ"}
                   </span>
                 </p>
               )}
@@ -332,10 +352,36 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               </span>
             </Link>
           </div>
+        ) : noRequests ? (
+          // 近所のお願いがない昼: 「雪かきGO！」の代わりに、自宅の雪かきと道の危険を知らせるへ（11/7 本人の指示）
+          <div className="grid grid-cols-2 gap-2">
+            <Link href={ownHouseHref} className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-lamp">
+                <Icon name="house" size={22} accent="var(--lamp)" />
+              </span>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">自宅の雪かき</span>
+                <span className="block whitespace-nowrap text-xs font-bold">何回でも・+8羽</span>
+              </span>
+            </Link>
+            <Link href={roadHref} className="flex min-h-14 items-center gap-2 rounded-full bg-card px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink shadow-md ring-1 ring-ink/15">
+              <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-warm text-lg">⚠️</span>
+              <span className="min-w-0 leading-tight">
+                <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">道の危険</span>
+                <span className="block whitespace-nowrap text-xs font-bold">写真で・+5羽</span>
+              </span>
+            </Link>
+          </div>
         ) : (
           // 昼も夜と同じ形（11/6 本人の指示）: 左に雪かきGO！、右にソロ活動。半分ずつ1行
           <div className="grid grid-cols-2 gap-2">
-            <Link href={goHref} className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md">
+            <GoButton
+              href={goHref}
+              direct={canHelpHouse}
+              reason={goReason}
+              soloHref={`/solo${q}`}
+              className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md"
+            >
               <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-lamp">
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                   <path d="M8 5 L19 12 L8 19 Z" fill="currentColor" />
@@ -343,9 +389,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               </span>
               <span className="min-w-0 leading-tight">
                 <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">{MENU.go.label}</span>
-                <span className="block whitespace-nowrap text-xs font-bold">{bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
+                <span className="block whitespace-nowrap text-xs font-bold">{!canHelpHouse ? "自宅の雪かきへ" : bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
               </span>
-            </Link>
+            </GoButton>
             <Link href={fiveHref} className="flex min-h-14 items-center gap-2 rounded-full bg-card px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink shadow-md ring-1 ring-ink/15">
               <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" className="shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="9" />

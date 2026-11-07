@@ -224,6 +224,8 @@
   完了条件: エージェントの返事のあとに声と方向が保存される（テストで確かめる）。
 - [ ] **T107 🔍 「7:00」の知らせが「6〜19時のあいだに」（T95 の決定）と食い違う** — 頼む家の人への `planForRequester("7:00", …)`（`lib/morning/ops.ts`）、手伝う人の行き先カード `placeCard({ time: "7:00" })` と画像 `heroUrl`（`lib/line/messages.ts`・`lib/line/flex.ts`）、隊長の指示文 `startTime`（`lib/claude/commander.ts`・`lib/morning/flow.ts`）、実況（`lib/morning/recap.ts`）に 7:00 が残っている（devlog 11/6「直すなら次で」のまま。点検 11/7 02:20）。
   完了条件: 町の人に見える文と画像から「7:00」が消え、「6〜19時のあいだに」にそろう（テストの 7:00 も直す）。
+- [ ] **T108 🔍 新しい列が本番の DB に自動で入らない** — `db/schema.sql` の `alter table … add column if not exists`（例: v1.31 の `solo_logs.strokes`）は /admin「データベースを準備」を押したときだけ流れるので、コードを先に出すと本番で select/insert が失敗する（11/7 14:20 の点検で本番の Neon に `strokes` 列がないことを確認。lib/repo/index.ts の SOLO_COLS は `strokes` を読む）。
+  完了条件: 起動時か最初の読みで alter が流れる（lib/mypage/store.ts の `ensure()` と同じ形）か、列がなくても落ちない。まずは本人が本番 /admin で「データベースを準備」を押す。
 - 点検で見つかった大きい 🐞 は、ここに `- [ ] **T9x 🔍 …**` で足していく（通常のループが上から拾う）。
 
 ## 第25段: ありがとうは声で（11/6 本人の決定、spec v1.29）
@@ -254,9 +256,17 @@
 ## 第29段: マイページと、なかま帳（11/7 本人の指示、spec v1.31）
 - [x] **T109 マイページ `/me`** — アイコン（絵文字＋背景色）・ひとこと・好きなこと・興味・話したいこと。隊長のインタビュー（決まった5問・とばせる・声でも）→ Claude（Haiku、採点表 `profile`）が整える → 本人が直して保存。なかま帳（一緒に活動した仲間の記録・「👋 また一緒に」の手ふり・おたがいなら合流の候補で先に）・記録。表 `my_profiles`・`nakama_waves`。ホームの左上の鳥が自分のアイコンに。テスト（点検・組み立て・なかま帳・手ふり）。1画面を 390×844・375×667 で確認。
 
-## 第30段: 多言語と隊長の声（11/7 本人の指示「多言語化と、チャットのシマエナ隊長の音声をかわいい音声に。音声は別の無料サービス、多言語は API も活用して」、spec v1.33）
-- [x] **T110 隊長トークの多言語** — 🌐 で日本語／English／中文／한국어／Tiếng Việt（cookie `lang`）。決まった文字は辞書 `lib/i18n/ui.ts`、隊長の吹き出し・ボタンの文字は Claude（Haiku）がまとめて訳してキャッシュ（`lib/i18n/translate.ts`・`translations` 表）、本人の文は日本語に直してから今までの処理へ。マイクも選んだことばで。下のタブの名前も。テスト 7 本。
+## 第30段: 報告箱（11/7 本人の指示「利用者側から機能追加要望やバグ報告をすると AI が自動で機能追加や改修をする」、spec v1.33）
+- [x] **T110 隊長に伝える** — 隊長トークの 📮 と設定の「お知らせ」から、種類（🐞💡❓）＋文（声でも）を送る `components/FeedbackSheet.tsx`。`lib/feedback/`（決まり・保存 `feedback_reports`・GitHub・操作）、Claude の整え `lib/claude/feedback.ts`（採点表 `feedback`）、隊長の返事、声に貯める、Issue（鍵があればその場で、なければ Actions `feedback.yml` が1時間ごとに `/api/feedback` から）、閉じた Issue を見つけて本人の隊長トークに「直しました」（/chat を開いたとき・Actions・/admin のボタン）。/admin の「声」タブに報告箱。点検ループの決まり（`docs/tenken.md`・`/tenken`）に報告箱の Issue の扱いを足す。テスト 13 本。
+  完了条件: `npm run check` が通る。`/chat?as=h3` の 📮 → 送る → 返事が流れに入る。`/settings?as=h3` のボタン。390×844・375×667 に収まる。
+
+## 第31段: 11/7 本人の指摘5つ（spec v1.35）
+- [x] **T111 新規向けの「できること」とチャット登録・チームの成績・雪かきGOの理由・ソロ2回目・「雪かき待ち」** — `AppTour`（動く絵5枚）→ `RegisterChat`（隊長が3つ聞く）。`/team` の「あなた」になかまと今週の成績（棒が伸びる・数が数えあがる）。ホーム・ソロに「お願い 0軒」の理由。自分の家の雪かきを1日に何回でも（`REPEATABLE`、`again-N`）。地図の「救助待ち」→「雪かき待ち」。
+  完了条件: `npm run check` が通る。`/start?opening=1`・`/team?as=h3`・`/?as=h3`・`/solo?as=h3` が 390×844 と 375×667 に収まる（登録のトークは中でスクロール）。
+
+## 第32段: 多言語と隊長の声（11/7 本人の指示「多言語化と、チャットのシマエナ隊長の音声をかわいい音声に。音声は別の無料サービス、多言語は API も活用して」、spec v1.36）
+- [x] **T112 隊長トークの多言語** — 🌐 で日本語／English／中文／한국어／Tiếng Việt（cookie `lang`）。決まった文字は辞書 `lib/i18n/ui.ts`、隊長の吹き出し・ボタンの文字は Claude（Haiku）がまとめて訳してキャッシュ（`lib/i18n/translate.ts`・`translations` 表）、本人の文は日本語に直してから今までの処理へ。マイクも選んだことばで。下のタブの名前も。テスト 7 本。
   完了条件: `npm run check` が通る。鍵なしでも画面の文字が切りかわり、隊長の文は日本語のまま止まらない。390×844・375×667 で1画面。
-- [x] **T111 隊長のかわいい声** — 無料の VOICEVOX Web API（api.tts.quest）で `VOICEVOX:雨晴はう`（シマエナガらしい、ふんわり高めの声。本人の指示でずんだもんから変更）の mp3（`lib/speech/voicevox.ts`・`/api/voice`）。日本語の読み上げはこの声、作れない・日本語以外はブラウザの声に戻る。クレジットを 🌐 の紙と README に。`CAPTAIN_VOICE=off`・`VOICEVOX_SPEAKER`・`VOICEVOX_API_KEY`。テスト 4 本。
+- [x] **T113 隊長のかわいい声** — 無料の VOICEVOX Web API（api.tts.quest）で `VOICEVOX:雨晴はう`（シマエナガらしい、ふんわり高めの声。本人の指示でずんだもんから変更）の mp3（`lib/speech/voicevox.ts`・`/api/voice`）。日本語の読み上げはこの声、作れない・日本語以外はブラウザの声に戻る。クレジットを 🌐 の紙と README に。`CAPTAIN_VOICE=off`・`VOICEVOX_SPEAKER`・`VOICEVOX_API_KEY`。テスト 4 本。
   完了条件: `npm run check` が通る。`/api/voice?text=…` が audio/mpeg を返す（この環境から確認）。
 

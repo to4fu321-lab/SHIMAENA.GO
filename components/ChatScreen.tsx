@@ -2,7 +2,7 @@
 
 // 隊長トークの画面（spec v1.17）。流れ（吹き出し・カード・画像・大きなボタン）と、下の入力欄（文・写真）。
 // 押したボタン・送った文はすぐ自分の吹き出しとして出し、返事が入ったら流れを読み直す。数秒ごとに新しい文面（点呼など）も取りに行く。
-// ことば（spec v1.33）: 🌐 で選ぶ。決まった文字は辞書（lib/i18n/ui.ts）、隊長の吹き出しはサーバーで訳したものが届く。
+// ことば（spec v1.36）: 🌐 で選ぶ。決まった文字は辞書（lib/i18n/ui.ts）、隊長の吹き出しはサーバーで訳したものが届く。
 // 読み上げは隊長のかわいい声（日本語は VOICEVOX、ほかはブラウザのそのことばの声）。
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ import { t } from "@/lib/i18n/ui";
 import type { ChatBubble, ChatButton } from "@/lib/inbox/view";
 import type { TeamId } from "@/lib/types";
 import ChatTools, { readSpeak, readTextSize, speakCaptain, TEXT_SIZE_PX, type TextSize } from "./ChatTools";
+import FeedbackButton from "./FeedbackSheet";
 import LangPicker from "./LangPicker";
 import Mascot from "./Mascot";
 import MicButton from "./MicButton";
@@ -242,6 +243,8 @@ export default function ChatScreen({
           {t(lang, "title")}
         </h1>
         {extra}
+        {/* 報告箱（spec v1.33）: 不具合・要望を隊長に伝える。返事はすぐ流れに入る */}
+        {!readOnly && viewerId && <FeedbackButton viewerId={viewerId} page="/chat" variant="icon" inChat onSent={(r) => r.bubbles && setBubbles(r.bubbles)} />}
         {!readOnly && <ChatTools size={size} onSize={setSize} speakOn={speakOn} onSpeak={setSpeakOn} lang={lang} />}
         <LangPicker lang={lang} onPick={pickLang} canTranslate={canTranslate} voiceName={voiceName} />
       </header>
@@ -261,6 +264,7 @@ export default function ChatScreen({
                     {b.label}
                   </button>
                 ))}
+                <p className="pt-1 text-sm text-ink-soft">困ったこと・こうしてほしいことは、右上の 📮 から隊長に伝えられます。</p>
               </div>
             )}
           </div>

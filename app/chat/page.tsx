@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { Suspense } from "react";
 import ChatScreen from "@/components/ChatScreen";
 import Mascot from "@/components/Mascot";
@@ -19,6 +19,7 @@ import { inboxKeyOf } from "@/lib/inbox/key";
 import { publicVapidKey } from "@/lib/push/keys";
 import { repo } from "@/lib/repo";
 import { listThread, markRead } from "@/lib/inbox/store";
+import { syncIfDue } from "@/lib/feedback/ops";
 import { toBubbles } from "@/lib/inbox/view";
 import { onTeam } from "@/lib/member";
 import { loadRoster } from "@/lib/morning/roster";
@@ -31,7 +32,7 @@ export const metadata: Metadata = { title: "隊長トーク ・ シマエナGO" 
 /**
  * 隊長トーク（spec v1.17）: 届くもの（予告・点呼・作戦・完了・ありがとう・なかま…）と、本人の文・ボタンの答えが1つの流れで並ぶ。
  * 文面とボタンは今までの LINE の文面のまま。ページは1画面（流れの中だけがスクロールする。LINE と同じ）。
- * ことば（spec v1.33）: cookie `lang` のことばで。決まった文字は辞書、隊長の吹き出しは Claude の訳（キャッシュつき）。
+ * ことば（spec v1.36）: cookie `lang` のことばで。決まった文字は辞書、隊長の吹き出しは Claude の訳（キャッシュつき）。
  */
 async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
@@ -81,6 +82,8 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
     );
   }
 
+  // 報告箱（spec v1.33）: 直った報告があれば、開いたついでに GitHub を見て知らせを入れる（30分に1回。待たせない）
+  if (me) after(() => syncIfDue());
   const items = await listThread(key);
   await markRead(key);
   const bubbles = await localizeBubbles(toBubbles(items, demoAs), lang);

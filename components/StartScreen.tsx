@@ -1,122 +1,89 @@
 "use client";
 
-// はじめる（spec v1.17）。LINE でログイン → 画面で30秒の登録 → そのままソロ出動へ。
-// 登録は1画面ずつ大きなボタンで: ①手伝う／手伝ってほしい／家族の代わりに ②家の場所 ③2問 → 「はじめる！」。
+// はじめる（spec v1.17）。LINE でログイン → オープニング → 「このアプリでできること」（動く絵、11/7）→ 隊長とのチャットで30秒の登録 → そのままソロ出動へ。
+// 登録の中身は ①手伝う／手伝ってほしい（絵のカードで両方えらべる。spec v1.33）／家族の代わりに ②家の場所 ③質問（両方なら4問。お願いする側は絵で）→ 「はじめる！」（components/RegisterChat.tsx）。
 // 家族の代わりの登録は、最後に6桁の連携コードを出す（ご本人・ほかの家族が「連携コードを入れる」で紐づく）。
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import { linkCodeAction, registerAction } from "@/app/start/actions";
 import type { LatLng } from "@/lib/types";
+import AppTour from "./AppTour";
 import LoginButton from "./LoginButton";
 import Mascot from "./Mascot";
 import { play } from "@/lib/sound/engine";
+import RegisterChat, { type ChatForm } from "./RegisterChat";
 import SnowScene from "./SnowScene";
 import WelcomeOpening from "./WelcomeOpening";
 
-const PinAdjust = dynamic(() => import("./PinAdjust"), { ssr: false });
-
 /** guest = ログインしていない、pending = ログイン済みで未登録、member = 登録済み、redo = 登録のやり直し */
 export type StartStatus = "guest" | "pending" | "member" | "redo";
-type Phase = "role" | "place" | "questions" | "saving" | "code" | "done";
-type Role = "helper" | "requester" | "family";
-
-const Q: Record<"helper" | "requester", { q1: { title: string; options: [string, string][] }; q2: { title: string; options: [string, string][] } }> = {
-  helper: {
-    q1: { title: "雪の朝、何分くらい動けますか？", options: [["15", "15分"], ["30", "30分"], ["60", "60分"]] },
-    q2: { title: "スコップなどの道具はありますか？", options: [["yes", "ある"], ["no", "ない"]] },
-  },
-  requester: {
-    // spec v1.20: 頼み方を登録で分ける（おまかせ／一緒にやる）。毎朝の質問はしない
-    q1: { title: "家の人も一緒に雪かきしますか？", options: [["omakase", "おまかせしたい"], ["together", "一緒にやる"]] },
-    q2: { title: "どこまで雪かきが要りますか？", options: [["entrance", "玄関前まで"], ["garage", "車庫前まで"], ["road", "道路まで"]] },
-  },
-};
+type Phase = "chat" | "done";
 
 export default function StartScreen({ status, name, center, next, opening = false }: { status: StartStatus; name: string; center: LatLng; next: string; opening?: boolean }) {
   const router = useRouter();
-  // はじめてログインした人（pending）には、登録の前にオープニングを1回見せる。opening = デモ撮影用に誰でも見られる（?opening=1）
+  // はじめてログインした人（pending）には、登録の前にオープニングと「できること」を1回見せる。opening = デモ撮影用に誰でも見られる（?opening=1）
   const [showOpening, setShowOpening] = useState(status === "pending" || opening);
+  const [showTour, setShowTour] = useState(false);
   // 登録できた瞬間の「入隊！」スタンプ
   const [joined, setJoined] = useState(false);
-  const [phase, setPhase] = useState<Phase>("role");
-  const [role, setRole] = useState<Role>();
-  const [place, setPlace] = useState<LatLng>();
-  const [picking, setPicking] = useState<LatLng>();
-  const [q1, setQ1] = useState<string>();
-  const [q2, setQ2] = useState<string>();
-  const [msg, setMsg] = useState<string>();
-  const [locating, setLocating] = useState(false);
-  const [code, setCode] = useState("");
+  const [phase, setPhase] = useState<Phase>("chat");
   const [linkCode, setLinkCode] = useState<string>();
   const [doneText, setDoneText] = useState<string>();
 
-  const here = () => {
-    setMsg(undefined);
-    if (!navigator.geolocation) {
-      setPicking(center);
-      return;
+  const save = async (f: ChatForm): Promise<string | undefined> => {
+    const r = await registerAction(f).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
+    if (!r.ok) {
+      play("error");
+      return r.text ?? "うまくいきませんでした。";
     }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        setPicking([pos.coords.latitude, pos.coords.longitude]); // 地図で家の上に合わせてから決める
-      },
-      () => {
-        setLocating(false);
-        setMsg("いまの場所が取れませんでした。地図で家の場所を選んでください。");
-        setPicking(center);
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    play("welcome");
+    play("cardStamp", { delay: 0.35 });
+    if (f.role === "family") {
+      setLinkCode("linkCode" in r ? r.linkCode : undefined);
+      setPhase("done");
+      return undefined;
+    }
+    setJoined(true);
+    const to = status === "redo" ? "/settings" : next === "/" ? "/solo?welcome=1" : next;
+    setTimeout(() => router.replace(to), 1400);
+    return undefined;
   };
 
-  const save = async () => {
-    if (!role || !place || !q1 || !q2) return;
-    setPhase("saving");
-    const r = await registerAction({ role, location: place, q1, q2 }).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
-    if (r.ok) {
-      play("welcome");
-      play("cardStamp", { delay: 0.35 });
-      if (role === "family") {
-        setLinkCode("linkCode" in r ? r.linkCode : undefined);
-        setPhase("done");
-        return;
-      }
-      setJoined(true);
-      const to = status === "redo" ? "/settings" : next === "/" ? "/solo?welcome=1" : next;
-      setTimeout(() => router.replace(to), 1400);
-      return;
-    }
-    setMsg(r.text);
-    setPhase("questions");
-    play("error");
-  };
-
-  const link = async (whoAmI: "self" | "family") => {
-    setMsg(undefined);
+  const link = async (code: string, whoAmI: "self" | "family"): Promise<string | undefined> => {
     const r = await linkCodeAction(code, whoAmI).catch(() => ({ ok: false as const, text: "うまくいきませんでした。" }));
     if (!r.ok) {
       play("error");
-      return setMsg(r.text);
+      return r.text ?? "うまくいきませんでした。";
     }
     play("welcome");
     setDoneText(r.text);
     setPhase("done");
     if (whoAmI === "self") setTimeout(() => router.replace("/"), 1500);
+    return undefined;
   };
 
-  const big = "min-h-20 w-full rounded-3xl px-4 text-left text-xl font-bold ring-2";
-  const qRole = role === "helper" ? "helper" : "requester";
   const registering = status === "pending" || status === "redo";
+  const overlays = (
+    <>
+      {showOpening && (
+        <WelcomeOpening
+          name={name}
+          onDone={() => {
+            setShowOpening(false);
+            setShowTour(true);
+          }}
+        />
+      )}
+      {showTour && <AppTour onDone={() => setShowTour(false)} />}
+    </>
+  );
 
   if (status === "guest") {
     // ログイン前: 雪の夜の町を背景に、このゲームの約束を3つ。下に「LINE でログイン」
     return (
       <div className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-[6dvh] text-center text-white">
-        {showOpening && <WelcomeOpening name={name} onDone={() => setShowOpening(false)} />}
+        {overlays}
         <SnowScene />
         <div className="relative flex min-h-0 flex-1 flex-col items-center">
           <Mascot size={96} className="captain-idle drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] short:size-20" />
@@ -153,7 +120,7 @@ export default function StartScreen({ status, name, center, next, opening = fals
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper px-4 pb-4 pt-5 text-ink">
-      {showOpening && <WelcomeOpening name={name} onDone={() => setShowOpening(false)} />}
+      {overlays}
       {joined && (
         // 登録できた: 「入隊！」のスタンプ（このあとソロ出動へ）
         <div className="fixed inset-0 z-50 mx-auto grid max-w-md place-items-center overflow-hidden bg-ink/85 text-white" role="status">
@@ -165,38 +132,22 @@ export default function StartScreen({ status, name, center, next, opening = fals
           </div>
         </div>
       )}
-      {picking && (
-        <PinAdjust
-          start={picking}
-          emoji="🏠"
-          onDone={(at) => {
-            setPlace(at);
-            setPicking(undefined);
-            setPhase("questions");
-          }}
-          onCancel={() => setPicking(undefined)}
-        />
-      )}
       <header className="flex shrink-0 items-center gap-3">
         <Mascot size={56} />
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">
             シマエナ<span className="text-lamp-deep">GO</span>
           </p>
-          <h1 className="text-2xl font-bold leading-tight max-[400px]:text-xl">{name ? `${name}さん、ようこそ` : "はじめる"}</h1>
+          <h1 className="truncate text-2xl font-bold leading-tight max-[400px]:text-xl">{status === "member" ? "登録ずみ" : name ? `${name}さんの隊員登録` : "隊員登録"}</h1>
         </div>
+        {registering && (
+          <button type="button" onClick={() => setShowTour(true)} className="min-h-11 shrink-0 rounded-full bg-card px-3 text-sm font-bold ring-1 ring-ink/15">
+            できること
+          </button>
+        )}
       </header>
-      {registering && ["role", "place", "questions", "saving"].includes(phase) && (
-        <ol className="mt-3 flex shrink-0 gap-1.5" aria-label="すすみぐあい">
-          {(["role", "place", "questions"] as const).map((p, i) => (
-            <li key={p} className={`h-2 flex-1 rounded-full ${["role", "place", "questions", "saving"].indexOf(phase) >= i ? "bg-lamp" : "bg-ink/15"}`} />
-          ))}
-        </ol>
-      )}
 
-      <main key={phase} className="step-in mt-4 flex min-h-0 flex-1 flex-col gap-3">
-        {msg && <p className="shrink-0 rounded-2xl bg-warm px-3 py-2 text-base">{msg}</p>}
-
+      <main className="mt-3 flex min-h-0 flex-1 flex-col gap-3">
         {status === "member" && (
           <>
             <p className="text-xl font-bold leading-snug">もう登録が終わっています。</p>
@@ -209,104 +160,7 @@ export default function StartScreen({ status, name, center, next, opening = fals
           </>
         )}
 
-        {registering && phase === "role" && (
-          <>
-            <h2 className="text-xl font-bold">{status === "redo" ? "もう一度、どちらですか？" : "あなたはどちらですか？"}</h2>
-            <button onClick={() => (setRole("helper"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.1s` }}>
-              🧤 手伝う
-              <span className="block text-base font-normal text-ink-soft">近所の雪かきを10分から</span>
-            </button>
-            <button onClick={() => (setRole("requester"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.22s` }}>
-              🏠 手伝ってほしい
-              <span className="block text-base font-normal text-ink-soft">10cm 積もった朝、近所に応援が届く（自分も手伝えます）</span>
-            </button>
-            <button onClick={() => (setRole("family"), setPhase("place"))} className={`${big} opening-pillar bg-card ring-ink/15`} style={{ animationDelay: `0.33999999999999997s` }}>
-              👪 家族の代わりに登録
-              <span className="block text-base font-normal text-ink-soft">離れて住む親の家を登録。終わると知らせが届きます</span>
-            </button>
-            <button onClick={() => setPhase("code")} className="mt-auto text-base underline">
-              連携コード（6桁）をお持ちの方はこちら
-            </button>
-          </>
-        )}
-
-        {registering && phase === "place" && (
-          <>
-            <h2 className="text-xl font-bold">{role === "family" ? "ご家族の家の場所を教えてください" : "家の場所を教えてください"}</h2>
-            <p className="text-lg leading-snug">近くの雪かきを知らせるために使います。地図には 50m のマスでしか出ず、名前や住所は出ません。</p>
-            {role !== "family" && (
-              <button disabled={locating} onClick={here} className="btn btn-lamp btn-big mt-auto w-full">
-                {locating ? "いまの場所を調べています…" : "📍 いま家にいる（いまの場所）"}
-              </button>
-            )}
-            <button onClick={() => setPicking(center)} className={`btn btn-big w-full ${role === "family" ? "btn-lamp mt-auto" : "btn-white"}`}>
-              🗺 地図で選ぶ
-            </button>
-            <button onClick={() => setPhase("role")} className="text-base underline">
-              ‹ もどる
-            </button>
-          </>
-        )}
-
-        {registering && (phase === "questions" || phase === "saving") && role && (
-          <>
-            {(["q1", "q2"] as const).map((k) => {
-              const q = Q[qRole][k];
-              const val = k === "q1" ? q1 : q2;
-              const set = k === "q1" ? setQ1 : setQ2;
-              return (
-                <section key={k} className="shrink-0 space-y-2">
-                  <h2 className="text-lg font-bold leading-snug">{role === "family" ? q.title.replace("家の人も", "ご本人も") : q.title}</h2>
-                  <div className={`grid gap-2 ${q.options.length === 4 ? "grid-cols-2" : q.options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
-                    {q.options.map(([v, label]) => (
-                      <button
-                        key={v}
-                        aria-pressed={val === v}
-                        onClick={() => set(v)}
-                        className={`min-h-14 rounded-2xl px-1 text-lg font-bold ring-2 ${val === v ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-            <button disabled={!q1 || !q2 || phase === "saving"} onClick={save} className="btn btn-lamp btn-big mt-auto w-full disabled:opacity-40">
-              {phase === "saving" ? "登録しています…" : role === "family" ? "登録する" : "はじめる！"}
-            </button>
-            <button onClick={() => setPhase("place")} className="text-base underline">
-              ‹ 家の場所を選び直す
-            </button>
-          </>
-        )}
-
-        {registering && phase === "code" && (
-          <>
-            <h2 className="text-xl font-bold">連携コードを入れてください</h2>
-            <p className="text-lg leading-snug">ご家族が登録したときに出た6桁の番号です。</p>
-            <input
-              inputMode="numeric"
-              pattern="\d*"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="123456"
-              className="min-h-16 w-full rounded-2xl bg-card text-center text-3xl font-bold tracking-widest ring-2 ring-ink/15 focus:outline-none focus:ring-lamp"
-              aria-label="連携コード（6桁）"
-            />
-            <p className="text-lg font-bold">あなたは？</p>
-            <button disabled={code.length !== 6} onClick={() => link("self")} className="btn btn-lamp btn-big w-full disabled:opacity-40">
-              お願いする本人です
-            </button>
-            <button disabled={code.length !== 6} onClick={() => link("family")} className="btn btn-white btn-big w-full disabled:opacity-40">
-              家族です（知らせを受け取る）
-            </button>
-            <button onClick={() => setPhase("role")} className="mt-auto text-base underline">
-              ‹ もどる
-            </button>
-          </>
-        )}
+        {registering && phase === "chat" && <RegisterChat name={name} center={center} redo={status === "redo"} onRegister={save} onLink={link} />}
 
         {phase === "done" && (
           <>

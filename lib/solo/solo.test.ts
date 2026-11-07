@@ -87,7 +87,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
   });
   const now = new Date("2026-11-03T03:00:00Z");
 
-  it("1日1回、初回はボーナスとカード。現地はチームに +3点、オンラインは +1点（v1.7）", async () => {
+  it("同じ種類は1日1回（自分の家は何回でも）、初回はボーナスとカード。現地はチームに +3点、オンラインは +1点（v1.7）", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const before = await loadMorning();
     const scoresBefore = before.morning.scores.length;
@@ -125,11 +125,20 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
       expect(r3.summary.teamPoints).toBe(5);
     }
     expect((await loadMorning()).morning.scores.length).toBe(scoresBefore + 2);
+    // 自分の家の雪かきは1日に何回でも（11/7 本人の指摘）。羽は毎回、チームの点は 15点の上限の内（5+3+5 = 13）
+    const r4 = await completeSolo("h3", "own_house", { now });
+    expect(r4.ok).toBe(true);
+    if (r4.ok) {
+      expect(r4.summary.timesToday).toBe(2);
+      expect(r4.summary.feathers).toBe(8);
+      expect(r4.summary.teamPoints).toBe(5);
+    }
     const st = await soloStatus("h3", now);
     expect(st.today).toBe(DEMO_DATE);
-    expect(st.todayFeathers).toBe(16);
-    expect(st.doneToday.sort()).toEqual(["own_house", "report_snow"]);
-    expect(st.cards).toBe(2);
+    expect(st.todayFeathers).toBe(24);
+    expect(st.doneToday.sort()).toEqual(["own_house", "own_house", "report_snow"]);
+    expect(st.cards).toBe(3);
+    expect((await memoryRepo.listSoloLogsByParticipant("h3")).filter((l) => l.kind === "own_house").map((l) => l.missionId)).toEqual([undefined, "again-2"]);
     expect((await memoryRepo.listSoloLogsByParticipant("h3")).every((l) => !("lat" in l))).toBe(true);
   });
 

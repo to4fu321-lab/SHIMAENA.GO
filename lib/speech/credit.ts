@@ -1,4 +1,4 @@
-// 声の主の名前（spec v1.33）: VOICEVOX のキャラクターはクレジットを出す決まり。画面の「ことば」の紙に出す。
+// 声の主の名前（spec v1.36）: VOICEVOX のキャラクターはクレジットを出す決まり。画面の「ことば」の紙に出す。
 // 番号と名前の対応は api.tts.quest/v3/voicevox/speakers_array の順（よく使うものだけ。ほかは「VOICEVOX」）。
 import { speakerId, voiceEnabled, type VoiceEnv } from "./voicevox";
 

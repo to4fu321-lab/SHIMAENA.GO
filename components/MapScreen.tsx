@@ -176,7 +176,7 @@ export default function MapScreen({
         </span>
         <span className="shrink-0 whitespace-nowrap text-sm leading-tight tabular-nums">
           {prog.total === 0 ? (
-            "作戦はまだ"
+            "お願いはまだ 0軒"
           ) : prog.allDone ? (
             <b>{prog.defeatedAt ? `${prog.defeatedAt} ` : ""}すべて完了！</b>
           ) : (
@@ -208,7 +208,7 @@ export default function MapScreen({
         <span className="w-[76px]" aria-hidden="true" />
       </header>
 
-      {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と救助待ちの札を浮かべる */}
+      {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と雪かき待ちの札を浮かべる */}
       <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
         <div className="absolute inset-0 isolate">
           <TownMap cells={cells} home={home} destinations={destinations} solo={solo} road={road} focusRoad={focus} fitRoad={roadView} />
@@ -279,7 +279,7 @@ export default function MapScreen({
               <circle cx="12" cy="9" r="3" fill="#fff" />
             </svg>
             <span className="leading-tight">
-              <span className="block text-xs font-bold">救助待ち</span>
+              <span className="block text-xs font-bold">雪かき待ち</span>
               <b className="text-xl tabular-nums">{rescue.length}</b>
               <span className="text-sm font-bold">軒</span>
             </span>
@@ -316,6 +316,20 @@ export default function MapScreen({
         startClosed={Boolean(focusRoad) || roadView}
         peek={peekNode}
         footer={
+          prog.total === 0 && !mySortie ? (
+            // 近所のお願いがない: 理由と、やれること2つへ（11/7 本人の指示）
+            <div className="space-y-2" aria-label="いまできること">
+              <p className="text-center text-sm font-bold">近所のお願いは いまありません。頼む家のお願いが出ると、地図に家が出ます。</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Link href={`/solo?pick=10&focus=own_house${q ? `&as=${state.viewerId}` : ""}`} className="btn btn-lamp min-h-14 text-base">
+                  🏠 自宅の雪かき
+                </Link>
+                <button type="button" onClick={openReport} className="btn btn-white min-h-14 whitespace-nowrap px-2 text-base max-[380px]:text-sm">
+                  ⚠️ 道の危険を知らせる
+                </button>
+              </div>
+            </div>
+          ) : (
           <MorningButtons
             viewerId={state.viewerId}
             canAct={Boolean(mySortie && mySortie.status === "going")}
@@ -323,6 +337,7 @@ export default function MapScreen({
             done={mySortie?.status === "done"}
             note={mySortie?.status === "done" ? "✓ 今朝の雪かきは完了しました。おつかれさまでした。" : mySortie ? undefined : "今朝の割り当てが届くと、ここのボタンが押せるようになります。"}
           />
+          )
         }
       >
                 {prog.allDone && recap && (
@@ -389,18 +404,21 @@ export default function MapScreen({
               </p>
             )}
           </div>
-        ) : (
+        ) : prog.total > 0 ? (
           <p className="text-base">
             <span className="font-bold">あなたの担当:</span> 今朝の割り当てはまだありません
           </p>
+        ) : null}
+        {/* お願いが 0 軒のときは「10分だけ参加」は出さない（下の「自宅の雪かき」「道の危険」へ） */}
+        {prog.total > 0 && (
+          <RescueList
+            viewerId={state.viewerId}
+            items={rescue}
+            goingTo={goingTo}
+            isHelper={viewer?.role === "helper" || Boolean(viewer?.teamId)}
+            hasAssignment={goingTo.length > 0}
+          />
         )}
-        <RescueList
-          viewerId={state.viewerId}
-          items={rescue}
-          goingTo={goingTo}
-          isHelper={viewer?.role === "helper" || Boolean(viewer?.teamId)}
-          hasAssignment={goingTo.length > 0}
-        />
         <details className="rounded-2xl bg-paper px-3 py-2 ring-1 ring-ink/10">
           <summary className="flex min-h-11 cursor-pointer items-center text-base font-bold">▼ くわしく（チームの得点・色の見方・共有）</summary>
           <div className="space-y-3 pb-1 pt-2">

@@ -2,7 +2,7 @@
 
 // 隊長トークの音声入力（spec v1.18）: ブラウザの音声認識で、話した言葉を入力欄に入れる。送る前に直せる。
 // 使えない端末（古いブラウザ・権限なし）ではボタンを出さず、キーボードのマイクを案内する。
-// ことば（spec v1.33）: 選んだことばで聞き取る（既定は日本語）。
+// ことば（spec v1.36）: 選んだことばで聞き取る（既定は日本語）。
 import { useEffect, useRef, useState } from "react";
 import { LANG_INFO, type Lang } from "@/lib/i18n/langs";
 import { t } from "@/lib/i18n/ui";

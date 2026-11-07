@@ -1,4 +1,4 @@
-// 選んだことばの cookie（spec v1.33）。サーバー側（page・server action）でだけ使う。
+// 選んだことばの cookie（spec v1.36）。サーバー側（page・server action）でだけ使う。
 import { cookies } from "next/headers";
 import { LANG_COOKIE, parseLang, type Lang } from "./langs";
 

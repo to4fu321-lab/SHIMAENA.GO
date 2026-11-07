@@ -1,6 +1,6 @@
 "use client";
 
-// ことばの切りかえ（spec v1.33）: 隊長トークの上段の 🌐。押すと下から紙が出て、5つのことばから選ぶ。
+// ことばの切りかえ（spec v1.36）: 隊長トークの上段の 🌐。押すと下から紙が出て、5つのことばから選ぶ。
 // 選ぶと cookie に覚え（端末ごと）、隊長の吹き出しは Claude の訳で、画面の決まった文字は辞書で、そのことばになる。
 import { useEffect, useState } from "react";
 import { LANG_INFO, LANGS, type Lang } from "@/lib/i18n/langs";

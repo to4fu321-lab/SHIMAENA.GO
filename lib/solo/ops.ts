@@ -24,7 +24,7 @@ import type { Card, Participant, PhotoCheck, SoloLog } from "../types";
 import { soloSnow } from "../snow-estimate";
 import { activeDates, bonusLog, bonusesDue, feathersOn, nextCard, streakDays, totalFeathers, type NextCard } from "./feathers";
 import { addSoloScores, soloPointsToday } from "./team-points";
-import { HELP_HOUSE_FEATHERS, SOLO_BONUS, SOLO_MISSIONS, soloLabel, soloMission, type SoloMission } from "./missions";
+import { HELP_HOUSE_FEATHERS, REPEATABLE, SOLO_BONUS, SOLO_MISSIONS, soloLabel, soloMission, type SoloMission } from "./missions";
 
 const newId = () => `sl-${randomBytes(6).toString("base64url")}`;
 
@@ -59,6 +59,8 @@ export interface SoloClearSummary {
   photoChecked?: boolean;
   /** v1.31: スコップカウンターの回数（数えたときだけ） */
   strokes?: number;
+  /** 今日この種類を終えた回数（自分の家の雪かきは何回でも。2回目なら 2） */
+  timesToday: number;
   /** v1.7: チームに入った点（現地の活動だけ。オンラインとチームのない人は 0） */
   teamPoints: number;
   teamName?: string;
@@ -96,7 +98,10 @@ export async function completeSolo(
   const today = appToday(record, opts.now);
   const at = opts.now.toISOString();
   const before = await r.listSoloLogsByParticipant(p.id);
-  if (before.some((l) => l.date === today && l.kind === mission.kind)) {
+  // 自分の家の雪かきは1日に何回でも（11/7 本人の指摘「朝に1回したら2度目ができない」。降り続く日は朝と昼で2回になる）。
+  // ほかのミッションは1日1回のまま。台帳の一意 index（参加者・日付・種類・missionId）に当たらないよう、2回目からは missionId に回数の印を入れる
+  const timesToday = before.filter((l) => l.date === today && l.kind === mission.kind).length;
+  if (timesToday > 0 && !REPEATABLE.has(mission.kind)) {
     return { ok: false, reason: "already", text: `「${mission.label}」は今日はもう完了しています。別のミッションをどうぞ。` };
   }
 
@@ -148,6 +153,7 @@ export async function completeSolo(
     feathers: mission.feathers,
     at,
   };
+  if (timesToday > 0) log.missionId = `again-${timesToday + 1}`; // 2回目・3回目…の印（家の手伝いの missionId とは別物）
   if (opts.note) log.note = opts.note.slice(0, 60);
   if (photoChecked !== undefined) log.photoChecked = photoChecked;
   if (mission.onsite && opts.strokes) log.strokes = opts.strokes; // v1.31 スコップカウンター（現地だけ。得点には入れない）
@@ -252,6 +258,7 @@ export async function completeSolo(
     photoNote,
     photoChecked,
     strokes: log.strokes,
+    timesToday: timesToday + 1,
     teamPoints,
     teamName: p.teamId ? getTeam(p.teamId).name : undefined,
     teamCapped,

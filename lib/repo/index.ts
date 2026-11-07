@@ -1,6 +1,7 @@
 // 参加者・拠点・家族の紐づけ・LINE の登録途中経過の保存先。
 // DATABASE_URL があれば Neon、なければメモリ（開発用）。素の SQL だけ。
 import { hasDb, query } from "../db";
+import { memoClear, memoRead } from "../db/memo";
 import { demoParticipantId } from "../inbox/key";
 import type { RegSession } from "../line/registration";
 import { TOWN } from "../town";
@@ -239,6 +240,7 @@ const dbSoloMethods: Pick<Repo, "countCards" | "insertSoloLog" | "listSoloLogsBy
     return Number(rows[0]?.n ?? 0);
   },
   async insertSoloLog(log) {
+    memoClear("repo:solo:");
     // 一意 index（solo_logs_once）に当たれば入らない → false
     const rows = await query<{ id: string }>(
       `insert into solo_logs (id, participant_id, date, kind, onsite, feathers, note, hitokoto, photo_checked, cell_key, mission_id, strokes, at)
@@ -252,8 +254,10 @@ const dbSoloMethods: Pick<Repo, "countCards" | "insertSoloLog" | "listSoloLogsBy
     return rows.length > 0;
   },
   async listSoloLogsByParticipant(participantId) {
-    const rows = await query<SoloLogRow>(`select ${SOLO_COLS} from solo_logs where participant_id = $1 order by at`, [participantId]);
-    return rows.map(rowToSoloLog);
+    return memoRead(`repo:solo:${participantId}`, async () => {
+      const rows = await query<SoloLogRow>(`select ${SOLO_COLS} from solo_logs where participant_id = $1 order by at`, [participantId]);
+      return rows.map(rowToSoloLog);
+    });
   },
   async listSoloLogsBetween(from, to) {
     const rows = await query<SoloLogRow>(`select ${SOLO_COLS} from solo_logs where date >= $1 and date <= $2 order by at`, [from, to]);
@@ -384,12 +388,15 @@ const dbCardMethods: Pick<
     return rows.map(rowToCard);
   },
   async updateCardBack(id, backSvg) {
+    memoClear("repo:cards:");
     await query("update cards set back_svg = $2 where id = $1", [id, backSvg]);
   },
   async updateCardFront(id, svg) {
+    memoClear("repo:cards:");
     await query("update cards set svg = $2 where id = $1", [id, svg]);
   },
   async insertCard(card, svg, backSvg) {
+    memoClear("repo:cards:");
     try {
       await insertCardRow(card, svg, backSvg);
     } catch (e) {
@@ -405,8 +412,10 @@ const dbCardMethods: Pick<
   return rows[0] ? { card: rowToCard(rows[0]), svg: rows[0].svg, backSvg: rows[0].back_svg } : undefined;
   },
   async listCardsByRecipient(recipientId) {
-  const rows = await query<CardRow>(`select ${CARD_COLS} from cards where recipient_id = $1 order by created_at desc`, [recipientId]);
-  return rows.map(rowToCard);
+    return memoRead(`repo:cards:${recipientId}`, async () => {
+      const rows = await query<CardRow>(`select ${CARD_COLS} from cards where recipient_id = $1 order by created_at desc`, [recipientId]);
+      return rows.map(rowToCard);
+    });
   },
   async countCardsForRollcall(rollcallId) {
   const rows = await query<{ n: string }>("select count(*)::text as n from cards where rollcall_id = $1", [rollcallId]);
@@ -424,14 +433,19 @@ export const dbRepo: Repo = {
     return rows[0] ? rowToParticipant(rows[0]) : undefined;
   },
   async findParticipant(id) {
-    const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants where id = $1`, [id]);
-    return rows[0] ? rowToParticipant(rows[0]) : undefined;
+    return memoRead(`repo:participant:${id}`, async () => {
+      const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants where id = $1`, [id]);
+      return rows[0] ? rowToParticipant(rows[0]) : undefined;
+    });
   },
   async listParticipants() {
-    const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants order by created_at, id`);
-    return rows.map(rowToParticipant);
+    return memoRead("repo:participants", async () => {
+      const rows = await query<ParticipantRow>(`select ${PARTICIPANT_COLS} from participants order by created_at, id`);
+      return rows.map(rowToParticipant);
+    });
   },
   async upsertParticipant(p) {
+    memoClear("repo:participant"); // 名簿が変わるので、同じリクエストの読みは取り直す
     await query(
       `insert into participants
          (id, nickname, role, lat, lng, line_user_id, team_id, solo_minutes, clear_area, level, morning_minutes, has_tools, registered_by_family_id)
@@ -474,14 +488,17 @@ export const dbRepo: Repo = {
     return rows[0] ? { id: rows[0].id, number: Number(rows[0].number), requesterId: rows[0].requester_id } : undefined;
   },
   async listBases() {
-    const rows = await query<{ id: string; number: number; requester_id: string }>("select id, number, requester_id from bases order by number");
-    return rows.map((r) => ({ id: r.id, number: Number(r.number), requesterId: r.requester_id }));
+    return memoRead("repo:bases", async () => {
+      const rows = await query<{ id: string; number: number; requester_id: string }>("select id, number, requester_id from bases order by number");
+      return rows.map((r) => ({ id: r.id, number: Number(r.number), requesterId: r.requester_id }));
+    });
   },
   async nextBaseNumber() {
     const rows = await query<{ n: number }>("select coalesce(max(number), 0) + 1 as n from bases");
     return Number(rows[0]?.n ?? 1);
   },
   async upsertBase(b) {
+    memoClear("repo:bases");
     await query(
       `insert into bases (id, number, requester_id) values ($1, $2, $3)
        on conflict (id) do update set number = excluded.number, requester_id = excluded.requester_id`,

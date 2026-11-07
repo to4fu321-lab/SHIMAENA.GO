@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fiveMinutesAction } from "@/app/map/actions";
 import { completeSoloAction, reportRoadAction, setRoadAlertAction, startHomeAction, stopHomeAction, type SoloActionResult } from "@/app/solo/actions";
-import { soloTeamPoints, type SoloMission } from "@/lib/solo/missions";
+import { REPEATABLE, soloTeamPoints, type SoloMission } from "@/lib/solo/missions";
 import { allowedAtNight, NIGHT_TEXT } from "@/lib/night";
 import type { SoloClearSummary, SoloStatus } from "@/lib/solo/ops";
 import type { Role } from "@/lib/types";
@@ -40,6 +40,7 @@ export default function SoloScreen({
   pickFive,
   focus,
   night = false,
+  noRequests = false,
   q,
   shareOptions = [],
   roadAlerts,
@@ -58,6 +59,8 @@ export default function SoloScreen({
   focus?: string;
   /** 夜（19時〜6時）: 自分の家と家の中でできることだけ（spec v1.8 防犯） */
   night?: boolean;
+  /** 近所のお願いが 0 軒（作戦がまだ）: 自宅の雪かき・道の危険へ誘導する */
+  noRequests?: boolean;
   q: string;
   /** SNS に投稿する下書き（わたしの活動・仲間を募集） */
   shareOptions?: ShareOption[];
@@ -99,7 +102,7 @@ export default function SoloScreen({
     const t = setTimeout(() => {
       try {
         const v = JSON.parse(localStorage.getItem(runKey) ?? "null");
-        if (v && typeof v.kind === "string" && typeof v.startedAt === "number" && !status.doneToday.includes(v.kind)) {
+        if (v && typeof v.kind === "string" && typeof v.startedAt === "number" && (REPEATABLE.has(v.kind) || !status.doneToday.includes(v.kind))) {
           setRunningState(v);
           setBeforeState(localStorage.getItem(beforeKey) ?? undefined);
         }
@@ -227,7 +230,7 @@ export default function SoloScreen({
   };
   const [active, setActive] = useState(firstIndex);
   const trackRef = useRef<HTMLDivElement>(null);
-  const doneCount = list.filter((m) => doneToday.includes(m.kind)).length;
+  const doneCount = list.filter((m) => doneToday.includes(m.kind)).length; // 種類の数（自分の家を2回しても 1）
   const [todayFeathers, setTodayFeathers] = useState(status.todayFeathers);
 
   // 指定のカードへ横スクロール（スワイプと同じ動き）
@@ -277,6 +280,9 @@ export default function SoloScreen({
 
   const missionCard = (m: SoloMission, i: number) => {
     const done = doneToday.includes(m.kind);
+    // 自分の家の雪かきは1日に何回でも（降り続く日は朝と昼で）。今日の回数を出して「もう一度」
+    const times = doneToday.filter((k) => k === m.kind).length;
+    const again = REPEATABLE.has(m.kind);
     const tp = soloTeamPoints(m);
     return (
       <div className="flex min-h-full flex-col gap-2 rounded-3xl bg-card p-3.5 shadow-md ring-1 ring-ink/15">
@@ -287,7 +293,11 @@ export default function SoloScreen({
           )}
           <span className="ml-auto text-sm font-bold tabular-nums text-ink-soft">{i + 1}/{slides.length}</span>
         </div>
-        <h2 className="text-2xl font-bold leading-tight short:text-xl">{done ? "✓ " : ""}{m.label}</h2>
+        <h2 className="text-2xl font-bold leading-tight short:text-xl">
+          {done ? "✓ " : ""}
+          {m.label}
+          {done && again && <span className="ml-2 align-middle rounded-full bg-ice-soft px-2 py-0.5 text-sm font-bold text-ink">今日 {times}回</span>}
+        </h2>
         {m.kind === "report_snow" ? (
           // 5つの危険を、警告標識のアイコンで先に見せる（11/6 本人の指示「分かりやすい UI」）
           <>
@@ -354,7 +364,7 @@ export default function SoloScreen({
             🌙 {NIGHT_TEXT.short}
             {NIGHT_TEXT.why}
           </p>
-        ) : done && m.kind !== "report_snow" ? (
+        ) : done && m.kind !== "report_snow" && !again ? (
           <button tabIndex={i === active ? 0 : -1} onClick={() => goTo(Math.min(i + 1, slides.length - 1))} className="btn sticky bottom-0 mt-auto rounded-full bg-ice-soft text-lg shadow-md">
             ✓ クリア済み　次へ ›
           </button>
@@ -365,7 +375,7 @@ export default function SoloScreen({
             onClick={() => beginOrSwitch(m)}
             className="btn btn-lamp sticky bottom-0 mt-auto whitespace-nowrap rounded-full text-xl shadow-md"
           >
-            {done ? "▶ もう1件 知らせる" : "▶ 出撃する！"}
+            {done && again ? "▶ もう一度 出撃する！" : done ? "▶ もう1件 知らせる" : "▶ 出撃する！"}
           </button>
         )}
       </div>
@@ -403,7 +413,8 @@ export default function SoloScreen({
           </div>
         ) : (
           <p className="mt-auto rounded-2xl bg-paper px-3 py-2 text-base text-ink-soft">
-            今は家の募集がありません（雪の朝や、近所から頼まれたときに出ます）。{role === "helper" ? "道の危険を知らせるのはどうですか？" : "自分の家の雪かきをどうぞ。"}
+            いまは近所の家のお願いが 0 軒です。頼む家として登録した家に 10cm 以上積もった朝 6:30 と、「お願いする」で頼まれたときに、地図に家が出ます。
+            {role === "helper" ? "それまでは、自分の家の雪かきや道の危険の報告をどうぞ。" : "それまでは、自分の家の雪かきをどうぞ。"}
           </p>
         )}
       </div>
@@ -464,7 +475,7 @@ export default function SoloScreen({
       {/* ゲームの HUD: 呼びかけ＋今日の成績 */}
       <div className="shrink-0 rounded-2xl bg-ink px-4 py-2 text-white shadow-md">
         <p className="text-lg font-bold leading-snug">
-          {runMission ? "🎯 遂行中！ 報告でクリア" : pickFive ? "⚡ 出動要請！ 町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
+          {runMission ? "🎯 遂行中！ 報告でクリア" : noRequests && !night ? "🏠 近所のお願いはなし。自宅と道の報告を！" : pickFive ? "⚡ 出動要請！ 町の雪に挑め" : doneCount === 0 ? "⚡ 今日の初出撃をきめよう！" : doneCount >= list.length ? "🏆 全ミッション制覇！" : "🔥 連続クリアをねらえ！"}
         </p>
         <p className="flex items-center justify-between text-sm font-bold text-white/85">
           <span>クリア {doneCount}/{list.length}</span>

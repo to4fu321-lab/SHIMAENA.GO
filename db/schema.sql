@@ -274,7 +274,28 @@ create table if not exists nakama_waves (
 );
 create index if not exists nakama_waves_to on nakama_waves (to_id);
 
--- 隊長のことばの訳（spec v1.33）。lang は 'en' のような訳先（本人の文を日本語に直したものは 'en>ja'）。hash は元の文の SHA-256 の先頭 32 文字
+-- 報告箱（spec v1.33）: 町の人が「隊長に伝える」で送った不具合・要望。原文（text）はここだけ。Issue に載るのは個人情報を除いた safe_text
+create table if not exists feedback_reports (
+  id text primary key,
+  participant_id text not null,
+  kind text not null,              -- bug / confusing / feature / other（本人の選択）
+  text text not null,
+  page text not null default '',
+  status text not null default 'open', -- open（Issue 待ち）/ issued（AI が確かめ中）/ done / skipped
+  triaged_kind text,
+  title text,
+  summary text,
+  safe_text text,
+  issue_number integer,
+  issue_url text,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  checked_at timestamptz
+);
+create index if not exists feedback_reports_status on feedback_reports (status, created_at);
+
+-- 隊長のことばの訳（spec v1.36）。lang は 'en' のような訳先（本人の文を日本語に直したものは 'en>ja'）。hash は元の文の SHA-256 の先頭 32 文字
 create table if not exists translations (
   lang text not null,
   hash text not null,

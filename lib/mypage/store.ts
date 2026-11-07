@@ -1,7 +1,7 @@
 // マイページの保存先（spec v1.32）。DATABASE_URL があれば Neon、なければメモリ（開発用）。
 // 表は足すだけ: my_profiles（1人1行）・nakama_waves（「また一緒に」の手ふり。2人の組で1行）。最初に使うときに作る。
 import { hasDb, query } from "../db";
-import { DEFAULT_BG, DEFAULT_ICON, isIconBgId, isIconId, type MyProfile, type Wave } from "./rules";
+import { cleanPhoto, defaultLook, isIconBgId, isIconId, type MyProfile, type Wave } from "./rules";
 
 const TABLES = [
   `create table if not exists my_profiles (
@@ -11,6 +11,7 @@ const TABLES = [
   `create table if not exists nakama_waves (
     from_id text not null, to_id text not null, at timestamptz not null default now(), primary key (from_id, to_id))`,
   `create index if not exists nakama_waves_to on nakama_waves (to_id)`,
+  `alter table my_profiles add column if not exists photo text`,
 ];
 let ready: Promise<void> | undefined;
 function ensure(): Promise<void> {
@@ -46,12 +47,14 @@ interface ProfileRow {
   likes: unknown;
   interests: unknown;
   talk: string;
+  photo?: string | null;
   updated_at: string | Date;
 }
 const toProfile = (r: ProfileRow): MyProfile => ({
   participantId: r.participant_id,
-  icon: isIconId(r.icon) ? r.icon : DEFAULT_ICON,
-  iconBg: isIconBgId(r.icon_bg) ? r.icon_bg : DEFAULT_BG,
+  icon: isIconId(r.icon) ? r.icon : defaultLook(r.participant_id).icon,
+  iconBg: isIconBgId(r.icon_bg) ? r.icon_bg : defaultLook(r.participant_id).iconBg,
+  ...(cleanPhoto(r.photo) ? { photo: r.photo as string } : {}),
   intro: r.intro ?? "",
   likes: strings(r.likes),
   interests: strings(r.interests),
@@ -90,11 +93,11 @@ export async function putProfile(p: MyProfile): Promise<void> {
   }
   await ensure();
   await query(
-    `insert into my_profiles (participant_id, icon, icon_bg, intro, likes, interests, talk, updated_at)
-     values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8)
+    `insert into my_profiles (participant_id, icon, icon_bg, intro, likes, interests, talk, updated_at, photo)
+     values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9)
      on conflict (participant_id) do update set icon = excluded.icon, icon_bg = excluded.icon_bg, intro = excluded.intro,
-       likes = excluded.likes, interests = excluded.interests, talk = excluded.talk, updated_at = excluded.updated_at`,
-    [p.participantId, p.icon, p.iconBg, p.intro, JSON.stringify(p.likes), JSON.stringify(p.interests), p.talk, p.updatedAt],
+       likes = excluded.likes, interests = excluded.interests, talk = excluded.talk, updated_at = excluded.updated_at, photo = excluded.photo`,
+    [p.participantId, p.icon, p.iconBg, p.intro, JSON.stringify(p.likes), JSON.stringify(p.interests), p.talk, p.updatedAt, p.photo ?? null],
   );
 }
 

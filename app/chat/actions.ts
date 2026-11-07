@@ -1,7 +1,7 @@
 "use server";
 
 // 隊長トーク（spec v1.17）の操作。画面の「自分」は trustedViewer で確かめる（cookie か、デモの架空の人）。
-// ことば（spec v1.33）: 返す流れは選んだことば（cookie）に訳す。本人が打った文は日本語に直してから今までの処理へ。
+// ことば（spec v1.36）: 返す流れは選んだことば（cookie）に訳す。本人が打った文は日本語に直してから今までの処理へ。
 import { revalidatePath } from "next/cache";
 import { takeChatQuota, type ChatKind } from "@/lib/chat/quota";
 import { sendToCaptain, type ChatInput } from "@/lib/chat/send";

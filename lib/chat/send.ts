@@ -8,7 +8,7 @@ import { withStateLock } from "../ops/lock";
 import type { Participant } from "../types";
 
 export type ChatInput =
-  /** shown: 自分の吹き出しに残す文字（本人が打った外国語の文・ボタンの訳。spec v1.33）。処理に渡すのは text（日本語） */
+  /** shown: 自分の吹き出しに残す文字（本人が打った外国語の文・ボタンの訳。spec v1.36）。処理に渡すのは text（日本語） */
   | { kind: "text"; text: string; shown?: string }
   | { kind: "postback"; data: string; label?: string }
   | { kind: "photo"; bytes: Uint8Array; mediaType: "image/jpeg" | "image/png" | "image/webp" };

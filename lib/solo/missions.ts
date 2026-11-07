@@ -33,6 +33,9 @@ export const SOLO_MISSIONS: SoloMission[] = [
   { kind: "help_house", label: "1軒の雪かきを手伝う", description: "今朝の作戦の家に10分だけ加わる（完了は写真で）", minutes: 10, onsite: true, difficulty: 2, feathers: HELP_HOUSE_FEATHERS, photo: "none" },
 ];
 
+/** 1日に何回でもできるミッション（自分の家の雪かき。11/7 本人の指摘。羽は毎回、チームの点は1日 15点の上限のまま） */
+export const REPEATABLE: ReadonlySet<SoloMissionKind> = new Set<SoloMissionKind>(["own_house"]);
+
 /** もう選べないミッション（前の記録の名前を出すためだけに残す） */
 const RETIRED: Pick<SoloMission, "kind" | "label">[] = [
   { kind: "patrol", label: "雪の状況を見回る" },
