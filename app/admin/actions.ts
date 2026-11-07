@@ -269,7 +269,7 @@ export async function runWeekly() {
 
 export async function backToSample() {
   return guarded("backToSample", async () => {
-    if (!demoEnabled()) return; // 本当に町内で使っているときは、見本の状態に戻さない
+    if (!demoEnabled()) return; // 本当にエリアで使っているときは、見本の状態に戻さない
     await resetToSample();
     // 架空の人の隊長トークも、見本の朝（おはよう → 作戦 → 完了）に入れ直す（地図と話をそろえる）
     try {
@@ -289,7 +289,7 @@ export async function setViewer(formData: FormData) {
   });
 }
 
-/** Neon に表を作り、架空の町内データを入れる（何度押しても安全） */
+/** Neon に表を作り、架空のエリアデータを入れる（何度押しても安全） */
 export async function prepareDatabase() {
   return guarded("prepareDatabase", async () => {
     const statements = await applySchema();

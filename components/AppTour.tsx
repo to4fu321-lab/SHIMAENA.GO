@@ -87,7 +87,7 @@ export default function AppTour({ onDone }: { onDone: () => void }) {
     },
     {
       key: "teams",
-      title: "町内ランダム3チーム",
+      title: "エリアでランダム3チーム",
       text: "月曜〜日曜の1週間。日曜の夜に組み直すので、毎週ちがう顔ぶれ。",
       scene: (
         <ul className="grid h-full grid-cols-3 items-center gap-1">

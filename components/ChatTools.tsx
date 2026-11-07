@@ -110,7 +110,7 @@ export function primeCaptainVoice(): void {
 }
 
 let woke = false;
-/** 自前の声の ENGINE（Hugging Face Space）は使わないと眠る → 画面に来たら1回だけ起こしておく（spec v1.37）。結果は待たない */
+/** 自前の声の ENGINE（Hugging Face Space）は使わないと眠る → 画面に来たら1回だけ起こしておく（spec v1.39）。結果は待たない */
 export function wakeCaptainVoice(): void {
   if (woke || typeof window === "undefined") return;
   woke = true;

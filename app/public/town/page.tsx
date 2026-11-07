@@ -18,7 +18,7 @@ import InviteBeacon from "@/components/InviteBeacon";
 import { isInviteCode } from "@/lib/invite";
 import Bgm from "@/components/Bgm";
 
-const TITLE = "しらかば町内の雪解け";
+const TITLE = "しらかばエリアの雪解け";
 const DESC = "町の雪解け率・今日の出動人数・今週の活動。雪かきゲーム「シマエナGO」の公開ページです。";
 
 export const metadata: Metadata = {
@@ -95,7 +95,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
           )}
           {via === "sns" && (
             <p className="shrink-0 rounded-2xl bg-warm px-3 py-2 text-base ring-1 ring-lamp/50" aria-label="ようこそ">
-              <b>SNS から来てくれて、ありがとう！</b> 札幌のある町内（デモは架空）の雪かきの様子です。見るだけ・応援だけでも大歓迎。
+              <b>SNS から来てくれて、ありがとう！</b> 札幌のあるエリア（デモは架空）の雪かきの様子です。見るだけ・応援だけでも大歓迎。
             </p>
           )}
           <section className="flex flex-1 flex-col justify-center gap-1.5 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-ink/10" aria-label="町の雪解け">
@@ -180,7 +180,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
             <h2 className="text-xl font-bold">シマエナGO とは</h2>
             <ul className="list-disc space-y-1 pl-5">
               <li>雪の朝、アプリの「隊長トーク」に1問だけの点呼が届きます。</li>
-              <li>町内の3チームが、ひとり暮らしの家の雪を10分単位でどけます。</li>
+              <li>エリアの3チームが、ひとり暮らしの家の雪を10分単位でどけます。</li>
               <li>動いた時だけのカードが届きます。お金には換えません。</li>
             </ul>
             <h3 className="text-lg font-bold">1人でも「ソロ出動」</h3>
@@ -238,7 +238,7 @@ async function Town({ searchParams }: { searchParams: Promise<{ via?: string; r?
               { key: "recruit", label: "仲間を募集", text: texts.recruit.text, image: "/api/share/recruit.png", page: `${site}/public/share/recruit?via=sns` },
             ]}
           />
-          <p className="shrink-0 text-sm text-ink-soft">公開しているのは集計だけです。名前や家の場所は出しません。デモの町内と人はすべて架空です。</p>
+          <p className="shrink-0 text-sm text-ink-soft">公開しているのは集計だけです。名前や家の場所は出しません。デモのエリアと人はすべて架空です。</p>
         </div>
       </Pager>
     </Screen>

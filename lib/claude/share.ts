@@ -55,7 +55,7 @@ export async function shareText(kind: TownShareKind, st: PublicStats): Promise<{
   const input = shareInput(kind, st);
   const res = await askJson({
     task:
-      "町内の雪かきゲームの、SNS に投稿する文の下書きを書いてください。採点表 share の規則に従います: 115字以内、2〜4行、入力の数字だけ、名前や家は書かない、" +
+      "エリアの雪かきゲームの、SNS に投稿する文の下書きを書いてください。採点表 share の規則に従います: 115字以内、2〜4行、入力の数字だけ、名前や家は書かない、" +
       "最後は #シマエナGO と #10分だけ出動 か #雪解け。名乗らない。読んだ人が10分だけ参加したくなる一文で終える。",
     input,
     schema: ShareTextSchema,

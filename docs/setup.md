@@ -23,8 +23,8 @@ npm run dev
 - `/admin` には、保存や通知の失敗が赤い「問題」として出る。「声」タブに今週の声と改善の提案が出る。
 - 人手が足りない家の最後の連絡先（町内会役員役のサポーター）: `SUPPORTER_LINE_USER_IDS`（LINE のアカウント ID をカンマ区切り）。
 - カードの絵を描くモデルを上げたいとき: `CARD_ART_MODEL`（既定は Claude Opus 5.5）。
-- **隊長の声（spec v1.38）: Aivis Cloud API（おすすめ・いちばん速い）**: https://aivis-project.com/cloud-api/ で登録（500 円分の無料クレジット）→ ダッシュボードで API キーを発行 → Vercel の環境変数 `AIVIS_API_KEY` に入れて Redeploy。声を変えるときは `AIVIS_MODEL`（モデル UUID。https://hub.aivis-project.com で探す）と `AIVIS_STYLE`（スタイル名。例「あまあま」）。`AIVIS_API_KEY` がないときは下の VOICEVOX。
-- 隊長の声（spec v1.36・v1.37、隊長トークの日本語の読み上げ）: 既定でオン。`CAPTAIN_VOICE=off` で切る（ブラウザの声に戻る）。`VOICEVOX_SPEAKER` で声を変える（番号は VOICEVOX のスタイル ID。一覧は https://api.tts.quest/v3/voicevox/speakers_array の順。既定 54 = 春歌ナナ。8 = 春日部つむぎ も候補）。作り方は2つ:
+- **隊長の声（spec v1.40）: Aivis Cloud API（おすすめ・いちばん速い）**: https://aivis-project.com/cloud-api/ で登録（500 円分の無料クレジット）→ ダッシュボードで API キーを発行 → Vercel の環境変数 `AIVIS_API_KEY` に入れて Redeploy。声を変えるときは `AIVIS_MODEL`（モデル UUID。https://hub.aivis-project.com で探す）と `AIVIS_STYLE`（スタイル名。例「あまあま」）。`AIVIS_API_KEY` がないときは下の VOICEVOX。
+- 隊長の声（spec v1.36・v1.39、隊長トークの日本語の読み上げ）: 既定でオン。`CAPTAIN_VOICE=off` で切る（ブラウザの声に戻る）。`VOICEVOX_SPEAKER` で声を変える（番号は VOICEVOX のスタイル ID。一覧は https://api.tts.quest/v3/voicevox/speakers_array の順。既定 54 = 春歌ナナ。8 = 春日部つむぎ も候補）。作り方は2つ:
   - **おすすめ: 自前の VOICEVOX ENGINE（`VOICEVOX_URL`）**。無料の Web API は鍵があっても1文に 10 秒以上かかるので（11/7 本人の指摘「遅すぎて使えない」）、Hugging Face Spaces の無料枠で ENGINE 本体を動かす（1〜2 秒で鳴る・回数の制限なし）。手順:
     1. https://huggingface.co/join でアカウントを作る（メールの確認あり）。
     2. https://huggingface.co/new-space で Space を作る: 名前は何でも（例 `shimaena-voice`）、**SDK は Docker（Blank）**、Hardware は **CPU basic（無料）**、**Public**。

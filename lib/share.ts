@@ -44,7 +44,7 @@ export function mixedCount(state: MorningState): number {
 
 /**
  * 共有用の文字（3行＋タグ）。例:
- *   シマエナGO しらかば町内 12/14 雪12cm『ぼた雪のドンブリ』
+ *   シマエナGO しらかばエリア 12/14 雪12cm『ぼた雪のドンブリ』
  *   ⬜🟦🟧🟪
  *   🟦⬜🟪🟧
  *   7/7軒 7:52 討伐 ・ 混成2

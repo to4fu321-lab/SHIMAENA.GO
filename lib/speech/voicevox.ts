@@ -1,4 +1,4 @@
-// 隊長の声（spec v1.36・v1.37）: VOICEVOX のかわいい声を作る。作り方は2つ。
+// 隊長の声（spec v1.36・v1.39）: VOICEVOX のかわいい声を作る。作り方は2つ。
 // 1) VOICEVOX_URL があれば、自前の VOICEVOX ENGINE（Hugging Face Spaces の無料枠。deploy/voicevox-space/）で直接作る。wav が 1〜2 秒で返る。
 // 2) なければ、無料の VOICEVOX Web API（api.tts.quest）。鍵があっても1文に 10 秒以上かかる（11/7 本人の指摘「遅すぎて使えない」）ので、確かめ用。
 // どちらもサーバー側でだけ呼ぶ（URL や鍵を画面に出さない）。失敗したら画面はブラウザの声に戻る（止まらない）。
@@ -160,7 +160,7 @@ export async function synthesizeQuest(text: string, fetchFn: typeof fetch = fetc
 }
 
 /**
- * 文を声に。AIVIS_API_KEY があれば Aivis Cloud API（spec v1.38。いちばん速い）、
+ * 文を声に。AIVIS_API_KEY があれば Aivis Cloud API（spec v1.40。いちばん速い）、
  * VOICEVOX_URL があれば自前の ENGINE、どちらもなければ VOICEVOX Web API。できなければ null（画面はブラウザの声に戻る）
  */
 export async function synthesize(text: string, fetchFn: typeof fetch = fetch, env: VoiceEnv = process.env): Promise<Voice | null> {

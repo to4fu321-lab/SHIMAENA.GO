@@ -59,7 +59,7 @@ export function snowHp(state: MorningState): { current: number; max: number } {
   return { current: Math.round(state.rollcall.forecastCm * (all.length - done)), max };
 }
 
-/** 今朝、町内みんなでどけた雪の合計（完了した家の kg を足す。チーム対抗ではなく共同の達成） */
+/** 今朝、エリアのみんなでどけた雪の合計（完了した家の kg を足す。チーム対抗ではなく共同の達成） */
 export function snowTotal(state: MorningState): { kg: number; houses: number; label: string; comparison: string } {
   const done = state.missions.filter((m) => m.status === "done" && (m.snowKg ?? 0) > 0);
   const kg = done.reduce((a, m) => a + (m.snowKg ?? 0), 0);

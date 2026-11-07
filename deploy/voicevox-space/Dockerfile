@@ -1,4 +1,4 @@
-# 隊長の声を作る VOICEVOX ENGINE を、Hugging Face Spaces（Docker・無料の CPU）で動かす（spec v1.37）。
+# 隊長の声を作る VOICEVOX ENGINE を、Hugging Face Spaces（Docker・無料の CPU）で動かす（spec v1.39）。
 # 使い方は docs/setup.md の「隊長の声」。この Dockerfile と同じ場所の README.md を、Space にそのまま置く。
 FROM voicevox/voicevox_engine:cpu-latest
 

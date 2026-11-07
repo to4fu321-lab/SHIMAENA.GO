@@ -57,8 +57,8 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
   return (
     <main className="mx-auto flex h-dvh max-w-md flex-col overflow-hidden bg-paper text-ink">
 
-      {/* 町内共通の印（毎週同じ） */}
-      <section className="shrink-0 bg-ink px-4 py-2 text-center text-white" aria-label="町内共通の印">
+      {/* エリア共通の印（毎週同じ） */}
+      <section className="shrink-0 bg-ink px-4 py-2 text-center text-white" aria-label="エリア共通の印">
         <p className="text-sm font-bold tracking-[0.2em]">{TOWN.name.replace("（架空）", "")} 公認</p>
         <p className="text-2xl font-bold">シマエナGO 雪かき中</p>
       </section>

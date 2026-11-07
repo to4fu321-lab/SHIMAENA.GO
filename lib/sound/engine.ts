@@ -6,6 +6,8 @@
 import { useSyncExternalStore } from "react";
 import { DEFAULT_SOUND_PREFS, readSoundPrefs, writeSoundPrefs, type SoundPrefs } from "./prefs";
 import { SFX, VIBRATE_MS, type SfxName } from "./sfx";
+import { createSpace, type Space } from "./space";
+import { primeBackground } from "./background";
 
 const VOL = { master: 0.8, sfx: 1.0, bgm: 0.55 } as const; // BGM は効果音より小さく（書き出して測った: 山 0.2〜0.3）
 
@@ -14,6 +16,8 @@ interface Engine {
   master: GainNode;
   sfx: GainNode;
   bgm: GainNode;
+  /** BGM の響き（やまびこ・残響）。spec v1.37 */
+  space: Space | null;
 }
 
 let engine: Engine | null = null;
@@ -46,6 +50,7 @@ export function soundPrefs(): SoundPrefs {
 export function setSoundPrefs(next: Partial<SoundPrefs>): void {
   prefs = { ...soundPrefs(), ...next };
   writeSoundPrefs(prefs);
+  applyAudioSession();
   if (engine) engine.bgm.gain.setTargetAtTime(prefs.bgm ? bgmLevel : 0, engine.ctx.currentTime, 0.05);
   emit();
 }
@@ -78,16 +83,38 @@ export function getEngine(): Engine | null {
     sfx.connect(master);
     const bgm = ctx.createGain();
     bgm.gain.value = soundPrefs().bgm ? VOL.bgm : 0;
-    bgm.connect(master);
-    engine = { ctx, master, sfx, bgm };
+    // BGM は響き（やまびこ・残響）を通して master へ。組めない端末では直接
+    let space: Space | null = null;
+    try {
+      space = createSpace(ctx, master);
+      bgm.connect(space.input);
+    } catch {
+      bgm.connect(master);
+    }
+    engine = { ctx, master, sfx, bgm, space };
     return engine;
   } catch {
     return null;
   }
 }
 
+/**
+ * 音の出し方（Safari の Audio Session）: 自分の音楽を聴きながら使うときは "ambient"＝ほかのアプリの音楽を止めずに重ねる。
+ * ふだんは "auto"（端末にまかせる）。対応していない端末では何もしない（spec v1.38）
+ */
+function applyAudioSession(): void {
+  try {
+    const s = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+    if (s) s.type = soundPrefs().ownMusic ? "ambient" : "auto";
+  } catch {
+    /* 対応していない端末 */
+  }
+}
+
 /** 最初のタップで呼ぶ: 止まっている AudioContext を動かす。壊れていれば作り直す。動いたら true */
 export async function unlock(): Promise<boolean> {
+  if (!gestureSeen) applyAudioSession(); // 音を出す前に決める
+  primeBackground(); // 雪かき中の曲を裏で鳴らすための <audio> を、タップの中で鳴らせる状態に
   let e = needsRebuild ? rebuild() : getEngine();
   if (!e) return false;
   gestureSeen = true;
@@ -199,11 +226,25 @@ export function vibrate(ms: number): void {
   }
 }
 
+/** BGM が実際に出る大きさ（BGM × master）。<audio> に焼き込むとき用 */
+export function bgmOutputGain(): number {
+  return VOL.bgm * VOL.master;
+}
+
 // ---- BGM の音量（トークでは半分） ----
 let bgmLevel: number = VOL.bgm;
 export function setBgmLevel(mult = 1): void {
   bgmLevel = VOL.bgm * mult;
   if (engine) engine.bgm.gain.setTargetAtTime(soundPrefs().bgm ? bgmLevel : 0, engine.ctx.currentTime, 0.3);
+}
+
+/** 曲が変わったら、やまびこの間隔を曲のテンポに合わせる */
+export function setBgmTempo(bpm: number): void {
+  try {
+    engine?.space?.setTempo(bpm);
+  } catch {
+    /* 響きが組めていない端末 */
+  }
 }
 
 /** 画面が裏に回った／戻った（SoundProvider が呼ぶ）。BGM 側が聞く */

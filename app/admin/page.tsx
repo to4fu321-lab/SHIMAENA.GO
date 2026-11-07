@@ -201,7 +201,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
   if (s.briefing)
     views.push(
       <section key="briefing" className={`${card} min-h-0 overflow-y-auto`}>
-        <h2 className="font-bold">{status === "announced" ? "前夜の予告" : "町内へのまとめ"}</h2>
+        <h2 className="font-bold">{status === "announced" ? "前夜の予告" : "エリアへのまとめ"}</h2>
         <p className="mt-1 text-base">{names.mask(s.briefing)}</p>
       </section>,
     );
