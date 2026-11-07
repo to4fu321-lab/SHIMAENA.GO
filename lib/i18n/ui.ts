@@ -49,7 +49,7 @@ const JA = {
   tabMap: "地図",
   tabChat: "隊長",
   tabConnect: "つなぐ",
-  tabCard: "活動",
+  tabCard: "きろく",
   time: "時刻",
 } as const;
 
@@ -102,7 +102,7 @@ const EN: Dict = {
   tabMap: "Map",
   tabChat: "Captain",
   tabConnect: "Connect",
-  tabCard: "Activity",
+  tabCard: "Records",
   time: "Time",
 };
 
@@ -152,7 +152,7 @@ const ZH: Dict = {
   tabMap: "地图",
   tabChat: "队长",
   tabConnect: "联系",
-  tabCard: "活动",
+  tabCard: "记录",
   time: "时间",
 };
 
@@ -202,7 +202,7 @@ const KO: Dict = {
   tabMap: "지도",
   tabChat: "대장",
   tabConnect: "연결",
-  tabCard: "활동",
+  tabCard: "기록",
   time: "시각",
 };
 
@@ -252,7 +252,7 @@ const VI: Dict = {
   tabMap: "Bản đồ",
   tabChat: "Đội trưởng",
   tabConnect: "Kết nối",
-  tabCard: "Hoạt động",
+  tabCard: "Nhật ký",
   time: "Giờ",
 };
 
