@@ -553,3 +553,36 @@ body {
   .opening-burst { display: none; }
   .opening-dawn, .opening-sun, .opening-flash, .opening-window { animation-duration: 0.01s; animation-delay: 0s !important; }
 }
+
+/* チーム画面（/team）: 今週の成績の棒が左から伸びる・仲間の顔が順にぽんと出る */
+.bar-grow { transform-origin: left center; animation: bar-grow 1.1s 0.25s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes bar-grow { from { transform: scaleX(0); } }
+.member-pop { animation: team-reveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .bar-grow, .member-pop { animation: none; }
+}
+
+/* このアプリでできること（components/AppTour.tsx）: 絵が切りかわる・ピンが脈打つ・雪の山が減る・カードがせり上がる */
+.tour-fade { animation: tour-fade 0.45s ease-out both; }
+@keyframes tour-fade { from { opacity: 0; transform: translateX(24px); } }
+.tour-pop { animation: tut-pop 0.4s ease-out both; }
+.tour-slide-in { animation: opening-rise 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+.tour-pin { animation: tour-pin 1.4s ease-in-out infinite; }
+@keyframes tour-pin { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.08); } }
+.tour-dash { animation: tour-dash 1.2s linear infinite; }
+@keyframes tour-dash { to { stroke-dashoffset: -26; } }
+.tour-shrink { animation: tour-shrink 2.2s 0.6s cubic-bezier(0.4, 0, 0.3, 1) both; }
+@keyframes tour-shrink { from { transform: scale(1); } to { transform: scale(0.22); } }
+.tour-fade-in { opacity: 0; animation: tour-fade-in 1s 1.6s ease-out both; }
+@keyframes tour-fade-in { to { opacity: 1; } }
+.tour-flash { opacity: 0; animation: tour-flash 0.5s 2.6s ease-out both; }
+@keyframes tour-flash { 0% { opacity: 0; } 20% { opacity: 0.95; } 100% { opacity: 0; } }
+.tour-card-up { animation: tour-card-up 0.7s 2.9s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes tour-card-up { from { opacity: 0; transform: translateY(60px) rotate(8deg) scale(0.6); } to { opacity: 1; transform: translateY(0) rotate(-4deg) scale(1); } }
+/* チャット形式の登録（components/RegisterChat.tsx）: 吹き出しと答えのボタンがぽんと出る */
+.chat-pop { animation: tut-pop 0.35s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .tour-fade, .tour-pop, .tour-slide-in, .tour-pin, .tour-dash, .tour-shrink, .tour-fade-in, .tour-flash, .tour-card-up, .chat-pop { animation: none; }
+  .tour-fade-in { opacity: 1; }
+  .tour-shrink { transform: scale(0.22); }
+}

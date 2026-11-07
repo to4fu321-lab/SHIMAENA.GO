@@ -46,7 +46,7 @@ export async function completeSoloAction(formData: FormData): Promise<SoloAction
     revalidatePath("/");
     revalidatePath("/map");
     if (!r.ok) return { ok: false, text: r.text };
-    return { ok: true, text: `「${r.summary.label}」完了！ +${r.summary.feathers}羽`, summary: r.summary };
+    return { ok: true, text: `「${r.summary.label}」${r.summary.timesToday > 1 ? `今日${r.summary.timesToday}回目の` : ""}完了！ +${r.summary.feathers}羽`, summary: r.summary };
   });
 }
 

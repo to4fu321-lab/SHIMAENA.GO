@@ -252,8 +252,16 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               ) : (
                 <p className="text-lg font-bold">
                   {asks > 0 ? `雪かきのお願い ${asks}軒` : rc.status === "closed" || !rc.forecastCm ? "今日は雪かきの予定なし" : `今日の雪 ${rc.forecastCm}cm`}
+                  {/* 雪はあるのに作戦がまだ（お願いの家が 0 軒）: 近所の雪かきに行けない理由をはっきり（11/7 本人の指摘） */}
+                  {asks === 0 && rc.status !== "closed" && rc.forecastCm > 0 && (
+                    <span className="ml-2 inline-block rounded-full bg-ice-soft px-2 py-0.5 align-middle text-sm font-bold">お願い 0軒</span>
+                  )}
                   <span className="block text-sm">
-                    {asks > 0 ? "地図の待っている家へ。10分だけでも大歓迎" : rc.status === "closed" || !rc.forecastCm ? "1人の10分でも町は変わります" : "10cm 積もったら、朝6:30に近所へお知らせ"}
+                    {asks > 0
+                      ? "地図の待っている家へ。10分だけでも大歓迎"
+                      : rc.status === "closed" || !rc.forecastCm
+                        ? "1人の10分でも町は変わります"
+                        : "頼む家のお願いが出ると、地図に家が出ます。いまは自宅の雪かきを"}
                   </span>
                 </p>
               )}
@@ -343,7 +351,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               </span>
               <span className="min-w-0 leading-tight">
                 <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">{MENU.go.label}</span>
-                <span className="block whitespace-nowrap text-xs font-bold">{bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
+                <span className="block whitespace-nowrap text-xs font-bold">{!canHelpHouse ? "お願いはまだ・自宅へ" : bonuses.length > 0 ? `${bonuses[0]}点` : "近所の家へ"}</span>
               </span>
             </Link>
             <Link href={fiveHref} className="flex min-h-14 items-center gap-2 rounded-full bg-card px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-ink shadow-md ring-1 ring-ink/15">

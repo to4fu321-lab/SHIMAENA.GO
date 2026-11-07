@@ -170,7 +170,7 @@ export default function MapScreen({
         <span className="w-[76px]" aria-hidden="true" />
       </header>
 
-      {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と救助待ちの札を浮かべる */}
+      {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と雪かき待ちの札を浮かべる */}
       <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
         <div className="absolute inset-0 isolate">
           <TownMap cells={cells} home={home} destinations={destinations} solo={solo} road={road} focusRoad={focus} fitRoad={roadView} />
@@ -220,7 +220,7 @@ export default function MapScreen({
               <circle cx="12" cy="9" r="3" fill="#fff" />
             </svg>
             <span className="leading-tight">
-              <span className="block text-xs font-bold">救助待ち</span>
+              <span className="block text-xs font-bold">雪かき待ち</span>
               <b className="text-xl tabular-nums">{rescue.length}</b>
               <span className="text-sm font-bold">軒</span>
             </span>
