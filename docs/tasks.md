@@ -224,8 +224,8 @@
   完了条件: エージェントの返事のあとに声と方向が保存される（テストで確かめる）。
 - [ ] **T107 🔍 「7:00」の知らせが「6〜19時のあいだに」（T95 の決定）と食い違う** — 頼む家の人への `planForRequester("7:00", …)`（`lib/morning/ops.ts`）、手伝う人の行き先カード `placeCard({ time: "7:00" })` と画像 `heroUrl`（`lib/line/messages.ts`・`lib/line/flex.ts`）、隊長の指示文 `startTime`（`lib/claude/commander.ts`・`lib/morning/flow.ts`）、実況（`lib/morning/recap.ts`）に 7:00 が残っている（devlog 11/6「直すなら次で」のまま。点検 11/7 02:20）。
   完了条件: 町の人に見える文と画像から「7:00」が消え、「6〜19時のあいだに」にそろう（テストの 7:00 も直す）。
-- [ ] **T108 🔍 新しい列が本番の DB に自動で入らない** — `db/schema.sql` の `alter table … add column if not exists`（例: v1.31 の `solo_logs.strokes`）は /admin「データベースを準備」を押したときだけ流れるので、コードを先に出すと本番で select/insert が失敗する（11/7 14:20 の点検で本番の Neon に `strokes` 列がないことを確認。lib/repo/index.ts の SOLO_COLS は `strokes` を読む）。
-  完了条件: 起動時か最初の読みで alter が流れる（lib/mypage/store.ts の `ensure()` と同じ形）か、列がなくても落ちない。まずは本人が本番 /admin で「データベースを準備」を押す。
+- [x] **T114 🔍 新しい列が本番の DB に自動で入らない**（点検で見つけたときは T108 と書いたが、スマートウォッチの T108 と重なるので T114 に改めた） — サーバーが起きて最初の問い合わせの前に1回だけ、足りない列を入れる（`lib/db/index.ts` の `ensureColumns`・`ADDED_COLUMNS`）。列を足したら schema.sql と `ADDED_COLUMNS` の両方に書く（違うとテストが落ちる）。/admin の「DB を準備する」は表が足りないときだけでなく列が足りないときも出る。
+  完了条件: テストで「表があって列がないときだけ alter を流す・2回目は何もしない・表がないときは流さない」「schema.sql と ADDED_COLUMNS が同じ」。
 - [ ] **T109 🔍 報告箱の Issue をログインなしの架空の人からも立てられる** — 本番は DEMO_MODE 既定「on」で README が `/chat?as=h1` を公開しているので、誰でも架空の人（h1…h11・r1…）ごとに 1 日 5 件、Claude を呼んで公開リポジトリに Issue を立てられる（lib/viewer.ts trustedViewer・app/chat/feedback-actions.ts・lib/feedback/ops.ts の上限は人ごと。点検 11/7 18:20）。
   完了条件: 架空の人の報告は DB と /admin「声」に置くだけで Issue にしない（か、全体の 1 日の上限、か cookie の本人だけ Issue に）。どれにするかは本人の判断。
 - 点検で見つかった大きい 🐞 は、ここに `- [ ] **T9x 🔍 …**` で足していく（通常のループが上から拾う）。
