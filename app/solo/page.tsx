@@ -27,9 +27,9 @@ export const maxDuration = 300;
 
 export const metadata: Metadata = { title: "雪かきGO！ ・ シマエナGO" };
 
-async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string; focus?: string }> }) {
+async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string; focus?: string; go?: string }> }) {
   await connection();
-  const { as, pick, focus } = await searchParams;
+  const { as, pick, focus, go } = await searchParams;
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
@@ -99,6 +99,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         night={isNight()}
         noRequests={record.morning.missions.filter((m) => m.status !== "no_answer").length === 0}
         focus={SOLO_MISSIONS.some((m) => m.kind === focus && m.kind !== "help_house") ? focus : undefined}
+        autoGo={go === "1"}
         q={q}
         shareOptions={shareOptions}
         roadAlerts={roadAlerts}
@@ -107,7 +108,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   );
 }
 
-export default function SoloPage({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string; focus?: string }> }) {
+export default function SoloPage({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string; focus?: string; go?: string }> }) {
   return (
     <Suspense fallback={<main className="min-h-dvh bg-paper p-6 text-ink">読み込み中…</main>}>
       <SoloContent searchParams={searchParams} />
