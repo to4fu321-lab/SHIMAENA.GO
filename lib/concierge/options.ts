@@ -3,7 +3,7 @@
 import type { Prop } from "../line/you-image";
 import type { Motive } from "./profile";
 
-export type OptionId = "rollcall" | "my_mission" | "join" | "own_house" | "patrol" | "online" | "tip" | "cheer" | "nakama" | "baton" | "team" | "cards";
+export type OptionId = "rollcall" | "my_mission" | "join" | "own_house" | "patrol" | "online" | "tip" | "cheer" | "nakama" | "baton" | "team" | "cards" | "time";
 
 export interface ConciergeContext {
   role: "helper" | "requester";
@@ -172,6 +172,18 @@ const O = {
     action: { kind: "uri", path: "/team" },
     motives: ["game"],
   }),
+  /** チームで時間をそろえる（spec v1.39）: 雪の日（予告のあと〜その日）だけ */
+  time: (): ConciergeOption => ({
+    id: "time",
+    button: "チームで時間をそろえる",
+    title: "そろう時間を選ぶ",
+    minutes: 1,
+    points: 0,
+    about: "雪の日に、チームのなかまと来る時間をそろえる。朝・お昼・夕方から選ぶと、いちばん集まる時間と「予定に入れる」（カレンダー）が出る",
+    prop: "phone",
+    action: { kind: "uri", path: "/team?tab=time" },
+    motives: ["connect", "game"],
+  }),
   cards: (): ConciergeOption => ({
     id: "cards",
     button: "カード図鑑と連続出動を見る",
@@ -209,11 +221,14 @@ export function buildOptions(ctx: ConciergeContext): ConciergeOption[] {
     if (!ctx.safety && ctx.hasTeam && ctx.rollcall === "planned" && ctx.shortHouses > 0) list.push(O.join(ctx));
   }
   // 方向ごとの候補（spec v1.17）: チームのある人には なかま・バトン・チーム・図鑑
-  if (ctx.hasTeam) list.push(O.nakama(), O.baton(), O.team(), O.cards());
+  // 雪の日（予告のあと〜その日）は、なかまの次に「チームで時間をそろえる」（spec v1.39）
+  const snowDay = ctx.rollcall === "announced" || ctx.rollcall === "open" || ctx.rollcall === "planned";
+  if (ctx.hasTeam) list.push(O.nakama(), ...(snowDay ? [O.time()] : []), O.baton(), O.team(), O.cards());
   else list.push(O.baton(), O.cards());
   // 夜は、よその家・道の見回り・人手不足の家・合流には誘わない（自分の家と家の中だけ）
   const nightOk: OptionId[] = ["rollcall", "own_house", "online", "tip", "cheer", "baton", "team", "cards"];
-  const open_ = ctx.night ? list.filter((o) => nightOk.includes(o.id)) : list;
+  // 時間をそろえるのは、夜なら前夜の予告のあと（明日の分）だけ。雪の日の夜は、その日の帯がもう終わっている
+  const open_ = ctx.night ? list.filter((o) => nightOk.includes(o.id) || (o.id === "time" && ctx.rollcall === "announced")) : list;
   return rankByMotives(open_, ctx.motives).slice(0, 6);
 }
 

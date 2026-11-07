@@ -155,7 +155,8 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
   const motives = motivesFromText(input.text);
   const all = [...motives, ...input.profile.motives];
   let pick: OptionId | null = null;
-  if (/行けない|いけない|無理|忙しい|仕事|学校|時間がない|外に出られない|出られない|寒い|今日は/.test(t)) pick = want("rollcall", "online", "cheer", "tip");
+  if (/カレンダー|予定に入れ|何時に|時間を(合わせ|そろえ)|同じ時間/.test(t) && has("time")) pick = "time";
+  else if (/行けない|いけない|無理|忙しい|仕事|学校|時間がない|外に出られない|出られない|寒い|今日は/.test(t)) pick = want("rollcall", "online", "cheer", "tip");
   else if (all.includes("connect")) pick = want("nakama", "join", "baton", "tip");
   else if (all.includes("game")) pick = want("own_house", "team", "cards");
   else if (all.includes("exercise")) pick = want("join", "own_house", "patrol");

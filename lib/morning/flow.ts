@@ -60,6 +60,9 @@ export interface MorningRecord {
   /** 「雪かきを頼む」（spec v1.10）: 頼んだ家（拠点 ID → 時刻 ISO）と、知らせを受けた人の回数（参加者 ID → 回数）。その日だけ */
   asked?: Record<string, string>;
   askSends?: Record<string, number>;
+  /** チームで時間をそろえる（spec v1.39）: 選んだ帯（その日だけ）と、チームごとの隊長のことば */
+  timeWishes?: import("../calendar/slots").TimeWish[];
+  slotLines?: import("../calendar/slots").SlotLines;
 }
 
 export interface ThanksRecord {
