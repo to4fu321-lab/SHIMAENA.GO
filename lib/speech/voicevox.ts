@@ -1,13 +1,18 @@
 // 隊長の声（spec v1.33）: 無料の VOICEVOX Web API（api.tts.quest。鍵なしでも少しずつ使える）で、かわいい声の mp3 を作る。
 // サーバー側でだけ呼ぶ（任意の API キー VOICEVOX_API_KEY を画面に出さない）。失敗したら画面はブラウザの声に戻る（止まらない）。
-// 声の主は VOICEVOX のキャラクター。使うときはクレジット「VOICEVOX:ずんだもん」などを出す決まり（画面の「ことば」の紙と README に）。
+// 声の主は VOICEVOX のキャラクター。使うときはクレジット「VOICEVOX:雨晴はう」などを出す決まり（画面の「ことば」の紙と README に）。
+// 鍵なしの枠は小さい（1分に数回。超えると 429）→ その回はブラウザの声に戻る。本番で使うなら無料の鍵を VOICEVOX_API_KEY に。
 // 切るときは Vercel の環境変数 CAPTAIN_VOICE=off。
 
 /** 読む設定（環境変数の一部。確かめ用に差しかえられる） */
 export type VoiceEnv = Readonly<Record<string, string | undefined>>;
 
-/** 既定の声: 3 = VOICEVOX:ずんだもん（ノーマル）。VOICEVOX_SPEAKER で変えられる（番号は api.tts.quest/v3/voicevox/speakers_array の順） */
-export const DEFAULT_SPEAKER = 3;
+/**
+ * 既定の声: 10 = VOICEVOX:雨晴はう（ノーマル）。シマエナガらしい、小さくてふんわり高めの声（11/7 本人の指示「ずんだもん以外で、シマエナガっぽいやつで」。
+ * 候補9つを同じ文で合成して測り、高め（基本周波数の中央値 393Hz）で声の大きさの揺れがやさしいものを選んだ）。
+ * VOICEVOX_SPEAKER で変えられる（番号は api.tts.quest/v3/voicevox/speakers_array の順）
+ */
+export const DEFAULT_SPEAKER = 10;
 /** 1回に読む長さの上限（文字）。長い文は前から */
 export const VOICE_TEXT_MAX = 200;
 const API = "https://api.tts.quest/v3/voicevox/synthesis";

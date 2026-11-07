@@ -257,6 +257,6 @@
 ## 第30段: 多言語と隊長の声（11/7 本人の指示「多言語化と、チャットのシマエナ隊長の音声をかわいい音声に。音声は別の無料サービス、多言語は API も活用して」、spec v1.33）
 - [x] **T110 隊長トークの多言語** — 🌐 で日本語／English／中文／한국어／Tiếng Việt（cookie `lang`）。決まった文字は辞書 `lib/i18n/ui.ts`、隊長の吹き出し・ボタンの文字は Claude（Haiku）がまとめて訳してキャッシュ（`lib/i18n/translate.ts`・`translations` 表）、本人の文は日本語に直してから今までの処理へ。マイクも選んだことばで。下のタブの名前も。テスト 7 本。
   完了条件: `npm run check` が通る。鍵なしでも画面の文字が切りかわり、隊長の文は日本語のまま止まらない。390×844・375×667 で1画面。
-- [x] **T111 隊長のかわいい声** — 無料の VOICEVOX Web API（api.tts.quest）で `VOICEVOX:ずんだもん` の mp3（`lib/speech/voicevox.ts`・`/api/voice`）。日本語の読み上げはこの声、作れない・日本語以外はブラウザの声に戻る。クレジットを 🌐 の紙と README に。`CAPTAIN_VOICE=off`・`VOICEVOX_SPEAKER`・`VOICEVOX_API_KEY`。テスト 4 本。
+- [x] **T111 隊長のかわいい声** — 無料の VOICEVOX Web API（api.tts.quest）で `VOICEVOX:雨晴はう`（シマエナガらしい、ふんわり高めの声。本人の指示でずんだもんから変更）の mp3（`lib/speech/voicevox.ts`・`/api/voice`）。日本語の読み上げはこの声、作れない・日本語以外はブラウザの声に戻る。クレジットを 🌐 の紙と README に。`CAPTAIN_VOICE=off`・`VOICEVOX_SPEAKER`・`VOICEVOX_API_KEY`。テスト 4 本。
   完了条件: `npm run check` が通る。`/api/voice?text=…` が audio/mpeg を返す（この環境から確認）。
 
