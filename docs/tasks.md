@@ -272,3 +272,7 @@
 - [x] **T113 隊長のかわいい声** — 無料の VOICEVOX Web API（api.tts.quest）で `VOICEVOX:雨晴はう`（シマエナガらしい、ふんわり高めの声。本人の指示でずんだもんから変更）の mp3（`lib/speech/voicevox.ts`・`/api/voice`）。日本語の読み上げはこの声、作れない・日本語以外はブラウザの声に戻る。クレジットを 🌐 の紙と README に。`CAPTAIN_VOICE=off`・`VOICEVOX_SPEAKER`・`VOICEVOX_API_KEY`。テスト 4 本。
   完了条件: `npm run check` が通る。`/api/voice?text=…` が audio/mpeg を返す（この環境から確認）。
 
+
+## 第33段: BGM の響き（11/7 本人の指示「BGM をもっといい感じに」「1番良いやつを実装して」、spec v1.37）
+- [x] **T114 BGM の響きとゆらぎ** — やまびこ（テンポ同期の付点8分）・残響（合成した 2.4 秒のインパルス応答を畳み込み）・軽いコンプレッサーを `lib/sound/space.ts` に。エレピ・鈴・ハットは 0〜14ms 遅らせ、音量を揺らす。曲と効果音は変えない。テスト 2 本。
+  完了条件: `npm run check` が通る。`scripts/sound-check.cjs` が全部 ✓。本番ビルドで BGM の山が 0.4 を超えない。

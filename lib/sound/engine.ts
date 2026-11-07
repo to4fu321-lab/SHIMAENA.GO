@@ -6,6 +6,7 @@
 import { useSyncExternalStore } from "react";
 import { DEFAULT_SOUND_PREFS, readSoundPrefs, writeSoundPrefs, type SoundPrefs } from "./prefs";
 import { SFX, VIBRATE_MS, type SfxName } from "./sfx";
+import { createSpace, type Space } from "./space";
 
 const VOL = { master: 0.8, sfx: 1.0, bgm: 0.55 } as const; // BGM は効果音より小さく（書き出して測った: 山 0.2〜0.3）
 
@@ -14,6 +15,8 @@ interface Engine {
   master: GainNode;
   sfx: GainNode;
   bgm: GainNode;
+  /** BGM の響き（やまびこ・残響）。spec v1.37 */
+  space: Space | null;
 }
 
 let engine: Engine | null = null;
@@ -78,8 +81,15 @@ export function getEngine(): Engine | null {
     sfx.connect(master);
     const bgm = ctx.createGain();
     bgm.gain.value = soundPrefs().bgm ? VOL.bgm : 0;
-    bgm.connect(master);
-    engine = { ctx, master, sfx, bgm };
+    // BGM は響き（やまびこ・残響）を通して master へ。組めない端末では直接
+    let space: Space | null = null;
+    try {
+      space = createSpace(ctx, master);
+      bgm.connect(space.input);
+    } catch {
+      bgm.connect(master);
+    }
+    engine = { ctx, master, sfx, bgm, space };
     return engine;
   } catch {
     return null;
@@ -204,6 +214,15 @@ let bgmLevel: number = VOL.bgm;
 export function setBgmLevel(mult = 1): void {
   bgmLevel = VOL.bgm * mult;
   if (engine) engine.bgm.gain.setTargetAtTime(soundPrefs().bgm ? bgmLevel : 0, engine.ctx.currentTime, 0.3);
+}
+
+/** 曲が変わったら、やまびこの間隔を曲のテンポに合わせる */
+export function setBgmTempo(bpm: number): void {
+  try {
+    engine?.space?.setTempo(bpm);
+  } catch {
+    /* 響きが組めていない端末 */
+  }
 }
 
 /** 画面が裏に回った／戻った（SoundProvider が呼ぶ）。BGM 側が聞く */
