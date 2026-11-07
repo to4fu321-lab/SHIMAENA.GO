@@ -11,7 +11,9 @@ import type { Destination } from "@/lib/nav";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { requestLabel } from "@/lib/request-note";
 import type { ShortHouse } from "@/lib/morning/watch";
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { reportRoadAction } from "@/app/solo/actions";
 import GoBriefing from "./GoBriefing";
 import HazardIcon from "./HazardIcon";
 import CheerCall from "./CheerCall";
@@ -19,6 +21,7 @@ import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
 import RescueList from "./RescueList";
+import RoadReportRun from "./RoadReportRun";
 import ShareButton from "./ShareButton";
 import Bgm from "./Bgm";
 
@@ -124,7 +127,42 @@ export default function MapScreen({
   // 道の報告の地図: 札を押すとその報告に寄って写真が開く
   const roadView = view === "road";
   const [focus, setFocus] = useState<string | undefined>(focusRoad);
-  const roadHref = `/solo?pick=10&focus=report_snow${q ? `&as=${state.viewerId}` : ""}`;
+  // 道の危険を知らせる（11/7 本人の指示「地図画面から」）: ソロと同じ報告の画面を地図の上に重ねる。送ると新しいピンに寄る
+  const router = useRouter();
+  const [reporting, setReporting] = useState(false);
+  const [roadPending, startRoad] = useTransition();
+  const [roadResult, setRoadResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const submitRoad = (fd: FormData) => {
+    fd.set("viewerId", state.viewerId);
+    startRoad(async () => {
+      try {
+        const r = await reportRoadAction(fd);
+        setRoadResult({ ok: r.ok, text: r.text });
+        if (!r.ok) {
+          play("error");
+          return;
+        }
+        play("missionClear");
+        setReporting(false);
+        if (r.road) setFocus(r.road.id);
+        router.refresh(); // 新しいピンを地図に出す
+      } catch (e) {
+        console.error(e);
+        play("error");
+        setRoadResult({ ok: false, text: "うまくいきませんでした。電波のよい所で、もう一度押してください。" });
+      }
+    });
+  };
+  const openReport = () => {
+    setRoadResult(null);
+    setReporting(true);
+  };
+  // 知らせは数秒で消す（地図を隠さない）
+  useEffect(() => {
+    if (!roadResult || reporting) return;
+    const t = setTimeout(() => setRoadResult(null), 6000);
+    return () => clearTimeout(t);
+  }, [roadResult, reporting]);
 
   // 畳んでも見える1行: 雪の名前は切らずに見せ、右は「3/7軒 あと4」と短く（11/7 UI 点検: 名前が「もっち…」と切れていた）
   const peekNode = (
@@ -198,9 +236,30 @@ export default function MapScreen({
                 ))}
               </div>
             )}
-            <Link href={roadHref} className="btn btn-lamp min-h-12 w-full text-base shadow-md">
+            <button type="button" onClick={openReport} className="btn btn-lamp min-h-12 w-full text-base shadow-md">
               📷 道の危険を知らせる（10分・写真1枚）
-            </Link>
+            </button>
+          </div>
+        )}
+        {/* ふつうの地図: 札の下に「道の危険を知らせる」。出発前の案内（雪かきGO）が出ているときは出さない */}
+        {!roadView && !briefing && !reporting && (
+          <button type="button" onClick={openReport} className="btn btn-lamp absolute left-2 top-[72px] z-[500] min-h-12 px-3 text-base shadow-md" aria-label="道の危険を知らせる（写真1枚）">
+            📷 道の危険を知らせる
+          </button>
+        )}
+        {roadResult && !reporting && (
+          <p className={`absolute inset-x-2 top-[118px] z-[500] rounded-2xl px-3 py-2 text-base font-bold shadow-md ${roadResult.ok ? "bg-ice-soft ring-2 ring-ice" : "bg-warm ring-2 ring-lamp"}`} role="status">
+            {roadResult.text}
+          </p>
+        )}
+        {reporting && (
+          <div className="absolute inset-0 z-[700] overflow-y-auto bg-paper/95 p-2" role="dialog" aria-label="道の危険を報告する">
+            {roadResult && !roadResult.ok && (
+              <p className="mb-2 rounded-2xl bg-warm px-3 py-2 text-base" role="alert">
+                {roadResult.text}
+              </p>
+            )}
+            <RoadReportRun viewerId={state.viewerId} pending={roadPending} onSend={submitRoad} onQuit={() => setReporting(false)} />
           </div>
         )}
         {!roadView && <div className="pointer-events-none absolute inset-x-2 top-2 z-[500] flex gap-1.5">
@@ -253,7 +312,7 @@ export default function MapScreen({
         />
       )}
       {/* 下のシート: つまみをスライドで畳める（畳むと地図が大きくなる） */}
-      {!briefing && <MapSheet
+      {!briefing && !reporting && <MapSheet
         startClosed={Boolean(focusRoad) || roadView}
         peek={peekNode}
         footer={
