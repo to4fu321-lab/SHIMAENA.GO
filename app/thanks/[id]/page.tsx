@@ -54,7 +54,7 @@ async function Thanks({ params, searchParams }: { params: Promise<{ id: string }
           <p className="text-lg leading-snug">この声は、雪かきをお願いした家の人と、手伝った人だけが聞けます。7日たつと消えます。</p>
         )}
       </main>
-      <TabBar active="chat" q={q} />
+      <TabBar q={q} />
     </div>
   );
 }

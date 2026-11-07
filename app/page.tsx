@@ -215,7 +215,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       <div className="relative min-h-10 flex-1 overflow-hidden">
         <SkyBackdrop sky={sky} />
         {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
-        <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} />
+        <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} chatAs={demoAs} />
       </div>
 
       <main className="relative -mt-3 shrink-0 space-y-2 px-4 pb-2.5 short:space-y-1.5 short:pb-1.5">

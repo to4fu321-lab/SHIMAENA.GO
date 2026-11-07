@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
+import ChatBadge from "@/components/ChatBadge";
 import { cheersSeenAction } from "@/app/home-actions";
 import type { TeamId } from "@/lib/types";
 
@@ -21,10 +22,13 @@ export default function CaptainStage({
   arrival = [],
   viewerId,
   chatHref = "/chat",
+  chatAs,
 }: {
   lines: string[];
   /** 吹き出しを押すと隊長トークへ（11/6 本人の指示: 「隊長」タブだけでは相談できると分かりにくい） */
   chatHref?: string;
+  /** デモの ?as=（未読の数を数える人） */
+  chatAs?: string;
   team?: TeamId;
   /** 応援・おつかれさまが届いていたら、隊長が飛んできて先に話す（聞いたらしるしを付ける） */
   arrival?: string[];
@@ -84,6 +88,7 @@ export default function CaptainStage({
       <div className="absolute left-3 top-2 z-10 max-w-[64%] short:top-1" aria-live="polite">
         <div key={`${i}-${flying}-${arriving}`} className={flying ? "speech-away" : "speech-pop"}>
           <Link href={chatHref} className="relative block rounded-3xl bg-card px-3.5 py-1.5 text-base font-bold leading-snug shadow-md ring-2 ring-ink/15 short:py-1">
+            <ChatBadge as={chatAs} className="absolute -right-1 -top-1 min-h-6 text-sm ring-2 ring-white" />
             <span className="block text-xs font-bold text-lamp-deep">シマエナ隊長</span>
             {flying ? "いってくるしま〜！" : arriving ? "おーい！知らせがあるえな〜！" : line}
             <span className="mt-1 flex items-center gap-1 rounded-full bg-lamp px-2.5 py-0.5 text-sm font-bold text-white short:mt-0.5">
