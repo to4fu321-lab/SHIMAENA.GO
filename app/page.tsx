@@ -38,11 +38,7 @@ import { countHomeNow } from "@/lib/solo/home-now";
 import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 import Bgm from "@/components/Bgm";
-import SnowSongChip from "@/components/SnowSongChip";
 import GoButton, { type GoReason } from "@/components/GoButton";
-import { loadSnowSong, warmSnowSong } from "@/lib/song/day";
-import { hasClaudeKey } from "@/lib/claude/client";
-import { runLater } from "@/lib/ops/later";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
@@ -61,9 +57,6 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     parseSkyParam(skyParam) ? Promise.resolve({} as Awaited<ReturnType<typeof currentWeather>>) : currentWeather(TOWN.center),
   ]);
   const m = record.morning;
-  // 今朝の雪の歌（spec v1.28）: まだなければ作る。Claude に頼むときは返事のあとで（次の自動更新で出る）
-  const songDay = appToday(record);
-  const song = (await loadSnowSong(songDay)) ?? (hasClaudeKey() ? (runLater("song/warm", async () => void (await warmSnowSong(songDay))), undefined) : await warmSnowSong(songDay));
   // 背景の空: いまの天気と時間（デモでは ?sky=night-snow のように上書きできる）
   const sky = parseSkyParam(skyParam) ?? { time: timeOfDay(jstMinutes()), weather: weatherOf(wx.code, m.rollcall.status === "closed" ? 0 : m.rollcall.forecastCm) };
   const demoAs = as && isDemoViewer(as) ? as : undefined;
@@ -84,7 +77,6 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const planned = m.rollcall.status === "planned";
   // 「雪かきを頼む」で開いた、まだ終わっていない家（spec v1.10）
   const asks = m.missions.filter((x) => x.ask && x.status !== "done").length;
-  const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
   // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
   const canHelpHouse = planned && onTeam(me);
   const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
@@ -207,7 +199,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             className="mb-1.5 mt-1 flex basis-full items-center gap-2 whitespace-nowrap text-sm font-bold"
             aria-label={`今週のあなたのチームは${myTeam.team.name}（チームを見る）`}
           >
-            今週のあなたのチームは
+            今週のチーム
             <span
               className="inline-flex items-center gap-1 rounded-full px-3.5 py-0.5 text-lg font-black shadow-md ring-2 ring-white max-[380px]:text-base"
               style={{ background: myTeam.team.color, color: myTeam.onColor }}
@@ -222,7 +214,6 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
       {/* 真ん中: 空と雪の町（天気と時間で変わる）、しゃべるシマエナ隊長 */}
       <div className="relative min-h-10 flex-1 overflow-hidden">
         <SkyBackdrop sky={sky} />
-        {song && <SnowSongChip song={song} q={q} />}
         {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
         <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} />
       </div>
@@ -233,9 +224,6 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#eaf3fa] to-card px-4 pb-2 pt-2 shadow-md ring-2 ring-[#8fb8d9] short:pt-1.5 short:pb-1.5"
           aria-label="今日のミッション"
         >
-          {/* 雪の結晶の飾り（枠で目立たせる） */}
-          <span aria-hidden="true" className="pointer-events-none absolute right-3 top-1.5 text-lg text-[#8fb8d9]/80">❄</span>
-          <span aria-hidden="true" className="pointer-events-none absolute right-8 top-6 text-xs text-[#8fb8d9]/70">❄</span>
           <div className="flex items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-warm">
               <Icon name="map" size={26} accent="var(--lamp)" />
@@ -279,54 +267,20 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
                 </p>
               )}
             </div>
-            {!night && prog.total > 0 && (
-              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-ice-soft text-sm font-bold tabular-nums" aria-label={`進み具合 ${pct}%`}>
-                {pct}%
-              </span>
-            )}
           </div>
-          <div className="mt-1.5 grid grid-cols-2 divide-x divide-ink/15 border-t border-ink/10 pt-1.5 short:mt-1 short:pt-1">
-            <p className="flex items-center justify-center gap-2 text-base font-bold">
-              <svg viewBox="0 0 40 40" width="28" height="28" aria-hidden="true" className="shrink-0">
-                <circle cx="14" cy="13" r="6" fill="#29445c" />
-                <circle cx="27" cy="14" r="5" fill="#3b6584" />
-                <path d="M3 33 C3 24 25 24 25 33 Z" fill="#29445c" />
-                <path d="M20 32 C21 25 37 24 37 32 Z" fill="#3b6584" />
-              </svg>
-              {night ? (
-                <span className="flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-xs leading-tight">
-                    自宅を
-                    <br />
-                    雪かき中
-                  </span>
-                  <b className="text-2xl tabular-nums">{homeNow}</b>人
-                </span>
-              ) : (
-                <span className="whitespace-nowrap">
-                  雪かき中 <b className="text-2xl tabular-nums">{activeNow + homeNow}</b>人
-                </span>
-              )}
+          {/* 数字2つと「声かけ」（応援・おつかれさまはポップアップで選ぶ。11/7 本人の指示） */}
+          <div className="mt-1.5 flex items-center gap-2 border-t border-ink/10 pt-1.5 short:mt-1 short:pt-1">
+          <div className="grid min-w-0 flex-1 grid-cols-2 divide-x divide-ink/15 text-base font-bold">
+            <p className="whitespace-nowrap px-1.5 text-center max-[380px]:text-sm">
+              雪かき中 <b className="text-2xl tabular-nums">{night ? homeNow : activeNow + homeNow}</b>人
             </p>
-            <p className="flex items-center justify-center gap-2 text-base font-bold">
-              <Icon name="house" size={28} accent="var(--lamp)" className="text-ink" />
-              {night ? (
-                <span className="flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-xs leading-tight">
-                    今日 自宅を
-                    <br />
-                    終えた人
-                  </span>
-                  <b className="text-2xl tabular-nums">{homeToday}</b>人
-                </span>
-              ) : (
-                <>
-                  達成 <b className="text-2xl tabular-nums">{prog.done}</b>軒
-                </>
-              )}
+            <p className="whitespace-nowrap px-1.5 text-center max-[380px]:text-sm">
+              {night ? "終えた人" : "達成"} <b className="text-2xl tabular-nums">{night ? homeToday : prog.done}</b>
+              {night ? "人" : "軒"}
             </p>
           </div>
           {me && cheerBtn && <HomeCheerButtons viewerId={me.id} {...cheerBtn} />}
+          </div>
         </section>
 
         {/* 出動（いちばん大事なボタン）と、ソロ活動。夜は「近隣の雪かき（明日6時から）」をグレーにして、ソロと半分ずつ1行に */}
@@ -405,27 +359,11 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
             </Link>
           </div>
         )}
-        {/* 雪かきを頼む（spec v1.20 お互いさま）と、仲間を増やす（つなぐ。11/6 本人の指示「ホームからも仲間を増やすボタン」） */}
-        <div className="grid grid-cols-2 gap-2">
-          <Link href={`/ask${q}`} className="flex min-h-12 items-center gap-2 rounded-full bg-card pl-1.5 pr-3 shadow-sm ring-1 ring-ink/15 short:min-h-11">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-warm">
-              <Icon name="ask" size={24} accent="var(--camellia)" />
-            </span>
-            <span className="min-w-0 leading-tight">
-              <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">お願いする</span>
-              <span className="block whitespace-nowrap text-xs text-ink-soft">うちの雪かきを</span>
-            </span>
-          </Link>
-          <Link href={`/connect${q}`} className="flex min-h-12 items-center gap-2 rounded-full bg-card pl-1.5 pr-3 shadow-sm ring-1 ring-ink/15 short:min-h-11">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-camellia-soft">
-              <Icon name="connect" size={24} accent="var(--lamp)" />
-            </span>
-            <span className="min-w-0 leading-tight">
-              <span className="block whitespace-nowrap text-base font-bold max-[380px]:text-sm">仲間を増やす</span>
-              <span className="block whitespace-nowrap text-xs text-ink-soft">誘う・広める</span>
-            </span>
-          </Link>
-        </div>
+        {/* 雪かきを頼む（spec v1.20 お互いさま）。「仲間を増やす」は下のタブ「つなぐ」と同じなので外した（11/7 本人の指示「スッキリ」） */}
+        <Link href={`/ask${q}`} className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-card px-3 shadow-sm ring-1 ring-ink/15 short:min-h-11">
+          <Icon name="ask" size={24} accent="var(--camellia)" />
+          <span className="whitespace-nowrap text-base font-bold">うちの雪かきをお願いする</span>
+        </Link>
       </main>
 
       <TabBar active="home" q={q} />
