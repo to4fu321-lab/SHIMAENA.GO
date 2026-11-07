@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { reactAction } from "@/app/nakama/actions";
 import type { AreaView } from "@/lib/nakama/ops";
 import { REACTION_LABEL, SOURCE_LABEL, type BatonSource } from "@/lib/nakama/rules";
+import HelpButton from "./HelpPopup";
 import NakamaAfter from "./NakamaAfter";
 import { PagedList } from "./Pager";
 
@@ -65,14 +66,16 @@ export default function BatonFeed({ viewerId, area, q = "" }: { viewerId: string
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       {/* 地域のいま: 今日の参加人数を主役に */}
-      <div className="flex shrink-0 items-center gap-3 rounded-3xl bg-ink px-4 py-2.5 text-white shadow-md">
+      <div className="relative flex shrink-0 items-center gap-3 rounded-3xl bg-ink px-4 py-2.5 text-white shadow-md">
         <span className="text-3xl" aria-hidden="true">🎽</span>
         <p className="min-w-0 flex-1 leading-tight">
-          <span className="block text-sm font-bold text-white/85">この地域（約250m四方）の雪かき</span>
+          <span className="block whitespace-nowrap text-sm font-bold text-white/85">この地域（約250m四方）の雪かき</span>
           <span className="block text-base font-bold">
             今日 <b className="text-3xl tabular-nums text-camellia">{area.people}</b> 人が参加
           </span>
         </p>
+        {/* 「バトンとは？」の説明（ポップアップ。11/7）。右下の角に小さく置いて、文の幅は変えない */}
+        <HelpButton topic="baton" light compact className="absolute bottom-2 right-3" />
       </div>
       {area.story && <p className="shrink-0 rounded-2xl bg-ice-soft px-3 py-2 text-base leading-snug">{area.story}</p>}
       {note && (
