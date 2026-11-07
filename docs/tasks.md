@@ -224,6 +224,8 @@
   完了条件: エージェントの返事のあとに声と方向が保存される（テストで確かめる）。
 - [ ] **T107 🔍 「7:00」の知らせが「6〜19時のあいだに」（T95 の決定）と食い違う** — 頼む家の人への `planForRequester("7:00", …)`（`lib/morning/ops.ts`）、手伝う人の行き先カード `placeCard({ time: "7:00" })` と画像 `heroUrl`（`lib/line/messages.ts`・`lib/line/flex.ts`）、隊長の指示文 `startTime`（`lib/claude/commander.ts`・`lib/morning/flow.ts`）、実況（`lib/morning/recap.ts`）に 7:00 が残っている（devlog 11/6「直すなら次で」のまま。点検 11/7 02:20）。
   完了条件: 町の人に見える文と画像から「7:00」が消え、「6〜19時のあいだに」にそろう（テストの 7:00 も直す）。
+- [ ] **T108 🔍 新しい列が本番の DB に自動で入らない** — `db/schema.sql` の `alter table … add column if not exists`（例: v1.31 の `solo_logs.strokes`）は /admin「データベースを準備」を押したときだけ流れるので、コードを先に出すと本番で select/insert が失敗する（11/7 14:20 の点検で本番の Neon に `strokes` 列がないことを確認。lib/repo/index.ts の SOLO_COLS は `strokes` を読む）。
+  完了条件: 起動時か最初の読みで alter が流れる（lib/mypage/store.ts の `ensure()` と同じ形）か、列がなくても落ちない。まずは本人が本番 /admin で「データベースを準備」を押す。
 - 点検で見つかった大きい 🐞 は、ここに `- [ ] **T9x 🔍 …**` で足していく（通常のループが上から拾う）。
 
 ## 第25段: ありがとうは声で（11/6 本人の決定、spec v1.29）
