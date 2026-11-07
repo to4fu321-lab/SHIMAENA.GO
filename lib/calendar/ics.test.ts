@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildIcs, fold, googleCalendarUrl, slotEvent } from "./ics";
 
-describe("📅 予定に入れる（spec v1.39）", () => {
+describe("📅 予定に入れる（spec v1.41）", () => {
   const ev = slotEvent({ date: "2026-12-14", when: "am", teamName: "サルビア", appUrl: "https://example.test/team?tab=time", area: "しらかばエリア" });
 
   it("帯の集まる時刻（日本時間）から 30 分の予定になる", () => {

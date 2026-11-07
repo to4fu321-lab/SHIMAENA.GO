@@ -270,6 +270,8 @@
 - [x] **T112 隊長トークの多言語** — 🌐 で日本語／English／中文／한국어／Tiếng Việt（cookie `lang`）。決まった文字は辞書 `lib/i18n/ui.ts`、隊長の吹き出し・ボタンの文字は Claude（Haiku）がまとめて訳してキャッシュ（`lib/i18n/translate.ts`・`translations` 表）、本人の文は日本語に直してから今までの処理へ。マイクも選んだことばで。下のタブの名前も。テスト 7 本。
   完了条件: `npm run check` が通る。鍵なしでも画面の文字が切りかわり、隊長の文は日本語のまま止まらない。390×844・375×667 で1画面。
 - [x] **T113 隊長のかわいい声** — 無料の VOICEVOX Web API（api.tts.quest）で `VOICEVOX:雨晴はう`（シマエナガらしい、ふんわり高めの声。本人の指示でずんだもんから変更）の mp3（`lib/speech/voicevox.ts`・`/api/voice`）。日本語の読み上げはこの声、作れない・日本語以外はブラウザの声に戻る。クレジットを 🌐 の紙と README に。`CAPTAIN_VOICE=off`・`VOICEVOX_SPEAKER`・`VOICEVOX_API_KEY`。テスト 4 本。
+- [~] **T115 隊長の声を自前の VOICEVOX に**（11/7 本人の指摘「声、可愛くない。2個目の。で止まった。遅すぎて使えない」→ 本人の選択「自前で動かす」） — `deploy/voicevox-space/`（Hugging Face Spaces 用の Dockerfile・README）、`VOICEVOX_URL` があれば `/audio_query` → `/synthesis` で wav（`synthesizeEngine`・元気な調子 `CAPTAIN_STYLE`）、`/api/voice?wake=1` で眠った Space を起こす、2つ目の文が作れなければ残りをブラウザの声で。手順は `docs/setup.md`。🔑 本人が HF に Space を作って `VOICEVOX_URL` を Vercel に入れるまで `[~]`。声は本人が聞きくらべて 54 = 春歌ナナ に決定（8 = 春日部つむぎ も可）。
+- [~] **T116 隊長の声を Aivis に**（HF の Docker Space は有料だった → 本人の選択） — `lib/speech/aivis.ts`（`AIVIS_API_KEY` があれば最初に使う・元気な調子 `AIVIS_TONE`・クレジット）。テスト 2 本。🔑 本人が Aivis で鍵を発行して Vercel の `AIVIS_API_KEY` に入れる・声は本人が試聴して雪降白華に決定。鍵は本番とプレビューに入った。
   完了条件: `npm run check` が通る。`/api/voice?text=…` が audio/mpeg を返す（この環境から確認）。
 
 
@@ -291,7 +293,7 @@
 - [x] **T124 3分のデモ動画を自動で組み立てる** — 本番ビルドを Playwright で録画（`scripts/demo-video/record.cjs`）→ 仮のナレーション（`narration.py`、gTTS）→ 1920×1080 の合成ページ（`compose.html`: イラスト・テロップ・字幕・スマホ枠）→ BGM とミックスして `docs/video/demo3min-v2.mp4`（`compose.cjs`）。流れと秒数は `timeline.cjs`。作り方・本人の声への差し替え方は `docs/video/howto.md`。
   完了条件: 180 秒ちょうどの MP4 ができ、動く画面が 7 割（0:33〜2:13 と 2:56〜）。本人の声への差し替えが台本の行単位でできる。
 
-## 第36段: カレンダーと時間合わせ（11/8 本人「カレンダー連携出来ない？ メンバーが同じ時間帯になるように AI が調整」→ ①②に本人 OK、spec v1.39）
+## 第36段: カレンダーと時間合わせ（11/8 本人「カレンダー連携出来ない？ メンバーが同じ時間帯になるように AI が調整」→ ①②に本人 OK、spec v1.41）
 - [x] **T125 チームで時間をそろえる・📅 予定に入れる** — `/team` の4つめのタブ「そろう時間」（`?tab=time`）。朝／お昼／夕方から選ぶ（したい人だけ・選び直せる）→ そろう時間はプログラム（いちばん多い帯、同数は早いほう）、隊長の一文は Claude Haiku（採点表 `slot`、点検に通らなければ決まった文）。ずれている人に「みんなの○に合わせる」。選ぶと「📅 予定に入れる」（`/api/calendar` の .ics）と「Google カレンダーで入れる」。前夜の予告・朝の「助けてほしい家」・隊長トークの候補に入口。デモは架空の手伝う人が決まった種で選んだことにする。
   完了条件: `npm run check` が通る。`/team?as=h3&tab=time` が 390×844・375×667 に収まる。.ics が UTC の時刻・CRLF・75 バイトの折り返しで、家や人の名前を含まない。
-- [ ] **T126 🔑 Google カレンダーの空きを読む（提出後）** — Google Cloud の OAuth（`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`）と Google の審査が要る。審査の前はテストの人 100 人まで・7 日ごとにつなぎ直し。空いている／いないだけを使い、予定の中身は読まない（spec v1.39「しないこと」）。
+- [ ] **T126 🔑 Google カレンダーの空きを読む（提出後）** — Google Cloud の OAuth（`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`）と Google の審査が要る。審査の前はテストの人 100 人まで・7 日ごとにつなぎ直し。空いている／いないだけを使い、予定の中身は読まない（spec v1.41「しないこと」）。

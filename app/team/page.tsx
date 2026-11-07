@@ -2,7 +2,7 @@
 // 1週間（月曜〜日曜）のチームを、チームの色・チーム色のマフラーのシマエナガ・期間で大きく見せる。
 // 11/7 本人の指摘: 「あなた」にチームのなかま（呼び名とアイコン）と、いまの成績（今週の点の棒グラフ・順位・完了した家・今朝の点）を動きつきで。
 // 1画面（11/5 本人の指示）: タブ「あなた／そろう時間／3チーム／しくみ」を横スワイプ。縦にはスクロールしない。
-// そろう時間（spec v1.39）: チームに入っている人だけ。朝／お昼／夕方を選ぶと、そろう時間と「📅 予定に入れる」。`?tab=time` で直接開く。
+// そろう時間（spec v1.41）: チームに入っている人だけ。朝／お昼／夕方を選ぶと、そろう時間と「📅 予定に入れる」。`?tab=time` で直接開く。
 import type { Metadata } from "next";
 import { onTeam } from "@/lib/member";
 import { cookies } from "next/headers";
@@ -75,7 +75,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string;
   const mates = mine ? members(mine.team.id) : [];
   const profiles = await getProfiles(mates.map((p) => p.id)).catch(() => new Map());
   const outToday = new Set(record.morning.sorties.filter((s) => s.status === "going" || s.status === "done").map((s) => s.participantId));
-  // そろう時間（spec v1.39）
+  // そろう時間（spec v1.41）
   const time = me && mine ? teamTimeView(record, roster, me, { demo: demoEnabled() }) : undefined;
   const timeFaces = Object.fromEntries(mates.map((p) => [p.id, { icon: profiles.get(p.id)?.icon, iconBg: profiles.get(p.id)?.iconBg, isMe: p.id === me?.id }]));
   const area = TOWN.name.replace(/（架空）$/, "");
@@ -198,7 +198,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string;
         </section>
       )}
 
-      {/* そろう時間（spec v1.39） */}
+      {/* そろう時間（spec v1.41） */}
       {time && me && mine && (
         <TeamTime
           viewerId={me.id}

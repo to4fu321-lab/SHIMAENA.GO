@@ -172,7 +172,7 @@ const O = {
     action: { kind: "uri", path: "/team" },
     motives: ["game"],
   }),
-  /** チームで時間をそろえる（spec v1.39）: 雪の日（予告のあと〜その日）だけ */
+  /** チームで時間をそろえる（spec v1.41）: 雪の日（予告のあと〜その日）だけ */
   time: (): ConciergeOption => ({
     id: "time",
     button: "チームで時間をそろえる",
@@ -221,7 +221,7 @@ export function buildOptions(ctx: ConciergeContext): ConciergeOption[] {
     if (!ctx.safety && ctx.hasTeam && ctx.rollcall === "planned" && ctx.shortHouses > 0) list.push(O.join(ctx));
   }
   // 方向ごとの候補（spec v1.17）: チームのある人には なかま・バトン・チーム・図鑑
-  // 雪の日（予告のあと〜その日）は、なかまの次に「チームで時間をそろえる」（spec v1.39）
+  // 雪の日（予告のあと〜その日）は、なかまの次に「チームで時間をそろえる」（spec v1.41）
   const snowDay = ctx.rollcall === "announced" || ctx.rollcall === "open" || ctx.rollcall === "planned";
   if (ctx.hasTeam) list.push(O.nakama(), ...(snowDay ? [O.time()] : []), O.baton(), O.team(), O.cards());
   else list.push(O.baton(), O.cards());

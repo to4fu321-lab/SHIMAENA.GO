@@ -45,7 +45,7 @@ const B = {
   camera: { type: "camera", label: "写真を撮る" } as Button,
   roll: { type: "cameraRoll", label: "写真を選ぶ" } as Button,
   register: say("登録する", "登録"),
-  /** チームで時間をそろえる（spec v1.39） */
+  /** チームで時間をそろえる（spec v1.41） */
   time: open("⏰ チームで時間をそろえる", "/team?tab=time"),
 };
 
@@ -212,7 +212,7 @@ export const MSG = {
   // ---- 前夜の予告・朝のあいさつ ----
   /** 前夜の予告（Claude の文）を、隊長カード1枚に */
   /** 前夜の予告（Claude の文）を、隊長カード1枚に。安全の一文が要る朝は最後に必ず足す（spec v1.6） */
-  // 下に「⏰ チームで時間をそろえる」（spec v1.39。カード1枚のまま、ボタンだけ足す）
+  // 下に「⏰ チームで時間をそろえる」（spec v1.41。カード1枚のまま、ボタンだけ足す）
   announce: (body: string, forecastCm: number, snowName?: string, safety?: string): LineMessage[] => [
     {
       ...captainCard({ cm: forecastCm, snowName, when: "eve", lines: [...sentences(body, 5), ...(safety ? [safety] : [])] }),

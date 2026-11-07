@@ -1,4 +1,4 @@
-// 📅 予定に入れる（spec v1.39 ①）: その日の帯の予定を .ics で返す。iPhone は開くと「カレンダーに追加」が出る。
+// 📅 予定に入れる（spec v1.41 ①）: その日の帯の予定を .ics で返す。iPhone は開くと「カレンダーに追加」が出る。
 // 中身は日付・帯・チーム名だけで決まる（家・人の名前・場所は入れない）。ログインは要らない。
 import { buildIcs, slotEvent } from "@/lib/calendar/ics";
 import { isSlot } from "@/lib/calendar/slots";

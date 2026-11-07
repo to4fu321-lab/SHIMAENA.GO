@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { aiLineOk } from "../nakama/rules";
 import { bestSlot, countSlots, demoWish, putWish, slotLineNumbers, slotOpen, templateSlotLine } from "./slots";
 
-describe("チームで時間をそろえる（spec v1.39）", () => {
+describe("チームで時間をそろえる（spec v1.41）", () => {
   const w = (participantId: string, when: "am" | "noon" | "pm") => ({ participantId, when, at: "" });
 
   it("そろう時間は、チームでいちばん多い帯。同じ数なら早いほう。誰もいなければ決めない", () => {
@@ -51,7 +51,7 @@ describe("チームで時間をそろえる（spec v1.39）", () => {
 });
 
 import { buildOptions } from "../concierge/options";
-describe("隊長トークの候補（spec v1.39）", () => {
+describe("隊長トークの候補（spec v1.41）", () => {
   const ctx = { role: "helper" as const, hasTeam: true, answered: false, going: false, shortHouses: 0, soloDoneToday: [], safety: false, firstTime: false, tipOk: false };
   it("雪の日だけ「チームで時間をそろえる」が出る（夜の予告のあとも）", () => {
     expect(buildOptions({ ...ctx, rollcall: "announced", night: true }).map((o) => o.id)).toContain("time");
@@ -62,7 +62,7 @@ describe("隊長トークの候補（spec v1.39）", () => {
 });
 
 import { MSG } from "../line/messages";
-describe("知らせに「⏰ チームで時間をそろえる」（spec v1.39）", () => {
+describe("知らせに「⏰ チームで時間をそろえる」（spec v1.41）", () => {
   const uris = (ms: unknown[]) => JSON.stringify(ms);
   it("前夜の予告（カード1枚のまま）と、朝の「助けてほしい家」に付く", () => {
     const eve = MSG.announce("明朝 6:30 にお知らせします。", 12, "ぼた雪のドンブリ");

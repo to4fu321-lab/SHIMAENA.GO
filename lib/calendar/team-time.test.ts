@@ -4,7 +4,7 @@ import { TOWN_ROSTER } from "../morning/roster";
 import { onTeam } from "../member";
 import { teamTimeView, timeActive, wishesFor } from "./team-time";
 
-describe("そろう時間の画面（spec v1.39）", () => {
+describe("そろう時間の画面（spec v1.41）", () => {
   const me = TOWN_ROSTER.participants.find((p) => p.role === "helper" && p.teamId)!;
   const mates = TOWN_ROSTER.participants.filter((p) => onTeam(p) && p.teamId === me.teamId && p.id !== me.id);
 

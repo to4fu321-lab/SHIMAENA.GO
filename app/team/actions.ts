@@ -1,6 +1,6 @@
 "use server";
 
-// チームで時間をそろえる（spec v1.39 ②）: 帯を選ぶ（選び直せる）。そろう時間が変わったら、隊長の一文を書き直して残す。
+// チームで時間をそろえる（spec v1.41 ②）: 帯を選ぶ（選び直せる）。そろう時間が変わったら、隊長の一文を書き直して残す。
 import { revalidatePath } from "next/cache";
 import { bestSlot, countSlots, isSlot, putWish, slotOpen } from "@/lib/calendar/slots";
 import { timeActive, wishesFor } from "@/lib/calendar/team-time";

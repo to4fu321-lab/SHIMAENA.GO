@@ -1,6 +1,6 @@
 "use client";
 
-// チームで時間をそろえる（spec v1.39）: 朝／お昼／夕方から選ぶ → そろう時間（プログラムが決める）と隊長のひとこと → 📅 予定に入れる。
+// チームで時間をそろえる（spec v1.41）: 朝／お昼／夕方から選ぶ → そろう時間（プログラムが決める）と隊長のひとこと → 📅 予定に入れる。
 // 選ばなくても、6〜19時のいつでも出動できる（押しつけない）。
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";

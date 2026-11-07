@@ -1,4 +1,4 @@
-// チームで時間をそろえる（spec v1.39 ②）の画面に出すもの。朝の記録と名簿から組み立てる（保存しない）。
+// チームで時間をそろえる（spec v1.41 ②）の画面に出すもの。朝の記録と名簿から組み立てる（保存しない）。
 import { onTeam } from "../member";
 import { dayDiff } from "../morning/today";
 import { jstDate, jstMinutes } from "../jst";

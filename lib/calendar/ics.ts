@@ -1,4 +1,4 @@
-// 📅 予定に入れる（spec v1.39 ①）。.ics（iPhone の標準カレンダー・Outlook・Google など）と、Google カレンダーの予定作成のリンク。
+// 📅 予定に入れる（spec v1.41 ①）。.ics（iPhone の標準カレンダー・Outlook・Google など）と、Google カレンダーの予定作成のリンク。
 // 家の名前・住所・人の名前は入れない。アプリはカレンダーを読まない・書きかえない。
 import { MEET_MINUTES, slotOf } from "./slots";
 import type { HelperWhen } from "../types";

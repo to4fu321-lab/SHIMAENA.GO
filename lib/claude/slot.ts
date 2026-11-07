@@ -1,4 +1,4 @@
-// チームで時間をそろえる（spec v1.39・採点表 slot）: 隊長の誘いの一文。そろう帯と人数はプログラム（lib/calendar/slots.ts）が決める。
+// チームで時間をそろえる（spec v1.41・採点表 slot）: 隊長の誘いの一文。そろう帯と人数はプログラム（lib/calendar/slots.ts）が決める。
 // 選んだときだけ呼ぶ（チームごとに1つ朝の記録に残して、みんなで使い回す）。点検に通らなければ決まった文。
 import { z } from "zod";
 import { askJson, hasClaudeKey } from "./client";
