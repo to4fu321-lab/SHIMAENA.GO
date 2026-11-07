@@ -30,16 +30,16 @@ function fakeCtx() {
 }
 
 describe("BGM の響き", () => {
-  it("残響の素は 2ch・2.4 秒で、頭は無音（プリディレイ）、終わりに向けて小さくなる", () => {
+  it("残響の素は 2ch・2.8 秒で、頭は無音（プリディレイ）、終わりに向けて小さくなる", () => {
     const { ctx } = fakeCtx();
     const ir = reverbImpulse(ctx);
     expect(ir.numberOfChannels).toBe(2);
-    expect(ir.length).toBe(Math.floor(8000 * 2.4));
+    expect(ir.length).toBe(Math.floor(8000 * 2.8));
     const d = ir.getChannelData(0);
     expect(d[0]).toBe(0);
     const rms = (from: number, to: number) => Math.sqrt(d.slice(from, to).reduce((s, x) => s + x * x, 0) / (to - from));
     expect(rms(200, 2000)).toBeGreaterThan(rms(8000, 10000));
-    expect(rms(8000, 10000)).toBeGreaterThan(rms(17000, 19000));
+    expect(rms(8000, 10000)).toBeGreaterThan(rms(19000, 21000));
     expect(reverbImpulse(ctx)).toBe(ir); // 同じ ctx では使い回す
   });
   it("やわらかい歪みの曲線は、小さい音はそのまま・大きい音は丸める", () => {

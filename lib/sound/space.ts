@@ -7,7 +7,7 @@
 const irCache = new WeakMap<BaseAudioContext, AudioBuffer>();
 
 /** 残響の素（インパルス応答）。左右で違うノイズ、指数で減衰、高い音は先に消える */
-export function reverbImpulse(ctx: BaseAudioContext, seconds = 2.4, preDelay = 0.02): AudioBuffer {
+export function reverbImpulse(ctx: BaseAudioContext, seconds = 2.8, preDelay = 0.02): AudioBuffer {
   const cached = irCache.get(ctx);
   if (cached) return cached;
   const sr = ctx.sampleRate;
@@ -22,7 +22,7 @@ export function reverbImpulse(ctx: BaseAudioContext, seconds = 2.4, preDelay = 0
       seed = (seed * 1664525 + 1013904223) >>> 0;
       const white = (seed / 4294967296) * 2 - 1;
       const t = (i - pre) / sr;
-      const k = 0.35 + 0.45 * Math.min(1, t / seconds); // 進むほど丸く
+      const k = 0.2 + 0.5 * Math.min(1, t / seconds); // 進むほど丸く（始まりは明るく＝透明感）
       lp += (white - lp) * (1 - k);
       d[i] = lp * Math.exp((-6.5 * t) / seconds); // 終わりで -56dB くらい
     }
@@ -65,8 +65,8 @@ export function createSpace(ctx: BaseAudioContext, out: AudioNode): Space {
   warm.oversample = "2x";
   const shelf = ctx.createBiquadFilter();
   shelf.type = "highshelf";
-  shelf.frequency.value = 6500;
-  shelf.gain.value = -3;
+  shelf.frequency.value = 9000;
+  shelf.gain.value = -1.5;
   input.connect(warm);
   warm.connect(shelf);
   shelf.connect(comp);
@@ -96,7 +96,7 @@ export function createSpace(ctx: BaseAudioContext, out: AudioNode): Space {
   revSend.gain.value = 0.3;
   const revHp = ctx.createBiquadFilter();
   revHp.type = "highpass";
-  revHp.frequency.value = 220;
+  revHp.frequency.value = 320; // 低音はにごるので削る（透明感）
   const conv = ctx.createConvolver();
   try {
     conv.buffer = reverbImpulse(ctx);

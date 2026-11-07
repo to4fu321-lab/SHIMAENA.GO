@@ -5,7 +5,7 @@
 // 鳴らし方は Web Audio の定番「2つの時計」: setInterval（25ms）で、少し先（0.15秒）までの小節を予約していく。
 // 曲の切りかえは 0.6 秒のクロスフェード。同じ曲ならタブを移っても頭に戻らない。
 import { getEngine, isUnlocked, onRebuild, onSoundPrefs, onUnlocked, setBgmLevel, setBgmTempo, soundPrefs } from "./engine";
-import { bass, bell, clap, crackle, crunch, epiano, hat, kick, lead, pad, snare, spread, wind } from "./synth";
+import { air, bass, bell, clap, crackle, crash, crunch, epiano, glass, hat, kick, lead, pad, riser, snare, spread, wind } from "./synth";
 import type { SnowSong } from "./snow-song";
 
 /** v1.28: snow = 今朝の雪の歌（その日だけの曲。なければ「しらかばの朝」） */
@@ -140,10 +140,16 @@ export const SONGS: Record<FixedTrack, Song> = {
       const chord = a < 6 ? MORNING_CHORDS[Math.floor(a / 2)] : a === 6 ? MORNING_CHORDS[3] : MORNING_CHORDS[4];
       const root = MORNING_BASS[Math.floor(a / 2)];
       const quiet = b >= 8 && b < 12; // 9〜12 小節目: ビートを抜いて、しっとり
+      const peak = b >= 12; // 13〜16 小節目: 盛り上がり（鉄琴のきらめき・空気のパッド・ベースが跳ねる）
       // 雪の風（前半・後半の頭で1回、小節8つぶん）
       if (a === 0) wind(ctx, out, t0, beat * 4 * 8 + 1, quiet ? 0.035 : 0.025);
-      // レコードのパチパチ（lo-fi の質感）
-      crackle(ctx, out, t0, beat * 4, 0.018, 2.5, 0.25);
+      // レコードのパチパチ（lo-fi の質感。盛り上がりでは消える）
+      if (!peak) crackle(ctx, out, t0, beat * 4, 0.014, 2.5, 0.25);
+      // 空気のパッド（しっとり〜盛り上がり: 和音の上に光）
+      if (b >= 8) air(ctx, out, chord, t0, beat * 4.3, peak ? 0.022 : 0.014);
+      // 盛り上がりの直前: 風が上がる → 頭でクラッシュ
+      if (b === 11) riser(ctx, out, at(2), beat * 2, 0.06);
+      if (b === 12) crash(ctx, out, at(0), 0.05);
       if (quiet) {
         // エレピは1拍目に長く置く（パッド代わり）＋3拍目に軽く
         for (const m of chord) epiano(ctx, out, m, lag(at(0) + (m % 3) * 0.008), beat * 3.6, vel(0.07), spread(m));
@@ -159,12 +165,20 @@ export const SONGS: Record<FixedTrack, Song> = {
         bass(ctx, out, root, at(0), beat * 0.9, vel(0.22, 0.06));
         bass(ctx, out, root, at(2.5), beat * 0.4, vel(0.14, 0.06));
         bass(ctx, out, root + 7, at(3), beat * 0.8, vel(0.16, 0.06));
-        // ゆるいビート: キック 1・2拍半、ブラシのスネア 2・4、ハットは8分（少しスウィング）
+        // ゆるいビート: キック 1・2拍半、ブラシのスネア 2・4、ハットは8分（少しスウィング）。盛り上がりはキックが4つ目にも、ハットは16分
         kick(ctx, out, at(0), vel(0.3, 0.06));
         kick(ctx, out, at(2.5), vel(0.2, 0.08));
-        snare(ctx, out, lag(at(1), 8), vel(0.07), -0.12);
-        snare(ctx, out, lag(at(3), 8), vel(0.08), -0.12);
-        for (let i = 0; i < 8; i++) hat(ctx, out, lag(at(i / 2 + (i % 2 ? 0.08 : 0)), 10), vel(i % 2 ? 0.02 : 0.035, 0.2), 0.035, 0.3);
+        if (peak) kick(ctx, out, at(3.5), vel(0.16, 0.08));
+        snare(ctx, out, lag(at(1), 8), vel(peak ? 0.09 : 0.07), -0.12);
+        snare(ctx, out, lag(at(3), 8), vel(peak ? 0.1 : 0.08), -0.12);
+        const hats = peak ? 16 : 8;
+        for (let i = 0; i < hats; i++) hat(ctx, out, lag(at((i * 4) / hats + (i % 2 ? 0.06 : 0)), 10), vel(i % 2 ? 0.018 : 0.032, 0.2), 0.035, 0.3);
+        // 盛り上がり: 鉄琴が和音を 16 分できらめく（高い音は右・低い音は左）、ベースは 1 オクターブ上に跳ねる
+        if (peak) {
+          const arp = [chord[1], chord[2], chord[3], chord[2]].map((m) => m + 24);
+          for (let i = 0; i < 8; i++) glass(ctx, out, arp[i % 4], lag(at(i / 2 + 0.25), 8), beat * 0.7, vel(0.035, 0.25), spread(arp[i % 4], 0.6));
+          bass(ctx, out, root + 12, at(1.5), beat * 0.4, vel(0.1, 0.06));
+        }
         // 16 小節目の終わり: ブラシの小さなフィル（頭に戻る合図）
         if (b === 15) for (let i = 0; i < 3; i++) snare(ctx, out, at(3.25 + i * 0.25), 0.04 + i * 0.015, -0.12);
       }
@@ -173,7 +187,11 @@ export const SONGS: Record<FixedTrack, Song> = {
       for (const [bar, x, m, d] of MORNING_MELODY_B) {
         if (bar !== b) continue;
         if (quiet) epiano(ctx, out, m, lag(at(x)), beat * d * 1.1, vel(0.1), spread(m));
-        else bell(ctx, out, m, lag(at(x)), beat * d * 1.4, vel(0.1), spread(m));
+        else {
+          // 盛り上がり: 鈴のメロディを鉄琴が 1 オクターブ上で重ねる（透明に抜ける）
+          bell(ctx, out, m, lag(at(x)), beat * d * 1.4, vel(0.11), spread(m));
+          glass(ctx, out, m + 12, lag(at(x), 6), beat * d * 1.2, vel(0.045), spread(m + 12, 0.6));
+        }
       }
     },
   },
@@ -206,6 +224,14 @@ export const SONGS: Record<FixedTrack, Song> = {
       // 8・16 小節目の終わり: スネアのフィル（上がっていく）→ 次へ
       if (b === 15) for (let i = 0; i < 4; i++) snare(ctx, out, at(3 + i * 0.25), 0.06 + i * 0.02, -0.12);
       if (b === 7) for (let i = 0; i < 2; i++) snare(ctx, out, at(3.5 + i * 0.25), 0.06 + i * 0.02, -0.12);
+      // サビの直前: 風が上がる → 頭でクラッシュ。13〜16 は鉄琴のきらめきと空気のパッドで最高潮
+      if (b === 7) riser(ctx, out, at(2), beat * 2, 0.07);
+      if (b === 8) crash(ctx, out, at(0), 0.06);
+      if (b >= 12) {
+        air(ctx, out, chord, t0, beat * 4.2, 0.018);
+        const sp = [chord[3], chord[2], chord[1], chord[2]].map((m) => m + 24);
+        for (let i = 0; i < 8; i++) glass(ctx, out, sp[i % 4], lag(at(i / 2 + 0.25), 6), beat * 0.6, vel(0.03, 0.25), spread(sp[i % 4], 0.6));
+      }
       // 1〜4 はエレピのアルペジオ（8分で上がる）、5〜8 は矩形波のメロディ、サビはエレピの刻み（1拍半・3拍）
       if (b < 4) for (let i = 0; i < 8; i++) epiano(ctx, out, chord[i % 4] + (i >= 4 ? 12 : 0), lag(at(i / 2), 10), beat * 0.9, vel(0.07), spread(chord[i % 4] + (i >= 4 ? 12 : 0)));
       else if (!chorus) for (const m of chord) epiano(ctx, out, m + 12, lag(at(1.5)), beat * 1.5, vel(0.05), spread(m + 12));
@@ -236,7 +262,14 @@ export const SONGS: Record<FixedTrack, Song> = {
       const arp = [chord[0], chord[1], chord[2], chord[3], chord[2], chord[1], chord[3], chord[1]];
       if (quiet) for (let i = 0; i < 4; i++) epiano(ctx, out, arp[i], lag(at(i), 10), beat * 1.6, vel(i === 0 ? 0.08 : 0.06), spread(arp[i]));
       else for (let i = 0; i < 8; i++) epiano(ctx, out, arp[i], lag(at(i / 2), 10), beat * 0.8, vel(i === 0 ? 0.09 : 0.065), spread(arp[i]));
-      if (wide) pad(ctx, out, chord.map((m) => m + 12), t0, beat * 4.2, 0.022, 1600);
+      if (wide) {
+        pad(ctx, out, chord.map((m) => m + 12), t0, beat * 4.2, 0.022, 1600);
+        air(ctx, out, chord, t0, beat * 4.3, 0.02);
+      }
+      if (quiet) air(ctx, out, chord, t0, beat * 4.3, 0.012);
+      // 広がりの直前: 風が上がる → 頭でクラッシュ
+      if (b === 11) riser(ctx, out, at(2), beat * 2, 0.06);
+      if (b === 12) crash(ctx, out, at(0), 0.055);
       // ベース: 根音（1拍、長め）・5度（3拍）・根音（4拍、短く）
       bass(ctx, out, root, at(0), beat * (quiet ? 3.2 : 1.4), vel(0.22, 0.06));
       if (!quiet) {
@@ -259,7 +292,10 @@ export const SONGS: Record<FixedTrack, Song> = {
       for (const [bar, x, m, d] of CLEAR_BELLS_B) {
         if (bar !== b) continue;
         bell(ctx, out, m, lag(at(x), 10), beat * d * 1.3, vel(quiet ? 0.09 : 0.12), spread(m));
-        if (wide) epiano(ctx, out, m - 12, lag(at(x), 12), beat * d * 1.1, vel(0.05), spread(m - 12));
+        if (wide) {
+          epiano(ctx, out, m - 12, lag(at(x), 12), beat * d * 1.1, vel(0.05), spread(m - 12));
+          glass(ctx, out, m + 12, lag(at(x), 6), beat * d * 1.1, vel(0.04), spread(m + 12, 0.6));
+        }
       }
       if (b === 7 || b === 15) for (let i = 0; i < 5; i++) bell(ctx, out, 96 + [0, 4, 7, 11, 12][i], at(3) + i * 0.08, 0.7, 0.05, spread(96 + [0, 4, 7, 11, 12][i]));
       // 12 小節目の終わり: クラップのフィル（広がる合図）
@@ -296,6 +332,15 @@ export function songFromData(d: SnowSong): Song {
       const chord = d.chords[b % d.chords.length];
       const root = d.bass[b % d.bass.length];
       if (b === 0 && d.wind > 0) wind(ctx, out, t0, beat * 4 * d.bars + 1, 0.01 + 0.035 * d.wind);
+      // 終わりの 4 小節は盛り上がり: 直前に風が上がり、頭でクラッシュ、空気のパッドと鉄琴のきらめき
+      const peak = d.bars >= 8 && b >= d.bars - 4;
+      if (b === d.bars - 5) riser(ctx, out, at(2), beat * 2, 0.06);
+      if (peak) {
+        if (b === d.bars - 4) crash(ctx, out, at(0), 0.05);
+        air(ctx, out, chord, t0, beat * 4.3, 0.018);
+        const sp = [chord[1], chord[2], chord[3] ?? chord[0], chord[2]].map((m) => m + 24);
+        for (let i = 0; i < 8; i++) glass(ctx, out, sp[i % 4], lag(at(i / 2 + 0.25), 8), beat * 0.7, vel(0.03, 0.25), spread(sp[i % 4], 0.6));
+      }
       switch (d.groove) {
         case "drive": {
           pad(ctx, out, chord.map((m) => m + 12), t0, beat * 4.1, 0.024, 1300);

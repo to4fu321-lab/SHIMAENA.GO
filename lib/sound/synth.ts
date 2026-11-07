@@ -281,3 +281,30 @@ export function crackle(ctx: BaseAudioContext, out: AudioNode, at: number, dur: 
     noise(ctx, out, { at: t, dur: 0.003 + Math.random() * 0.006, gain: gain * (0.3 + Math.random()), attack: 0.001, filter: { type: "bandpass", f: 2600 + Math.random() * 1500, q: 0.8 } });
   }
 }
+
+/** グロッケン（鉄琴）: 澄んだ高い音。倍音が整数でない（2.76 倍）ので「ガラス」のように聞こえる。短く消える */
+export function glass(ctx: BaseAudioContext, out: AudioNode, midi: number, at: number, dur = 0.9, gain = 0.08, p = 0): void {
+  const f = hz(midi);
+  out = pan(ctx, out, p);
+  tone(ctx, out, { f, at, dur, type: "sine", gain, attack: 0.001 });
+  tone(ctx, out, { f: f * 2.76, at, dur: dur * 0.3, type: "sine", gain: gain * 0.3, attack: 0.001 });
+  tone(ctx, out, { f: f * 5.4, at, dur: dur * 0.12, type: "sine", gain: gain * 0.12, attack: 0.001 });
+}
+
+/** 空気のパッド: 2オクターブ上の正弦波をゆっくり。和音の上に「光」をのせる（透明感） */
+export function air(ctx: BaseAudioContext, out: AudioNode, midis: number[], at: number, dur: number, gain = 0.02): void {
+  const L = pan(ctx, out, -0.35);
+  const R = pan(ctx, out, 0.35);
+  midis.forEach((m, i) => tone(ctx, i % 2 ? R : L, { f: hz(m + 24), at, dur, type: "sine", gain, attack: Math.min(0.8, dur * 0.4), decay: "lin", cents: i % 2 ? 4 : -4 }));
+}
+
+/** ライザー: 風が上がっていく（ローパスを 400 → 7000Hz に開きながら大きく）。盛り上がりの直前に */
+export function riser(ctx: BaseAudioContext, out: AudioNode, at: number, dur: number, gain = 0.08): void {
+  noise(ctx, out, { at, dur, gain, attack: dur * 0.85, decay: "exp", filter: { type: "lowpass", f: 400, f1: 7000, q: 1.2 } });
+}
+
+/** クラッシュ風: 長めの明るいノイズが広がって消える。盛り上がりの頭に */
+export function crash(ctx: BaseAudioContext, out: AudioNode, at: number, gain = 0.06): void {
+  noise(ctx, pan(ctx, out, -0.2), { at, dur: 1.4, gain, attack: 0.004, filter: { type: "highpass", f: 5000 } });
+  noise(ctx, pan(ctx, out, 0.25), { at: at + 0.01, dur: 1.0, gain: gain * 0.6, attack: 0.004, filter: { type: "bandpass", f: 9000, q: 0.6 } });
+}
