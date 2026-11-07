@@ -819,3 +819,9 @@
 - 詰まったこと: なし。3羽の写真と未来のイメージ画は権利に注意（自分の写真か Claude のイラスト）と書いた。
 - 次: 本人が決める（冒頭の順番・笑いの濃さ・顔・吹き込む人・絵）→ 決まったら `docs/demo.md` の表を差し替える。
 - 11/7 夜 本人の答え（雪かきから始める・笑い濃いめ・顔なし・ありがとうは娘さん・3羽の画像あり）を `storyboard.md` 2版に反映。見せ場の候補 A〜H と「笑いと本気の波」を足した。3羽の画像は AI 生成の可能性が高いので、出どころを確かめるまでリポジトリに入れない。
+
+## 11/7 夜 隊長の声を自前の VOICEVOX に（本人の指摘「声、可愛くない。2個目の。で止まった。遅すぎて使えない」）
+- これから: 無料の Web API は鍵があっても1文 10〜16 秒（本番で測った）→ 本人の選択で、Hugging Face Spaces の無料枠に VOICEVOX ENGINE を置いて 1〜2 秒にする。
+- やったこと: `deploy/voicevox-space/`（Dockerfile は Spaces の「ユーザー ID 1000」に合わせて gosu を使わず直接起動）、`lib/speech/voicevox.ts` に `synthesizeEngine`（audio_query → 元気な調子に直す → synthesis、wav）・`wakeEngine`、`/api/voice` は wav/mp3 どちらも返す・`?wake=1`、画面は開いたときに起こす・2つ目の文が作れなければ残りをブラウザの声で。手順を `docs/setup.md` に。テスト 5 本。
+- 詰まったこと: 鍵（VOICEVOX_API_KEY）は 11/6 に本番へ入っていたが、速さは変わらなかった（サービス側の順番待ち）。
+- 次: 本人が HF に Space を作る（10〜20 分）→ `VOICEVOX_URL` を Vercel に → 声（`VOICEVOX_SPEAKER`）を聞きくらべて決める。

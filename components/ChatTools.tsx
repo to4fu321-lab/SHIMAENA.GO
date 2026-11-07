@@ -80,6 +80,7 @@ function getPlayer(): HTMLAudioElement | null {
  * タップの中で呼ぶ: <audio> とブラウザの読み上げを「鳴らしてよい」状態にする（iPhone 対策）。何度呼んでもよい
  */
 export function primeCaptainVoice(): void {
+  wakeCaptainVoice();
   if (primed) return;
   const a = getPlayer();
   if (a && !a.paused) {
@@ -106,6 +107,14 @@ export function primeCaptainVoice(): void {
       /* 使えない端末 */
     }
   }
+}
+
+let woke = false;
+/** 自前の声の ENGINE（Hugging Face Space）は使わないと眠る → 画面に来たら1回だけ起こしておく（spec v1.37）。結果は待たない */
+export function wakeCaptainVoice(): void {
+  if (woke || typeof window === "undefined") return;
+  woke = true;
+  void fetch("/api/voice?wake=1").catch(() => {});
 }
 
 /** いま鳴っている隊長の声を止める */
@@ -143,7 +152,7 @@ async function fetchVoice(text: string): Promise<Blob | null> {
  */
 function playBlob(a: HTMLAudioElement, blob: Blob, my: number): Promise<boolean> {
   if (blobUrl) URL.revokeObjectURL(blobUrl);
-  blobUrl = URL.createObjectURL(new Blob([blob], { type: "audio/mpeg" }));
+  blobUrl = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: "audio/mpeg" }));
   return new Promise((resolve) => {
     let started = false;
     let done = false;
