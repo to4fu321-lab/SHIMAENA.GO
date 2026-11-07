@@ -117,7 +117,9 @@ export function bell(ctx: BaseAudioContext, out: AudioNode, midi: number, at: nu
 export function epiano(ctx: BaseAudioContext, out: AudioNode, midi: number, at: number, dur = 0.8, gain = 0.2): void {
   const f = hz(midi);
   tone(ctx, out, { f, at, dur, type: "sine", gain, attack: 0.006 });
+  tone(ctx, out, { f: f * 1.003, at: at + 0.012, dur: dur * 0.9, type: "sine", gain: gain * 0.35, attack: 0.02 }); // 少しずれた2本目（コーラスの揺れ・厚み）
   tone(ctx, out, { f: f * 2, at, dur: dur * 0.6, type: "sine", gain: gain * 0.3, attack: 0.004 });
+  tone(ctx, out, { f: f * 3, at, dur: dur * 0.3, type: "sine", gain: gain * 0.08, attack: 0.003 }); // 3倍音でエレピの「コツッ」
   tone(ctx, out, { f: f * 4.01, at, dur: dur * 0.2, type: "triangle", gain: gain * 0.06, attack: 0.002 });
 }
 
@@ -169,4 +171,13 @@ export function pad(ctx: BaseAudioContext, out: AudioNode, midis: number[], at: 
 /** 雪の風「しんしん」: ノイズをローパスで。ゆっくり */
 export function wind(ctx: BaseAudioContext, out: AudioNode, at: number, dur: number, gain = 0.03): void {
   noise(ctx, out, { at, dur, gain, attack: Math.min(1.5, dur * 0.4), decay: "lin", filter: { type: "lowpass", f: 500, f1: 320, q: 0.5 } });
+}
+
+/** レコードのパチパチ（lo-fi の質感）: 1小節ぶんに小さなノイズの粒をまばらに。粒は小節の中に収める */
+export function crackle(ctx: BaseAudioContext, out: AudioNode, at: number, dur: number, gain = 0.02, perSecond = 3): void {
+  const n = Math.max(1, Math.round(dur * perSecond));
+  for (let i = 0; i < n; i++) {
+    const t = at + Math.random() * dur * 0.97;
+    noise(ctx, out, { at: t, dur: 0.003 + Math.random() * 0.006, gain: gain * (0.3 + Math.random()), attack: 0.001, filter: { type: "bandpass", f: 2600 + Math.random() * 1500, q: 0.8 } });
+  }
 }
