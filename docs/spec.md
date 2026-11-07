@@ -527,6 +527,6 @@ Next.js (App Router) + TypeScript + Tailwind／Vercel（Cron: 21:00 予告、6:3
 
 ## v1.38 追加（11/7、Hugging Face の Docker Space が有料になっていた → 本人の質問「他のサービスで同じような声出せるの無い？」→ 本人の選択「Aivis」）
 - **隊長の声は Aivis Cloud API で作る**（日本の音声合成。最速 0.3 秒。登録で 500 円分（約 11,000 字）の無料クレジット、その後は 1 万字 440 円の前払い）。鍵は `AIVIS_API_KEY`（サーバー側だけ）。
-- 声はモデルの一覧から本人が試聴して選ぶ（`AIVIS_MODEL`＝モデル UUID・`AIVIS_STYLE`＝スタイル名。候補はライセンス ACML 1.0 のもの: まお・コハク・みちのくあいり・六弦エレキ。既定はコハク）。クレジット「AivisSpeech: ○○」を 🌐 の紙と README に。
+- 声はモデルの一覧から本人が試聴して選ぶ（`AIVIS_MODEL`＝モデル UUID・`AIVIS_STYLE`＝スタイル名）。**既定は雪降白華（ゆきふりしろか）**＝11/7 本人が試聴して決定（「シマエナガに合う、元気でハキハキした声」）。著作権表示「Tαkoe:AivisSpeech:雪降白華」が必須なので 🌐 の紙と README に出す。
 - 調子は少し速く（1.1）・感情を強めに（1.3）・緩急すこし（1.1）。ピッチは変えない（変えると遅く粗くなる）。
 - `AIVIS_API_KEY` がないときは v1.37 のまま（自前の ENGINE → VOICEVOX Web API → ブラウザの声）。

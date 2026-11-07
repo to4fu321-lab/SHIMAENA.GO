@@ -7,10 +7,10 @@ describe("隊長の声（Aivis Cloud API）", () => {
   it("設定: AIVIS_API_KEY があれば使う。声は AIVIS_MODEL・AIVIS_STYLE。クレジットも Aivis の名前に", () => {
     expect(aivisEnabled({})).toBe(false);
     expect(aivisEnabled({ AIVIS_API_KEY: " k " })).toBe(true);
-    expect(aivisVoiceName({ AIVIS_API_KEY: "k" })).toBe("AivisSpeech: コハク");
+    expect(aivisVoiceName({ AIVIS_API_KEY: "k" })).toBe("Tαkoe:AivisSpeech:雪降白華");
     expect(aivisVoiceName({ AIVIS_MODEL: "a59cb814-0083-4369-8542-f51a29e72af7" })).toBe("AivisSpeech: まお");
     expect(aivisVoiceName({ AIVIS_MODEL: "00000000-0000-0000-0000-000000000000" })).toBe("AivisSpeech");
-    expect(captainVoiceName({ AIVIS_API_KEY: "k" })).toBe("AivisSpeech: コハク");
+    expect(captainVoiceName({ AIVIS_API_KEY: "k" })).toBe("Tαkoe:AivisSpeech:雪降白華");
     expect(captainVoiceName({ AIVIS_API_KEY: "k", CAPTAIN_VOICE: "off" })).toBeUndefined();
   });
 
@@ -22,7 +22,7 @@ describe("隊長の声（Aivis Cloud API）", () => {
     }) as typeof fetch;
     const env = { AIVIS_API_KEY: "k1", AIVIS_STYLE: "あまあま", VOICEVOX_URL: "https://x.hf.space" };
     const r = await synthesize("こんにちは〜🎉", ok, env);
-    expect(r).toEqual({ audio: new Uint8Array([7, 7]), type: "audio/mpeg", speakerName: "AivisSpeech: コハク" });
+    expect(r).toEqual({ audio: new Uint8Array([7, 7]), type: "audio/mpeg", speakerName: "Tαkoe:AivisSpeech:雪降白華" });
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe("https://api.aivis-project.com/v1/tts/synthesize");
     expect((calls[0].init?.headers as Record<string, string>).authorization).toBe("Bearer k1");

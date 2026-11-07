@@ -271,6 +271,6 @@
   完了条件: `npm run check` が通る。鍵なしでも画面の文字が切りかわり、隊長の文は日本語のまま止まらない。390×844・375×667 で1画面。
 - [x] **T113 隊長のかわいい声** — 無料の VOICEVOX Web API（api.tts.quest）で `VOICEVOX:雨晴はう`（シマエナガらしい、ふんわり高めの声。本人の指示でずんだもんから変更）の mp3（`lib/speech/voicevox.ts`・`/api/voice`）。日本語の読み上げはこの声、作れない・日本語以外はブラウザの声に戻る。クレジットを 🌐 の紙と README に。`CAPTAIN_VOICE=off`・`VOICEVOX_SPEAKER`・`VOICEVOX_API_KEY`。テスト 4 本。
 - [~] **T115 隊長の声を自前の VOICEVOX に**（11/7 本人の指摘「声、可愛くない。2個目の。で止まった。遅すぎて使えない」→ 本人の選択「自前で動かす」） — `deploy/voicevox-space/`（Hugging Face Spaces 用の Dockerfile・README）、`VOICEVOX_URL` があれば `/audio_query` → `/synthesis` で wav（`synthesizeEngine`・元気な調子 `CAPTAIN_STYLE`）、`/api/voice?wake=1` で眠った Space を起こす、2つ目の文が作れなければ残りをブラウザの声で。手順は `docs/setup.md`。🔑 本人が HF に Space を作って `VOICEVOX_URL` を Vercel に入れるまで `[~]`。声は本人が聞きくらべて 54 = 春歌ナナ に決定（8 = 春日部つむぎ も可）。
-- [~] **T116 隊長の声を Aivis に**（HF の Docker Space は有料だった → 本人の選択） — `lib/speech/aivis.ts`（`AIVIS_API_KEY` があれば最初に使う・元気な調子 `AIVIS_TONE`・クレジット）。テスト 2 本。🔑 本人が Aivis で鍵を発行して Vercel の `AIVIS_API_KEY` に入れる・声を試聴して `AIVIS_MODEL`/`AIVIS_STYLE` を決めるまで `[~]`。
+- [~] **T116 隊長の声を Aivis に**（HF の Docker Space は有料だった → 本人の選択） — `lib/speech/aivis.ts`（`AIVIS_API_KEY` があれば最初に使う・元気な調子 `AIVIS_TONE`・クレジット）。テスト 2 本。🔑 本人が Aivis で鍵を発行して Vercel の `AIVIS_API_KEY` に入れる・声は本人が試聴して雪降白華に決定。鍵は本番とプレビューに入った。
   完了条件: `npm run check` が通る。`/api/voice?text=…` が audio/mpeg を返す（この環境から確認）。
 

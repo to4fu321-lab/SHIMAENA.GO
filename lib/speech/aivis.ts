@@ -1,7 +1,7 @@
 // 隊長の声（spec v1.38）: Aivis Cloud API（日本の音声合成。最速 0.3 秒）で、かわいい声の mp3 を作る。
 // 11/7 本人の指摘「遅すぎて使えない」→ 無料の VOICEVOX Web API は1文 10 秒以上、自前の ENGINE は Hugging Face が有料になっていた → 本人の選択で Aivis に。
 // 鍵 AIVIS_API_KEY はサーバー側でだけ使う（画面に出さない）。登録で 500 円分（約 11,000 字）の無料クレジット、その後は 1 万字 440 円（前払い）。
-// 声は AIVIS_MODEL（モデル UUID）と AIVIS_STYLE（スタイル名）で選ぶ。ライセンスは ACML 1.0 のモデルだけを候補にした（クレジットは任意だが出す）。
+// 声は AIVIS_MODEL（モデル UUID）と AIVIS_STYLE（スタイル名）で選ぶ。候補は使ってよいライセンスのもの（ACML 1.0 か、個人の利用を許すもの）。クレジットは画面と README に出す。
 import type { Voice, VoiceEnv } from "./voicevox";
 
 const API = "https://api.aivis-project.com/v1/tts/synthesize";
@@ -17,10 +17,15 @@ export const AIVIS_VOICES: Readonly<Record<string, string>> = {
   "f5017410-fbb5-49e1-97cb-e785f42e15f5": "AivisSpeech: 凛音エル",
   "4f281e78-eba6-495a-8e50-5c322d02b5b1": "AivisSpeech: るな",
   "3328da9a-8124-4619-a853-f7fc2f37889f": "AivisSpeech: 桜音",
+  // Tαkoe プロジェクトの声は著作権表示が必須（「Tαkoe:ソフト名:キャラクター名」の形。利用規約 http://wedst.pj.ymhk.jp/tos.html）
+  "37e49039-522f-4608-b8d6-fc6716ada80e": "Tαkoe:AivisSpeech:雪降白華",
 };
 
-/** 既定の声: コハク（子猫のような甘い声）。本人が試聴して決めたら差しかえる */
-export const DEFAULT_AIVIS_MODEL = "22e8ed77-94fe-4ef2-871f-a86f94e9a579";
+/**
+ * 既定の声: 雪降白華（ゆきふりしろか。Tαkoe プロジェクト）。11/7 本人が試聴して決定（「シマエナガに合う、元気でハキハキした声」）。
+ * 名前が「雪が降る白い花」で雪の妖精シマエナガに合い、試聴の文も朝の時刻と天気の案内で隊長の点呼そのまま
+ */
+export const DEFAULT_AIVIS_MODEL = "37e49039-522f-4608-b8d6-fc6716ada80e";
 export const DEFAULT_AIVIS_STYLE = "ノーマル";
 
 /** 元気でかわいい調子（11/7 本人の指示）: 少し速く・感情を強めに・緩急を少しつける。ピッチは触らない（変えると遅く・粗くなる） */
