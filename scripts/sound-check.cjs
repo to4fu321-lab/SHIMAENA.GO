@@ -75,8 +75,8 @@ async function waitForServer(url, ms = 40000) {
     await page.waitForTimeout(700);
     c = await counts();
     ok(c.state === "running", `最初のタップで AudioContext が動く（${c.state}）`);
-    ok(c.bgm === "snow", `ホームの BGM は今朝の雪の歌（v1.28。${c.bgm}）`);
-    if (c.bgm !== "snow") console.log("  debug:", JSON.stringify(await page.evaluate(() => window.__bgmDebug)));
+    ok(c.bgm === "morning", `ホームの BGM は「しらかばの朝」（11/7 今朝の歌をホームから外した。${c.bgm}）`);
+    if (c.bgm !== "morning") console.log("  debug:", JSON.stringify(await page.evaluate(() => window.__bgmDebug)));
     const before = c.osc;
     await page.waitForTimeout(3200); // 今朝の雪の歌の1小節は 2〜3 秒。次の小節が予約されるまで待つ
     c = await counts();
@@ -99,7 +99,7 @@ async function waitForServer(url, ms = 40000) {
     const b1 = (await counts()).osc;
     await page.waitForTimeout(3200);
     c = await counts();
-    ok(c.state === "running" && c.osc > b1 + 10 && c.bgm === "snow", `戻ると続きから鳴る（${c.state}・3.2秒で +${c.osc - b1} 音・${c.bgm}）`);
+    ok(c.state === "running" && c.osc > b1 + 10 && c.bgm === "morning", `戻ると続きから鳴る（${c.state}・3.2秒で +${c.osc - b1} 音・${c.bgm}）`);
     // 時計が止まったまま戻ったふり → 次のタップで新しい AudioContext になり、BGM が続く
     await page.evaluate(() => {
       const ctx = window.__sound.ctx;
@@ -117,10 +117,10 @@ async function waitForServer(url, ms = 40000) {
     await page.waitForTimeout(3200);
     c = await counts();
     const rebuilt = await page.evaluate(() => window.__sound.ctx !== window.__oldCtx && window.__oldCtx.state === "closed");
-    ok(rebuilt && c.state === "running" && c.osc > b2 + 10 && c.bgm === "snow", `時計が止まっていたら作り直して鳴り続ける（作り直し ${rebuilt}・${c.state}・+${c.osc - b2} 音・${c.bgm}）`);
+    ok(rebuilt && c.state === "running" && c.osc > b2 + 10 && c.bgm === "morning", `時計が止まっていたら作り直して鳴り続ける（作り直し ${rebuilt}・${c.state}・+${c.osc - b2} 音・${c.bgm}）`);
 
     // 2. 下のタブで地図へ: 同じ「しらかばの朝」のまま（出発前）
-    await page.getByRole("link", { name: "地図" }).click();
+    await page.getByRole("link", { name: "マップ" }).click();
     await page.waitForURL(/\/map/);
     await page.waitForTimeout(1200);
     c = await counts();
@@ -132,19 +132,42 @@ async function waitForServer(url, ms = 40000) {
     await page.waitForTimeout(1200);
     c = await counts();
     ok(c.bgm === "mission", `雪かき中の印は「出撃！」（${c.bgm}）`);
+    // v1.38: 雪かき中の曲は <audio> で鳴る（書き出しが終わるまで待つ）→ 裏に回しても止まらない
+    let bg = null;
+    for (let i = 0; i < 40 && bg !== "playing"; i++) {
+      await page.waitForTimeout(250);
+      bg = await page.evaluate(() => document.documentElement.dataset.bgmBg ?? null);
+    }
+    ok(bg === "playing", `雪かき中の曲は画面を消しても鳴る <audio> で（${bg}）`);
+    await setHidden(true);
+    await page.waitForTimeout(800);
+    bg = await page.evaluate(() => document.documentElement.dataset.bgmBg ?? null);
+    const st = (await counts()).state;
+    ok(bg === "playing" && st === "suspended", `裏に回しても雪かき中の曲は止まらない（${bg}・Web Audio は ${st}）`);
+    await setHidden(false);
+    await page.waitForTimeout(400);
 
     // 4. 設定で BGM をオフ → 止まる。オンに戻す → 戻る
     await page.goto(`http://localhost:${PORT}/settings?as=h1`, { waitUntil: "networkidle" });
     await page.getByRole("tab", { name: "音" }).click();
     await page.waitForTimeout(600);
-    await page.getByRole("switch", { name: /BGM/ }).click();
+    await page.getByRole("switch", { name: /^BGM/ }).click();
     await page.waitForTimeout(300);
     c = await counts();
     ok(c.bgm === null, `BGM をオフにすると止まる（${c.bgm}）`);
-    await page.getByRole("switch", { name: /BGM/ }).click();
+    await page.getByRole("switch", { name: /^BGM/ }).click();
     await page.waitForTimeout(600);
     c = await counts();
     ok(c.bgm === "morning", `オンに戻すと「しらかばの朝」（${c.bgm}）`);
+    // v1.38: 自分の音楽を聴く → BGM は止まる。戻すと鳴る
+    await page.getByRole("switch", { name: /自分の音楽/ }).click();
+    await page.waitForTimeout(300);
+    c = await counts();
+    ok(c.bgm === null, `「自分の音楽を聴く」で BGM が止まる（${c.bgm}）`);
+    await page.getByRole("switch", { name: /自分の音楽/ }).click();
+    await page.waitForTimeout(600);
+    c = await counts();
+    ok(c.bgm === "morning", `戻すと BGM が鳴る（${c.bgm}）`);
 
     // 5. ボタンの音: 主役（ピポッ）と白いボタン（プッ）で音が出る
     const b0 = (await counts()).osc;
@@ -194,7 +217,7 @@ async function waitForServer(url, ms = 40000) {
       console.log("  debug:", await page.evaluate(() => `${location.href} h2: ${[...document.querySelectorAll("h2")].map((h) => h.textContent.trim()).join(" / ")}`));
       await page.screenshot({ path: ".shots/sound-check-solo.png" });
     }
-    await page.locator("article", { hasText: "自分の家の雪かき" }).locator("button", { hasText: "出撃する！" }).click();
+    await page.locator("article", { hasText: "自分の家の雪かき" }).locator("button", { hasText: "雪かきGO！" }).click();
     await page.waitForTimeout(400);
     got = await sfx();
     ok(got.includes("confirm") && got.includes("missionStart@0.1"), `出撃！: ${got.join(" ")}`);

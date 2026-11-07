@@ -133,13 +133,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
         {me && <FeedbackButton viewerId={me.id} page="/settings" q={q} />}
       </section>
 
-      <div className="space-y-2">
-        <SoundToggle />
-        {/* 今朝の雪の歌（spec v1.28）。11/7 本人の指示でホームから設定の「音」へ */}
-        <Link href={`/song${q}`} className="btn btn-white min-h-14 w-full text-lg">
-          ♪ 今朝の雪の歌を聞く
-        </Link>
-      </div>
+      <SoundToggle songHref={`/song${q}`} />
 
       <WatchSettings />
 
