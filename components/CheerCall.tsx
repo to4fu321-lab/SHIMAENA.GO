@@ -29,7 +29,7 @@ export default function CheerCall({
       data-sound="none"
       className={
         compact
-          ? `flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-[#06C755]/15 px-3 text-base font-bold text-ink ring-1 ring-[#06C755]/50 ${className}`
+          ? `flex min-h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#06C755]/15 px-3 text-sm font-bold text-ink ring-1 ring-[#06C755]/50 ${className}`
           : `btn btn-white w-full gap-2 rounded-full text-lg ${className}`
       }
     >

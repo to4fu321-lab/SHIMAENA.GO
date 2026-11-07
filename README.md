@@ -62,7 +62,7 @@
 | 日曜の夜 | 「今週の群れ」の実況・チーム順位・称号・翌週のチームのシャッフル。1週間の記録から「町の週刊絵本」。娘さんには「今週は N 回手伝ってもらいました」 | |
 
 <p>
-<img src="docs/screens/chat.png" width="24%" alt="隊長トーク: 今朝は拠点1へ、行く／今朝は行けない">
+<img src="docs/screens/chat.png" width="24%" alt="隊長トーク: 助けてほしい家があります、行く（10分でも）／今は無理">
 <img src="docs/screens/chat-requester.png" width="24%" alt="お願いした家の隊長トーク: 終わりました、ひとこと返しませんか、声でありがとう">
 <img src="docs/screens/thanks-voice.png" width="24%" alt="声のありがとう: 押して話す（30秒まで）">
 <img src="docs/screens/card-front.png" width="24%" alt="その時だけのカード: 7:16 にひらく真冬の朝、No.001/11、排雪 900kg">

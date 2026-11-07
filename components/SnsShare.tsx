@@ -178,7 +178,7 @@ export default function SnsShare({ options, title = "SNS に投稿する", compa
                 role="tab"
                 aria-selected={o.key === opt.key}
                 onClick={() => setKey(o.key)}
-                className={`min-h-10 whitespace-nowrap rounded-xl px-0.5 text-[13px] font-bold max-[380px]:tracking-tighter ${o.key === opt.key ? "bg-ink text-white" : "text-ink"}`}
+                className={`min-h-10 whitespace-nowrap rounded-xl px-0.5 text-xs font-bold tracking-tight max-[380px]:text-[13px] ${o.key === opt.key ? "bg-ink text-white" : "text-ink"}`}
               >
                 {o.label}
               </button>
