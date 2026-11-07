@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSpace, reverbImpulse } from "./space";
+import { createSpace, reverbImpulse, softCurve } from "./space";
 
 /** AudioContext の代わり: つないだ線と作ったノードを数える */
 function fakeCtx() {
@@ -19,6 +19,8 @@ function fakeCtx() {
     createDelay: () => node("delay"),
     createConvolver: () => node("convolver"),
     createDynamicsCompressor: () => node("comp"),
+    createWaveShaper: () => ({ ...node("shaper"), curve: null, oversample: "none" }),
+    createStereoPanner: () => ({ ...node("panner"), pan: param() }),
     createBuffer: (ch: number, len: number) => {
       const chans = Array.from({ length: ch }, () => new Float32Array(len));
       return { getChannelData: (i: number) => chans[i], length: len, numberOfChannels: ch };
@@ -40,6 +42,14 @@ describe("BGM の響き", () => {
     expect(rms(8000, 10000)).toBeGreaterThan(rms(17000, 19000));
     expect(reverbImpulse(ctx)).toBe(ir); // 同じ ctx では使い回す
   });
+  it("やわらかい歪みの曲線は、小さい音はそのまま・大きい音は丸める", () => {
+    const c = softCurve(1.7, 1001);
+    expect(c[500]).toBeCloseTo(0, 6);
+    expect(c[1000]).toBeLessThan(1);
+    expect(c[1000]).toBeGreaterThan(0.5);
+    expect(c[0]).toBeCloseTo(-c[1000], 6);
+    expect(c[510] - c[500]).toBeCloseTo(0.02, 3); // 傾き 1（10 きざみ × 0.002）
+  });
   it("やまびこ・残響・コンプレッサーを組み、テンポで付点8分の間隔になる", () => {
     const { ctx, made, targets, edges } = fakeCtx();
     const out = { connect: () => {} } as unknown as AudioNode;
@@ -48,6 +58,7 @@ describe("BGM の響き", () => {
     expect(made).toContain("delay");
     expect(made).toContain("convolver");
     expect(made).toContain("comp");
+    expect(made).toContain("shaper");
     expect(edges()).toBeGreaterThan(10);
     space.setTempo(120); // 1拍 0.5 秒 → 付点8分 0.375 秒
     expect(targets.at(-1)).toBeCloseTo(0.375, 5);

@@ -5,7 +5,7 @@
 // 鳴らし方は Web Audio の定番「2つの時計」: setInterval（25ms）で、少し先（0.15秒）までの小節を予約していく。
 // 曲の切りかえは 0.6 秒のクロスフェード。同じ曲ならタブを移っても頭に戻らない。
 import { getEngine, isUnlocked, onRebuild, onSoundPrefs, onUnlocked, setBgmLevel, setBgmTempo, soundPrefs } from "./engine";
-import { bass, bell, clap, crackle, crunch, epiano, hat, kick, lead, pad, snare, wind } from "./synth";
+import { bass, bell, clap, crackle, crunch, epiano, hat, kick, lead, pad, snare, spread, wind } from "./synth";
 import type { SnowSong } from "./snow-song";
 
 /** v1.28: snow = 今朝の雪の歌（その日だけの曲。なければ「しらかばの朝」） */
@@ -143,18 +143,18 @@ export const SONGS: Record<FixedTrack, Song> = {
       // 雪の風（前半・後半の頭で1回、小節8つぶん）
       if (a === 0) wind(ctx, out, t0, beat * 4 * 8 + 1, quiet ? 0.035 : 0.025);
       // レコードのパチパチ（lo-fi の質感）
-      crackle(ctx, out, t0, beat * 4, 0.018, 2.5);
+      crackle(ctx, out, t0, beat * 4, 0.018, 2.5, 0.25);
       if (quiet) {
         // エレピは1拍目に長く置く（パッド代わり）＋3拍目に軽く
-        for (const m of chord) epiano(ctx, out, m, lag(at(0) + (m % 3) * 0.008), beat * 3.6, vel(0.07));
-        for (const m of chord) epiano(ctx, out, m + 12, lag(at(2.5) + (m % 3) * 0.004), beat * 1.2, vel(0.03));
+        for (const m of chord) epiano(ctx, out, m, lag(at(0) + (m % 3) * 0.008), beat * 3.6, vel(0.07), spread(m));
+        for (const m of chord) epiano(ctx, out, m + 12, lag(at(2.5) + (m % 3) * 0.004), beat * 1.2, vel(0.03), spread(m + 12));
         bass(ctx, out, root, at(0), beat * 3.2, vel(0.2, 0.06));
         bass(ctx, out, root + 7, at(3), beat * 0.8, vel(0.12, 0.06));
         kick(ctx, out, at(0), vel(0.18, 0.06));
-        hat(ctx, out, lag(at(2), 8), vel(0.018, 0.2), 0.05);
+        hat(ctx, out, lag(at(2), 8), vel(0.018, 0.2), 0.05, 0.3);
       } else {
         // エレピの和音を裏拍で軽く（1拍半・3拍半）。偶数小節は3拍半だけ
-        for (const x of b % 2 === 0 ? [1.5, 3.5] : [1.5, 2.5, 3.5]) for (const m of chord) epiano(ctx, out, m, lag(at(x) + (m % 3) * 0.004), beat * 1.2, vel(x === 2.5 ? 0.05 : 0.08));
+        for (const x of b % 2 === 0 ? [1.5, 3.5] : [1.5, 2.5, 3.5]) for (const m of chord) epiano(ctx, out, m, lag(at(x) + (m % 3) * 0.004), beat * 1.2, vel(x === 2.5 ? 0.05 : 0.08), spread(m));
         // 三角波ベース: ドン（1拍）・ド（2拍半）・5度（3拍）
         bass(ctx, out, root, at(0), beat * 0.9, vel(0.22, 0.06));
         bass(ctx, out, root, at(2.5), beat * 0.4, vel(0.14, 0.06));
@@ -162,18 +162,18 @@ export const SONGS: Record<FixedTrack, Song> = {
         // ゆるいビート: キック 1・2拍半、ブラシのスネア 2・4、ハットは8分（少しスウィング）
         kick(ctx, out, at(0), vel(0.3, 0.06));
         kick(ctx, out, at(2.5), vel(0.2, 0.08));
-        snare(ctx, out, lag(at(1), 8), vel(0.07));
-        snare(ctx, out, lag(at(3), 8), vel(0.08));
-        for (let i = 0; i < 8; i++) hat(ctx, out, lag(at(i / 2 + (i % 2 ? 0.08 : 0)), 10), vel(i % 2 ? 0.02 : 0.035, 0.2), 0.035);
+        snare(ctx, out, lag(at(1), 8), vel(0.07), -0.12);
+        snare(ctx, out, lag(at(3), 8), vel(0.08), -0.12);
+        for (let i = 0; i < 8; i++) hat(ctx, out, lag(at(i / 2 + (i % 2 ? 0.08 : 0)), 10), vel(i % 2 ? 0.02 : 0.035, 0.2), 0.035, 0.3);
         // 16 小節目の終わり: ブラシの小さなフィル（頭に戻る合図）
-        if (b === 15) for (let i = 0; i < 3; i++) snare(ctx, out, at(3.25 + i * 0.25), 0.04 + i * 0.015);
+        if (b === 15) for (let i = 0; i < 3; i++) snare(ctx, out, at(3.25 + i * 0.25), 0.04 + i * 0.015, -0.12);
       }
       // 前半は鈴の合いの手、後半はメロディ（9〜12 エレピ・13〜16 鈴）
-      for (const [bar, x, m, d] of MORNING_BELLS) if (bar === b) bell(ctx, out, m, lag(at(x)), beat * d * 1.5, vel(0.09));
+      for (const [bar, x, m, d] of MORNING_BELLS) if (bar === b) bell(ctx, out, m, lag(at(x)), beat * d * 1.5, vel(0.09), spread(m));
       for (const [bar, x, m, d] of MORNING_MELODY_B) {
         if (bar !== b) continue;
-        if (quiet) epiano(ctx, out, m, lag(at(x)), beat * d * 1.1, vel(0.1));
-        else bell(ctx, out, m, lag(at(x)), beat * d * 1.4, vel(0.1));
+        if (quiet) epiano(ctx, out, m, lag(at(x)), beat * d * 1.1, vel(0.1), spread(m));
+        else bell(ctx, out, m, lag(at(x)), beat * d * 1.4, vel(0.1), spread(m));
       }
     },
   },
@@ -199,19 +199,19 @@ export const SONGS: Record<FixedTrack, Song> = {
       for (let i = 0; i < 8; i++) bass(ctx, out, root + (i % 2 ? 12 : 0), at(i / 2), beat * 0.42, vel(i % 2 ? 0.14 : 0.22, 0.06));
       // 四つ打ちキック・雪を踏むザッザッ（2・4拍）・ハット（裏）
       for (let i = 0; i < 4; i++) kick(ctx, out, at(i), 0.42);
-      crunch(ctx, out, at(1), vel(0.16));
-      crunch(ctx, out, at(3), vel(0.18));
-      for (let i = 0; i < 4; i++) hat(ctx, out, lag(at(i + 0.5), 8), vel(0.045, 0.2));
-      if (b % 4 === 3) hat(ctx, out, at(3.75), 0.04);
+      crunch(ctx, out, at(1), vel(0.16), -0.2);
+      crunch(ctx, out, at(3), vel(0.18), -0.2);
+      for (let i = 0; i < 4; i++) hat(ctx, out, lag(at(i + 0.5), 8), vel(0.045, 0.2), 0.04, 0.3);
+      if (b % 4 === 3) hat(ctx, out, at(3.75), 0.04, 0.04, 0.3);
       // 8・16 小節目の終わり: スネアのフィル（上がっていく）→ 次へ
-      if (b === 15) for (let i = 0; i < 4; i++) snare(ctx, out, at(3 + i * 0.25), 0.06 + i * 0.02);
-      if (b === 7) for (let i = 0; i < 2; i++) snare(ctx, out, at(3.5 + i * 0.25), 0.06 + i * 0.02);
+      if (b === 15) for (let i = 0; i < 4; i++) snare(ctx, out, at(3 + i * 0.25), 0.06 + i * 0.02, -0.12);
+      if (b === 7) for (let i = 0; i < 2; i++) snare(ctx, out, at(3.5 + i * 0.25), 0.06 + i * 0.02, -0.12);
       // 1〜4 はエレピのアルペジオ（8分で上がる）、5〜8 は矩形波のメロディ、サビはエレピの刻み（1拍半・3拍）
-      if (b < 4) for (let i = 0; i < 8; i++) epiano(ctx, out, chord[i % 4] + (i >= 4 ? 12 : 0), lag(at(i / 2), 10), beat * 0.9, vel(0.07));
-      else if (!chorus) for (const m of chord) epiano(ctx, out, m + 12, lag(at(1.5)), beat * 1.5, vel(0.05));
-      else for (const x of [1.5, 3]) for (const m of chord) epiano(ctx, out, m + 12, lag(at(x)), beat * 0.8, vel(0.045));
-      for (const [bar, x, m, d] of MISSION_LEAD) if (bar === b) lead(ctx, out, m, lag(at(x), 10), beat * d * 0.9, vel(0.05, 0.08));
-      for (const [bar, x, m, d] of MISSION_LEAD_B) if (bar === b) lead(ctx, out, m, lag(at(x), 10), beat * d * 0.9, vel(0.06, 0.08));
+      if (b < 4) for (let i = 0; i < 8; i++) epiano(ctx, out, chord[i % 4] + (i >= 4 ? 12 : 0), lag(at(i / 2), 10), beat * 0.9, vel(0.07), spread(chord[i % 4] + (i >= 4 ? 12 : 0)));
+      else if (!chorus) for (const m of chord) epiano(ctx, out, m + 12, lag(at(1.5)), beat * 1.5, vel(0.05), spread(m + 12));
+      else for (const x of [1.5, 3]) for (const m of chord) epiano(ctx, out, m + 12, lag(at(x)), beat * 0.8, vel(0.045), spread(m + 12));
+      for (const [bar, x, m, d] of MISSION_LEAD) if (bar === b) lead(ctx, out, m, lag(at(x), 10), beat * d * 0.9, vel(0.05, 0.08), 0.12);
+      for (const [bar, x, m, d] of MISSION_LEAD_B) if (bar === b) lead(ctx, out, m, lag(at(x), 10), beat * d * 0.9, vel(0.06, 0.08), 0.12);
     },
   },
   clear: {
@@ -221,9 +221,9 @@ export const SONGS: Record<FixedTrack, Song> = {
     intro(ctx, out, at) {
       // ファンファーレ 1.2 秒: C-E-G-C の鈴＋エレピの和音
       const run = [72, 76, 79, 84];
-      run.forEach((m, i) => bell(ctx, out, m, at + i * 0.12, 1.4, 0.16));
-      for (const m of [60, 64, 67, 71]) epiano(ctx, out, m, at + 0.36, 1.2, 0.1);
-      for (let i = 0; i < 6; i++) bell(ctx, out, 91 + [0, 4, 7][i % 3], at + 0.5 + i * 0.07, 0.6, 0.05);
+      run.forEach((m, i) => bell(ctx, out, m, at + i * 0.12, 1.4, 0.16, spread(m)));
+      for (const m of [60, 64, 67, 71]) epiano(ctx, out, m, at + 0.36, 1.2, 0.1, spread(m));
+      for (let i = 0; i < 6; i++) bell(ctx, out, 91 + [0, 4, 7][i % 3], at + 0.5 + i * 0.07, 0.6, 0.05, spread(91 + [0, 4, 7][i % 3]));
       return 1.2;
     },
     bar(ctx, out, b, t0, beat) {
@@ -234,8 +234,8 @@ export const SONGS: Record<FixedTrack, Song> = {
       const wide = b >= 12; // 13〜16 小節目: 高く広がる
       // エレピのアルペジオ（上がって下りる 8分）。しっとりの間はゆっくり（4分）
       const arp = [chord[0], chord[1], chord[2], chord[3], chord[2], chord[1], chord[3], chord[1]];
-      if (quiet) for (let i = 0; i < 4; i++) epiano(ctx, out, arp[i], lag(at(i), 10), beat * 1.6, vel(i === 0 ? 0.08 : 0.06));
-      else for (let i = 0; i < 8; i++) epiano(ctx, out, arp[i], lag(at(i / 2), 10), beat * 0.8, vel(i === 0 ? 0.09 : 0.065));
+      if (quiet) for (let i = 0; i < 4; i++) epiano(ctx, out, arp[i], lag(at(i), 10), beat * 1.6, vel(i === 0 ? 0.08 : 0.06), spread(arp[i]));
+      else for (let i = 0; i < 8; i++) epiano(ctx, out, arp[i], lag(at(i / 2), 10), beat * 0.8, vel(i === 0 ? 0.09 : 0.065), spread(arp[i]));
       if (wide) pad(ctx, out, chord.map((m) => m + 12), t0, beat * 4.2, 0.022, 1600);
       // ベース: 根音（1拍、長め）・5度（3拍）・根音（4拍、短く）
       bass(ctx, out, root, at(0), beat * (quiet ? 3.2 : 1.4), vel(0.22, 0.06));
@@ -245,25 +245,25 @@ export const SONGS: Record<FixedTrack, Song> = {
       }
       // キック 1・3、クラップ 2・4、ハット 8分（しっとりの間はハットだけ）
       if (quiet) {
-        hat(ctx, out, lag(at(1), 8), vel(0.02, 0.2), 0.05);
-        hat(ctx, out, lag(at(3), 8), vel(0.02, 0.2), 0.05);
+        hat(ctx, out, lag(at(1), 8), vel(0.02, 0.2), 0.05, 0.3);
+        hat(ctx, out, lag(at(3), 8), vel(0.02, 0.2), 0.05, 0.3);
       } else {
         kick(ctx, out, at(0), vel(0.32, 0.06));
         kick(ctx, out, at(2), vel(0.26, 0.06));
-        clap(ctx, out, lag(at(1), 8), vel(0.09));
-        clap(ctx, out, lag(at(3), 8), vel(0.1));
-        for (let i = 0; i < 8; i++) hat(ctx, out, lag(at(i / 2), 8), vel(i % 2 ? 0.025 : 0.035, 0.2));
+        clap(ctx, out, lag(at(1), 8), vel(0.09), 0.15);
+        clap(ctx, out, lag(at(3), 8), vel(0.1), 0.15);
+        for (let i = 0; i < 8; i++) hat(ctx, out, lag(at(i / 2), 8), vel(i % 2 ? 0.025 : 0.035, 0.2), 0.04, 0.3);
       }
       // 鈴のメロディ（前半）・後半のメロディ（13〜16 はエレピが1オクターブ下で重なる）
-      for (const [bar, x, m, d] of CLEAR_BELLS) if (bar === b) bell(ctx, out, m, lag(at(x), 10), beat * d * 1.3, vel(0.12));
+      for (const [bar, x, m, d] of CLEAR_BELLS) if (bar === b) bell(ctx, out, m, lag(at(x), 10), beat * d * 1.3, vel(0.12), spread(m));
       for (const [bar, x, m, d] of CLEAR_BELLS_B) {
         if (bar !== b) continue;
-        bell(ctx, out, m, lag(at(x), 10), beat * d * 1.3, vel(quiet ? 0.09 : 0.12));
-        if (wide) epiano(ctx, out, m - 12, lag(at(x), 12), beat * d * 1.1, vel(0.05));
+        bell(ctx, out, m, lag(at(x), 10), beat * d * 1.3, vel(quiet ? 0.09 : 0.12), spread(m));
+        if (wide) epiano(ctx, out, m - 12, lag(at(x), 12), beat * d * 1.1, vel(0.05), spread(m - 12));
       }
-      if (b === 7 || b === 15) for (let i = 0; i < 5; i++) bell(ctx, out, 96 + [0, 4, 7, 11, 12][i], at(3) + i * 0.08, 0.7, 0.05);
+      if (b === 7 || b === 15) for (let i = 0; i < 5; i++) bell(ctx, out, 96 + [0, 4, 7, 11, 12][i], at(3) + i * 0.08, 0.7, 0.05, spread(96 + [0, 4, 7, 11, 12][i]));
       // 12 小節目の終わり: クラップのフィル（広がる合図）
-      if (b === 11) for (let i = 0; i < 3; i++) clap(ctx, out, at(3 + i * 0.33), 0.05 + i * 0.02);
+      if (b === 11) for (let i = 0; i < 3; i++) clap(ctx, out, at(3 + i * 0.33), 0.05 + i * 0.02, 0.15);
     },
   },
 };
@@ -288,7 +288,7 @@ export function songFromData(d: SnowSong): Song {
     bars: d.bars,
     intro(ctx, out, at) {
       // はじまりの合図: その曲の最初の和音を鈴で上がる（0.8 秒）
-      d.chords[0].forEach((m, i) => bell(ctx, out, m + 12, at + i * 0.1, 1.2, 0.08));
+      d.chords[0].forEach((m, i) => bell(ctx, out, m + 12, at + i * 0.1, 1.2, 0.08, spread(m + 12)));
       return 0.8;
     },
     bar(ctx, out, b, t0, beat) {
@@ -301,22 +301,22 @@ export function songFromData(d: SnowSong): Song {
           pad(ctx, out, chord.map((m) => m + 12), t0, beat * 4.1, 0.024, 1300);
           for (let i = 0; i < 8; i++) bass(ctx, out, root + (i % 2 ? 12 : 0), at(i / 2), beat * 0.42, i % 2 ? 0.13 : 0.2);
           for (let i = 0; i < 4; i++) kick(ctx, out, at(i), 0.36);
-          for (let i = 0; i < 4; i++) hat(ctx, out, at(i + 0.5), 0.04);
+          for (let i = 0; i < 4; i++) hat(ctx, out, at(i + 0.5), 0.04, 0.04, 0.3);
           if (d.crunch) {
-            crunch(ctx, out, at(1), 0.14);
-            crunch(ctx, out, at(3), 0.16);
+            crunch(ctx, out, at(1), 0.14, -0.2);
+            crunch(ctx, out, at(3), 0.16, -0.2);
           } else {
-            clap(ctx, out, at(1), 0.07);
-            clap(ctx, out, at(3), 0.08);
+            clap(ctx, out, at(1), 0.07, 0.15);
+            clap(ctx, out, at(3), 0.08, 0.15);
           }
           break;
         }
         case "ballad": {
           pad(ctx, out, chord, t0, beat * 4.3, 0.03, 900);
-          for (const m of chord) epiano(ctx, out, m, at(0) + (m % 3) * 0.01, beat * 3.5, 0.05);
+          for (const m of chord) epiano(ctx, out, m, at(0) + (m % 3) * 0.01, beat * 3.5, 0.05, spread(m));
           bass(ctx, out, root, at(0), beat * 3, 0.16);
           if (b % 2 === 1) kick(ctx, out, at(0), 0.14);
-          hat(ctx, out, at(2), 0.015, 0.05);
+          hat(ctx, out, at(2), 0.015, 0.05, 0.3);
           break;
         }
         case "march": {
@@ -324,32 +324,32 @@ export function songFromData(d: SnowSong): Song {
           for (let i = 0; i < 4; i++) bass(ctx, out, i % 2 ? root + 7 : root, at(i), beat * 0.6, 0.2);
           kick(ctx, out, at(0), 0.4);
           kick(ctx, out, at(2), 0.34);
-          snare(ctx, out, at(1), 0.1);
-          snare(ctx, out, at(3), 0.11);
-          if (b % 4 === 3) for (let i = 0; i < 4; i++) snare(ctx, out, at(3 + i * 0.25), 0.05 + i * 0.015);
-          if (d.crunch) for (const x of [0.5, 2.5]) crunch(ctx, out, at(x), 0.1);
+          snare(ctx, out, at(1), 0.1, -0.12);
+          snare(ctx, out, at(3), 0.11, -0.12);
+          if (b % 4 === 3) for (let i = 0; i < 4; i++) snare(ctx, out, at(3 + i * 0.25), 0.05 + i * 0.015, -0.12);
+          if (d.crunch) for (const x of [0.5, 2.5]) crunch(ctx, out, at(x), 0.1, -0.2);
           break;
         }
         default: {
-          crackle(ctx, out, t0, beat * 4, 0.016, 2.5); // lo-fi のパチパチ
-          for (const x of b % 2 === 0 ? [1.5, 3.5] : [1.5, 2.5, 3.5]) for (const m of chord) epiano(ctx, out, m, lag(at(x) + (m % 3) * 0.004), beat * 1.2, vel(x === 2.5 ? 0.045 : 0.07));
+          crackle(ctx, out, t0, beat * 4, 0.016, 2.5, 0.25); // lo-fi のパチパチ
+          for (const x of b % 2 === 0 ? [1.5, 3.5] : [1.5, 2.5, 3.5]) for (const m of chord) epiano(ctx, out, m, lag(at(x) + (m % 3) * 0.004), beat * 1.2, vel(x === 2.5 ? 0.045 : 0.07), spread(m));
           bass(ctx, out, root, at(0), beat * 0.9, 0.2);
           bass(ctx, out, root, at(2.5), beat * 0.4, 0.13);
           bass(ctx, out, root + 7, at(3), beat * 0.8, 0.15);
           kick(ctx, out, at(0), 0.28);
           kick(ctx, out, at(2.5), 0.18);
-          snare(ctx, out, at(1), 0.06);
-          snare(ctx, out, at(3), 0.07);
-          for (let i = 0; i < 8; i++) hat(ctx, out, lag(at(i / 2 + (i % 2 ? 0.08 : 0)), 10), vel(i % 2 ? 0.02 : 0.032, 0.2), 0.035);
-          if (d.crunch) crunch(ctx, out, at(3), 0.07);
+          snare(ctx, out, at(1), 0.06, -0.12);
+          snare(ctx, out, at(3), 0.07, -0.12);
+          for (let i = 0; i < 8; i++) hat(ctx, out, lag(at(i / 2 + (i % 2 ? 0.08 : 0)), 10), vel(i % 2 ? 0.02 : 0.032, 0.2), 0.035, 0.3);
+          if (d.crunch) crunch(ctx, out, at(3), 0.07, -0.2);
         }
       }
       for (const [, x, m, len] of mel.get(b) ?? []) {
-        if (d.lead === "lead") lead(ctx, out, m, lag(at(x), 10), beat * len * 0.9, vel(0.05, 0.08));
-        else if (d.lead === "epiano") epiano(ctx, out, m, lag(at(x)), beat * len * 1.1, vel(0.1));
-        else bell(ctx, out, m, lag(at(x)), beat * len * 1.4, vel(0.11));
+        if (d.lead === "lead") lead(ctx, out, m, lag(at(x), 10), beat * len * 0.9, vel(0.05, 0.08), 0.12);
+        else if (d.lead === "epiano") epiano(ctx, out, m, lag(at(x)), beat * len * 1.1, vel(0.1), spread(m));
+        else bell(ctx, out, m, lag(at(x)), beat * len * 1.4, vel(0.11), spread(m));
       }
-      for (const [, x, m, len] of spk.get(b) ?? []) bell(ctx, out, m, lag(at(x)), beat * len * 1.6, vel(0.045));
+      for (const [, x, m, len] of spk.get(b) ?? []) bell(ctx, out, m, lag(at(x)), beat * len * 1.6, vel(0.045), spread(m));
     },
   };
 }

@@ -23,6 +23,7 @@ function fakeCtx() {
     createOscillator: () => node("osc"),
     createGain: () => node("gain"),
     createBiquadFilter: () => node("filter"),
+    createStereoPanner: () => ({ ...node("panner"), pan: param() }),
     createBufferSource: () => node("noise"),
     createBuffer: (_c: number, len: number) => ({ getChannelData: () => new Float32Array(len) }),
   } as unknown as BaseAudioContext;

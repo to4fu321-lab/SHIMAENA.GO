@@ -31,6 +31,16 @@ export function reverbImpulse(ctx: BaseAudioContext, seconds = 2.4, preDelay = 0
   return buf;
 }
 
+/** やわらかい歪みの曲線: 小さい音はそのまま（傾き 1）、大きい音ほど丸める（tanh） */
+export function softCurve(k = 1.7, n = 1024): Float32Array<ArrayBuffer> {
+  const c = new Float32Array(new ArrayBuffer(n * 4));
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    c[i] = Math.tanh(k * x) / k;
+  }
+  return c;
+}
+
 export interface Space {
   /** ここへつなぐ（BGM の音量ノードの出口） */
   input: GainNode;
@@ -49,8 +59,17 @@ export function createSpace(ctx: BaseAudioContext, out: AudioNode): Space {
   comp.release.value = 0.25;
   comp.connect(out);
 
-  // 乾いた音
-  input.connect(comp);
+  // 乾いた音: やわらかい歪み（テープ風。山だけ少し丸める）→ 高音を少し落とす（lo-fi の温かさ）→ コンプレッサー
+  const warm = ctx.createWaveShaper();
+  warm.curve = softCurve(1.7);
+  warm.oversample = "2x";
+  const shelf = ctx.createBiquadFilter();
+  shelf.type = "highshelf";
+  shelf.frequency.value = 6500;
+  shelf.gain.value = -3;
+  input.connect(warm);
+  warm.connect(shelf);
+  shelf.connect(comp);
 
   // やまびこ: send → delay ⇄ (feedback → lowpass) → return
   const delay = ctx.createDelay(1.5);
