@@ -120,7 +120,7 @@
 
 ## 提出のチェック（11/8 18:00 までに）
 - [ ] プロジェクト概要（下の提出文）。
-- [ ] デモ動画の URL を README の「デモ動画」に入れて push。
+- [x] デモ動画の URL を README の「デモ動画」に入れて push（https://youtu.be/lAT-q81yChE）。
 - [ ] リポジトリが公開で、`.env*` が入っていない（`git ls-files | grep env` が空）。
 - [x] `docs/video/demo3min.html`（作り置きのアニメ動画）は前の「6:30 の点呼に答える」流れのまま → `docs/video/README.md` と README に「作り置き・古い流れ」と明記（11/6）。本人の決定で、記念として残す。
 
