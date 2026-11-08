@@ -132,7 +132,8 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
         )}
 
         <section aria-label="最近の記録" className="flex min-h-0 flex-1 flex-col">
-          <div className="flex items-baseline justify-between">
+          {/* 「すべて見る」は見出しのすぐ右に（右端は端からのぞく隊長と重なるため。11/8 点検） */}
+          <div className="flex items-baseline gap-3">
             <h2 className="text-lg font-bold">最近の記録</h2>
             <Link href={`/cards/book${q}`} className="text-sm font-bold underline">
               すべて見る ›
