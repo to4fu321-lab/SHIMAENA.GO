@@ -73,7 +73,7 @@
     const el = document.createElement("div");
     el.className = "phone";
     el.style.setProperty("--team", p.team);
-    el.innerHTML = `<div class="name"><span class="tag">${p.tag}</span>${p.name}<small>${p.sub}</small></div><div class="bar"></div><div class="frame"><iframe allow="microphone; camera; autoplay; clipboard-write" title="${p.tag} ${p.name}"></iframe></div>`;
+    el.innerHTML = `<div class="name"><span class="tag">${p.tag}</span>${p.name}<small>${p.sub}</small></div><div class="bar"></div><div class="frame"><iframe allow="microphone; camera; geolocation; autoplay; clipboard-write" title="${p.tag} ${p.name}"></iframe></div>`;
     const frame = el.querySelector("iframe");
     const bar = el.querySelector(".bar");
     const go = (path) => {
