@@ -10,7 +10,7 @@ import { withStateLock } from "@/lib/ops/lock";
 import { clearProblems } from "@/lib/ops/problems";
 import { applySchema, seedTown } from "@/lib/db";
 import { issueCardsForMission } from "@/lib/cards/issue";
-import { DEMO_DATE, completeNextForDemo, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
+import { completeNextForDemo, fillAnswers, rescueShort, type MorningRecord } from "@/lib/morning/flow";
 import { isThanksChoice } from "@/lib/claude/thanks";
 import { isCheerChoice } from "@/lib/morning/cheer";
 import { latestClear } from "@/lib/morning/clear";
