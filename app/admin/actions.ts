@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-auth";
 import { demoEnabled } from "@/lib/env";
-import { insertRoadReport } from "@/lib/road/store";
+import { deleteRoadReportsBy, insertRoadReport, listRoadReportsSince, markNotified } from "@/lib/road/store";
+import { agoText, hazard } from "@/lib/road/hazards";
+import { baseUrl } from "@/lib/url";
 import { TOWN } from "@/lib/town";
 import { jstDate } from "@/lib/jst";
 import { withStateLock } from "@/lib/ops/lock";
@@ -544,6 +546,35 @@ export async function seedRoadReportsDemo() {
     revalidatePath("/admin");
     revalidatePath("/map");
   });
+}
+
+/** 撮影ステージ（道の危険）: 報告する人（A）の前の撮影の報告と、近所の人（B）の隊長トークを消す */
+export async function resetRoadStage() {
+  await requireAdmin();
+  await deleteRoadReportsBy(STAGE_CAST.a);
+  const b = (await loadRoster()).participants.find((p) => p.id === STAGE_CAST.b);
+  const k = b ? inboxKeyOf(b) : undefined;
+  if (k?.startsWith(DEMO_PREFIX)) await clearThread(k).catch(() => undefined);
+  revalidatePath("/map");
+}
+
+/**
+ * 撮影ステージ（道の危険）: A がいま送った報告を、近所の人（B）の隊長トークへ知らせる。
+ * 本番と同じ知らせの文面。撮影なので、受け取る設定・夜・1日の回数は見ない。報告の id を返す
+ */
+export async function presentRoadAlert(): Promise<{ id: string; distance: number } | undefined> {
+  await requireAdmin();
+  const now = new Date();
+  const r = (await listRoadReportsSince(new Date(now.getTime() - 60 * 60 * 1000).toISOString())).find((x) => x.participantId === STAGE_CAST.a);
+  const h = r && hazard(r.hazard);
+  const b = (await loadRoster()).participants.find((p) => p.id === STAGE_CAST.b);
+  const k = b ? inboxKeyOf(b) : undefined;
+  if (!r || !h || !b || !k) return undefined;
+  const distance = Math.round(distanceM(r.location, b.location) / 10) * 10;
+  const photoUrl = baseUrl().startsWith("https://") ? `${baseUrl()}/api/road/${r.id}/photo` : undefined;
+  await push(k, MSG.roadAlert({ ...h, distance, ago: agoText(r.at, now), photoUrl, reportId: r.id }));
+  await markNotified(r.id, now.toISOString());
+  return { id: r.id, distance };
 }
 
 /** デモ用（spec v1.26）: 次に完了しそうな家の人の「雪の聞き書き」を1件入れる（届ける、を選んだ状態）。その家が終わると、来た人の隊長トークに届く */
