@@ -89,6 +89,16 @@ export async function listRoadReportsSince(since: string): Promise<RoadReport[]>
   return rows.map(toReport);
 }
 
+/** 撮影ステージ用: その人の道の報告を消す（前の撮影のピンが残らないように） */
+export async function deleteRoadReportsBy(participantId: string): Promise<void> {
+  if (!hasDb()) {
+    for (const [id, r] of mem().reports) if (r.participantId === participantId) mem().reports.delete(id);
+    return;
+  }
+  await ensure();
+  await query("delete from road_reports where participant_id = $1", [participantId]);
+}
+
 export async function roadPhoto(id: string): Promise<string | undefined> {
   if (!hasDb()) return mem().reports.get(id)?.photo;
   await ensure();

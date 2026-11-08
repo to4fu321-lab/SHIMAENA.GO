@@ -312,6 +312,10 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-sm text-ink">🎬</span>
             撮影ステージ（自動・1画面）を開く
           </Link>
+          <Link href="/admin/stage/road" className="flex w-full items-center gap-3 rounded-2xl bg-ink px-4 py-2 text-left text-lg font-bold text-white shadow-sm">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-sm text-ink">🚧</span>
+            撮影ステージ（道の危険・自動）を開く
+          </Link>
           <PresentationMode
             actions={{
               announce: startEmptyMorning,
