@@ -61,7 +61,6 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     });
     f.src = `${path}${path.includes("?") ? "&" : "?"}as=${AS}`;
     await loaded;
-    setFinger((f) => (f ? { x: W / 2, y: H / 2 } : f)); // 画面が変わったら指はまんなかへ（前のボタンの上に残さない）
     await sleep(settle);
   };
 
@@ -80,21 +79,39 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     return undefined;
   };
 
-  /** 指を押す所へ動かして、押した印（波紋）を出してから押す（指は録画に映らないので）。outer: 撮影ページ側の要素（通知のバナー） */
+  /**
+   * 押す・送るときだけ指の印を出す（11/8 本人「タップやスクロールの時だけマークを出して」）。
+   * 押す所が画面の外なら、先に指で画面を送る（スワイプの印）。押す所へ指を出して、波紋を出してから押し、指を消す。
+   * outer: 撮影ページ側の要素（通知のバナー）
+   */
   const tap = async (el: Element, click = true, outer = false) => {
     if (!outer) {
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
-      await sleep(600);
+      const r0 = el.getBoundingClientRect();
+      const below = r0.bottom > H; // 画面の中に見えていれば送らない（下のメニューなど）
+      const above = r0.top < 0;
+      if (below || above) {
+        const x = W * 0.62;
+        setFinger({ x, y: below ? H * 0.72 : H * 0.3 });
+        await sleep(200);
+        setFinger({ x, y: below ? H * 0.32 : H * 0.7 }); // 指で送る
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
+        await sleep(850);
+        setFinger(undefined);
+        await sleep(200);
+      }
     }
     const r = el.getBoundingClientRect();
     const o = box.current?.getBoundingClientRect();
     const pos = outer && o ? { x: (r.left - o.left + r.width / 2) / scale, y: (r.top - o.top + r.height / 2) / scale } : { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    setFinger(pos);
-    await sleep(700); // 指が動くのを見せる
+    setFinger({ x: pos.x + 18, y: pos.y + 36 });
+    await sleep(60);
+    setFinger(pos); // 少し下から押す所へ
+    await sleep(650);
     setPress(Date.now());
     await sleep(350);
     if (click) (el as HTMLElement).click();
-    await sleep(400);
+    await sleep(350);
+    setFinger(undefined);
   };
 
   const buttons = (re: RegExp) => [...(doc()?.querySelectorAll("button, a") ?? [])].filter((b) => re.test((b.textContent ?? "").replace(/\s+/g, "")));
@@ -137,17 +154,21 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     setLog("");
     const t0 = Date.now();
     const tick = setInterval(() => setSec(Math.round((Date.now() - t0) / 1000)), 500);
-    setFinger({ x: W / 2, y: H * 0.72 });
     try {
       // 1. 前夜
       say("前の夜。隊長から予告が届く");
       await actions.announce();
+      await open("/", 1500);
+      const talk = await until(() => buttons(/隊長に相談する/)[0], 3); // ホームの吹き出しから隊長トークへ
+      if (talk) await tap(talk, false);
       await open("/chat", 2000);
       await wait(2);
 
       // 2. ホーム → 6:30 の通知
       if (!on.current) return;
       say("朝 6:30。10cm 積もった");
+      const home = buttons(/^ホーム$/).at(-1);
+      if (home) await tap(home, false);
       await open("/", 1200);
       await wait(1);
       await actions.ring(); // Claude が作戦を考えて、近所に知らせる（少しかかる）
