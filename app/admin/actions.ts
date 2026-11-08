@@ -98,6 +98,8 @@ export async function announceByForecast() {
 export async function ringNow() {
   return guarded("ringNow", async () => {
     await ring();
+    // 本番の 6:30（morningAuto）と同じく、続けて作戦を立てて近所に通知する（11/8 本人「1 で通知が来るように」）
+    if ((await loadMorning()).morning.rollcall.status === "open") await plan();
     refresh();
   });
 }
