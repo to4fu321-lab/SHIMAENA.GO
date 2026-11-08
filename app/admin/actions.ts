@@ -40,7 +40,8 @@ import { nudgeInactive } from "@/lib/nudge/ops";
 import { seedDemoStory } from "@/lib/kikigaki/ops";
 import { seedDemoTalk } from "@/lib/morning/demo-talk";
 import { syncWithGithub } from "@/lib/feedback/ops";
-import { STAGE_CAST, STAGE_IDS } from "@/lib/demo-cast";
+import { PRESENT_EXTRA, STAGE_CAST, STAGE_IDS } from "@/lib/demo-cast";
+import { repo } from "@/lib/repo";
 import { DEMO_PREFIX, inboxKeyOf } from "@/lib/inbox/key";
 import { clearThread } from "@/lib/inbox/store";
 import { push } from "@/lib/line/client";
@@ -237,6 +238,36 @@ export async function presentAllTeams(): Promise<string> {
     refresh();
     revalidatePath("/chat");
     return names.length > 0 ? `${names.join("・")}も拠点7へ` : "拠点7には、もう3チームそろっています";
+  });
+}
+
+/** 発表モード: 町の手伝う人が全員（20人）どこかの家へ向かう。足りない8人は名簿に足してから（11/8 本人「参加人数も20人に」） */
+export async function presentGather(): Promise<string> {
+  return guarded("presentGather", async () => {
+    const r = repo();
+    const known = new Set((await r.listParticipants()).map((p) => p.id));
+    for (const p of PRESENT_EXTRA) if (!known.has(p.id)) await r.upsertParticipant(p);
+    const roster = await loadRoster();
+    let n = 0;
+    for (const p of roster.participants) {
+      if (p.role !== "helper" || !p.teamId || p.lineUserId || STAGE_IDS.has(p.id)) continue;
+      const s = await loadMorning();
+      if (s.morning.sorties.some((x) => x.participantId === p.id && x.status === "going")) continue;
+      const open = s.morning.missions.filter((m) => m.status !== "done" && m.status !== "no_answer");
+      const near = (m: (typeof open)[number]) => {
+        const home = roster.participants.find((q) => q.id === roster.bases.find((b) => b.id === m.baseId)?.requesterId)?.location;
+        return home ? distanceM(p.location, home) : 0;
+      };
+      const m = open.sort((a, b) => near(a) - near(b))[0];
+      if (!m) break;
+      await joinMission(p.id, m.id, new Date(), { extra: true });
+      n++;
+    }
+    refresh();
+    revalidatePath("/chat");
+    const s = await loadMorning();
+    const active = new Set(s.morning.sorties.filter((x) => x.status === "going").map((x) => x.participantId)).size;
+    return `近所の ${n} 人も出発（活動中 ${active} 人）`;
   });
 }
 

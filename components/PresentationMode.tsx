@@ -12,6 +12,7 @@ export interface PresentationActions {
   goA: Run;
   goB: Run;
   allTeams: Run;
+  gather: Run;
   completeOther: () => Promise<{ more: boolean }>;
   finishA: Run;
   cheer: Run;
@@ -48,6 +49,7 @@ export default function PresentationMode({ actions }: { actions: PresentationAct
       await step("A 田中さんが拠点7へ「行く」", actions.goA, 10);
       await step("B そうたさんが拠点7へ「行く」", actions.goB, 10);
       await step("3つ目のチームの人も拠点7へ（3チームがそろう）", actions.allTeams, 10);
+      await step("近所の人が次々に出発（手伝う人 20 人）", actions.gather, 10);
       await step("ほかの家を1軒完了（Claude がカードを描きます）", actions.completeOther, 8);
       await step("A 田中さんが拠点7で「終わりました」", actions.finishA, 12);
       await step("拠点7の家族が「あったかくして」", actions.cheer, 10);
