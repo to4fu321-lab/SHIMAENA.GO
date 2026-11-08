@@ -302,3 +302,4 @@
 - [x] **T130 隊長トークを1往復に** — 道具を全部いっしょに調べてから Haiku に1回だけ（`lib/agent/captain.ts` の `gatherFacts`・`captainChatModel`）。考え中の吹き出し（`components/ChatScreen.tsx` の `Thinking`）。テストを1往復に合わせて直した。
 - [x] **T131 BGM をホームでも** — 指を離したときにも音を解放（`SoundProvider`）、ホームの 🔊 は鳴らせないうちは「🎵 タップ」（`SoundToggle`）。
 - [x] **T132 いつでも隊長トーク** — 下のタブのある画面に動かせる 💬 ボタン（`ChatFab`）。場所は端末に覚える。テスト 2 本（spec v1.43）。
+- [x] **T133 端からのぞく隊長** — 💬 を端から半分だけ顔を出す形に。内側へスワイプかタップで開く、上下に動かせる（spec v1.44）。
