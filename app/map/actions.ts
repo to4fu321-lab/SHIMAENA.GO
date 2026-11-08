@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { adminGate } from "@/lib/admin-auth";
 import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
 import type { ClearSummary } from "@/lib/morning/clear";
@@ -84,7 +86,9 @@ export async function finishAction(formData: FormData): Promise<ActionResult> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const mediaType = sniffImageType(bytes);
     if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
-    const r = await completeWithPhoto(id, { bytes, mediaType });
+    // 撮影ステージ（/admin/stage）から: 合言葉でログインした人の画面で、撮影の印があるときだけ、写真を Claude に送らず決まった確認で進める
+    const stage = (await cookies()).get("shimaena_stage")?.value === "1" && ["ok", "open"].includes(await adminGate());
+    const r = await completeWithPhoto(id, { bytes, mediaType }, new Date(), { fast: stage });
     revalidatePath("/map");
     return { ok: r.done, text: firstText(r.messages), clear: r.clear, canManual: r.retry };
   });

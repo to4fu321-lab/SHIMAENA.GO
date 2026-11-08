@@ -116,6 +116,34 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
 
   const buttons = (re: RegExp) => [...(doc()?.querySelectorAll("button, a") ?? [])].filter((b) => re.test((b.textContent ?? "").replace(/\s+/g, "")));
 
+  /** シートのつまみを指でスライドして、畳む／開く（シートは指の動きで反応するので、キーの合図で切りかえる） */
+  const slideSheet = async (label: string, down: boolean) => {
+    const el = await until(() => doc()?.querySelector<HTMLElement>(`[aria-label="${label}"]`) ?? undefined, 4);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const y = r.top + 14;
+    setFinger({ x, y: y + (down ? -10 : 10) });
+    await sleep(60);
+    setFinger({ x, y });
+    await sleep(500);
+    setPress(Date.now());
+    setFinger({ x, y: down ? Math.min(H - 60, y + 260) : Math.max(120, y - 260) }); // スライド
+    await sleep(500);
+    const win = frame.current?.contentWindow as (typeof window) | null;
+    if (win) el.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await sleep(500);
+    setFinger(undefined);
+  };
+  /** 地図を大きく: 下のシートを下へスライドして畳む（11/8 本人「地図が遠くて分かりづらい。下の文字をスライドして地図を広く」） */
+  const bigMap = async () => {
+    await slideSheet("シートを畳んで地図を大きくする", true); // 近づけると家のない所に寄るので、畳むだけ
+  };
+  /** 畳んだシートを上へスライドして開く（「終わりました」などを押す前に） */
+  const openSheet = async () => {
+    if (doc()?.querySelector('[aria-label="シートを開く"]')) await slideSheet("シートを開く", false);
+  };
+
   /** 「拠点7」の誘いの中の「行く（10分でも）」（ほかの家の誘いと間違えない） */
   const goButtonFor7 = () => {
     const d = doc();
@@ -154,6 +182,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     setLog("");
     const t0 = Date.now();
     const tick = setInterval(() => setSec(Math.round((Date.now() - t0) / 1000)), 500);
+    document.cookie = "shimaena_stage=1; path=/; max-age=1800; samesite=lax"; // 撮影の印（写真の確認・カードを決まった形で速く）
     try {
       // 1. 前夜
       say("前の夜。隊長から予告が届く");
@@ -202,11 +231,13 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       say("町の地図。近所の人が一斉に動き出す");
       const toMap = await until(() => buttons(/町の地図を開く|^マップ$/).at(-1), 3);
       if (toMap) await tap(toMap, false);
-      await open("/map", 2500);
+      await open("/map", 2000);
+      await bigMap();
       await wait(3);
 
       // 7. 終わりました → 写真
       say("終わったら、写真を1枚");
+      await openSheet();
       const done = await until(() => buttons(/^終わりました$/)[0], 10);
       if (done) await tap(done, false); // 本物のカメラは開かない（下で写真を渡す）
       const input = doc()?.querySelector<HTMLInputElement>('input[type="file"][capture]');
@@ -216,14 +247,21 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
         input.files = dt.files;
         input.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      say("Claude が写真を確かめる");
-      const result = await until(() => buttons(/町の地図へ戻る|それでも完了にする/)[0], 60);
+      say("写真を確かめて、完了");
+      const result = await until(() => buttons(/町の地図へ戻る|それでも完了にする/)[0], 30);
       if (result && /それでも完了にする/.test(result.textContent ?? "")) {
         await tap(result);
         await until(() => buttons(/町の地図へ戻る/)[0], 30);
       }
       say("1軒、灯りがともった");
-      await wait(5);
+      await wait(4);
+      // カードを受け取る（完了画面の「カード」）
+      const card = await until(() => buttons(/カードを見る|^カード$/)[0], 4);
+      if (card) {
+        say("その朝だけのカードが届く");
+        await tap(card);
+        await wait(5);
+      }
 
       // 8. 家族から応援
       await actions.cheer();
@@ -242,20 +280,28 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
 
       // 10. 町じゅうの家が終わる
       say("町じゅうの玄関が、ひらいていく");
-      for (let i = 0; i < 12 && on.current && (Date.now() - t0) / 1000 < 170; i++) {
+      // ぜんぶ終わるまで（時間で打ち切らない。11/8 本人「雪かき終わってないのに終了になってる」）
+      for (let i = 0; i < 20 && on.current; i++) {
         const r = await actions.completeOther();
-        await open("/map", 1500);
         if (!r.more) break;
       }
-      await actions.finishA();
+      await actions.finishA(); // 田中さんが手伝った家も完了
       await open("/map", 2000);
+      await bigMap();
       say("今朝の雪かき、ぜんぶ完了");
-      await wait(5);
+      await wait(4);
+      // 受け取ったカード
+      const cardsTab = buttons(/^きろく$/).at(-1);
+      if (cardsTab) await tap(cardsTab, false);
+      await open("/cards", 2500);
+      say("今朝のカード");
+      await wait(4);
       say(on.current ? "おわり。録画を止めてください" : "止めました");
     } catch (e) {
       say(`止まりました: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       clearInterval(tick);
+      document.cookie = "shimaena_stage=; path=/; max-age=0";
       on.current = false;
       setRunning(false);
       setReady(true);

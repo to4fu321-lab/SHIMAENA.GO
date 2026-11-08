@@ -298,7 +298,7 @@ export async function presentGather(): Promise<string> {
 /** 発表モード: A が拠点7で「終わりました」（写真なし・本人の報告として。写真の確認はスマホで撮る場面で見せる） */
 export async function presentFinish(): Promise<string> {
   return guarded("presentFinish", async () => {
-    const r = await completeManually(STAGE_CAST.a);
+    const r = await completeManually(STAGE_CAST.a, new Date(), { fast: true });
     const roster = await loadRoster();
     const k = inboxKeyOf(roster.participants.find((x) => x.id === STAGE_CAST.a));
     if (k) await push(k, r.messages);

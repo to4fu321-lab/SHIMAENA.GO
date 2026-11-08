@@ -2,7 +2,7 @@
 import type { PhotoDepth } from "../snow-estimate";
 import type { RevealCard } from "./reveal";
 import { randomBytes } from "node:crypto";
-import { cardText } from "../claude/card";
+import { cardText, mockCardText } from "../claude/card";
 import { jstMinutes } from "../jst";
 import { inboxKeyOf } from "../inbox/key";
 import { push } from "../line/client";
@@ -82,7 +82,7 @@ export async function issueCardsForMission(
   roster: Roster,
   mission: Mission,
   sorties: Sortie[],
-  opts: { thanks?: string; streakDays?: number } = {},
+  opts: { thanks?: string; streakDays?: number; /** 撮影ステージ用: カードの文を Claude に頼まない（決まった文）。絵はあとで描く */ fast?: boolean } = {},
 ): Promise<IssuedCards> {
   const r = repo();
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
@@ -98,15 +98,15 @@ export async function issueCardsForMission(
   const base = roster.bases.find((b) => b.id === mission.baseId);
   const requester = base && byId.get(base.requesterId);
   // v1.26: この家の人が「届ける」を選んだ雪の思い出（聞き書き）があれば、カードの裏に1行・カードのあとに隊長トークへ
-  const story = await storyForMission(requester?.id, mission.id).catch(() => undefined);
+  const story = opts.fast ? undefined : await storyForMission(requester?.id, mission.id).catch(() => undefined);
   const rarity = decideRarity({
     completedAt,
     forecastCm: s.morning.rollcall.forecastCm,
     teamIds: members.map((m) => m.teamId),
     streakDays: opts.streakDays ?? 1,
   });
-  const topics = (await dayTopic(s.morning.rollcall.date)).items;
-  const text = await cardText({
+  const topics = opts.fast ? [] : (await dayTopic(s.morning.rollcall.date)).items;
+  const text = await (opts.fast ? async (i: Parameters<typeof mockCardText>[0]) => mockCardText(i) : cardText)({
     date: s.morning.rollcall.date,
     completedAtJst: hm(completedAt),
     forecastCm: s.morning.rollcall.forecastCm,

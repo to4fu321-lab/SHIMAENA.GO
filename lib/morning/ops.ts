@@ -452,7 +452,8 @@ export interface CompleteResult {
 /**
  * 写真1枚で1軒を完了にする（spec 2）。Claude が写真を確認 → その家の出撃を全部完了 → 得点 → 依頼者と仲間に通知。
  */
-export async function completeWithPhoto(participantId: string, image: PhotoInput, now = new Date()): Promise<CompleteResult> {
+/** opts.fast: 撮影ステージ用（11/8 本人「実際の AI 読み込みなどはしなくて良い。一連の流れをトータルで動かして」）。写真は Claude に送らず、決まった確認で完了にする */
+export async function completeWithPhoto(participantId: string, image: PhotoInput, now = new Date(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
@@ -467,6 +468,11 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
     s.log.push(`拠点${number}の写真: 前に受け付けた写真と同じ → 撮り直しをお願い`);
     await saveMorning(s);
     return { done: false, retry: true, messages: MSG.photoNotCleared("前に送られた写真と同じでした。いまの玄関前から道路側を、新しく撮ってください。") };
+  }
+  if (opts.fast) {
+    await rememberPhoto(day, fp);
+    const demo: PhotoCheck = { cleared: true, passable: true, icy: false, comment: "玄関前から道路まで、通れるようになっています。お疲れさまでした。（撮影用の決まった文）" };
+    return finishMission(s, roster, sortie, mission, demo, participantId, now, { fast: true });
   }
   const check = await checkPhoto(image);
   // 雪質が気温と食い違えば「ふつうの雪」に戻す（写真の見た目だけで決めつけない。spec v1.8）
@@ -492,7 +498,7 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
 }
 
 /** 「それでも完了にする」（LINE のボタン／地図のボタン）: 写真なしで、本人の報告として完了にする */
-export async function completeManually(participantId: string, now = new Date()): Promise<CompleteResult> {
+export async function completeManually(participantId: string, now = new Date(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
@@ -506,7 +512,7 @@ export async function completeManually(participantId: string, now = new Date()):
     uncertain: true,
     comment: "本人の報告で完了にしました（写真では確認していません）。お疲れさまでした。",
   };
-  return finishMission(s, roster, sortie, mission, check, participantId, now);
+  return finishMission(s, roster, sortie, mission, check, participantId, now, opts);
 }
 
 /** 1軒を完了にする本体: 出撃を完了 → 得点 → カード → 依頼者・家族・仲間へ通知 → MISSION CLEAR のまとめ */
@@ -518,6 +524,7 @@ async function finishMission(
   check: PhotoCheck,
   participantId: string,
   now: Date,
+  opts: { fast?: boolean } = {},
 ): Promise<CompleteResult> {
   const number = baseNumberOf(roster, mission.baseId);
   const at = now.toISOString();
@@ -543,7 +550,7 @@ async function finishMission(
   // その時だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る（初出撃の人には歓迎も）
   let myCard: RevealCard | undefined;
   try {
-    const issued = await issueCardsForMission(s, roster, mission, sorties);
+    const issued = await issueCardsForMission(s, roster, mission, sorties, { fast: opts.fast });
     s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
     const mine = issued.cards.find((c) => c.recipientId === participantId);
     if (mine) myCard = revealOf(mine, s.morning.rollcall.date, issued.sceneCode);
@@ -580,7 +587,7 @@ async function finishMission(
   const prog = progress(s.morning);
   // あなたが主役の招待文（spec v1.6）: 写真を送った本人の今朝の活動から3案。失敗しても完了は止めない
   let invites: string[] | undefined;
-  try {
+  if (!opts.fast) try {
     const minutes = Number(s.answers.find((a) => a.participantId === participantId)?.answer) || 5;
     invites = await inviteDrafts({
       minutes: Math.min(60, Math.max(5, minutes)),
@@ -617,8 +624,8 @@ async function finishMission(
     clear.inviteUrl = joinUrl;
     clear.inviteResult = inviteResult;
   }
-  if (prog.allDone) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
-  await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
+  if (prog.allDone && !opts.fast) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
+  if (!opts.fast) await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
   return { done: true, messages: reply, clear };
 }
 
