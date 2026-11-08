@@ -1,7 +1,8 @@
 // 今週のチーム（T47）。隊長トークのチーム発表の「チームを見る」とホームのチーム札から開く。
 // 1週間（月曜〜日曜）のチームを、チームの色・チーム色のマフラーのシマエナガ・期間で大きく見せる。
 // 11/7 本人の指摘: 「あなた」にチームのなかま（呼び名とアイコン）と、いまの成績（今週の点の棒グラフ・順位・完了した家・今朝の点）を動きつきで。
-// 1画面（11/5 本人の指示）: タブ「あなた／3チーム／しくみ」を横スワイプ。縦にはスクロールしない。
+// 1画面（11/5 本人の指示）: タブ「あなた／そろう時間／3チーム／しくみ」を横スワイプ。縦にはスクロールしない。
+// そろう時間（spec v1.41）: チームに入っている人だけ。朝／お昼／夕方を選ぶと、そろう時間と「📅 予定に入れる」。`?tab=time` で直接開く。
 import type { Metadata } from "next";
 import { onTeam } from "@/lib/member";
 import { cookies } from "next/headers";
@@ -25,6 +26,14 @@ import { TEAMS } from "@/lib/teams";
 import type { TeamId } from "@/lib/types";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import Bgm from "@/components/Bgm";
+import TeamTime from "@/components/TeamTime";
+import { googleCalendarUrl, slotEvent } from "@/lib/calendar/ics";
+import { SLOTS } from "@/lib/calendar/slots";
+import { teamTimeView } from "@/lib/calendar/team-time";
+import { demoEnabled } from "@/lib/env";
+import { TOWN } from "@/lib/town";
+import { baseUrl } from "@/lib/url";
+import type { HelperWhen } from "@/lib/types";
 import PlayOnMount from "@/components/PlayOnMount";
 
 export const metadata: Metadata = { title: "今週のチーム ・ シマエナGO" };
@@ -32,9 +41,9 @@ export const metadata: Metadata = { title: "今週のチーム ・ シマエナG
 const CONFETTI_AT = [4, 13, 22, 31, 40, 49, 58, 67, 76, 85, 94];
 const MAX_FACES = 8;
 
-async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   await connection();
-  const { as } = await searchParams;
+  const { as, tab } = await searchParams;
   const [roster, record, cookieStore] = await Promise.all([loadRoster(), loadMorning(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
@@ -66,6 +75,20 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
   const mates = mine ? members(mine.team.id) : [];
   const profiles = await getProfiles(mates.map((p) => p.id)).catch(() => new Map());
   const outToday = new Set(record.morning.sorties.filter((s) => s.status === "going" || s.status === "done").map((s) => s.participantId));
+  // そろう時間（spec v1.41）
+  const time = me && mine ? teamTimeView(record, roster, me, { demo: demoEnabled() }) : undefined;
+  const timeFaces = Object.fromEntries(mates.map((p) => [p.id, { icon: profiles.get(p.id)?.icon, iconBg: profiles.get(p.id)?.iconBg, isMe: p.id === me?.id }]));
+  const area = TOWN.name.replace(/（架空）$/, "");
+  const calendar = Object.fromEntries(
+    SLOTS.map((sl) => {
+      const qs = new URLSearchParams({ date: record.morning.rollcall.date, when: sl.id, ...(mine ? { team: mine.team.id } : {}) });
+      const ev = slotEvent({ date: record.morning.rollcall.date, when: sl.id, teamName: mine?.team.name, appUrl: `${baseUrl()}/team?tab=time`, area });
+      return [sl.id, { ics: `/api/calendar?${qs.toString()}`, google: googleCalendarUrl(ev) }];
+    }),
+  ) as Record<HelperWhen, { ics: string; google: string }>;
+  const tabs = [{ key: "mine", label: mine ? "あなた" : "今週" }, ...(time ? [{ key: "time", label: "そろう時間" }] : []), { key: "three", label: "3チーム" }, { key: "how", label: "しくみ" }];
+  const initialTab = Math.max(0, tabs.findIndex((t) => t.key === tab));
+
   const faces = [...mates].sort((a, b) => (a.id === me?.id ? -1 : b.id === me?.id ? 1 : Number(outToday.has(b.id)) - Number(outToday.has(a.id))));
 
   return (
@@ -73,7 +96,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
       footer={<TabBar active="team" q={q} />}
     >
       <div className="pt-3" />
-      <Pager tabs={[{ key: "mine", label: mine ? "あなた" : "今週" }, { key: "three", label: "3チーム" }, { key: "how", label: "しくみ" }]}>
+      <Pager tabs={tabs} initial={initialTab}>
       {/* 発表（チームの色いっぱいに）→ なかま → いまの成績 */}
       {mine ? (
         <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -175,6 +198,17 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
         </section>
       )}
 
+      {/* そろう時間（spec v1.41） */}
+      {time && me && mine && (
+        <TeamTime
+          viewerId={me.id}
+          view={time}
+          theme={{ color: mine.team.color, deep: mine.deep, onColor: mine.onColor, soft: mine.soft }}
+          faces={timeFaces}
+          calendar={calendar}
+        />
+      )}
+
       {/* 3チーム */}
       <section aria-label="3つのチーム" className="flex min-h-0 flex-1 flex-col justify-center">
         <h2 className="mb-3 text-lg font-bold">今週の3チーム</h2>
@@ -238,7 +272,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string 
   );
 }
 
-export default function TeamPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+export default function TeamPage({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   return (
     <>
       <Bgm track="morning" />

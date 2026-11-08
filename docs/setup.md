@@ -23,7 +23,16 @@ npm run dev
 - `/admin` には、保存や通知の失敗が赤い「問題」として出る。「声」タブに今週の声と改善の提案が出る。
 - 人手が足りない家の最後の連絡先（町内会役員役のサポーター）: `SUPPORTER_LINE_USER_IDS`（LINE のアカウント ID をカンマ区切り）。
 - カードの絵を描くモデルを上げたいとき: `CARD_ART_MODEL`（既定は Claude Opus 5.5）。
-- 隊長の声（spec v1.36、隊長トークの日本語の読み上げ）: 既定でオン（無料の VOICEVOX Web API、鍵なし）。`CAPTAIN_VOICE=off` で切る（ブラウザの声に戻る）。`VOICEVOX_SPEAKER` で声を変える（番号は https://api.tts.quest/v3/voicevox/speakers_array の順。既定 70 = 満別花丸（元気））。**鍵なしの枠は小さい**（1分に数回。超えると 429 で、その回はブラウザの声に戻る）ので、本番・撮影の前に api.tts.quest（su-shiki.com）で無料の鍵を作って `VOICEVOX_API_KEY` に入れる。
+- **隊長の声（spec v1.40）: Aivis Cloud API（おすすめ・いちばん速い）**: https://aivis-project.com/cloud-api/ で登録（500 円分の無料クレジット）→ ダッシュボードで API キーを発行 → Vercel の環境変数 `AIVIS_API_KEY` に入れて Redeploy。声を変えるときは `AIVIS_MODEL`（モデル UUID。https://hub.aivis-project.com で探す）と `AIVIS_STYLE`（スタイル名。例「あまあま」）。`AIVIS_API_KEY` がないときは下の VOICEVOX。
+- 隊長の声（spec v1.36・v1.39、隊長トークの日本語の読み上げ）: 既定でオン。`CAPTAIN_VOICE=off` で切る（ブラウザの声に戻る）。`VOICEVOX_SPEAKER` で声を変える（番号は VOICEVOX のスタイル ID。一覧は https://api.tts.quest/v3/voicevox/speakers_array の順。既定 54 = 春歌ナナ。8 = 春日部つむぎ も候補）。作り方は2つ:
+  - **おすすめ: 自前の VOICEVOX ENGINE（`VOICEVOX_URL`）**。無料の Web API は鍵があっても1文に 10 秒以上かかるので（11/7 本人の指摘「遅すぎて使えない」）、Hugging Face Spaces の無料枠で ENGINE 本体を動かす（1〜2 秒で鳴る・回数の制限なし）。手順:
+    1. https://huggingface.co/join でアカウントを作る（メールの確認あり）。
+    2. https://huggingface.co/new-space で Space を作る: 名前は何でも（例 `shimaena-voice`）、**SDK は Docker（Blank）**、Hardware は **CPU basic（無料）**、**Public**。
+    3. できた Space の「Files」→「+ Contribute」→「Upload files」で、このリポジトリの `deploy/voicevox-space/` にある **`Dockerfile` と `README.md` の2つ**を上げる（Space にもとからある README.md は置きかえる）。「Commit」を押すと組み立てが始まる（5〜10 分。「Running」になれば OK）。
+    4. Space の URL を確かめる: 「⋮」→「Embed this Space」に出る `https://＜ユーザー名＞-＜Space 名＞.hf.space`。ブラウザで `その URL/version` を開いて版の番号が出れば動いている。
+    5. Vercel の環境変数に `VOICEVOX_URL` = その URL（Production と Preview の両方）を入れて、Redeploy。
+    - 弱点: 無料枠は **しばらく使わないと眠る**（起きるのに 1 分ほど。その間はブラウザの声）。アプリを開くと自動で起こす（`/api/voice?wake=1`）が、撮影・発表の前には Space のページを一度開いておく。
+  - 自前がないとき: 無料の VOICEVOX Web API（api.tts.quest、鍵なしでも少し使える）。**鍵なしの枠は小さい**（1分に数回。超えると 429 で待たされる）ので `VOICEVOX_API_KEY` に無料の鍵（su-shiki.com）を入れる。それでも1文 10 秒以上かかるので確かめ用。
 - ことば（spec v1.36）: 隊長トークの 🌐 で選ぶ。隊長の文の訳は `ANTHROPIC_API_KEY` があるときだけ（なければ日本語のまま）。訳は `translations` 表に貯まる（`/admin` の「DB を準備する」で作る。なくても最初に使うとき自動で作る）。
 - 隊長トークで Claude を呼ぶ回数の1人1日の上限（公開中のお金の守り。架空の人 `?as=h1` などだけ。LINE でログインした人は上限なし）: `CHAT_TEXT_PER_DAY`（文。既定 20）・`CHAT_PHOTO_PER_DAY`（写真。既定 5）。超えた分は鍵がないときと同じモック応答になる。`/api/song?date=` で作れる歌は今日と過去7日だけ。
 

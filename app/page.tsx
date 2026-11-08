@@ -178,7 +178,14 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
           <h1 className="whitespace-nowrap text-2xl font-bold max-[400px]:text-xl">
             シマエナ<span className="text-lamp-deep">GO</span>
           </h1>
-          {!myTeam && <p className="whitespace-nowrap text-sm font-bold max-[380px]:text-xs">10分の雪かきで、町が変わる。</p>}
+          {/* 右のボタンにはみ出さないよう、狭いときは「、」で2行に（11/8） */}
+          {!myTeam && (
+            <p className="text-sm font-bold max-[380px]:text-xs">
+              <span className="whitespace-nowrap">10分の雪かきで、</span>
+              <wbr />
+              <span className="whitespace-nowrap">町が変わる。</span>
+            </p>
+          )}
         </div>
         {/* BGM のオン・オフ（spec v1.19）。効果音は設定の「音」で */}
         <SoundToggle compact />

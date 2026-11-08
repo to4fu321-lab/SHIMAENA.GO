@@ -45,6 +45,8 @@ const B = {
   camera: { type: "camera", label: "写真を撮る" } as Button,
   roll: { type: "cameraRoll", label: "写真を選ぶ" } as Button,
   register: say("登録する", "登録"),
+  /** チームで時間をそろえる（spec v1.41） */
+  time: open("⏰ チームで時間をそろえる", "/team?tab=time"),
 };
 
 /** チーム発表: 画像1枚と文（「チームを見る」ボタン付き） */
@@ -210,14 +212,18 @@ export const MSG = {
   // ---- 前夜の予告・朝のあいさつ ----
   /** 前夜の予告（Claude の文）を、隊長カード1枚に */
   /** 前夜の予告（Claude の文）を、隊長カード1枚に。安全の一文が要る朝は最後に必ず足す（spec v1.6） */
-  announce: (body: string, forecastCm: number, snowName?: string, safety?: string) => [
-    captainCard({ cm: forecastCm, snowName, when: "eve", lines: [...sentences(body, 5), ...(safety ? [safety] : [])] }),
+  // 下に「⏰ チームで時間をそろえる」（spec v1.41。カード1枚のまま、ボタンだけ足す）
+  announce: (body: string, forecastCm: number, snowName?: string, safety?: string): LineMessage[] => [
+    {
+      ...captainCard({ cm: forecastCm, snowName, when: "eve", lines: [...sentences(body, 5), ...(safety ? [safety] : [])] }),
+      quickReply: { items: [{ type: "action", action: B.time }] },
+    },
   ],
   morningHello: (forecastCm?: number, snowName?: string, safety?: string) => hello(forecastCm, snowName, safety),
   /** 作戦のあと、手伝う側へ: 家の数と「10分だけでも」。割り当てがない人には「雪かきGO！」ボタン */
   housesToday: (houses: number, withGoButton: boolean) =>
     houses > 0
-      ? bubbles([`助けてほしい家が${houses}軒あります。`, "10分だけでも大歓迎えな〜！"], withGoButton ? [B.go, B.map] : undefined)
+      ? bubbles([`助けてほしい家が${houses}軒あります。`, "10分だけでも大歓迎えな〜！"], withGoButton ? [B.go, B.map, B.time] : undefined)
       : bubbles(["今朝は、助けてほしい家はありません。ありがとうえな〜！"]),
 
   /** お昼・夕方に動ける人へ（spec v1.8）: まだ待っている家の数 */

@@ -124,6 +124,11 @@ export default function ChatScreen({
   const fileRoll = useRef<HTMLInputElement>(null);
   const lastId = bubbles.at(-1)?.id;
 
+  // 「考え中」の吹き出しが出たら、それが見えるところまで下げる
+  useEffect(() => {
+    if (pending) list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" });
+  }, [pending]);
+
   // 新しい吹き出しが増えたら、いちばん下へ。読み上げがオンなら、隊長の新しい吹き出しを読む（開いたときの分は読まない）
   useEffect(() => {
     const el = list.current;
@@ -351,12 +356,7 @@ export default function ChatScreen({
             </div>
           )];
         })}
-        {pending && last?.from === "me" && (
-          <div className="flex items-end gap-1.5">
-            <Avatar team={teamId} />
-            <p className="rounded-2xl rounded-bl-md bg-card px-3 py-2 text-base text-ink-soft shadow-sm">…</p>
-          </div>
-        )}
+        {pending && last?.from === "me" && <Thinking lang={lang} avatar={<Avatar team={teamId} />} />}
       </div>
       {/* 小さなボタン（いちばん新しい隊長の吹き出しのもの） */}
       {!readOnly && quick.length > 0 && (
@@ -404,6 +404,32 @@ export default function ChatScreen({
         <input ref={fileRoll} type="file" accept="image/*" className="hidden" onChange={(e) => void onPhoto(e.target.files?.[0])} />
       </form>
       )}
+    </div>
+  );
+}
+
+/**
+ * 隊長が返事を考えている間の吹き出し（spec v1.42。11/8 本人の指示「返答を考えてるのが分かるように」）:
+ * 3つの点が跳ねて、いま何をしているか（町の様子 → 天気と道 → 返事を書く）を順に出す
+ */
+function Thinking({ lang, avatar }: { lang: Lang; avatar: ReactNode }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setStep((s) => Math.min(s + 1, 2)), 1200);
+    return () => window.clearInterval(id);
+  }, []);
+  const label = t(lang, (["thinking1", "thinking2", "thinking3"] as const)[step]);
+  return (
+    <div className="flex items-end gap-1.5" role="status" aria-live="polite">
+      {avatar}
+      <div className="rounded-2xl rounded-bl-md bg-card px-4 py-2.5 shadow-sm ring-1 ring-lamp/40">
+        <span className="flex h-5 items-center gap-1.5" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="size-2.5 animate-bounce rounded-full bg-lamp" style={{ animationDelay: `${i * 0.15}s` }} />
+          ))}
+        </span>
+        <p className="mt-1 text-sm font-bold text-ink-soft">{label}…</p>
+      </div>
     </div>
   );
 }

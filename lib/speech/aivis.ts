@@ -1,0 +1,79 @@
+// 隊長の声（spec v1.40）: Aivis Cloud API（日本の音声合成。最速 0.3 秒）で、かわいい声の mp3 を作る。
+// 11/7 本人の指摘「遅すぎて使えない」→ 無料の VOICEVOX Web API は1文 10 秒以上、自前の ENGINE は Hugging Face が有料になっていた → 本人の選択で Aivis に。
+// 鍵 AIVIS_API_KEY はサーバー側でだけ使う（画面に出さない）。登録で 500 円分（約 11,000 字）の無料クレジット、その後は 1 万字 440 円（前払い）。
+// 声は AIVIS_MODEL（モデル UUID）と AIVIS_STYLE（スタイル名）で選ぶ。候補は使ってよいライセンスのもの（ACML 1.0 か、個人の利用を許すもの）。クレジットは画面と README に出す。
+import type { Voice, VoiceEnv } from "./voicevox";
+
+const API = "https://api.aivis-project.com/v1/tts/synthesize";
+
+/** 候補の声（本人が試聴して選ぶ）。キーはモデル UUID、値はクレジットに出す名前 */
+export const AIVIS_VOICES: Readonly<Record<string, string>> = {
+  "a59cb814-0083-4369-8542-f51a29e72af7": "AivisSpeech: まお",
+  "22e8ed77-94fe-4ef2-871f-a86f94e9a579": "AivisSpeech: コハク",
+  "1b2830f4-8cf1-4184-a0d9-3a1bace3a844": "AivisSpeech: みちのくあいり",
+  "ed0f793d-786c-4fde-8561-e8bbac7bfe1d": "AivisSpeech: 六弦エレキ",
+  "e9339137-2ae3-4d41-9394-fb757a7e61e6": "AivisSpeech: まい",
+  "a670e6b8-0852-45b2-8704-1bc9862f2fe6": "AivisSpeech: 花音",
+  "f5017410-fbb5-49e1-97cb-e785f42e15f5": "AivisSpeech: 凛音エル",
+  "4f281e78-eba6-495a-8e50-5c322d02b5b1": "AivisSpeech: るな",
+  "3328da9a-8124-4619-a853-f7fc2f37889f": "AivisSpeech: 桜音",
+  // Tαkoe プロジェクトの声は著作権表示が必須（「Tαkoe:ソフト名:キャラクター名」の形。利用規約 http://wedst.pj.ymhk.jp/tos.html）
+  "37e49039-522f-4608-b8d6-fc6716ada80e": "Tαkoe:AivisSpeech:雪降白華",
+};
+
+/**
+ * 既定の声: 雪降白華（ゆきふりしろか。Tαkoe プロジェクト）。11/7 本人が試聴して決定（「シマエナガに合う、元気でハキハキした声」）。
+ * 名前が「雪が降る白い花」で雪の妖精シマエナガに合い、試聴の文も朝の時刻と天気の案内で隊長の点呼そのまま
+ */
+export const DEFAULT_AIVIS_MODEL = "37e49039-522f-4608-b8d6-fc6716ada80e";
+export const DEFAULT_AIVIS_STYLE = "ノーマル";
+
+/** 元気でかわいい調子（11/7 本人の指示）: 少し速く・感情を強めに・緩急を少しつける。ピッチは触らない（変えると遅く・粗くなる） */
+export const AIVIS_TONE = { speaking_rate: 1.1, emotional_intensity: 1.3, tempo_dynamics: 1.1 } as const;
+
+/** 1つの文を作る待ち時間。ふつうは 1 秒もかからない */
+const AIVIS_MS = 10_000;
+
+export function aivisEnabled(env: VoiceEnv = process.env): boolean {
+  return !!env.AIVIS_API_KEY?.trim();
+}
+
+export function aivisModel(env: VoiceEnv = process.env): string {
+  return env.AIVIS_MODEL?.trim() || DEFAULT_AIVIS_MODEL;
+}
+
+export function aivisStyle(env: VoiceEnv = process.env): string {
+  return env.AIVIS_STYLE?.trim() || DEFAULT_AIVIS_STYLE;
+}
+
+/** 隊長の声のクレジット名（Aivis を使っているとき） */
+export function aivisVoiceName(env: VoiceEnv = process.env): string {
+  return AIVIS_VOICES[aivisModel(env)] ?? "AivisSpeech";
+}
+
+/** Aivis Cloud API で mp3 に。できなければ null（画面はブラウザの声に戻る）。text は整え済み（voiceText）を渡す */
+export async function synthesizeAivis(text: string, env: VoiceEnv = process.env, fetchFn: typeof fetch = fetch): Promise<Voice | null> {
+  const key = env.AIVIS_API_KEY?.trim();
+  if (!key || !text) return null;
+  const res = await fetchFn(API, {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      model_uuid: aivisModel(env),
+      style_name: aivisStyle(env),
+      text,
+      use_ssml: false,
+      output_format: "mp3",
+      leading_silence_seconds: 0,
+      trailing_silence_seconds: 0.1,
+      ...AIVIS_TONE,
+    }),
+    signal: AbortSignal.timeout(AIVIS_MS),
+  });
+  if (!res.ok) {
+    console.error("[voice] Aivis が声を作れませんでした:", res.status, (await res.text().catch(() => "")).slice(0, 200));
+    return null;
+  }
+  const audio = new Uint8Array(await res.arrayBuffer());
+  return audio.byteLength > 0 ? { audio, type: "audio/mpeg", speakerName: aivisVoiceName(env) } : null;
+}
