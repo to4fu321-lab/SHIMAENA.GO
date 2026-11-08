@@ -18,3 +18,13 @@ export const PRESENT_EXTRA: Participant[] = [
   { id: "h19", nickname: "まい", role: "helper", location: [43.0395, 141.3742], teamId: "salvia", morningMinutes: 15, hasTools: false },
   { id: "h20", nickname: "いとう", role: "helper", location: [43.0381, 141.3699], teamId: "marigold", morningMinutes: 30, hasTools: true },
 ];
+
+// 審査員がえらぶ架空の手伝う人10人（11/8 本人「人を10人から選べるように」）。
+// 1人を全員で使うと記録が混ざるので、10人に分ける。撮影ステージの2人（h1・h11）は入れない（撮影で動くため）
+export const JUDGE_CAST = ["h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10", "h12"] as const;
+
+/** えらんだ人で開く道（?as= を付ける）。next はアプリの中の道だけ */
+export function demoHref(next: string, as: string): string {
+  const path = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  return `${path}${path.includes("?") ? "&" : "?"}as=${as}`;
+}

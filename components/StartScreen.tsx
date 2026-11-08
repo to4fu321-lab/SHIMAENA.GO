@@ -108,7 +108,7 @@ export default function StartScreen({ status, name, center, next, opening = fals
           <div className="mt-auto w-full space-y-2 rounded-3xl bg-white/95 p-3 text-ink shadow-xl">
             <p className="text-base font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
             <LoginButton next="/start" />
-            <Link href="/?as=h3" className="btn btn-white min-h-12 w-full text-lg">
+            <Link href="/demo" className="btn btn-white min-h-12 w-full text-lg">
               デモを見る（登録なし）
             </Link>
             <p className="text-sm text-ink-soft">LINE は本人の確認にだけ使います</p>

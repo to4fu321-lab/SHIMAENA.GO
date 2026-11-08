@@ -48,7 +48,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
           <p className="text-lg font-bold">仲間がいなくても、自分の10分で町を変えられる。</p>
           <p className="text-base">ソロ出動は登録した人の画面です。</p>
           {demoEnabled() && (
-            <Link href="/solo?as=h3&pick=10" className="btn btn-lamp btn-big w-full">
+            <Link href="/demo?next=%2Fsolo%3Fpick%3D10" className="btn btn-lamp btn-big w-full">
               デモで体験する（架空の人として）
             </Link>
           )}
@@ -60,7 +60,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
             使い方
           </Link>
           <p className="text-sm text-ink-soft">
-            デモ: <Link href="/solo?as=h3" className="underline">架空の手伝う側として開く</Link>
+            デモ: <Link href="/demo?next=%2Fsolo%3Fpick%3D10" className="underline">架空の10人からえらんで開く</Link>
           </p>
         </section>
       </main>
