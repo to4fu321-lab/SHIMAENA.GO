@@ -30,7 +30,7 @@ async function Stage() {
         goB: presentGo.bind(null, "b"),
         allTeams: presentAllTeams,
         gather: presentGather,
-        completeOther: completeOneAuto,
+        completeOther: completeOneAuto.bind(null, true),
         finishA: presentFinish,
         cheer: presentCheer,
       }}

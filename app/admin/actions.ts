@@ -131,7 +131,8 @@ export async function reopenDemo() {
 }
 
 /** 4: そろった家を1軒、完了にする（デモ）。カードも発行して、LINE のある人には届く。全軒終わったら今朝の実況 */
-export async function completeOne() {
+export async function completeOne(fast?: unknown) {
+  const quick = fast === true; // 撮影ステージから: カードの絵と実況（Claude）を省いて速く（フォームから押したときは FormData が来る）
   return guarded("completeOne", async () => {
     const roster = await loadRoster();
     let allDone = false;
@@ -145,8 +146,10 @@ export async function completeOne() {
       if (!mission) return;
       const sorties = s.morning.sorties.filter((x) => x.missionId === mission.id);
       try {
-        const issued = await issueCardsForMission(s, roster, mission, sorties);
-        s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
+        if (!quick) {
+          const issued = await issueCardsForMission(s, roster, mission, sorties);
+          s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
+        }
       } catch (e) {
         s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -170,7 +173,8 @@ export async function completeOne() {
     });
     for (const n of notices) await push(n.key, n.messages);
     revalidatePath("/chat");
-    if (allDone) await writeRecapNow();
+    if (quick) refresh();
+    else if (allDone) await writeRecapNow();
     else await refreshShareTexts().catch((e) => console.error("[share]", e));
   });
 }
@@ -179,8 +183,8 @@ export async function completeOne() {
  * 4 を自動で（11/8 本人「完了にするボタンを自動で順番に完了にしていってほしい」）: 1軒終えて、まだ終えられる家が残っているかを返す。
  * 撮影ステージの3人とログインした本物の人が向かっている家は、本人の写真で終えるので数えない（4 と同じ）。
  */
-export async function completeOneAuto(): Promise<{ more: boolean }> {
-  await completeOne();
+export async function completeOneAuto(fast?: unknown): Promise<{ more: boolean }> {
+  await completeOne(fast === true);
   return guarded("completeOneAuto", async () => {
     const [s, roster] = await Promise.all([loadMorning(), loadRoster()]);
     if (s.morning.rollcall.status !== "planned") return { more: false };
@@ -248,25 +252,31 @@ export async function presentGather(): Promise<string> {
     const known = new Set((await r.listParticipants()).map((p) => p.id));
     for (const p of PRESENT_EXTRA) if (!known.has(p.id)) await r.upsertParticipant(p);
     const roster = await loadRoster();
+    const homeOf = (baseId: string) => roster.participants.find((q) => q.id === roster.bases.find((b) => b.id === baseId)?.requesterId)?.location;
     let n = 0;
-    for (const p of roster.participants) {
-      if (p.role !== "helper" || !p.teamId || p.lineUserId || STAGE_IDS.has(p.id)) continue;
-      const s = await loadMorning();
-      if (s.morning.sorties.some((x) => x.participantId === p.id && x.status === "going")) continue;
+    let active = 0;
+    // 撮影用に速く: 1回読んで、全員ぶんの「向かう」をまとめて書く（1人ずつ読み書きすると Neon との往復で数十秒かかる）
+    await update((s) => {
       const open = s.morning.missions.filter((m) => m.status !== "done" && m.status !== "no_answer");
-      const near = (m: (typeof open)[number]) => {
-        const home = roster.participants.find((q) => q.id === roster.bases.find((b) => b.id === m.baseId)?.requesterId)?.location;
-        return home ? distanceM(p.location, home) : 0;
-      };
-      const m = open.sort((a, b) => near(a) - near(b))[0];
-      if (!m) break;
-      await joinMission(p.id, m.id, new Date(), { extra: true });
-      n++;
-    }
+      const at = new Date().toISOString();
+      for (const p of roster.participants) {
+        if (p.role !== "helper" || !p.teamId || p.lineUserId || STAGE_IDS.has(p.id)) continue;
+        if (s.morning.sorties.some((x) => x.participantId === p.id && x.status === "going")) continue;
+        const m = [...open].sort((a, b) => {
+          const ha = homeOf(a.baseId);
+          const hb = homeOf(b.baseId);
+          return (ha ? distanceM(p.location, ha) : 0) - (hb ? distanceM(p.location, hb) : 0);
+        })[0];
+        if (!m) break;
+        s.morning.sorties.push({ id: `s${Date.now().toString(36)}${n}`, missionId: m.id, participantId: p.id, teamId: p.teamId, subtaskIds: [], status: "going", rescue: false, confirmedAt: at });
+        const going = s.morning.sorties.filter((x) => x.missionId === m.id && x.status === "going").length;
+        if (going >= m.requiredPeople) m.status = "in_progress";
+        n++;
+      }
+      s.log.push(`撮影: 近所の ${n} 人が出発`);
+      active = new Set(s.morning.sorties.filter((x) => x.status === "going").map((x) => x.participantId)).size;
+    });
     refresh();
-    revalidatePath("/chat");
-    const s = await loadMorning();
-    const active = new Set(s.morning.sorties.filter((x) => x.status === "going").map((x) => x.participantId)).size;
     return `近所の ${n} 人も出発（活動中 ${active} 人）`;
   });
 }

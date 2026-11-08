@@ -133,32 +133,32 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       // 1. 前夜
       say("前の夜。隊長から予告が届く");
       await actions.announce();
-      await open("/chat", 3000);
-      await wait(4);
+      await open("/chat", 2000);
+      await wait(2);
 
       // 2. ホーム → 6:30 の通知
       if (!on.current) return;
       say("朝 6:30。10cm 積もった");
-      await open("/", 1500);
-      await wait(2);
+      await open("/", 1200);
+      await wait(1);
       await actions.ring(); // Claude が作戦を考えて、近所に知らせる（少しかかる）
       setBanner("助けてほしい家があります。🙏 拠点7、あと3人です。10分でもOK");
-      await wait(3);
+      await wait(2);
 
       // 3. 通知を押す → 隊長トーク
       say("通知を押すと、隊長トーク");
       const b = document.getElementById("stage-banner");
       if (b) await tap(b, false);
       setBanner(undefined);
-      await open("/chat", 3000);
-      await wait(2);
+      await open("/chat", 2000);
+      await wait(1);
 
       // 4. 行く（拠点7）
       say("「行く（10分でも）」");
       const go = await until(goButtonFor7, 10);
       if (go) await tap(go);
       else await actions.goA();
-      await wait(4);
+      await wait(2);
 
       // 5. ほかのチームも集まる
       say("ほかのチームの人も、同じ家へ");
@@ -171,11 +171,11 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       say("町の地図。近所の人が一斉に動き出す");
       const toMap = await until(() => buttons(/町の地図を開く|^マップ$/).at(-1), 3);
       if (toMap) await tap(toMap);
-      await open("/map", 3500);
-      await wait(4);
-      await actions.completeOther();
-      await open("/map", 3000);
+      await open("/map", 2500);
       await wait(3);
+      await actions.completeOther();
+      await open("/map", 2000);
+      await wait(1);
 
       // 7. 終わりました → 写真
       say("終わったら、写真を1枚");
@@ -195,7 +195,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
         await until(() => buttons(/町の地図へ戻る/)[0], 30);
       }
       say("1軒、灯りがともった");
-      await wait(8);
+      await wait(5);
 
       // 8. 家族から応援
       await actions.cheer();
@@ -205,24 +205,24 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
 
       // 9. 手伝う（近くの家へ 10分だけ）
       say("まだ時間がある。近くの家を手伝う");
-      await open("/map", 3000);
+      await open("/map", 2000);
       const help = await until(() => buttons(/10分だけ(助けに行く|参加する)/)[0], 5);
       if (help) {
         await tap(help);
-        await wait(4);
+        await wait(2);
       }
 
       // 10. 町じゅうの家が終わる
       say("町じゅうの玄関が、ひらいていく");
       for (let i = 0; i < 12 && on.current && (Date.now() - t0) / 1000 < 170; i++) {
         const r = await actions.completeOther();
-        await open("/map", 2000);
+        await open("/map", 1500);
         if (!r.more) break;
       }
       await actions.finishA();
-      await open("/map", 3000);
+      await open("/map", 2000);
       say("今朝の雪かき、ぜんぶ完了");
-      await wait(6);
+      await wait(5);
       say(on.current ? "おわり。録画を止めてください" : "止めました");
     } catch (e) {
       say(`止まりました: ${e instanceof Error ? e.message : String(e)}`);
