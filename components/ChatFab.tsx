@@ -1,8 +1,8 @@
 "use client";
 // いつでも隊長トーク（spec v1.43・v1.44・v1.45）: 下のタブのある画面の端から、シマエナガがのぞいている。
 // 11/8 本人の指摘「少し邪魔」→「端から顔を出してスワイプで」→「半分埋まって見える。もっとのぞいている絵に。引っぱると体が少し伸びてチャットへ。体は全部出てこない」:
-// - 端からのぞく専用の絵（PeekBird）。内側へ引っぱると体が指についてゴムのように伸び（縦は少し細く）、画面の 1/4 まで引っぱるか、タップで、ぐーんと伸びて隊長トークへ
-// - 1/4 に足りなければ、ばねで少し行きすぎて縮み、ぽよよんと戻る（11/8 本人の指示「伸縮するように。弾力性ある感じで戻る」）
+// - 端からのぞく専用の絵（PeekBird）。内側へ引っぱると体が指についてゴムのように伸び（縦は少し細く）、画面の 1/3 まで引っぱるか、タップで、ぐーんと伸びて隊長トークへ
+// - 1/3 に足りなければ、ばねで少し行きすぎて縮み、ぽよよんと戻る（11/8 本人の指示「伸縮するように。弾力性ある感じで戻る」）
 // - 上下に動かすと場所を変えられ、反対の端まで持っていけばそちらの端へ。場所はこの端末に覚える
 // - 隊長トークの画面では出さない
 import Link from "next/link";
@@ -15,9 +15,9 @@ const POS_KEY = "shimaena-chat-fab";
 export const FAB_SIZE = 60;
 /** これより動いたら「動かした」とみなす（タップと分ける。px） */
 const DRAG_PX = 8;
-/** 画面の幅のこの割合まで引っぱったら隊長トークを開く（11/8 本人の指示「画面の4分の1」） */
-export const OPEN_RATIO = 0.25;
-/** 開くまでの長さ（px）。画面の幅の 1/4 */
+/** 画面の幅のこの割合まで引っぱったら隊長トークを開く（11/8 本人の指示「画面の4分の1」→「3分の1」） */
+export const OPEN_RATIO = 1 / 3;
+/** 開くまでの長さ（px）。画面の幅の 1/3 */
 export function openPx(width: number): number {
   return Math.round(width * OPEN_RATIO);
 }
@@ -84,46 +84,75 @@ export function squashOf(pull: number): number {
 
 /**
  * 端からのぞくシマエナガ（右の端から。左の端は左右を反転して使う）。右の端（x = 幅）が画面の端で、体の残りは画面の外。
- * 丸い頭はそのままの形で前へ出て、体（首）がおもちのように伸びる。縮むときは頭も少しつぶれる。体は全部は出てこない
+ * 引っぱると、まんまるの頭が指について前へ出て、首がきゅっとくびれた「おもち」の形にのびる（11/8 本人「もっと可愛い形で」）。
+ * 引っぱっている間は目が「><」になり、小さな羽をぱたぱたさせ、ほっぺが赤くなる。縮むときは頭がつぶれる。体は全部は出てこない
  */
 function PeekBird({ pull }: { pull: number }) {
   const p = Math.max(pull, -18);
   const w = PEEK_W + Math.max(p, 0);
   const sq = squashOf(p);
   const headR = 24;
-  // 頭の真ん中（いつもは端から 24px 内側。引っぱった分だけ前へ。縮むときは端へ寄る）
-  const hx = w - 24 - p;
+  const hx = w - 24 - p; // 頭の真ん中（引っぱった分だけ前へ。縮むときは端へ寄る）
   const hy = 38;
-  const bodyRx = Math.max(w - hx + 6, 20); // 体は頭のうしろから端の向こうまで
-  const bodyRy = 23 * sq;
+  const stretched = p > 18;
   const headSq = p < 0 ? sq : 1; // 縮むときだけ頭もつぶれる
-  const tilt = -12 * Math.max(0, 1 - Math.max(p, 0) / 70); // 引っぱるほど首がまっすぐに
+  // 頭とおしりをなめらかにつなぐ「おもち」の輪郭。のびるほど、まんなかが少しくびれる（細い棒にはしない）
+  const bx = w + 4;
+  const by = hy + 4;
+  const bR = 26 * (p < 0 ? sq : 1);
+  const len = bx - hx;
+  const pinch = Math.min(13, Math.max(p, 0) / 7);
+  const body =
+    `M${hx} ${hy - headR} ` +
+    `C${hx + len * 0.3} ${hy - headR + pinch * 1.6} ${bx - len * 0.45} ${by - bR + pinch * 1.4} ${bx} ${by - bR} ` +
+    `L${bx} ${by + bR} ` +
+    `C${bx - len * 0.45} ${by + bR - pinch * 1.4} ${hx + len * 0.3} ${hy + headR - pinch * 1.6} ${hx} ${hy + headR} Z`;
+  const tilt = -12 * Math.max(0, 1 - Math.max(p, 0) / 60); // 引っぱるほど首がまっすぐに
+  const flap = stretched ? Math.sin(p / 6) * 22 : 0; // 羽のぱたぱた（引っぱる長さで動く）
   const line = "#c9d6e2";
-  const shapes = (stroke: boolean) => (
-    <>
-      <ellipse cx={w} cy={hy + 4} rx={bodyRx} ry={bodyRy} fill="#ffffff" stroke={stroke ? line : "none"} strokeWidth={stroke ? 3 : 0} />
-      <ellipse cx={hx} cy={hy} rx={headR / headSq ** 0.5} ry={headR * headSq} fill="#ffffff" stroke={stroke ? line : "none"} strokeWidth={stroke ? 3 : 0} />
-    </>
-  );
+  const shapes = (stroke: boolean) => {
+    const st = stroke ? { stroke: line, strokeWidth: 3 } : { stroke: "none" };
+    return (
+      <>
+        {/* 端のおしり（ふわふわの体の残り） */}
+        <ellipse cx={bx} cy={by} rx={26} ry={bR} fill="#ffffff" {...st} />
+        {/* のびるおもちの体 */}
+        {p > 2 && <path d={body} fill="#ffffff" {...st} />}
+        {/* まんまるの頭 */}
+        <ellipse cx={hx} cy={hy} rx={headR / headSq ** 0.5} ry={headR * headSq} fill="#ffffff" {...st} />
+      </>
+    );
+  };
   return (
     <svg viewBox={`0 0 ${w} 68`} width={w} height={PEEK_H} aria-hidden="true" className="overflow-visible drop-shadow-[0_2px_4px_rgba(31,42,55,0.28)]">
       <g transform={`rotate(${tilt} ${w} 40)`}>
-        {/* ふちどり → 白でぬる（頭と体が1つにつながって見える） */}
+        {/* 小さな羽（頭のうしろ。のびているとぱたぱた） */}
+        <ellipse cx={hx + 16} cy={hy + 14} rx={9} ry={5.5} fill="#ffffff" stroke={line} strokeWidth="1.4" transform={`rotate(${-25 + flap} ${hx + 10} ${hy + 14})`} />
+        {/* ふちどり → 白でぬる（頭と首とおしりが1つにつながって見える） */}
         {shapes(true)}
         {shapes(false)}
-        {/* マフラー（首に巻いて、体といっしょに伸びる） */}
-        <path d={`M${hx - 14} ${hy + 18} Q${(hx + w) / 2} ${hy + 25} ${w} ${hy + 22} L${w} ${hy + 28} Q${(hx + w) / 2} ${hy + 31} ${hx - 16} ${hy + 23} Z`} fill="var(--lamp)" />
+        {/* マフラー（首に巻く。のびると細く） */}
+        <path
+          d={`M${hx - 13} ${hy + 18} Q${hx + 4} ${hy + 25} ${hx + 20} ${hy + 20} L${hx + 22} ${hy + 25.5} Q${hx + 4} ${hy + 31} ${hx - 15} ${hy + 23} Z`}
+          fill="var(--lamp)"
+        />
+        <path d={`M${hx + 14} ${hy + 22} l5 10 l5 -2 l-3 -9 Z`} fill="var(--lamp)" />
         {/* 顔（頭についていく） */}
         <g transform={`translate(${hx - 24} ${hy - 38})`}>
           <path d="M18 15 q4 -6 9 -2 q3 -5 8 -1" fill="none" stroke={line} strokeWidth="1.6" strokeLinecap="round" />
-          <circle cx="14" cy="34" r="4.2" fill="#24313f" />
-          <circle cx="15.4" cy="32.6" r="1.4" fill="#ffffff" />
+          {stretched ? (
+            // ぎゅっとつぶった目「><」
+            <path d="M10.5 30.5 L16 34 L10.5 37.5" fill="none" stroke="#24313f" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          ) : (
+            <>
+              <circle cx="14" cy="34" r="4.2" fill="#24313f" />
+              <circle cx="15.4" cy="32.6" r="1.4" fill="#ffffff" />
+            </>
+          )}
           <path d="M-1.5 39 L4.5 36.2 L4.5 41.6 Z" fill="#24313f" />
-          <ellipse cx="17" cy="44.5" rx="4.6" ry="2.6" fill="#f4b6c2" opacity="0.85" />
+          <ellipse cx="17" cy="44.5" rx={stretched ? 5.6 : 4.6} ry={stretched ? 3.2 : 2.6} fill="#f4a3b4" opacity={stretched ? 1 : 0.85} />
         </g>
       </g>
-      {/* 端をつかむ羽 */}
-      <path d={`M${w} 58 q-9 1 -11 6 q6 1 11 -1 Z`} fill="#ffffff" stroke={line} strokeWidth="1.2" />
     </svg>
   );
 }
@@ -220,7 +249,7 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
     const s = start.current;
     start.current = null;
     if (s?.mode === "pull") {
-      // 画面の 1/4 まで引っぱっていれば開く。足りなければ、ばねでぽよよんと戻る
+      // 画面の 1/3 まで引っぱっていれば開く。足りなければ、ばねでぽよよんと戻る
       if (pull >= openPx(window.innerWidth) - 0.5) open(pull);
       else stopSpring.current = springBack(pull, setPull);
       return;
