@@ -262,11 +262,11 @@ export default function ChatScreen({
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ fontSize: TEXT_SIZE_PX[size] }} lang={LANG_INFO[lang].speech}>
       {/* 上段は1行: 隊長・題名・（通知オン）・文字の大きさ・読み上げ・🌐。流れをできるだけ大きく */}
-      <header className="flex shrink-0 items-center gap-1.5 bg-ice-soft py-1 pl-3 pr-2" style={headerBg ? { background: headerBg } : undefined}>
+      <header className="flex shrink-0 items-center gap-1 bg-ice-soft py-1 pl-2 pr-1.5" style={headerBg ? { background: headerBg } : undefined}>
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-card shadow-sm">
           <Mascot size={30} team={teamId} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-lg font-bold leading-tight" title={t(lang, "subtitle")}>
+        <h1 className="min-w-0 flex-1 truncate text-[17px] font-bold leading-tight" title={t(lang, "subtitle")}>
           {t(lang, "title")}
         </h1>
         {extra}

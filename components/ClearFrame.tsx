@@ -65,7 +65,7 @@ export const FIT_IMG = "[&_img]:mx-auto [&_img]:max-h-[calc(100dvh_-_400px)] [&_
  */
 export function ConnectPanel({ shares, invite, baton, more }: { shares: ReactNode[]; invite?: ReactNode; baton?: (view: "baton" | "wish") => ReactNode; /** 「つなぐ」の画面へのリンク（?as= つき） */ more?: string }) {
   const opts = [
-    ...(shares.length > 0 ? [["share", "共有"] as const] : []),
+    ...(shares.length > 0 ? [["share", "広める"] as const] : []),
     ...(invite ? [["invite", "誘う"] as const] : []),
     ...(baton ? ([["baton", "バトン"], ["wish", "次は？"]] as const) : []),
   ];

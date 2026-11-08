@@ -149,7 +149,7 @@ export default function CardReveal({ card, label = "カードを発行しまし�
           {serial}
           {card.code ? ` ・ この時だけの設計図 #${card.code}` : ""}
         </span>
-        <button type="button" onClick={() => setRound((r) => r + 1)} className="mt-1 text-sm text-ink-soft underline">
+        <button type="button" onClick={() => setRound((r) => r + 1)} className="mt-1 min-h-10 rounded-full bg-card px-4 text-base font-bold text-ink ring-1 ring-ink/20">
           もう一度見る
         </button>
       </figcaption>

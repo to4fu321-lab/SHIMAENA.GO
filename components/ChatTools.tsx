@@ -265,7 +265,7 @@ export default function ChatTools({
             aria-checked={size === s}
             aria-label={sizeLabel[s]}
             onClick={() => pick(s)}
-            className={`min-h-9 min-w-9 px-0.5 font-bold leading-none ${size === s ? "bg-ink text-white" : "text-ink"}`}
+            className={`min-h-9 min-w-8 px-0.5 font-bold leading-none ${size === s ? "bg-ink text-white" : "text-ink"}`}
             style={{ fontSize: s === "m" ? 13 : s === "l" ? 16 : 19 }}
           >
             {lang === "ja" ? "あ" : "A"}

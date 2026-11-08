@@ -351,7 +351,7 @@ export const MSG = {
     ),
   /** 声のありがとう（v1.29）: 手伝った人へ */
   voiceToHelper: (fromName: string, baseNumber: number | string, missionId: string) =>
-    bubbles([`${san(fromName)}（拠点${baseNumber}）から、声のありがとうが届きました。🎤`], [open("▶ 声を聞く", `/thanks/${missionId}`)]),
+    bubbles([`${san(fromName)}（拠点${baseNumber}）から、声のありがとうが届きました。🎤`], [open(`▶ ${san(fromName)}の声を聞く`, `/thanks/${missionId}`)]),
   thanksNotFound: () => bubbles(["今朝の雪かきの記録が見つかりませんでした。", "少し時間をおいて、もう一度押してみてください。"]),
   /** 仲間が増えた（誘った人へ。名前は出さない。仲間カードと同じプッシュで。v1.8） */
   pairJoined: () => bubbles(["あなたの招待で、新しい仲間が初出動しました！🎉", "ふたりに「ふたりの群れ」カードが届きました。羽も +20。"]),

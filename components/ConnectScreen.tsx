@@ -84,7 +84,7 @@ function InvitePanel({ inviteLine }: { inviteLine?: string }) {
       <button type="button" onClick={cheer} className={`${row} bg-card text-ink ring-1 ring-ink/15`}>
         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-camellia-soft text-2xl" aria-hidden="true">📣</span>
         <span className="min-w-0 leading-tight">
-          <span className="block text-lg font-bold">応援を呼ぶ</span>
+          <span className="block text-lg font-bold">応援を頼む</span>
           <span className="block text-sm text-ink-soft">「町を応援」を押してもらう</span>
         </span>
         <span className="ml-auto text-2xl" aria-hidden="true">›</span>

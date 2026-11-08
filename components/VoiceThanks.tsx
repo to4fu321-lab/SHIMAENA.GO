@@ -159,10 +159,11 @@ function Recorder({ viewerId, missionId, helperCount, savedSrc }: Extract<Props,
               <span className="text-5xl" aria-hidden>
                 {recording ? "■" : "🎤"}
               </span>
-              <span className="text-xl font-bold">{recording ? `とめる（あと${left}秒）` : state === "sent" ? "吹き込み直す" : "押して話す"}</span>
+              <span className="text-xl font-bold">{recording ? "とめる" : state === "sent" ? "吹き込み直す" : "押して話す"}</span>
+              {recording && <span className="text-base font-bold">あと{left}秒</span>}
             </span>
           </button>
-          {state === "sent" && savedSrc && <audio controls src={savedSrc} className="w-full" preload="none" />}
+          {state === "sent" && savedSrc && <audio controls src={savedSrc} className="w-full" preload="metadata" />}
         </>
       )}
       {note && (

@@ -89,7 +89,7 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
           </div>
         ) : (
           <div className="mt-3 w-full rounded-3xl bg-white px-4 py-3 text-ink shadow-md">
-            <p className="text-base font-bold">今日の合言葉（{TODAY_LABEL.format(now)}）</p>
+            <p className="text-base font-bold">今日の合言葉（{TODAY_LABEL.format(now).replace("(", "・").replace(")", "")}）</p>
             <p className="mt-1 text-4xl font-bold" style={{ color: theme.deep }}>
               {password ?? "（準備中）"}
             </p>

@@ -76,7 +76,8 @@ export async function startEmptyMorning() {
         if (k?.startsWith(DEMO_PREFIX)) await clearThread(k).catch(() => undefined);
       }
     }
-    await announce({ date: DEMO_DATE, forecastCm: 12 });
+    // 撮影・審査では本当の日付の朝にする（地図やカードの「12月14日」と、トークの日付が混ざらないように。11/8 点検）
+    await announce({ date: jstDate(new Date()), forecastCm: 12 });
     refresh();
   });
 }

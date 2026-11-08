@@ -212,7 +212,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="truncate font-bold">{clear.snowName ? `今朝の雪『${clear.snowName}』` : "今朝の雪"}</span>
             <span className="shrink-0 whitespace-nowrap tabular-nums" aria-label={`雪のこり ${clear.hpBefore} から ${clear.hpAfter}、全部で ${clear.hpMax}`}>
-              <b className="text-base">{clear.hpAfter}</b>/{clear.hpMax}
+              雪のこり <b className="text-base">{clear.hpAfter}</b>/{clear.hpMax}
             </span>
           </div>
           <span className="relative mt-1 block h-3 overflow-hidden rounded-full bg-ice-soft">

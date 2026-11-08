@@ -34,7 +34,7 @@ export default function CheerCall({
       }
     >
       <span aria-hidden="true">📣</span>
-      {compact ? "友だちに応援を呼ぶ（LINE）" : "📣 友だちに応援を呼ぶ（LINE）"}
+      {compact ? "友だちに応援を頼む（LINE）" : "📣 友だちに応援を頼む（LINE）"}
     </button>
   );
 }

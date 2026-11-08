@@ -41,8 +41,8 @@ export function tone(ctx: BaseAudioContext, out: AudioNode, o: ToneOpts): void {
   for (const d of voices) {
     const osc = ctx.createOscillator();
     osc.type = o.type ?? "sine";
-    osc.frequency.setValueAtTime(o.f, o.at);
-    if (o.f1) osc.frequency.exponentialRampToValueAtTime(Math.max(1, o.f1), o.at + o.dur);
+    osc.frequency.setValueAtTime(Math.min(20000, o.f), o.at); // 倍音が 22kHz を超えないように（ブラウザの警告を出さない）
+    if (o.f1) osc.frequency.exponentialRampToValueAtTime(Math.min(20000, Math.max(1, o.f1)), o.at + o.dur);
     if (d || o.cents) osc.detune.setValueAtTime(d + (o.cents ?? 0), o.at);
     if (o.vibrato) {
       const lfo = ctx.createOscillator();
@@ -104,7 +104,7 @@ export function fm(ctx: BaseAudioContext, out: AudioNode, o: FmOpts): void {
   car.frequency.setValueAtTime(o.f, o.at);
   const mod = ctx.createOscillator();
   mod.type = "sine";
-  mod.frequency.setValueAtTime(o.f * o.ratio, o.at);
+  mod.frequency.setValueAtTime(Math.min(20000, o.f * o.ratio), o.at); // 高い音で 22kHz を超えないように（ブラウザの警告を出さない）
   const depth = ctx.createGain();
   depth.gain.setValueAtTime(Math.max(0.01, o.index * o.f), o.at);
   depth.gain.exponentialRampToValueAtTime(Math.max(0.01, (o.indexEnd ?? 0.1) * o.f), o.at + (o.indexDecay ?? o.dur * 0.5));
