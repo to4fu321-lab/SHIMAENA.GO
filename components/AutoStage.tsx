@@ -260,6 +260,21 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
         await tap(card);
         await wait(5);
       }
+      // 次の人へバトン（途中まででも渡せる。11/8 本人「バトンとかもできればほしい」）
+      const tsunagu = await until(() => buttons(/^つなぐ$/)[0], 3);
+      if (tsunagu) {
+        say("途中まででも、次の人へバトン");
+        await tap(tsunagu);
+        const baton = await until(() => buttons(/^バトン$/)[0], 3);
+        if (baton) await tap(baton);
+        const preset = await until(() => buttons(/^続きをお願いします$/)[0], 3);
+        if (preset) await tap(preset);
+        const half = await until(() => buttons(/^途中まで$/)[0], 3);
+        if (half) await tap(half);
+        const pass = await until(() => buttons(/^渡す$/)[0], 3);
+        if (pass) await tap(pass);
+        await wait(4);
+      }
 
       // 8. 家族から応援
       await actions.cheer();
