@@ -45,7 +45,8 @@ import { DEMO_PREFIX, inboxKeyOf } from "@/lib/inbox/key";
 import { clearThread } from "@/lib/inbox/store";
 import { push } from "@/lib/line/client";
 import { MSG } from "@/lib/line/messages";
-import { getTeam } from "@/lib/teams";
+import { getTeam, TEAMS } from "@/lib/teams";
+import { distanceM } from "@/lib/game/help";
 import type { LineMessage } from "@/lib/line/types";
 
 /** 管理の操作の入口: 合言葉のログインを確かめ、今朝の状態の鍵を取ってから動かす */
@@ -212,6 +213,30 @@ export async function presentGo(who: "a" | "b"): Promise<string> {
     refresh();
     revalidatePath("/chat");
     return `${p?.nickname ?? who}さんが拠点7へ`;
+  });
+}
+
+/** 発表モード: 拠点7にまだ来ていないチームから、いちばん近い架空の人を1人ずつ呼ぶ（3チームそろう。11/8 本人「3チーム全てが参加してるように」） */
+export async function presentAllTeams(): Promise<string> {
+  return guarded("presentAllTeams", async () => {
+    const { s, roster, mission } = await stageMission();
+    if (!mission) return "拠点7のミッションがありません（先に 1 を）";
+    const home = roster.participants.find((p) => p.id === STAGE_CAST.c)?.location;
+    const here = new Set(s.morning.sorties.filter((x) => x.missionId === mission.id).map((x) => x.teamId));
+    const busy = new Set(s.morning.sorties.filter((x) => x.status === "going").map((x) => x.participantId));
+    const names: string[] = [];
+    for (const t of TEAMS) {
+      if (here.has(t.id)) continue;
+      const pick = roster.participants
+        .filter((p) => p.role === "helper" && p.teamId === t.id && !p.lineUserId && !STAGE_IDS.has(p.id) && !busy.has(p.id))
+        .sort((a, b) => (home ? distanceM(a.location, home) - distanceM(b.location, home) : 0))[0];
+      if (!pick) continue;
+      await joinMission(pick.id, mission.id, new Date(), { extra: true });
+      names.push(`${pick.nickname}さん（${t.name}）`);
+    }
+    refresh();
+    revalidatePath("/chat");
+    return names.length > 0 ? `${names.join("・")}も拠点7へ` : "拠点7には、もう3チームそろっています";
   });
 }
 
