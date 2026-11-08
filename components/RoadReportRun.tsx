@@ -5,6 +5,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { HAZARDS, type HazardId } from "@/lib/road/hazards";
+import { TOWN } from "@/lib/town";
 import { shrink } from "./shrink";
 import { blurNote, blurPrivate } from "./blur";
 import HazardIcon from "./HazardIcon";
@@ -172,6 +173,9 @@ export default function RoadReportRun({
               📍 {loc.why}{" "}
               <button onClick={locate} className="font-bold underline">
                 もう一度
+              </button>{" "}
+              <button onClick={() => setAdjusting(true)} disabled={pending} className="font-bold text-lamp-deep underline">
+                地図で場所をえらぶ
               </button>
             </span>
           )}
@@ -205,13 +209,13 @@ export default function RoadReportRun({
         </button>
       </div>
 
-      {adjusting && loc.state === "ok" && (
+      {adjusting && loc.state !== "wait" && (
         <PinAdjust
-          start={[loc.lat, loc.lng]}
+          start={loc.state === "ok" ? [loc.lat, loc.lng] : TOWN.center}
           emoji={HAZARDS.find((h) => h.id === hz)?.emoji}
           onCancel={() => setAdjusting(false)}
           onDone={([lat, lng]) => {
-            setLoc({ state: "ok", lat, lng, acc: loc.acc, adjusted: true });
+            setLoc({ state: "ok", lat, lng, acc: loc.state === "ok" ? loc.acc : 0, adjusted: true });
             setAdjusting(false);
           }}
         />

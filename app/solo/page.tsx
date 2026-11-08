@@ -21,6 +21,7 @@ import { shareTextsFor } from "@/lib/sns/refresh";
 import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { demoEnabled } from "@/lib/env";
 
 // v1.24: 完了でカードが出たあと、返事のあとで Claude が絵を描く（after()）。その時間まで関数を止めない
 export const maxDuration = 300;
@@ -46,6 +47,11 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
         <section className="space-y-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-ink/10">
           <p className="text-lg font-bold">仲間がいなくても、自分の10分で町を変えられる。</p>
           <p className="text-base">ソロ出動は登録した人の画面です。</p>
+          {demoEnabled() && (
+            <Link href="/solo?as=h3&pick=10" className="btn btn-lamp btn-big w-full">
+              デモで体験する（架空の人として）
+            </Link>
+          )}
           <LoginButton next="/solo" />
           <Link href={join} className="btn btn-white text-lg">
             はじめての方: 30秒で登録
