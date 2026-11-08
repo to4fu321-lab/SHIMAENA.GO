@@ -109,7 +109,7 @@ Claude は町の「隊長」です。人と人をつなぐ段取りだけを受�
 
 ## 画面
 
-下のタブは **ホーム／マップ／チーム／つなぐ／きろく**（隊長トークはホームの隊長の吹き出しから）。どの画面もスマホ1画面（390×844）に収め、本文 18px 以上、ボタンは少なく大きく。色だけに頼らず、アイコンだけの操作もなし。子どもから高齢者まで。
+下のタブは **ホーム／マップ／チーム／つなぐ／きろく**（隊長トークは、どの画面でも端からのぞくシマエナガを内側へ引っぱるか押すと開く。ホームの吹き出しからも）。どの画面もスマホ1画面（390×844）に収め、本文 18px 以上、ボタンは少なく大きく。色だけに頼らず、アイコンだけの操作もなし。子どもから高齢者まで。
 
 | 画面 | 何ができるか |
 |---|---|
@@ -145,11 +145,11 @@ Claude は町の「隊長」です。人と人をつなぐ段取りだけを受�
 
 プログラミングは初心者です。開発はすべて、**スマホの Claude アプリから Claude Code に日本語で指示するだけ**。初日に [`docs/spec.md`](docs/spec.md) を「仕様の正本」にし、[`CLAUDE.md`](CLAUDE.md) の手順（タスクを1つ → `npm run check` → スクショを自分で見る → 1コミット）で `/loop` 自走。企画役 [`kikaku`](.claude/agents/kikaku.md) が提案書（[`docs/ideas/`](docs/ideas/)）を書き、点検役 [`tenken`](.claude/agents/tenken.md) が4時間ごとに全ページを見て直す（[`docs/tenken.md`](docs/tenken.md)）。本人の役割は判断・鍵の準備・実機の確認・デモ動画。6日間の記録は [`docs/devlog.md`](docs/devlog.md) とコミット履歴がそのまま残っています。
 
-こだわり: 絵は画像生成 AI を使わず、Claude の指示とプログラムで SVG を組み立てる。音は音ファイルを持たず、BGM 3曲・効果音 36種・今朝の雪の歌を Web Audio で合成（[`lib/sound/`](lib/sound/)）。配色は「白銀の北海道に、家の灯りがともる。」雪明かり `#F4F7FA`／冬の深い青 `#29445C`／灯りオレンジ `#D9825B`（いちばん大事なボタンだけ）。赤は「人手不足」だけ、緑は使わない。
+こだわり: 絵は画像生成 AI を使わず、Claude の指示とプログラムで SVG を組み立てる。音は音ファイルを持たず、BGM 3曲・効果音 39種・今朝の雪の歌を Web Audio で合成（[`lib/sound/`](lib/sound/)）。配色は「白銀の北海道に、家の灯りがともる。」雪明かり `#F4F7FA`／冬の深い青 `#29445C`／灯りオレンジ `#D9825B`（いちばん大事なボタンだけ）。赤は「人手不足」だけ、緑は使わない。
 
 ## 技術と動かし方
 
-Next.js 16（App Router）/ TypeScript / Tailwind CSS v4 / Vercel（Cron）/ Neon（Postgres、素の SQL）/ vitest（テスト 469 本）/ Claude API（Opus 5.5・Haiku 5.5、構造化出力、画像入力、tool use、web_search）/ LINE ログイン（本人の確認だけ）/ Web Push ＋ PWA / Leaflet ＋ OpenStreetMap / Open-Meteo
+Next.js 16（App Router）/ TypeScript / Tailwind CSS v4 / Vercel（Cron）/ Neon（Postgres、素の SQL）/ vitest（テスト 568 本）/ Claude API（Opus 5.5・Haiku 5.5、構造化出力、画像入力、tool use、web_search）/ LINE ログイン（本人の確認だけ）/ Web Push ＋ PWA / Leaflet ＋ OpenStreetMap / Open-Meteo
 
 ```bash
 npm install
