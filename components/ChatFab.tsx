@@ -1,20 +1,17 @@
 "use client";
-// いつでも隊長トーク（spec v1.43・v1.44）: 下のタブのある画面の端から、シマエナガが半分だけ顔を出している。
-// 11/8 本人の指摘「少し邪魔」→ 本人の案「端から少し顔を出して、スワイプで起動」:
-// - 画面の内側へスワイプ（引っぱり出す）すると隊長トーク。タップでも開く（スワイプが苦手な人のため）
-// - 上下に引っぱると場所を変えられる。反対の端まで持っていけば、そちらの端に移る。場所はこの端末に覚える
+// いつでも隊長トーク（spec v1.43・v1.44・v1.45）: 下のタブのある画面の端から、シマエナガがのぞいている。
+// 11/8 本人の指摘「少し邪魔」→「端から顔を出してスワイプで」→「半分埋まって見える。もっとのぞいている絵に。引っぱると体が少し伸びてチャットへ。体は全部出てこない」:
+// - 端からのぞく専用の絵（PeekBird）。内側へ引っぱると体が横に伸び、一定まで引っぱるか、タップでも、ぐーんと伸びて隊長トークへ
+// - 上下に動かすと場所を変えられ、反対の端まで持っていけばそちらの端へ。場所はこの端末に覚える
 // - 隊長トークの画面では出さない
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import Mascot from "./Mascot";
 import { useClientValue } from "./useClientValue";
 
 const POS_KEY = "shimaena-chat-fab";
-/** 丸の大きさ（px） */
+/** 動かすときの目安の大きさ（px） */
 export const FAB_SIZE = 60;
-/** 画面の外に隠す長さ（px）。残りが顔を出す */
-export const FAB_HIDDEN = 26;
 /** これより動いたら「動かした」とみなす（タップと分ける。px） */
 const DRAG_PX = 8;
 /** 内側へこれだけ引っぱったら隊長トークを開く（px） */
@@ -63,20 +60,67 @@ function readPos(): FabPos {
 
 type Mode = "none" | "pull" | "move";
 
+/** 見えている部分の幅・高さ（px）。押せる広さもこれ */
+export const PEEK_W = 50;
+export const PEEK_H = 68;
+/** 引っぱったときの体の伸び（1 = そのまま）。いちばん伸びても体の半分は画面の外 */
+export function stretchOf(pull: number): number {
+  return 1 + Math.min(Math.max(pull, 0), 70) / 55;
+}
+
+/**
+ * 端からのぞくシマエナガ（右の端から。左の端は左右を反転して使う）。x=50 が画面の端で、体の残りは画面の外。
+ * 首をかしげて、黒い目とくちばし、ほっぺ、マフラーが見える
+ */
+function PeekBird({ stretch }: { stretch: number }) {
+  return (
+    <svg
+      viewBox="0 0 50 68"
+      width={PEEK_W}
+      height={PEEK_H}
+      aria-hidden="true"
+      className="overflow-visible drop-shadow-[0_2px_4px_rgba(31,42,55,0.28)]"
+      style={{ transform: `scaleX(${stretch})`, transformOrigin: "100% 50%", transition: stretch === 1 ? "transform 0.25s cubic-bezier(.3,1.6,.5,1)" : "none" }}
+    >
+      <g transform="rotate(-14 50 40)">
+        {/* 体（ふわふわの白） */}
+        <ellipse cx="50" cy="40" rx="42" ry="27" fill="#ffffff" stroke="#c9d6e2" strokeWidth="1.5" />
+        {/* 頭の上の毛 */}
+        <path d="M30 15 q4 -6 9 -2 q3 -5 8 -1" fill="none" stroke="#c9d6e2" strokeWidth="1.6" strokeLinecap="round" />
+        {/* 目（ぱっちり） */}
+        <circle cx="24" cy="34" r="4.2" fill="#24313f" />
+        <circle cx="25.4" cy="32.6" r="1.4" fill="#ffffff" />
+        {/* くちばし */}
+        <path d="M8.5 39 L14.5 36.2 L14.5 41.6 Z" fill="#24313f" />
+        {/* ほっぺ */}
+        <ellipse cx="27" cy="44.5" rx="4.6" ry="2.6" fill="#f4b6c2" opacity="0.85" />
+        {/* マフラー */}
+        <path d="M14 56 Q32 64 50 61 L50 67.5 Q30 70.5 12 61.5 Z" fill="var(--lamp)" />
+      </g>
+      {/* 端をつかむ羽 */}
+      <path d="M50 58 q-9 1 -11 6 q6 1 11 -1 Z" fill="#ffffff" stroke="#c9d6e2" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: string; label?: string }) {
   const router = useRouter();
   const href = `/chat${q}`;
   const saved = useClientValue(DEFAULT_FAB_POS, readPos);
   const [movedPos, setPos] = useState<FabPos | null>(null);
   const pos = movedPos ?? saved;
-  /** 動かしている途中: pull = 内側へ引っぱっている長さ、move = 指の場所（丸の左上） */
-  const [live, setLive] = useState<{ mode: Mode; pull: number; x: number; y: number }>({ mode: "none", pull: 0, x: 0, y: 0 });
-  const start = useRef<{ px: number; py: number; x: number; y: number; mode: Mode } | null>(null);
+  /** 動かしている途中: pull = 内側へ引っぱっている長さ、move = 指の場所（side と高さ） */
+  const [live, setLive] = useState<{ mode: Mode | "open"; pull: number; side: FabPos["side"]; y: number }>({ mode: "none", pull: 0, side: "right", y: 0 });
+  const start = useRef<{ px: number; py: number; mode: Mode } | null>(null);
   const used = useRef(false);
 
+  const open = () => {
+    setLive((l) => ({ ...l, mode: "open", pull: 90 })); // ぐーんと伸びてから
+    window.setTimeout(() => router.push(href), 160);
+  };
+
   const onDown = (e: React.PointerEvent<HTMLAnchorElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    start.current = { px: e.clientX, py: e.clientY, x: r.left, y: r.top, mode: "none" };
+    start.current = { px: e.clientX, py: e.clientY, mode: "none" };
     used.current = false;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -87,25 +131,25 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
     const dy = e.clientY - s.py;
     if (s.mode === "none") {
       if (Math.hypot(dx, dy) < DRAG_PX) return;
-      // 最初の動きで決める: 内側へ横に動かしたら「引っぱり出す」、それ以外は「場所を動かす」
+      // 最初の動きで決める: 内側へ横に動かしたら「引っぱる」、それ以外は「場所を動かす」
       s.mode = Math.abs(dx) > Math.abs(dy) && inwardPx(pos.side, dx) > 0 ? "pull" : "move";
       used.current = true;
     }
     if (s.mode === "pull") {
-      setLive({ mode: "pull", pull: Math.min(FAB_SIZE, Math.max(0, inwardPx(pos.side, dx))), x: 0, y: 0 });
+      setLive({ mode: "pull", pull: Math.max(0, inwardPx(pos.side, dx)), side: pos.side, y: 0 });
     } else {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      setLive({ mode: "move", pull: 0, x: Math.min(w - FAB_SIZE, Math.max(0, s.x + dx)), y: Math.min(h - FAB_SIZE, Math.max(0, s.y + dy)) });
+      const y = Math.min(0.82, Math.max(0.08, e.clientY / h));
+      setLive({ mode: "move", pull: 0, side: e.clientX < w / 2 ? "left" : "right", y });
     }
   };
   const onUp = () => {
     const s = start.current;
     start.current = null;
-    if (s?.mode === "pull" && live.pull >= SWIPE_OPEN_PX) {
-      router.push(href);
-    } else if (s?.mode === "move" && live.mode === "move") {
-      const next = snapFab(live.x, live.y, window.innerWidth, window.innerHeight);
+    if (s?.mode === "pull" && live.pull >= SWIPE_OPEN_PX) return open();
+    if (s?.mode === "move" && live.mode === "move") {
+      const next: FabPos = { side: live.side, y: live.y };
       setPos(next);
       try {
         localStorage.setItem(POS_KEY, JSON.stringify(next));
@@ -113,23 +157,17 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
         /* 覚えられなくても動かせる */
       }
     }
-    setLive({ mode: "none", pull: 0, x: 0, y: 0 });
+    setLive({ mode: "none", pull: 0, side: pos.side, y: 0 });
   };
 
-  const edge = -FAB_HIDDEN + (live.mode === "pull" ? live.pull : 0);
-  const style: React.CSSProperties =
-    live.mode === "move"
-      ? { left: live.x, top: live.y, transition: "none" }
-      : {
-          top: `calc(${pos.y * 100}% - ${FAB_SIZE / 2}px)`,
-          ...(pos.side === "left" ? { left: edge } : { right: edge }),
-          ...(live.mode === "pull" ? { transition: "none" } : {}),
-        };
+  const side = live.mode === "move" ? live.side : pos.side;
+  const y = live.mode === "move" ? live.y : pos.y;
+  const stretch = live.mode === "pull" || live.mode === "open" ? stretchOf(live.pull) : 1;
 
   return (
     <Link
       href={href}
-      aria-label={`${label}（内側へスワイプするか、押すと開きます。上下に動かすと場所を変えられます）`}
+      aria-label={`${label}（引っぱるか、押すと開きます。上下に動かすと場所を変えられます）`}
       data-sound="tap"
       draggable={false}
       onPointerDown={onDown}
@@ -137,21 +175,29 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
       onPointerUp={onUp}
       onPointerCancel={onUp}
       onClick={(e) => {
+        e.preventDefault();
         if (used.current) {
-          e.preventDefault(); // 動かした・引っぱったときは、離したときの処理に任せる
-          used.current = false;
+          used.current = false; // 動かした・引っぱったときは、離したときの処理に任せる
+          return;
         }
+        open(); // タップでも、ぐーんと伸びて開く
       }}
       onContextMenu={(e) => e.preventDefault()}
-      style={{ ...style, width: FAB_SIZE, height: FAB_SIZE, touchAction: "none" }}
-      className={`fixed z-40 grid select-none place-items-center rounded-full bg-card/95 shadow-md ring-2 ring-lamp transition-[top,left,right] duration-200 [-webkit-touch-callout:none] ${live.mode === "move" ? "scale-105 opacity-90" : ""}`}
+      style={{
+        top: `calc(${y * 100}% - ${PEEK_H / 2}px)`,
+        width: PEEK_W,
+        height: PEEK_H,
+        touchAction: "none",
+        ...(side === "left" ? { left: 0, transform: "scaleX(-1)" } : { right: 0 }),
+        transition: live.mode === "move" ? "none" : "top 0.2s",
+      }}
+      className={`fixed z-40 block select-none [-webkit-touch-callout:none] ${live.mode === "move" ? "opacity-90" : ""}`}
     >
-      {/* 顔は見えている側に寄せる（のぞいている感じ） */}
-      <span className={pos.side === "right" ? "-translate-x-2.5" : "translate-x-2.5"}>
-        <Mascot size={40} />
-      </span>
+      <PeekBird stretch={stretch} />
+      {/* 吹き出し（左の端では反転を戻す） */}
       <span
-        className={`absolute -top-1.5 grid size-6 place-items-center rounded-full bg-lamp text-sm shadow ${pos.side === "right" ? "left-0" : "right-0"}`}
+        className="absolute -top-2 left-0 grid size-6 place-items-center rounded-full bg-lamp text-sm shadow"
+        style={side === "left" ? { transform: "scaleX(-1)" } : undefined}
         aria-hidden="true"
       >
         💬
