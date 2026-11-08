@@ -9,7 +9,7 @@ import type { RevealCard } from "../cards/reveal";
 import { announceText } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
 import { okVoiceMime, saveThanksVoice, VOICE_MAX_BYTES, VOICE_MAX_SECONDS } from "../thanks/voice";
-import { planMorning } from "../claude/commander";
+import { mockPlan, planMorning } from "../claude/commander";
 import { checkPhoto, decidePhoto, hazardLines, SNOW_TYPE_LABEL, WIDTH_LABEL, type PhotoInput } from "../claude/photo";
 import { photoFingerprint, photoSeen, rememberPhoto } from "../ops/photo-seen";
 import { weeklyText } from "../claude/weekly";
@@ -114,12 +114,13 @@ export async function checkForecastAndAnnounce(now = new Date()): Promise<{ fore
  * 「雪かき待ち」の答えにする。作戦（plan）は 6:30 の cron（morningAuto）がすぐ続けて行い、
  * その配信で近所の人に「助けてほしい家が○軒」が届く（足りない家は 300m の人へも）。
  */
-export async function ring(): Promise<{ record: MorningRecord; sent: number }> {
+/** opts.fast: 撮影ステージ用。Claude を待たない（隊長のひとことは定型） */
+export async function ring(opts: { fast?: boolean } = {}): Promise<{ record: MorningRecord; sent: number }> {
   const s = await loadMorning();
   if (s.morning.rollcall.status !== "announced") return { record: s, sent: 0 };
   ringRollcall(s);
   // 隊長のひとこと（状態ごと）をこの朝に1回だけ書く。失敗しても止めない（定型が出る）
-  try {
+  if (!opts.fast) try {
     const rc = s.morning.rollcall;
     s.captainLines = await captainLines({ snowCm: rc.forecastCm, snowName: rc.snowName, safety: Boolean(rcArgs(s)[2]) });
   } catch (e) {
@@ -277,20 +278,24 @@ export async function answerByWords(lineUserId: string, text: string, now = new 
 }
 
 /** 6:40 の作戦: 司令官（Claude かモック）→ ミッションと出撃 → LINE で配信 */
-export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
+/**
+ * opts.fast（撮影ステージ用・11/8 本人「発表動画なので通しで連続で。ほかの参加者などの調整は架空で即」）:
+ * 作戦は Claude を待たずに決める（mockPlan）。隊長トークへの知らせは opts.only の人だけ、ヘルプ通知は opts.helpBase の家だけ。
+ */
+export async function plan(opts: { fast?: boolean; only?: ReadonlySet<string>; helpBase?: string } = {}): Promise<{ record: MorningRecord; sent: number }> {
   if (!(await claimPlanning())) return { record: await loadMorning(), sent: 0 };
   const s = await loadMorning();
   s.morning.rollcall.status = "open"; // claim で planned にしたぶんを戻し、applyPlan で改めて planned にする
   const roster = await loadRoster();
   try {
-    const result = await planMorning(commanderInput(s, roster));
+    const result = opts.fast ? mockPlan(commanderInput(s, roster)) : await planMorning(commanderInput(s, roster));
     applyPlan(s, roster, result);
   } catch (e) {
     await saveMorning(s); // open に戻して、もう一度押せるようにする
     throw e;
   }
   // 今朝の先生: 町のコツから今朝の雪に合う1つ（失敗しても作戦は止めない）
-  try {
+  if (!opts.fast) try {
     const rc = s.morning.rollcall;
     const pick = await pickTeacher({ cm: rc.forecastCm, tempMinC: rc.tempMinC, tips: await loadTips() });
     s.teacherTip = pick ? { line: pick.line } : undefined;
@@ -320,7 +325,7 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   let failed = 0;
   for (const p of roster.participants) {
     const k = inboxKeyOf(p);
-    if (!k) continue;
+    if (!k || (opts.only && !opts.only.has(p.id))) continue;
     const mine = personal.get(k) ?? [];
     const head = MSG.morningHello(...rcArgs(s));
     // 手伝う側と、チームに入っている頼む家の人（お互いさま。spec v1.20）に、近所の待っている家の数
@@ -334,6 +339,7 @@ export async function plan(): Promise<{ record: MorningRecord; sent: number }> {
   await saveMorning(s);
   // 開始 20 分前（6:40）の時点で足りない家はすぐヘルプ通知（spec 4-a）、返事なしの家は声かけと家族へ（spec 4）
   for (const m of s.morning.missions) {
+    if (opts.helpBase && m.baseId !== opts.helpBase) continue;
     if (m.status === "short") await notifyHelp(m.id);
     if (m.status === "no_answer") await notifyNoAnswer(m.id);
   }

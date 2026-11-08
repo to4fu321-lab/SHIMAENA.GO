@@ -206,6 +206,19 @@ async function stageMission() {
   return { s, roster, mission: base ? s.morning.missions.find((m) => m.baseId === base.id) : undefined };
 }
 
+/** 撮影ステージ用の 6:30: Claude を待たずに作戦を決め、撮影の3人にだけ知らせる（ヘルプ通知は拠点7だけ） */
+export async function presentRingFast(): Promise<string> {
+  return guarded("presentRingFast", async () => {
+    await ring({ fast: true });
+    const roster = await loadRoster();
+    const base = roster.bases.find((b) => b.requesterId === STAGE_CAST.c);
+    if ((await loadMorning()).morning.rollcall.status === "open") await plan({ fast: true, only: STAGE_IDS, helpBase: base?.id });
+    refresh();
+    revalidatePath("/chat");
+    return "6:30 の知らせ";
+  });
+}
+
 /** 発表モード: A か B が、拠点7の「行く（10分でも）」を押したのと同じ */
 export async function presentGo(who: "a" | "b"): Promise<string> {
   return guarded("presentGo", async () => {
@@ -257,7 +270,8 @@ export async function presentGather(): Promise<string> {
     let active = 0;
     // 撮影用に速く: 1回読んで、全員ぶんの「向かう」をまとめて書く（1人ずつ読み書きすると Neon との往復で数十秒かかる）
     await update((s) => {
-      const open = s.morning.missions.filter((m) => m.status !== "done" && m.status !== "no_answer");
+      const base7 = roster.bases.find((b) => b.requesterId === STAGE_CAST.c)?.id;
+      const open = s.morning.missions.filter((m) => m.status !== "done" && m.status !== "no_answer" && m.baseId !== base7); // 拠点7は撮影の3チームだけ（完了のカードを少なく速く）
       const at = new Date().toISOString();
       for (const p of roster.participants) {
         if (p.role !== "helper" || !p.teamId || p.lineUserId || STAGE_IDS.has(p.id)) continue;

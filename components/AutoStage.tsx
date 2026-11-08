@@ -173,9 +173,6 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       if (toMap) await tap(toMap);
       await open("/map", 2500);
       await wait(3);
-      await actions.completeOther();
-      await open("/map", 2000);
-      await wait(1);
 
       // 7. 終わりました → 写真
       say("終わったら、写真を1枚");
@@ -230,8 +227,24 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       clearInterval(tick);
       on.current = false;
       setRunning(false);
+      setReady(true);
     }
   };
+
+  // 開いたら、朝をまっさら（前夜の予告）に戻してからホームを出す（前の撮影の雪かきが残らないように。11/8 本人の指示）
+  const [ready, setReady] = useState(false);
+  const reset = async () => {
+    setReady(false);
+    setCaption("");
+    await actions.announce();
+    await open("/", 1500);
+    setReady(true);
+  };
+  useEffect(() => {
+    const t = setTimeout(() => void reset(), 0); // 描き終わってから（effect の中で直接 state を変えない）
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // キー: Enter で開始・止める、T でテロップを出す／消す
   useEffect(() => {
@@ -266,9 +279,14 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       <div className="w-80 space-y-4">
         {showCaption && caption && <p className="text-3xl font-bold leading-snug">{caption}</p>}
         {!running ? (
-          <button type="button" onClick={() => void start()} className="w-full rounded-2xl bg-[#d9825b] px-4 py-3 text-xl font-bold text-white">
-            ▶ 発表（約3分・全部自動）
-          </button>
+          <>
+            <button type="button" disabled={!ready} onClick={() => void start()} className="w-full rounded-2xl bg-[#d9825b] px-4 py-3 text-xl font-bold text-white disabled:opacity-50">
+              {ready ? "▶ 発表（全部自動）" : "朝をまっさらに戻しています…"}
+            </button>
+            <button type="button" disabled={!ready} onClick={() => void reset()} className="w-full rounded-2xl bg-white/15 px-4 py-2 text-base disabled:opacity-50">
+              ↺ リセット（朝をまっさらに）
+            </button>
+          </>
         ) : (
           <button type="button" onClick={() => (on.current = false)} className="w-full rounded-2xl bg-white/15 px-4 py-2 text-base">
             止める（{Math.floor(sec / 60)}:{String(sec % 60).padStart(2, "0")}）
