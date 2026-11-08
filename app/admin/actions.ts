@@ -41,7 +41,7 @@ import { seedDemoStory } from "@/lib/kikigaki/ops";
 import { seedDemoTalk } from "@/lib/morning/demo-talk";
 import { syncWithGithub } from "@/lib/feedback/ops";
 import { PRESENT_EXTRA, STAGE_CAST, STAGE_IDS } from "@/lib/demo-cast";
-import { repo } from "@/lib/repo";
+import { clearDemoSoloLogs, repo } from "@/lib/repo";
 import { DEMO_PREFIX, inboxKeyOf } from "@/lib/inbox/key";
 import { clearThread } from "@/lib/inbox/store";
 import { push } from "@/lib/line/client";
@@ -398,7 +398,13 @@ export async function runWeekly() {
 export async function backToSample() {
   return guarded("backToSample", async () => {
     if (!demoEnabled()) return; // 本当にエリアで使っているときは、見本の状態に戻さない
+    const before = appToday(await loadMorning()); // 戻す前の「今日」（本番の日付のことがある）
     await resetToSample();
+    // 動作確認で増えた架空の人の今日の記録（「今日はもう8回」など）も消す。戻す前と後の両方の「今日」
+    const after = appToday(await loadMorning());
+    let cleared = 0;
+    for (const d of new Set([before, after])) cleared += await clearDemoSoloLogs(d).catch(() => 0);
+    if (cleared > 0) await update((s) => void s.log.push(`架空の人の今日のソロ記録を ${cleared} 件消しました`));
     // 架空の人の隊長トークも、見本の朝（おはよう → 作戦 → 完了）に入れ直す（地図と話をそろえる）
     try {
       await seedDemoTalk(await loadMorning(), await loadRoster());
