@@ -283,7 +283,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <Step n="0" label="前夜の予告（12cm）" action={startEmptyMorning} />
-          <Step n="1" label="6:30 積もった → 登録した家を雪かき待ちに" action={ringNow} disabled={status !== "announced"} />
+          <Step n="1" label="6:30 積もった → 雪かき待ち・作戦・近所に通知" action={ringNow} disabled={status !== "announced"} />
           <Step n="2" label="（なくてよい）架空の人が手伝える時間を答える" action={answerRandomly} disabled={status !== "open"} />
           <Step n="3" label="6:40 司令官の作戦" action={runCommander} disabled={status !== "open" || s.answers.length === 0} />
           <Step
