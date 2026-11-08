@@ -369,7 +369,7 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           </form>
           {demoEnabled() && (
             <form action={backToSample}>
-              <button className={link}>7:10 の見本の状態に戻す</button>
+              <button className={link}>7:10 の見本の状態に戻す（架空の人の今日の記録も消す）</button>
             </form>
           )}
           <form action="/api/cards/try" method="get">

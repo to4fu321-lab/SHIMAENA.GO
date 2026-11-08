@@ -555,3 +555,19 @@ export const dbRepo: Repo = {
 export function repo(): Repo {
   return hasDb() ? dbRepo : memoryRepo;
 }
+
+/**
+ * 架空の人（h1・r2 など）の、その日のソロ台帳を消す（/admin の「見本の状態に戻す」から）。
+ * 審査や撮影の前に、動作確認で増えた「今日は8回」などを消して、見本の朝からやり直せるように（11/8）。本物の人は消さない
+ */
+export async function clearDemoSoloLogs(date: string): Promise<number> {
+  const demo = /^[hr]\d+$/;
+  if (!hasDb()) {
+    let n = 0;
+    for (const [id, l] of mem().soloLogs) if (l.date === date && demo.test(l.participantId)) (mem().soloLogs.delete(id), n++);
+    return n;
+  }
+  memoClear("repo:solo:");
+  const rows = await query<{ id: string }>("delete from solo_logs where date = $1 and participant_id ~ '^[hr][0-9]+$' returning id", [date]);
+  return rows.length;
+}
