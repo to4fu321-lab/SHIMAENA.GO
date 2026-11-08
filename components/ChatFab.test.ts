@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { bodyPull, DEFAULT_FAB_POS, FAB_SIZE, inwardPx, openPx, parseFabPos, snapFab, squashOf } from "./ChatFab";
+import { DEFAULT_FAB_POS, FAB_SIZE, inwardPx, openPx, parseFabPos, snapFab, squashOf } from "./ChatFab";
 
-describe("いつでも隊長トークのボタン（v1.43・v1.44）", () => {
-  it("画面の 1/3 で開く。そこまでは指にぴったり、その先はゴムのように重い。伸びると細く、縮むと太く", () => {
-    expect(openPx(390)).toBe(130);
-    expect(bodyPull(50, 130)).toBe(50);
-    expect(bodyPull(230, 130)).toBe(160);
+describe("いつでも隊長トークのボタン（v1.43〜v1.48）", () => {
+  it("画面の 1/4 で飛び出して開く。伸びると細く、縮むと太く（もちもち）", () => {
+    expect(openPx(390)).toBe(98);
+    expect(openPx(375)).toBe(94);
     expect(squashOf(0)).toBe(1);
-    expect(squashOf(130)).toBeLessThan(1);
+    expect(squashOf(98)).toBeLessThan(1);
     expect(squashOf(-10)).toBeGreaterThan(1);
   });
 
