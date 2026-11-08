@@ -80,4 +80,19 @@ describe("デモの朝の流れ", () => {
     expect(s.morning.missions.find((m) => m.id === short.id)!.status).not.toBe("done");
     expect(s.morning.missions.filter((m) => m.id !== short.id && m.status !== "no_answer").every((m) => m.status === "done")).toBe(true);
   });
+
+  it("4 を続けて押すと、終わった家の色（最初に来たチーム）が1色にかたよらない（11/8 本人「みんなオレンジになる」）", () => {
+    const s = emptyMorning();
+    ringRollcall(s);
+    for (const p of R.participants) if (p.role === "requester") putAnswer(s, p.id, "no", `${s.morning.rollcall.date}T06:31:00+09:00`);
+    applyPlan(s, R, mockPlan(commanderInput(s, R)));
+    const first = new Set<string>();
+    for (let k = 0; k < 6; k++) {
+      const id = completeNextForDemo(s, R);
+      if (!id) break;
+      const t = s.morning.sorties.find((x) => x.missionId === id)?.teamId;
+      if (t) first.add(t);
+    }
+    expect(first.size).toBeGreaterThan(1);
+  });
 });

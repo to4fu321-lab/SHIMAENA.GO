@@ -1,6 +1,7 @@
 // 朝の流れ（予告 → 点呼 → 回答 → 司令官 → 出撃 → 完了）を「今朝の状態」に書き込む。
 // 保存先や LINE に関係なく使えるよう、状態と名簿を受け取って書き換えるだけの関数にしている。
 import type { CommanderInput, Plan } from "../claude/commander";
+import { distanceM } from "../game/help";
 import { decompose } from "../game/mission";
 import { scoreMission } from "../game/score";
 import { clockText, jstIso } from "../jst";
@@ -328,7 +329,11 @@ export function rescueShort(s: MorningRecord, roster: Roster, targetId?: string,
   const finished = (id: string) => s.morning.sorties.some((x) => x.participantId === id && x.status === "done");
   const candidates = roster.participants.filter((p) => p.role === "helper" && p.teamId && !p.lineUserId && !exclude?.has(p.id) && !busy.has(p.id) && canMove(p.id));
   const rank = (p: (typeof candidates)[number]) => (teamsThere.has(p.teamId!) ? 0 : 2) + (finished(p.id) ? 1 : 0);
-  const helper = candidates.reduce<(typeof candidates)[number] | undefined>((best, p) => (!best || rank(p) > rank(best) ? p : best), undefined);
+  // 同じ順位なら、その家にいちばん近い人（名簿の先頭の人ばかりが選ばれて、町が1色になるのを防ぐ。11/8 本人「みんなオレンジになる」）
+  const home = roster.participants.find((p) => p.id === roster.bases.find((b) => b.id === m.baseId)?.requesterId)?.location;
+  const far = (p: (typeof candidates)[number]) => (home && p.location ? distanceM(p.location, home) : 0);
+  const better = (p: (typeof candidates)[number], best: (typeof candidates)[number]) => rank(p) > rank(best) || (rank(p) === rank(best) && far(p) < far(best));
+  const helper = candidates.reduce<(typeof candidates)[number] | undefined>((best, p) => (!best || better(p, best) ? p : best), undefined);
   if (!helper) return null;
   const finishedOwn = s.morning.sorties.some((x) => x.participantId === helper.id && x.status === "done");
   s.morning.sorties.push({
