@@ -2,10 +2,10 @@
 // いつでも隊長トーク（spec v1.43〜v1.48）: 下のタブのある画面の端から、シマエナガがのぞいている。
 // 11/8 本人の案「💬を常に画面に。邪魔な時は動かせるように」→「端から顔を出してスワイプで」→ 本人の絵コンテ（v1.48）:
 // ① 端から内側へ引っぱる ② もちもち伸びる（吹き出しは「チャットへ ←」に変わる） ③ 目が「><」で羽をパタパタ
-// ④ 画面の 1/4 まで引っぱると、全身がぴょんと飛び出してチャットへ ⑤ 足りなければ、ぽよんと元の姿に戻ってハート
+// ④ 画面の半分まで引っぱると、全身がぴょんと飛び出してチャットへ ⑤ 足りなければ、ぽよんと元の姿に戻ってハート
 // - 黒いふちどりの、まんまるでふわふわのシマエナガ（両目・小さなくちばし・ほっぺ・オレンジの足・羽・しっぽ）
 // - タップでも飛び出して開く。上下に動かすと場所を変えられ、反対の端まで持っていけばそちらの端へ。場所はこの端末に覚える
-// - 効果音（v1.49）: 引っぱり始め「みょーん」、半分を越えると羽「パタパタ」、飛び出し「ぴょーん＋ピヨッ」、戻る「ぽよよん」→ ♥「ピヨッ」
+// - 効果音（v1.49）: 引っぱり始め「みょーん」、開く長さの半分を越えると羽「パタパタ」、飛び出し「ぴょーん＋ピヨッ」、戻る「ぽよよん」→ ♥「ピヨッ」
 // - 隊長トークの画面では出さない
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -17,9 +17,9 @@ const POS_KEY = "shimaena-chat-fab";
 export const FAB_SIZE = 60;
 /** これより動いたら「動かした」とみなす（タップと分ける。px） */
 const DRAG_PX = 8;
-/** 画面の幅のこの割合まで引っぱったら、飛び出してチャットへ（11/8 本人の絵コンテ「4分の1行ったら出てきてチャットへ」） */
-export const OPEN_RATIO = 1 / 4;
-/** 開くまでの長さ（px）。画面の幅の 1/4 */
+/** 画面の幅のこの割合まで引っぱったら、飛び出してチャットへ（11/8 本人の指示「4分の1」→「画面の半分」） */
+export const OPEN_RATIO = 1 / 2;
+/** 開くまでの長さ（px）。画面の幅の 1/2 */
 export function openPx(width: number): number {
   return Math.round(width * OPEN_RATIO);
 }
@@ -322,7 +322,7 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
         sounded.current.flap = true;
         play("flap", { gain: 1.6 }); // 羽パタパタ
       }
-      if (d >= openPx(window.innerWidth)) open(); // 1/4 に届いたら、その場で飛び出す
+      if (d >= openPx(window.innerWidth)) open(); // 画面の半分に届いたら、その場で飛び出す
     } else {
       const y = Math.min(0.82, Math.max(0.08, e.clientY / window.innerHeight));
       setMoving({ side: e.clientX < window.innerWidth / 2 ? "left" : "right", y });

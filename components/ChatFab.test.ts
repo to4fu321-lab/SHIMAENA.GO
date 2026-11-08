@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_FAB_POS, FAB_SIZE, inwardPx, openPx, parseFabPos, snapFab, squashOf } from "./ChatFab";
 
 describe("いつでも隊長トークのボタン（v1.43〜v1.48）", () => {
-  it("画面の 1/4 で飛び出して開く。伸びると細く、縮むと太く（もちもち）", () => {
-    expect(openPx(390)).toBe(98);
-    expect(openPx(375)).toBe(94);
+  it("画面の半分で飛び出して開く。伸びると細く、縮むと太く（もちもち）", () => {
+    expect(openPx(390)).toBe(195);
+    expect(openPx(375)).toBe(188);
     expect(squashOf(0)).toBe(1);
     expect(squashOf(98)).toBeLessThan(1);
     expect(squashOf(-10)).toBeGreaterThan(1);
