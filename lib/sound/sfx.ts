@@ -116,6 +116,25 @@ export const SFX = {
   flap: (c, o, t) => {
     for (let i = 0; i < 5; i++) noise(c, o, { at: t + i * 0.13, dur: 0.07, gain: 0.05, filter: { type: "lowpass", f: 700 } });
   },
+  // ---- 端からのぞく隊長（spec v1.49。components/ChatFab.tsx）----
+  /** 「みょーん」引っぱり始め（ゴムがのびる） */
+  peekStretch: (c, o, t) => {
+    tone(c, o, { f: 240, f1: 600, at: t, dur: 0.3, type: "triangle", gain: 0.12, attack: 0.02 });
+    tone(c, o, { f: 480, f1: 1200, at: t + 0.02, dur: 0.24, type: "sine", gain: 0.05, attack: 0.02 });
+  },
+  /** 「ぴょーん＋ピヨッ」全身が飛び出してチャットへ */
+  peekPop: (c, o, t) => {
+    tone(c, o, { f: 380, f1: 1400, at: t, dur: 0.18, type: "sine", gain: 0.18 });
+    noise(c, o, { at: t + 0.04, dur: 0.24, gain: 0.07, filter: { type: "bandpass", f: 600, f1: 3200, q: 1.4 } });
+    tone(c, o, { f: 1800, f1: 2600, at: t + 0.2, dur: 0.07, type: "sine", gain: 0.1 });
+    tone(c, o, { f: 2100, f1: 2900, at: t + 0.3, dur: 0.08, type: "sine", gain: 0.09 });
+  },
+  /** 「ぽよよん」足りずに離して、元の姿に戻る */
+  peekBoing: (c, o, t) => {
+    tone(c, o, { f: 560, f1: 250, at: t, dur: 0.12, type: "sine", gain: 0.18 });
+    tone(c, o, { f: 290, f1: 470, at: t + 0.1, dur: 0.12, type: "sine", gain: 0.13 });
+    tone(c, o, { f: 450, f1: 370, at: t + 0.21, dur: 0.15, type: "sine", gain: 0.09 });
+  },
   /** 「ポロン」隊長トークに新しい文 */
   message: (c, o, t) => {
     bell(c, o, 79, t, 0.5, 0.14);

@@ -5,9 +5,11 @@
 // ④ 画面の 1/4 まで引っぱると、全身がぴょんと飛び出してチャットへ ⑤ 足りなければ、ぽよんと元の姿に戻ってハート
 // - 黒いふちどりの、まんまるでふわふわのシマエナガ（両目・小さなくちばし・ほっぺ・オレンジの足・羽・しっぽ）
 // - タップでも飛び出して開く。上下に動かすと場所を変えられ、反対の端まで持っていけばそちらの端へ。場所はこの端末に覚える
+// - 効果音（v1.49）: 引っぱり始め「みょーん」、半分を越えると羽「パタパタ」、飛び出し「ぴょーん＋ピヨッ」、戻る「ぽよよん」→ ♥「ピヨッ」
 // - 隊長トークの画面では出さない
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { play } from "@/lib/sound/engine";
 import { useClientValue } from "./useClientValue";
 
 const POS_KEY = "shimaena-chat-fab";
@@ -248,6 +250,8 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
   const used = useRef(false);
   const stopSpring = useRef<(() => void) | null>(null);
   const opening = useRef(false);
+  /** この引っぱりで鳴らした音（同じ音を何度も鳴らさない） */
+  const sounded = useRef({ stretch: false, flap: false });
 
   useEffect(() => () => stopSpring.current?.(), []);
 
@@ -257,6 +261,7 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
     opening.current = true;
     stopSpring.current?.();
     start.current = null;
+    play("peekPop"); // ぴょーん＋ピヨッ
     const t0 = performance.now();
     const step = (now: number) => {
       const k = Math.min(1, (now - t0) / 320);
@@ -277,8 +282,10 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
 
   /** ⑤ ぽよんと戻って、ハート */
   const bounceBack = (from: number) => {
+    if (from > 12) play("peekBoing"); // ぽよよん
     stopSpring.current = springBack(from, setPull, () => {
       if (from > 12) {
+        play("chirp", { gain: 0.8 }); // ♥ と「ピヨッ」
         setHeart(true);
         window.setTimeout(() => setHeart(false), 900);
       }
@@ -290,6 +297,7 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
     stopSpring.current?.();
     start.current = { px: e.clientX, py: e.clientY, mode: "none" };
     used.current = false;
+    sounded.current = { stretch: false, flap: false };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onMove = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -306,6 +314,14 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
     if (s.mode === "pull") {
       const d = Math.max(0, inwardPx(pos.side, dx));
       setPull(d);
+      if (!sounded.current.stretch && d > 10) {
+        sounded.current.stretch = true;
+        play("peekStretch"); // みょーん
+      }
+      if (!sounded.current.flap && d > openPx(window.innerWidth) * 0.55) {
+        sounded.current.flap = true;
+        play("flap", { gain: 1.6 }); // 羽パタパタ
+      }
       if (d >= openPx(window.innerWidth)) open(); // 1/4 に届いたら、その場で飛び出す
     } else {
       const y = Math.min(0.82, Math.max(0.08, e.clientY / window.innerHeight));
@@ -355,7 +371,7 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
     <button
       type="button"
       aria-label={`${label}（内側へ引っぱるか、押すと開きます。上下に動かすと場所を変えられます）`}
-      data-sound="tap"
+      data-sound="none"
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}
