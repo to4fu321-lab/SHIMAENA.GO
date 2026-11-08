@@ -25,6 +25,13 @@ export function openPx(width: number): number {
   return Math.round(width * OPEN_RATIO);
 }
 
+/** 隊長がのぞく端。PC など広い画面ではアプリの枠（max-w-md = 28rem）の端に寄せる。スマホでは画面の端（0） */
+const EDGE = "max(0px, calc((100vw - 28rem) / 2))";
+/** 引っぱる長さを決める幅（アプリの枠の幅まで） */
+function frameWidth(): number {
+  return Math.min(window.innerWidth, 448);
+}
+
 export interface FabPos {
   /** 左右どちらの端から顔を出すか */
   side: "left" | "right";
@@ -324,11 +331,11 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
         sounded.current.stretch = true;
         play("peekStretch"); // みょーん
       }
-      if (!sounded.current.flap && d > openPx(window.innerWidth) * 0.55) {
+      if (!sounded.current.flap && d > openPx(frameWidth()) * 0.55) {
         sounded.current.flap = true;
         play("flap", { gain: 1.6 }); // 羽パタパタ
       }
-      if (d >= openPx(window.innerWidth)) open(); // 画面の半分に届いたら、その場で飛び出す
+      if (d >= openPx(frameWidth())) open(); // 画面の半分に届いたら、その場で飛び出す
     } else {
       const y = Math.min(0.82, Math.max(0.08, e.clientY / window.innerHeight));
       setMoving({ side: e.clientX < window.innerWidth / 2 ? "left" : "right", y });
@@ -366,7 +373,7 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
       <div
         aria-hidden="true"
         className="pointer-events-none fixed z-40"
-        style={{ top: `calc(${y * 100}% - 40px - ${hop}px)`, ...(flip ? { left: travel - 60, transform: "scaleX(-1)" } : { right: travel - 60 }), width: 120, height: 80 }}
+        style={{ top: `calc(${y * 100}% - 40px - ${hop}px)`, ...(flip ? { left: `calc(${EDGE} + ${travel - 60}px)`, transform: "scaleX(-1)" } : { right: `calc(${EDGE} + ${travel - 60}px)` }), width: 120, height: 80 }}
       >
         <FullBird />
       </div>
@@ -395,7 +402,7 @@ export default function ChatFab({ q = "", label = "隊長に話す" }: { q?: str
         width,
         height: PEEK_H,
         touchAction: "none",
-        ...(flip ? { left: 0, transform: "scaleX(-1)" } : { right: 0 }),
+        ...(flip ? { left: EDGE, transform: "scaleX(-1)" } : { right: EDGE }),
         transition: moving ? "none" : "top 0.2s",
       }}
       className={`fixed z-40 block select-none bg-transparent p-0 [-webkit-touch-callout:none] ${moving ? "opacity-90" : ""}`}
