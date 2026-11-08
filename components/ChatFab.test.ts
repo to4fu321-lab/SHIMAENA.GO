@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FAB_POS, FAB_SIZE, parseFabPos, snapFab } from "./ChatFab";
+import { DEFAULT_FAB_POS, FAB_SIZE, inwardPx, parseFabPos, snapFab } from "./ChatFab";
 
-describe("いつでも隊長トークのボタン（v1.43）", () => {
+describe("いつでも隊長トークのボタン（v1.43・v1.44）", () => {
+  it("内側へ引っぱった長さ: 右の端なら左へ、左の端なら右へ動かすと正", () => {
+    expect(inwardPx("right", -40)).toBe(40);
+    expect(inwardPx("right", 40)).toBe(-40);
+    expect(inwardPx("left", 40)).toBe(40);
+  });
+
   it("覚えた場所を読む。壊れていれば右下", () => {
     expect(parseFabPos(null)).toEqual(DEFAULT_FAB_POS);
     expect(parseFabPos("こわれた")).toEqual(DEFAULT_FAB_POS);
