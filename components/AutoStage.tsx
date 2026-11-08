@@ -31,7 +31,9 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
   const [caption, setCaption] = useState("");
   const [showCaption, setShowCaption] = useState(true);
   const [banner, setBanner] = useState<string>();
-  const [tapAt, setTapAt] = useState<{ x: number; y: number; n: number }>();
+  // 指の位置（スマホの画面の座標）。発表中はいつも出して、押す所へ動かす（11/8 本人「タップ場所を常にわかるように」）
+  const [finger, setFinger] = useState<{ x: number; y: number }>();
+  const [press, setPress] = useState(0);
   const [sec, setSec] = useState(0);
   const [log, setLog] = useState("");
 
@@ -59,6 +61,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     });
     f.src = `${path}${path.includes("?") ? "&" : "?"}as=${AS}`;
     await loaded;
+    setFinger((f) => (f ? { x: W / 2, y: H / 2 } : f)); // 画面が変わったら指はまんなかへ（前のボタンの上に残さない）
     await sleep(settle);
   };
 
@@ -77,16 +80,21 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     return undefined;
   };
 
-  /** 押す位置に丸を出してから押す（指は録画に映らないので） */
-  const tap = async (el: Element, click = true) => {
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
-    await sleep(700);
+  /** 指を押す所へ動かして、押した印（波紋）を出してから押す（指は録画に映らないので）。outer: 撮影ページ側の要素（通知のバナー） */
+  const tap = async (el: Element, click = true, outer = false) => {
+    if (!outer) {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      await sleep(600);
+    }
     const r = el.getBoundingClientRect();
-    setTapAt({ x: r.left + r.width / 2, y: r.top + r.height / 2, n: Date.now() });
-    await sleep(600);
+    const o = box.current?.getBoundingClientRect();
+    const pos = outer && o ? { x: (r.left - o.left + r.width / 2) / scale, y: (r.top - o.top + r.height / 2) / scale } : { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    setFinger(pos);
+    await sleep(700); // 指が動くのを見せる
+    setPress(Date.now());
+    await sleep(350);
     if (click) (el as HTMLElement).click();
-    await sleep(500);
-    setTapAt(undefined);
+    await sleep(400);
   };
 
   const buttons = (re: RegExp) => [...(doc()?.querySelectorAll("button, a") ?? [])].filter((b) => re.test((b.textContent ?? "").replace(/\s+/g, "")));
@@ -129,6 +137,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     setLog("");
     const t0 = Date.now();
     const tick = setInterval(() => setSec(Math.round((Date.now() - t0) / 1000)), 500);
+    setFinger({ x: W / 2, y: H * 0.72 });
     try {
       // 1. 前夜
       say("前の夜。隊長から予告が届く");
@@ -148,7 +157,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       // 3. 通知を押す → 隊長トーク
       say("通知を押すと、隊長トーク");
       const b = document.getElementById("stage-banner");
-      if (b) await tap(b, false);
+      if (b) await tap(b, false, true);
       setBanner(undefined);
       await open("/chat", 2000);
       await wait(1);
@@ -156,8 +165,9 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       // 4. 行く（拠点7）
       say("「行く（10分でも）」");
       const go = await until(goButtonFor7, 10);
-      if (go) await tap(go);
-      else await actions.goA();
+      if (go) await tap(go, false); // 押す動きだけ見せる（画面のボタンは返事を組み立てるのに時間がかかるので、返事は決まった文ですぐ）
+      await actions.goA();
+      await open("/chat", 1500);
       await wait(2);
 
       // 5. ほかのチームも集まる
@@ -170,7 +180,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       // 6. 町の地図
       say("町の地図。近所の人が一斉に動き出す");
       const toMap = await until(() => buttons(/町の地図を開く|^マップ$/).at(-1), 3);
-      if (toMap) await tap(toMap);
+      if (toMap) await tap(toMap, false);
       await open("/map", 2500);
       await wait(3);
 
@@ -268,12 +278,15 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
             </span>
           </div>
         )}
-        {tapAt && (
+        {finger && (
           <span
-            key={tapAt.n}
-            className="pointer-events-none absolute size-14 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-[#d9825b]/60 ring-4 ring-[#d9825b]"
-            style={{ left: tapAt.x * scale, top: tapAt.y * scale }}
-          />
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-700 ease-in-out"
+            style={{ left: finger.x * scale, top: finger.y * scale }}
+            aria-hidden="true"
+          >
+            {press > 0 && <span key={press} className="absolute left-1/2 top-1/2 size-16 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-[#d9825b]/50" />}
+            <span className="relative block size-11 rounded-full border-4 border-white bg-[#d9825b]/70 shadow-[0_0_0_3px_rgba(41,68,92,0.6),0_6px_14px_rgba(0,0,0,0.35)]" />
+          </span>
         )}
       </div>
       <div className="w-80 space-y-4">
