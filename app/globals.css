@@ -607,3 +607,16 @@ body {
   .tour-fade-in { opacity: 1; }
   .tour-shrink { transform: scale(0.22); }
 }
+
+/* PC 表示（幅 1024px 以上）: 冬空の背景の真ん中にスマホの枠を置く。枠の中はスマホと同じ画面（components/PcCaption.tsx が左に案内を出す） */
+@media (min-width: 1024px) {
+  body {
+    background: linear-gradient(180deg, #1b2a3c 0%, #3d5b7a 55%, #dfe9f0 100%) fixed;
+  }
+  body > .max-w-md {
+    box-shadow: 0 0 0 1px rgba(41, 68, 92, 0.25), 0 24px 70px rgba(13, 28, 44, 0.45);
+  }
+  /* 印刷ページ（/book/print）は枠が広いので、背景も案内も出さない */
+  body:has(> .max-w-2xl) { background: var(--paper); }
+  body:has(> .max-w-2xl) .pc-caption { display: none; }
+}
