@@ -6,7 +6,7 @@ import { onTeam } from "../member";
 import { consistentSnowType } from "../snow-estimate";
 import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
-import { announceText } from "../claude/announce";
+import { announceText, mockAnnounce } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
 import { okVoiceMime, saveThanksVoice, VOICE_MAX_BYTES, VOICE_MAX_SECONDS } from "../thanks/voice";
 import { mockPlan, planMorning } from "../claude/commander";
@@ -77,13 +77,25 @@ async function archiveIfReal(current: MorningRecord, nextDate: string): Promise<
 }
 
 /** 前夜の予告: 今朝の状態を作り直し、LINE のある全員に送る */
-export async function announce(opts: { date: string; forecastCm: number; tempMinC?: number; windMaxMs?: number; depthCm?: number }): Promise<MorningRecord> {
+export async function announce(opts: {
+  date: string;
+  forecastCm: number;
+  tempMinC?: number;
+  windMaxMs?: number;
+  depthCm?: number;
+  /** 撮影ステージ用: 予告の文は Claude を待たず、知らせるのは only の人だけ */
+  fast?: boolean;
+  only?: ReadonlySet<string>;
+}): Promise<MorningRecord> {
   const current = await loadMorning();
   await archiveIfReal(current, opts.date);
-  const a = await announceText({ date: opts.date, forecastCm: opts.forecastCm, seed: `${opts.date}|${Date.now()}` }); // 同じ日の練習でも毎回ちがう名前に（v1.30）
-  const s = emptyMorning({ ...opts, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
+  const input = { date: opts.date, forecastCm: opts.forecastCm, seed: `${opts.date}|${Date.now()}` }; // 同じ日の練習でも毎回ちがう名前に（v1.30）
+  const a = opts.fast ? mockAnnounce(input) : await announceText(input);
+  const { fast: _fast, only, ...rest } = opts;
+  void _fast;
+  const s = emptyMorning({ ...rest, viewerId: current.morning.viewerId, announcement: a.text, snowName: a.snowName });
   const roster = await loadRoster();
-  const ids = lineIds(roster.participants);
+  const ids = lineIds(only ? roster.participants.filter((p) => only.has(p.id)) : roster.participants);
 const ok =   await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowName, safetyLine({ cm: opts.forecastCm, tempMinC: opts.tempMinC, windMaxMs: opts.windMaxMs }))); // 予告はシマエナ隊長のカード1枚に
   s.log.push(ok ? `予告を隊長トークで ${ids.length} 人に` : "⚠ 予告を隊長トークに入れられませんでした（/admin の「問題」を見てください）");
   await saveMorning(s);

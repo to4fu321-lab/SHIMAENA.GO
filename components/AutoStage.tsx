@@ -185,9 +185,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
     document.cookie = "shimaena_stage=1; path=/; max-age=1800; samesite=lax"; // 撮影の印（写真の確認・カードを決まった形で速く）
     try {
       // 1. 前夜
-      say("前の夜。隊長から予告が届く");
-      await actions.announce();
-      await open("/", 1500);
+      say("前の夜。隊長から予告が届く"); // 朝のリセット（予告）はページを開いた時と「↺ リセット」で済んでいる
       const talk = await until(() => buttons(/隊長に相談する/)[0], 3); // ホームの吹き出しから隊長トークへ
       if (talk) await tap(talk, false);
       await open("/chat", 2000);
@@ -304,14 +302,16 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       document.cookie = "shimaena_stage=; path=/; max-age=0";
       on.current = false;
       setRunning(false);
-      setReady(true);
+      setDone(true); // もう一度撮るときは、先に「↺ リセット」
     }
   };
 
   // 開いたら、朝をまっさら（前夜の予告）に戻してからホームを出す（前の撮影の雪かきが残らないように。11/8 本人の指示）
   const [ready, setReady] = useState(false);
+  const [done, setDone] = useState(false);
   const reset = async () => {
     setReady(false);
+    setDone(false);
     setCaption("");
     await actions.announce();
     await open("/", 1500);
@@ -360,8 +360,8 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
         {showCaption && caption && <p className="text-3xl font-bold leading-snug">{caption}</p>}
         {!running ? (
           <>
-            <button type="button" disabled={!ready} onClick={() => void start()} className="w-full rounded-2xl bg-[#d9825b] px-4 py-3 text-xl font-bold text-white disabled:opacity-50">
-              {ready ? "▶ 発表（全部自動）" : "朝をまっさらに戻しています…"}
+            <button type="button" disabled={!ready || done} onClick={() => void start()} className="w-full rounded-2xl bg-[#d9825b] px-4 py-3 text-xl font-bold text-white disabled:opacity-50">
+              {!ready ? "朝をまっさらに戻しています…" : done ? "もう一度は ↓ リセットしてから" : "▶ 発表（全部自動）"}
             </button>
             <button type="button" disabled={!ready} onClick={() => void reset()} className="w-full rounded-2xl bg-white/15 px-4 py-2 text-base disabled:opacity-50">
               ↺ リセット（朝をまっさらに）

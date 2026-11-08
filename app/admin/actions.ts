@@ -206,6 +206,19 @@ async function stageMission() {
   return { s, roster, mission: base ? s.morning.missions.find((m) => m.baseId === base.id) : undefined };
 }
 
+/** 撮影ステージ用のリセット: 撮影の人の隊長トークだけ空にして、予告は Claude を待たずに撮影の3人へ（11/8 本人「いきなりチャットを見に行かない」＝待ちが長い） */
+export async function presentReset(): Promise<string> {
+  return guarded("presentReset", async () => {
+    const roster = await loadRoster();
+    const keys = roster.participants.filter((p) => STAGE_IDS.has(p.id) || p.id.startsWith("h")).map((p) => inboxKeyOf(p)).filter((k): k is string => Boolean(k?.startsWith(DEMO_PREFIX)));
+    await Promise.all(keys.map((k) => clearThread(k).catch(() => undefined)));
+    await announce({ date: jstDate(new Date()), forecastCm: 12, fast: true, only: STAGE_IDS });
+    refresh();
+    revalidatePath("/chat");
+    return "リセット";
+  });
+}
+
 /** 撮影ステージ用の 6:30: Claude を待たずに作戦を決め、撮影の3人にだけ知らせる（ヘルプ通知は拠点7だけ） */
 export async function presentRingFast(): Promise<string> {
   return guarded("presentRingFast", async () => {

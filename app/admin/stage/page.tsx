@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { adminGate } from "@/lib/admin-auth";
 import AutoStage from "@/components/AutoStage";
-import { completeOneAuto, presentAllTeams, presentCheer, presentFinish, presentGather, presentGo, presentRingFast, startEmptyMorning } from "../actions";
+import { completeOneAuto, presentAllTeams, presentCheer, presentFinish, presentGather, presentGo, presentReset, presentRingFast } from "../actions";
 
 export const metadata: Metadata = { title: "撮影ステージ（自動） ・ シマエナGO" };
 
@@ -24,7 +24,7 @@ async function Stage() {
   return (
     <AutoStage
       actions={{
-        announce: startEmptyMorning,
+        announce: presentReset,
         ring: presentRingFast,
         goA: presentGo.bind(null, "a"),
         goB: presentGo.bind(null, "b"),
