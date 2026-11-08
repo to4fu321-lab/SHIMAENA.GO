@@ -26,7 +26,7 @@ async function Content({ searchParams }: { searchParams: Promise<{ as?: string; 
         <p className="text-lg">登録した人の画面です。</p>
         <LoginButton next="/nakama" />
         <p className="text-base text-ink-soft">
-          デモ: <Link href="/nakama?as=h3" className="underline">架空の手伝う側として開く</Link>
+          デモ: <Link href="/demo?next=%2Fnakama" className="underline">架空の10人からえらんで開く</Link>
         </p>
       </main>
     );

@@ -28,7 +28,7 @@ async function Content({ searchParams }: { searchParams: Promise<{ as?: string; 
         <p className="text-lg">登録した人の画面です。アイコンと紹介、一緒に活動した仲間の記録が見られます。</p>
         <LoginButton next="/me" />
         <p className="text-base text-ink-soft">
-          デモ: <Link href="/me?as=h3" className="underline">架空の手伝う側として開く</Link>
+          デモ: <Link href="/demo?next=%2Fme" className="underline">架空の10人からえらんで開く</Link>
         </p>
       </main>
     );

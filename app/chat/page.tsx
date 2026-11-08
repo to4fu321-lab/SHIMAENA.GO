@@ -73,7 +73,7 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
           </Link>
           <p className="text-sm text-ink-soft">
             {t(lang, "demo")}{" "}
-            <Link href="/chat?as=h3" className="underline">
+            <Link href="/demo?next=%2Fchat" className="underline">
               {t(lang, "demoLink")}
             </Link>
           </p>

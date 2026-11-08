@@ -63,7 +63,7 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
         )}
       </section>
       <p className="relative mt-auto rounded-full bg-white/85 px-3 py-1 text-center text-sm text-ink">
-        デモ: <Link href="/?as=h3" className="underline">架空の手伝う側として見る</Link>
+        デモ: <Link href="/demo" className="underline">架空の10人からえらんで見る</Link>
       </p>
     </main>
   );
