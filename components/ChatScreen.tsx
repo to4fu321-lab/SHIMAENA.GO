@@ -129,9 +129,36 @@ export default function ChatScreen({
     if (pending) list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" });
   }, [pending]);
 
+  // いちばん下についていくか（自分で上へ戻したら、ついていかない）
+  const stick = useRef(true);
+  const lastTop = useRef(0);
+  const onListScroll = () => {
+    const el = list.current;
+    if (!el) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) stick.current = true;
+    else if (el.scrollTop < lastTop.current - 4) stick.current = false; // 指で上へ戻した
+    lastTop.current = el.scrollTop;
+  };
+  // 吹き出しの画像（カードなど）があとから読み込まれて伸びたときも、いちばん下へ（11/8 本人「下に自動スクロールしないのがある」）
+  useEffect(() => {
+    const el = list.current;
+    if (!el) return;
+    const follow = () => {
+      if (stick.current) el.scrollTop = el.scrollHeight;
+    };
+    el.addEventListener("load", follow, true); // img の load は泡立たないので、捕まえる側で
+    const ro = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(follow);
+    for (const c of Array.from(el.children)) ro?.observe(c);
+    return () => {
+      el.removeEventListener("load", follow, true);
+      ro?.disconnect();
+    };
+  }, [lastId]);
+
   // 新しい吹き出しが増えたら、いちばん下へ。読み上げがオンなら、隊長の新しい吹き出しを読む（開いたときの分は読まない）
   useEffect(() => {
     const el = list.current;
+    stick.current = true;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     const r = freshCaptainText(bubbles, seenCaptain.current);
     seenCaptain.current = r.seen;
@@ -281,7 +308,7 @@ export default function ChatScreen({
         <LangPicker lang={lang} onPick={pickLang} canTranslate={canTranslate} voiceName={voiceName} />
       </header>
       {/* 流れ（この中だけがスクロールする） */}
-      <div ref={list} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label={t(lang, "thread")}>
+      <div ref={list} onScroll={onListScroll} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#e3ebf3] px-3 py-3" aria-live="polite" aria-label={t(lang, "thread")}>
         {bubbles.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-2 text-center">
             <Mascot size={96} team={teamId} className="captain-idle drop-shadow-md" />
