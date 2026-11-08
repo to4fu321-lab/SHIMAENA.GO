@@ -619,4 +619,6 @@ body {
   /* 印刷ページ（/book/print）は枠が広いので、背景も案内も出さない */
   body:has(> .max-w-2xl) { background: var(--paper); }
   body:has(> .max-w-2xl) .pc-caption { display: none; }
+  /* 撮影ステージ（/admin/stage）は自分で背景とスマホ枠を持つので、案内を出さない */
+  body:has(.auto-stage) .pc-caption { display: none; }
 }

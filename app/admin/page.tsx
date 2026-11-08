@@ -308,6 +308,10 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
           <Step n="5b" label="まだ降っている → もう一度" action={reopenDemo} disabled={status !== "planned" || !anyDone} />
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <Link href="/admin/stage" className="flex w-full items-center gap-3 rounded-2xl bg-lamp px-4 py-2 text-left text-lg font-bold text-white shadow-sm">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-sm text-ink">🎬</span>
+            撮影ステージ（自動・1画面）を開く
+          </Link>
           <PresentationMode
             actions={{
               announce: startEmptyMorning,
