@@ -6,6 +6,7 @@
 // - 黒いふちどりの、まんまるでふわふわのシマエナガ（両目・小さなくちばし・ほっぺ・オレンジの足・羽・しっぽ）
 // - タップでも飛び出して開く。上下に動かすと場所を変えられ、反対の端まで持っていけばそちらの端へ。場所はこの端末に覚える
 // - 効果音（v1.49）: 引っぱり始め「みょーん」、開く長さの半分を越えると羽「パタパタ」、飛び出し「ぴょーん＋ピヨッ」、戻る「ぽよよん」→ ♥「ピヨッ」
+// - のぞいているときは、まんまるの頭（体）だけ。おしりは引っぱり始めると画面の内側へ寄ってくる（v1.51）
 // - 隊長トークの画面では出さない
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -158,7 +159,10 @@ function PeekBird({ pull }: { pull: number }) {
   const pulling = p > 10;
   const headSq = p < 0 ? sq : 1;
   // 頭と端の向こうのおしりを、まんなかが少しくびれた輪郭でつなぐ
-  const bx = w + 14;
+  // おしり（端の向こうの体）は、引っぱり始めると画面の内側へ寄ってくる。のぞいているときは画面の外に隠し、頭だけのまんまるに見せる
+  // （11/8 本人の指摘「覗いてる時の形が変、まんまるにして」: 前はおしりが頭の右上にこぶのように見えていた）
+  const grow = Math.min(1, Math.max(p, 0) / 24);
+  const bx = w + 14 + (1 - grow) * 34;
   const by = hy + 3;
   const bR = 25 * (p < 0 ? sq : 1);
   const len = bx - hx;
@@ -173,7 +177,7 @@ function PeekBird({ pull }: { pull: number }) {
     const st = stroke ? { stroke: INK, strokeWidth: 4.6, strokeLinejoin: "round" as const } : { stroke: "none" };
     return (
       <>
-        <ellipse cx={bx} cy={by} rx={28} ry={bR} fill="#fff" {...st} />
+        {p > 2 && <ellipse cx={bx} cy={by} rx={28} ry={bR} fill="#fff" {...st} />}
         {p > 2 && <path d={body} fill="#fff" {...st} />}
         <ellipse cx={hx} cy={hy} rx={R / headSq ** 0.5} ry={R * headSq} fill="#fff" {...st} />
       </>
@@ -190,7 +194,8 @@ function PeekBird({ pull }: { pull: number }) {
       <Feet x={feetX} y={feetY} />
       {/* おなかの影（ふわふわ感） */}
       <ellipse cx={hx + 4} cy={hy + R * headSq - 7} rx={R * 0.7} ry="4" fill="#e6edf6" />
-      {p > 2 && <Wing x={Math.min(hx + 22, w - 6)} y={hy - 4} flap={flap} />}
+      {/* 羽: のぞいているときは丸い体の横に小さく、のびると背中でパタパタ */}
+      {p > 2 ? <Wing x={Math.min(hx + 22, w - 6)} y={hy - 4} flap={flap} /> : <Wing x={hx + 9} y={hy - 4} flap={-4} />}
       <Face cx={hx} cy={hy} squint={pulling} />
       {/* 動きの線（のびているとき） */}
       {pulling && (
