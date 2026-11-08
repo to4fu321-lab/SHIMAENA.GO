@@ -38,7 +38,8 @@ ${JSON.stringify(rubric, null, 2)}`;
 
 let client: Anthropic | undefined;
 function getClient(): Anthropic {
-  client ??= new Anthropic();
+  // 1回 60 秒まで・やり直し 1 回。API が詰まっても Vercel の 300 秒で関数ごと落ちないように（11/8）
+  client ??= new Anthropic({ timeout: 60_000, maxRetries: 1 });
   return client;
 }
 

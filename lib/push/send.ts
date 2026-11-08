@@ -34,7 +34,7 @@ export async function sendPush(key: string, payload: PushPayload, opts: Pick<Not
   let sent = 0;
   for (const s of subs) {
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(payload), { TTL: opts.ttl, urgency: opts.urgency });
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(payload), { TTL: opts.ttl, urgency: opts.urgency, timeout: 8000 });
       sent++;
     } catch (e) {
       const status = (e as { statusCode?: number }).statusCode;

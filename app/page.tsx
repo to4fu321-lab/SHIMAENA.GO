@@ -21,6 +21,7 @@ import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { demoEnabled } from "@/lib/env";
 import { captainLine, captainRotation, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
 import { soloStatus } from "@/lib/solo/ops";
@@ -78,17 +79,22 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 「雪かきを頼む」で開いた、まだ終わっていない家（spec v1.10）
   const asks = m.missions.filter((x) => x.ask && x.status !== "done").length;
   // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
-  const canHelpHouse = planned && onTeam(me);
-  const goHref = canHelpHouse ? `/map${q}` : `/solo${q}`;
+  // 登録していない人（審査員など）: デモが許されていれば、押した先は架空の手伝う側 h3 として動く（登録画面で止めない。11/8 本人の指示）
+  const demoGuest = !me && demoEnabled();
+  const actAs = demoAs ?? (demoGuest ? "h3" : undefined);
+  const actor = me ?? (demoGuest ? roster.participants.find((p) => p.id === "h3") : undefined);
+  const aq = actAs ? `?as=${actAs}` : "";
+  const canHelpHouse = planned && onTeam(actor);
+  const goHref = canHelpHouse ? `/map${aq}` : `/solo${aq}`;
   // go=1: 押したらすぐ「雪かきGO！」「お知らせGO！」で始まる（11/7 本人の指示）
   // 近所のお願いがない（作戦がまだ・頼む家が 0 軒）: はっきり伝えて、自宅の雪かきと道の危険を知らせるへ誘導（11/7 本人の指示）
   const noRequests = asks === 0 && prog.total === 0;
-  const ownHouseHref = `/solo?pick=10&focus=own_house&go=1${demoAs ? `&as=${demoAs}` : ""}`;
-  const roadHref = `/solo?pick=10&focus=report_snow&go=1${demoAs ? `&as=${demoAs}` : ""}`;
+  const ownHouseHref = `/solo?pick=10&focus=own_house&go=1${actAs ? `&as=${actAs}` : ""}`;
+  const roadHref = `/solo?pick=10&focus=report_snow&go=1${actAs ? `&as=${actAs}` : ""}`;
   // 地図に行けないときの理由（押したら案内の紙を出してからソロへ。11/7 本人の指摘）
-  const goReason: GoReason = !planned ? "no-plan" : !me ? "guest" : "no-team";
+  const goReason: GoReason = !planned ? "no-plan" : !actor ? "guest" : "no-team";
   // ソロ活動をする: いつもソロ出動（チームの人も、自分の家の雪かきや見回りができるように）
-  const fiveHref = `/solo?pick=10${demoAs ? `&as=${demoAs}` : ""}`;
+  const fiveHref = `/solo?pick=10${actAs ? `&as=${actAs}` : ""}`;
   const next = shorts[0];
   // 1週間のチーム: 見出しの色・シマエナガのマフラー・チームの札（押すと /team）
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
@@ -343,7 +349,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
               href={goHref}
               direct={canHelpHouse}
               reason={goReason}
-              soloHref={`/solo${q}`}
+              soloHref={`/solo${aq}`}
               className="flex min-h-14 items-center gap-2 rounded-full bg-lamp px-3 max-[380px]:gap-1.5 max-[380px]:px-2.5 text-white shadow-md"
             >
               <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-lamp">
