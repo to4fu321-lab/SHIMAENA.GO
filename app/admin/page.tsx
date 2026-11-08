@@ -19,6 +19,10 @@ import {
   cheerDemo,
   clearProblemsAction,
   completeOne,
+  completeOneAuto,
+  presentCheer,
+  presentFinish,
+  presentGo,
   helpNextRing,
   prepareDatabase,
   rescue,
@@ -38,6 +42,8 @@ import {
   writeShareTextsNow,
 } from "./actions";
 import { remakeSnowSong } from "./song-actions";
+import AutoComplete from "@/components/AutoComplete";
+import PresentationMode from "@/components/PresentationMode";
 import { THANKS_CHOICES } from "@/lib/claude/thanks";
 import { adminGate } from "@/lib/admin-auth";
 import { makeNameMasker } from "@/lib/admin-names";
@@ -292,10 +298,25 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
             action={completeOne}
             disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress" || x.status === "short")}
           />
+          <AutoComplete
+            run={completeOneAuto}
+            disabled={status !== "planned" || !m.missions.some((x) => x.status === "assigned" || x.status === "in_progress" || x.status === "short")}
+          />
           <Step n="5" label="人手不足の家へ駆けつけ" action={rescue} disabled={!anyShort} />
           <Step n="5b" label="まだ降っている → もう一度" action={reopenDemo} disabled={status !== "planned" || !anyDone} />
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <PresentationMode
+            actions={{
+              announce: startEmptyMorning,
+              ring: ringNow,
+              goA: presentGo.bind(null, "a"),
+              goB: presentGo.bind(null, "b"),
+              completeOther: completeOneAuto,
+              finishA: presentFinish,
+              cheer: presentCheer,
+            }}
+          />
           <Step n="6" label="日曜の夜: 今週の群れ" action={runWeekly} />
           <form action={makeBookNow}>
             <button className={link}>今週の絵本を作る（文と絵: Claude）→ /book</button>

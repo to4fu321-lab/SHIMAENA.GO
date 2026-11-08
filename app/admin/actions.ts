@@ -19,7 +19,9 @@ import {
   applyCheer,
   applyThanks,
   checkForecastAndAnnounce,
+  completeManually,
   escalateHelpIfDue,
+  joinMission,
   notifyHelp,
   plan,
   reopenIfStillSnowing,
@@ -38,7 +40,7 @@ import { nudgeInactive } from "@/lib/nudge/ops";
 import { seedDemoStory } from "@/lib/kikigaki/ops";
 import { seedDemoTalk } from "@/lib/morning/demo-talk";
 import { syncWithGithub } from "@/lib/feedback/ops";
-import { STAGE_IDS } from "@/lib/demo-cast";
+import { STAGE_CAST, STAGE_IDS } from "@/lib/demo-cast";
 import { DEMO_PREFIX, inboxKeyOf } from "@/lib/inbox/key";
 import { clearThread } from "@/lib/inbox/store";
 import { push } from "@/lib/line/client";
@@ -168,6 +170,73 @@ export async function completeOne() {
     revalidatePath("/chat");
     if (allDone) await writeRecapNow();
     else await refreshShareTexts().catch((e) => console.error("[share]", e));
+  });
+}
+
+/**
+ * 4 を自動で（11/8 本人「完了にするボタンを自動で順番に完了にしていってほしい」）: 1軒終えて、まだ終えられる家が残っているかを返す。
+ * 撮影ステージの3人とログインした本物の人が向かっている家は、本人の写真で終えるので数えない（4 と同じ）。
+ */
+export async function completeOneAuto(): Promise<{ more: boolean }> {
+  await completeOne();
+  return guarded("completeOneAuto", async () => {
+    const [s, roster] = await Promise.all([loadMorning(), loadRoster()]);
+    if (s.morning.rollcall.status !== "planned") return { more: false };
+    const keep = new Set([...roster.participants.filter((p) => p.lineUserId).map((p) => p.id), ...STAGE_IDS]);
+    const kept = (id: string) => s.morning.sorties.some((x) => x.missionId === id && x.status === "going" && keep.has(x.participantId));
+    const more = s.morning.missions.some((m) => (m.status === "assigned" || m.status === "in_progress" || m.status === "short") && !kept(m.id));
+    refresh();
+    return { more };
+  });
+}
+
+// ---- 発表モード（11/8 本人「admin に発表モードで、終わりましたや助けに行くなども勝手に動くように。録画時間を3分ほどで」）----
+// 撮影ステージの3人（A 田中さん・B そうたさん・C 小林さん）を、画面のボタンの代わりにここから動かす。中身は画面で押したときと同じ処理。
+
+/** 撮影ステージの C の家（拠点7）の、今朝のミッション */
+async function stageMission() {
+  const [s, roster] = await Promise.all([loadMorning(), loadRoster()]);
+  const base = roster.bases.find((b) => b.requesterId === STAGE_CAST.c);
+  return { s, roster, mission: base ? s.morning.missions.find((m) => m.baseId === base.id) : undefined };
+}
+
+/** 発表モード: A か B が、拠点7の「行く（10分でも）」を押したのと同じ */
+export async function presentGo(who: "a" | "b"): Promise<string> {
+  return guarded("presentGo", async () => {
+    const { roster, mission } = await stageMission();
+    if (!mission) return "拠点7のミッションがありません（先に 1 を）";
+    const p = roster.participants.find((x) => x.id === STAGE_CAST[who]);
+    const messages = await joinMission(STAGE_CAST[who], mission.id, new Date(), { extra: true });
+    const k = inboxKeyOf(p);
+    if (k) await push(k, messages);
+    refresh();
+    revalidatePath("/chat");
+    return `${p?.nickname ?? who}さんが拠点7へ`;
+  });
+}
+
+/** 発表モード: A が拠点7で「終わりました」（写真なし・本人の報告として。写真の確認はスマホで撮る場面で見せる） */
+export async function presentFinish(): Promise<string> {
+  return guarded("presentFinish", async () => {
+    const r = await completeManually(STAGE_CAST.a);
+    const roster = await loadRoster();
+    const k = inboxKeyOf(roster.participants.find((x) => x.id === STAGE_CAST.a));
+    if (k) await push(k, r.messages);
+    refresh();
+    revalidatePath("/chat");
+    return r.done ? "拠点7 完了" : "拠点7 はまだ完了にできませんでした";
+  });
+}
+
+/** 発表モード: 拠点7の家族が「あったかくして」 */
+export async function presentCheer(): Promise<string> {
+  return guarded("presentCheer", async () => {
+    const { mission } = await stageMission();
+    if (!mission || mission.status !== "done") return "拠点7 がまだ終わっていません";
+    await applyCheer(mission.id, "2");
+    refresh();
+    revalidatePath("/chat");
+    return "家族の応援「あったかくして」";
   });
 }
 
