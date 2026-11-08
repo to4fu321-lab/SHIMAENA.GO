@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import PcCaption from "@/components/PcCaption";
 import PwaRegister from "@/components/PwaRegister";
 import SoundProvider from "@/components/SoundProvider";
 import { baseUrl } from "@/lib/url";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <PwaRegister />
         <SoundProvider />
+        <PcCaption />
         {children}
       </body>
     </html>

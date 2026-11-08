@@ -193,7 +193,7 @@ export default function MapScreen({
   const bgm = prog.allDone && prog.total > 0 ? "clear" : mySortie?.status === "going" && mySortie.confirmedAt ? "mission" : "morning";
 
   return (
-    <div className="flex h-dvh flex-col bg-paper text-ink">
+    <div className="mx-auto flex h-dvh w-full max-w-md flex-col bg-paper text-ink">
       <Bgm track={bgm} />
       <ClearWatcher clear={clear} />
       {/* 上: 戻る・題名（濃い冬の青） */}

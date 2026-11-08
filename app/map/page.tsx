@@ -79,7 +79,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
 
 export default function MapPage({ searchParams }: { searchParams: Promise<{ as?: string; road?: string; view?: string }> }) {
   return (
-    <Suspense fallback={<div className="grid h-dvh place-items-center bg-paper text-ink">読み込み中…</div>}>
+    <Suspense fallback={<div className="mx-auto grid h-dvh max-w-md place-items-center bg-paper text-ink">読み込み中…</div>}>
       <MapContent searchParams={searchParams} />
     </Suspense>
   );
