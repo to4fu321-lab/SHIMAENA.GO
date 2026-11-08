@@ -242,6 +242,7 @@ export default function SoloScreen({
     const track = trackRef.current;
     if (!el || !track) return;
     track.scrollTo({ left: el.offsetLeft - (track.clientWidth - el.clientWidth) / 2, behavior: smooth ? "smooth" : "auto" });
+    setActive(i);
   };
   useEffect(() => {
     goTo(active, false);
@@ -255,9 +256,10 @@ export default function SoloScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runningKind]);
   // いま真ん中にあるカードを「選んでいるミッション」にする
-  const onScroll = () => {
+  // 画面の真ん中に見えているカードの番号（点や ‹ › の記録がずれても、見えている位置から数える）
+  const centerIndex = () => {
     const track = trackRef.current;
-    if (!track) return;
+    if (!track) return active;
     const center = track.scrollLeft + track.clientWidth / 2;
     let best = 0;
     let dist = Infinity;
@@ -269,8 +271,24 @@ export default function SoloScreen({
         best = i;
       }
     });
+    return best;
+  };
+  const onScroll = () => {
+    const best = centerIndex();
     if (best !== active) setActive(best);
   };
+  // スクロールが止まったとき・画面の大きさが変わったときも、見えているカードに合わせ直す
+  useEffect(() => {
+    const track = trackRef.current;
+    const sync = () => setActive(centerIndex());
+    track?.addEventListener("scrollend", sync);
+    window.addEventListener("resize", sync);
+    return () => {
+      track?.removeEventListener("scrollend", sync);
+      window.removeEventListener("resize", sync);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const runMission = running ? list.find((m) => m.kind === running.kind) : undefined;
   // スワイプで選ぶカード: 道の危険・自分の家・（あれば）家の手伝い
   const slides = [...list.map((m) => ({ kind: m.kind, label: m.label })), ...(house ? [{ kind: house.kind, label: house.label }] : [])];
@@ -538,6 +556,13 @@ export default function SoloScreen({
                 key={sl.kind}
                 aria-label={`${i + 1}/${slides.length} ${sl.label}`}
                 aria-hidden={i !== active}
+                onClickCapture={(e) => {
+                  // 端に見えているカードを押したら、そのカードを真ん中へ（中のボタンは押さない）
+                  if (i === centerIndex()) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  goTo(i);
+                }}
                 className={`h-full w-[88%] shrink-0 snap-center overflow-y-auto rounded-3xl transition-transform [scrollbar-width:none] ${i === active ? "" : "scale-95 opacity-70"}`}
               >
                 {m && running?.kind === m.kind && m.kind === "report_snow" ? (
@@ -567,7 +592,7 @@ export default function SoloScreen({
           })}
         </div>
         <div className="flex shrink-0 items-center justify-center gap-3 pt-1">
-          <button aria-label="前のミッション" disabled={active === 0} onClick={() => goTo(active - 1)} className="grid size-9 place-items-center rounded-full bg-card text-xl font-bold shadow-sm ring-1 ring-ink/15 disabled:opacity-30">
+          <button aria-label="前のミッション" disabled={active === 0} onClick={() => goTo(Math.max(0, centerIndex() - 1))} className="grid size-9 place-items-center rounded-full bg-card text-xl font-bold shadow-sm ring-1 ring-ink/15 disabled:opacity-30">
             ‹
           </button>
           <div className="flex gap-1.5" role="tablist" aria-label="ミッションの番号">
@@ -582,7 +607,7 @@ export default function SoloScreen({
               />
             ))}
           </div>
-          <button aria-label="次のミッション" disabled={active >= slides.length - 1} onClick={() => goTo(active + 1)} className="grid size-9 place-items-center rounded-full bg-card text-xl font-bold shadow-sm ring-1 ring-ink/15 disabled:opacity-30">
+          <button aria-label="次のミッション" disabled={active >= slides.length - 1} onClick={() => goTo(Math.min(slides.length - 1, centerIndex() + 1))} className="grid size-9 place-items-center rounded-full bg-card text-xl font-bold shadow-sm ring-1 ring-ink/15 disabled:opacity-30">
             ›
           </button>
         </div>
