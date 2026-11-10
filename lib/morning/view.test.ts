@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatKg } from "../snowkg";
 import { DEMO_MORNING } from "./sample";
-import { progress, snowHp, snowTotal } from "./view";
+import { mySortieOf, progress, snowHp, snowTotal } from "./view";
 
 describe("雪ボスの HP と進み具合（spec v1.1）", () => {
   it("返事なしの家は相手に数えず、完了した分だけ HP が減る", () => {
@@ -35,5 +35,24 @@ describe("雪ボスの HP と進み具合（spec v1.1）", () => {
     expect(t).toMatchObject({ kg: 1500, houses: 2, label: "1.5t", comparison: "軽トラ2台分" });
     expect(formatKg(800)).toBe("800kg");
     expect(formatKg(1000)).toBe("1t");
+  });
+});
+
+describe("見ている人の出動（地図の「終わりました」）", () => {
+  const base = { teamId: "salvia" as const, subtaskIds: [] as string[], rescue: false };
+  it("1軒終えて別の家に加わったら、いま向かっている家を選ぶ（写真で完了できる）", () => {
+    const sorties = [
+      { ...base, id: "a", missionId: "m1", participantId: "h1", status: "done" as const },
+      { ...base, id: "b", missionId: "m2", participantId: "h1", status: "going" as const, rescue: true },
+    ];
+    expect(mySortieOf(sorties, "h1")?.missionId).toBe("m2");
+  });
+  it("向かっている家がなければ最後の出動。出動がなければ undefined", () => {
+    const sorties = [
+      { ...base, id: "a", missionId: "m1", participantId: "h1", status: "done" as const },
+      { ...base, id: "b", missionId: "m2", participantId: "h1", status: "done" as const },
+    ];
+    expect(mySortieOf(sorties, "h1")?.missionId).toBe("m2");
+    expect(mySortieOf(sorties, "h9")).toBeUndefined();
   });
 });
