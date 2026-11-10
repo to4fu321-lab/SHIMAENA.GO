@@ -21,7 +21,8 @@ import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
-import { demoEnabled } from "@/lib/env";
+import { demoEnabled, demoMorning } from "@/lib/env";
+import { isClockNight } from "@/lib/night";
 import { captainLine, captainRotation, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
 import { soloStatus } from "@/lib/solo/ops";
@@ -58,8 +59,14 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     parseSkyParam(skyParam) ? Promise.resolve({} as Awaited<ReturnType<typeof currentWeather>>) : currentWeather(TOWN.center),
   ]);
   const m = record.morning;
+  // デモの夜は「雪の朝 7:10」として見せる（11/10 本人「デモは雪が積もった朝から」）。昼は時計どおり
+  const demoDawn = demoMorning() && isClockNight();
+  const nowMin = demoDawn ? 7 * 60 + 10 : jstMinutes();
   // 背景の空: いまの天気と時間（デモでは ?sky=night-snow のように上書きできる）
-  const sky = parseSkyParam(skyParam) ?? { time: timeOfDay(jstMinutes()), weather: weatherOf(wx.code, m.rollcall.status === "closed" ? 0 : m.rollcall.forecastCm) };
+  const sky = parseSkyParam(skyParam) ?? {
+    time: timeOfDay(nowMin),
+    weather: demoDawn ? "snow" : weatherOf(wx.code, m.rollcall.status === "closed" ? 0 : m.rollcall.forecastCm),
+  };
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
@@ -67,7 +74,6 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
 
   const prog = progress(m);
   // 1日に何回でも（spec v1.8）: 6〜19時ならいつでも。いま雪かき中の人数と、朝・ドカ雪のボーナス
-  const nowMin = jstMinutes();
   const open = isWorkHours();
   const activeNow = activeHelpers(m);
   const bonuses = [

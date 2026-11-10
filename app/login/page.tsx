@@ -22,9 +22,9 @@ const ERRORS: Record<string, string> = {
 };
 
 /** ログイン（spec v1.17）: LINE はここ（本人の確認）だけに使う。1画面 */
-async function Login({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
+async function Login({ searchParams }: { searchParams: Promise<{ error?: string; next?: string; bye?: string }> }) {
   await connection();
-  const { error, next } = await searchParams;
+  const { error, next, bye } = await searchParams;
   const viewerId = readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
   const me = viewerId ? await repo().findParticipant(viewerId) : undefined;
   const to = safeNext(next);
@@ -56,6 +56,7 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
           <>
             <p className="text-lg font-bold leading-snug">LINE のアカウントで、あなたを確かめます。</p>
             <p className="text-base leading-snug">LINE は本人の確認にだけ使います。雪の朝のお知らせは、このアプリの「隊長トーク」と通知で届きます。</p>
+            {bye && <p className="rounded-2xl bg-ice-soft px-3 py-2 text-base font-bold">退会しました。登録と記録を消しました。これまでありがとうございました。</p>}
             {error && ERRORS[error] && <p className="rounded-2xl bg-warm px-3 py-2 text-base">{ERRORS[error]}</p>}
             <LoginButton next={to} />
             {!hasLoginKeys() && <p className="text-sm text-ink-soft">（鍵がない間は、ログインの代わりにデモの架空の人で見られます）</p>}
@@ -69,7 +70,7 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
   );
 }
 
-export default function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
+export default function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string; bye?: string }> }) {
   return (
     <>
       <Bgm track="morning" />

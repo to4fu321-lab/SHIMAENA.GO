@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { jstDate } from "@/lib/jst";
-import { isNight } from "@/lib/night";
+import { isClockNight } from "@/lib/night";
 import { hazard, type RoadReport } from "@/lib/road/hazards";
 import { notifyRoadReport } from "@/lib/road/notify";
 import { getAlertPref, insertRoadReport, setAlertPref } from "@/lib/road/store";
@@ -126,7 +126,7 @@ export async function reportRoadAction(formData: FormData): Promise<SoloActionRe
   const r = await withStateLock("solo:reportRoad", () => completeSolo(id, "report_snow", { photo, note: `${h.label}${note ? `: ${note}` : ""}`, now }));
   revalidatePath("/solo");
   revalidatePath("/map");
-  const road = { id: report.id, later: isNight(now) };
+  const road = { id: report.id, later: isClockNight(now) };
   if (!r.ok) return { ok: true, text: `地図に「${h.label}」を出しました。ありがとうございます！`, road };
   return { ok: true, text: `「${h.label}」を報告しました！ +${r.summary.feathers}羽`, summary: r.summary, road };
 }
