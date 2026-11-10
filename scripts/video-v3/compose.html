@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>シマエナGO 紹介動画 v3（合成ページ）</title>
+<!--
+  3分の紹介動画（v3）の合成ページ。render.cjs が ?render=1 で開き、seek(t) で t 秒のコマを出してスクショする（1920×1080・30fps）。
+  読むもの: ../../.video/v3/timeline.js（layout.cjs が書く時間割）、../../.video/v3/rec/<場面>/00001.jpg（record.cjs の録画のコマ）
+  ブラウザで直接開くと、下のつまみで動かして確かめられる（音はなし）。
+-->
+<style>
+  @font-face { font-family: "Zen Maru Gothic"; font-weight: 400; src: url("../../.video/v3/fonts/ZenMaruGothic-Regular.ttf"); }
+  @font-face { font-family: "Zen Maru Gothic"; font-weight: 500; src: url("../../.video/v3/fonts/ZenMaruGothic-Medium.ttf"); }
+  @font-face { font-family: "Zen Maru Gothic"; font-weight: 700; src: url("../../.video/v3/fonts/ZenMaruGothic-Bold.ttf"); }
+  @font-face { font-family: "Zen Maru Gothic"; font-weight: 900; src: url("../../.video/v3/fonts/ZenMaruGothic-Black.ttf"); }
+  @font-face { font-family: "Noto Sans JP"; font-weight: 100 900; src: url("../../.video/v3/fonts/NotoSansJP.ttf"); }
+  @font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url("../../.video/v3/fonts/JetBrainsMono.ttf"); }
+  :root {
+    --paper:#f4f7fa; --ink:#29445c; --ink-deep:#1e3346; --night:#101c29; --ink-soft:#b7c7d6; --lamp:#d9825b; --lamp-deep:#b8603a; --lamp-light:#ffd0b5;
+    --ice:#8fb8c9; --ice-soft:#e3eef3; --camellia:#c8a7b8; --camellia-deep:#7d4f68; --warm:#f5eee5; --salvia:#2F6FE4; --marigold:#FF8A3D; --lupinus:#9B5DE5; --alert:#c0392b;
+    --maru: "Zen Maru Gothic", "Noto Sans JP", sans-serif; --sans: "Noto Sans JP", sans-serif; --mono: "JetBrains Mono", "Noto Sans JP", monospace;
+  }
+  html, body { margin:0; background:#000; }
+  body { font-family: var(--maru); color:#fff; -webkit-font-smoothing: antialiased; }
+  #stage { position:relative; width:1920px; height:1080px; overflow:hidden; background:#000; }
+  .scene { position:absolute; inset:0; display:none; overflow:hidden; }
+  .abs { position:absolute; }
+  .full { position:absolute; inset:0; }
+  .snowbg { position:absolute; inset:0; pointer-events:none; }
+  .flake { position:absolute; left:0; top:0; border-radius:50%; background:#fff; will-change:transform; }
+  .bg-night { background:radial-gradient(120% 90% at 50% 0%, #2f4d69 0%, #1b2e41 62%, #142232 100%); }
+  .bg-deep { background:radial-gradient(110% 100% at 50% 10%, #22384e 0%, #131f2d 70%); }
+  .bg-paper { background:linear-gradient(180deg,#f7fafc 0%,#e7f0f5 62%,#d6e4ec 100%); }
+  .note { position:absolute; right:36px; top:30px; font-size:22px; font-weight:700; color:rgba(255,255,255,.62); font-family:var(--sans); }
+
+  /* 字幕（ナレーションの文字） */
+  #sub { position:absolute; top:950px; text-align:center; font-family:var(--sans); font-size:40px; font-weight:800; line-height:1.42; letter-spacing:.01em; z-index:50; }
+  #sub span { display:inline; padding:6px 20px; border-radius:12px; background:rgba(8,16,25,.72); color:#fff; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+  #sub.light span { background:rgba(41,68,92,.86); }
+  #sub.grand span { background:rgba(125,79,104,.94); }
+  #sub.two { top:922px; }
+  /* 章のしるし */
+  #chap { position:absolute; left:44px; top:28px; z-index:40; display:flex; align-items:center; gap:14px; font-family:var(--sans); font-weight:800; font-size:22px; color:#fff; }
+  #chap .dots { display:flex; gap:6px; }
+  #chap .dots i { display:block; width:34px; height:6px; border-radius:3px; background:rgba(255,255,255,.28); }
+  #chap .dots i.on { background:var(--lamp); }
+  #chap .name { padding:5px 14px; border-radius:999px; background:rgba(10,20,30,.5); letter-spacing:.06em; }
+  #chap.dark .name { background:rgba(41,68,92,.12); color:var(--ink); }
+  #chap.dark .dots i { background:rgba(41,68,92,.2); }
+  #chap.dark .dots i.on { background:var(--lamp); }
+
+  /* スマホ */
+  .ph { position:absolute; border-radius:54px; background:#0b131c; box-shadow:0 34px 70px rgba(0,0,0,.5), 0 0 0 2px rgba(255,255,255,.12) inset; will-change:transform,opacity; }
+  .ph-screen { position:absolute; inset:11px; border-radius:44px; overflow:hidden; background:#fff; }
+  .ph-screen img { position:absolute; left:0; top:0; width:100%; height:100%; display:block; }
+  .ph-label { position:absolute; left:-60px; right:-60px; bottom:-52px; text-align:center; font-size:26px; font-weight:700; color:var(--ink-soft); letter-spacing:.04em; white-space:nowrap; }
+  .ph-finger { position:absolute; width:52px; height:52px; margin:-26px 0 0 -26px; border-radius:50%; background:rgba(217,130,91,.78); border:4px solid #fff; box-shadow:0 0 0 3px rgba(41,68,92,.55), 0 6px 14px rgba(0,0,0,.35); opacity:0; z-index:3; }
+  .ph-ripple { position:absolute; width:110px; height:110px; margin:-55px 0 0 -55px; border-radius:50%; border:6px solid var(--lamp); background:rgba(217,130,91,.28); opacity:0; z-index:2; }
+  .lens { position:absolute; overflow:hidden; border-radius:30px; background:#fff; box-shadow:0 30px 60px rgba(0,0,0,.45), 0 0 0 5px rgba(255,255,255,.9); will-change:transform,opacity; }
+  .lens img { position:absolute; left:0; top:0; display:block; transform-origin:0 0; }
+
+  /* 文字 */
+  .h1 { font-size:72px; font-weight:900; line-height:1.28; letter-spacing:.01em; text-shadow:0 4px 22px rgba(0,0,0,.35); }
+  .h2 { font-size:52px; font-weight:900; line-height:1.32; text-shadow:0 4px 18px rgba(0,0,0,.3); }
+  .h3 { font-size:36px; font-weight:700; line-height:1.45; color:#dfe8f0; }
+  .small { font-size:28px; font-weight:700; line-height:1.5; color:#c4d3e0; }
+  .lampc { color:var(--lamp-light); }
+  .tag { display:inline-flex; align-items:center; gap:14px; padding:12px 30px 12px 22px; border-radius:999px; background:var(--lamp); color:#fff; font-size:38px; font-weight:900; box-shadow:0 12px 30px rgba(217,130,91,.42); white-space:nowrap; }
+  .tag .spark { width:40px; height:40px; flex:none; }
+  .tag small { font-size:26px; font-weight:700; opacity:.92; }
+  .tag.blue { background:#345a7a; box-shadow:0 12px 30px rgba(0,0,0,.25); }
+  .chip { display:inline-block; padding:8px 20px; border-radius:999px; font-size:28px; font-weight:700; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.22); color:#eaf2f8; white-space:nowrap; }
+  .card { position:absolute; border-radius:34px; background:rgba(255,255,255,.07); border:2.5px solid rgba(255,255,255,.16); backdrop-filter:blur(2px); }
+  .mono { font-family:var(--mono); }
+  .code { font-family:var(--mono); font-size:27px; line-height:1.5; color:#d7e6f2; white-space:pre; }
+  .code .k { color:#8fd0ee; } .code .s { color:#ffd0b5; } .code .n { color:#c9a6ff; } .code .c { color:#7f97ab; }
+  .photo { position:absolute; background:#fff; padding:16px 16px 62px; box-shadow:0 34px 70px rgba(0,0,0,.5); will-change:transform; }
+  .photo img { display:block; }
+  .photo .cap { position:absolute; left:0; right:0; bottom:14px; text-align:center; font-family:var(--sans); font-size:22px; font-weight:700; color:#55697b; }
+  /* 作り方の場面: 本人の指示（右・オレンジ）とコミット（左） */
+  .mk { font-family:var(--sans); font-size:20.5px; line-height:1.42; font-weight:600; padding:11px 15px; border-radius:18px; color:#29445c; }
+  .mk.me { align-self:flex-end; max-width:84%; background:#d9825b; color:#fff; border-bottom-right-radius:5px; font-weight:800; font-size:22px; }
+  .mk.cc { align-self:flex-start; max-width:90%; background:#e3eef3; border-bottom-left-radius:5px; }
+  .mk .at { display:inline-block; font-family:var(--mono); font-size:15px; color:#6d8497; margin-right:9px; }
+  #ctrl { position:fixed; left:12px; top:1090px; z-index:9; font:14px sans-serif; color:#fff; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="chap"><div class="dots"><i></i><i></i><i></i><i></i></div><div class="name"></div></div><div id="sub"><span></span></div></div>
+<div id="ctrl"><button id="play">▶ 再生（音なし）</button> <input id="pos" type="range" min="0" max="180" step="0.05" value="0" style="width:900px"> <span id="tt">0.0</span></div>
+<script src="../../.video/v3/timeline.js"></script>
+<script src="edit.js"></script>
+<script src="compose-core.js"></script>
+<script src="compose-s1.js"></script>
+<script src="compose-s2.js"></script>
+<script src="compose-s3.js"></script>
+<script src="compose-s4.js"></script>
+<script src="compose-run.js"></script>
+</body>
+</html>

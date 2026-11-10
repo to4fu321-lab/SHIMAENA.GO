@@ -58,3 +58,10 @@ next-env.d.ts
 
 # デモ動画の中間ファイル（scripts/demo-video）
 /.video
+
+# 紹介動画 v3 の仮の声の道具（scripts/video-v3/tts/setup.sh が作る。大きいので入れない）
+/scripts/video-v3/tts/venv/
+/scripts/video-v3/tts/models/
+/scripts/video-v3/tts/.cache/
+/scripts/video-v3/tts/out/
+/scripts/video-v3/tts/__pycache__/
