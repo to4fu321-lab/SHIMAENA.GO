@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // ループの自己確認用スクリプト（Node の CommonJS）
     "scripts/**/*.cjs",
+    // 紹介動画 v3 の合成ページ用（ブラウザで <script> として読む。Node の検査の対象外）
+    "scripts/video-v3/*.js",
     ".shots/**",
     // 並行作業用の作業コピー（Claude Code）
     ".claude/worktrees/**",
