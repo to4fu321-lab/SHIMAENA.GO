@@ -4,11 +4,12 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import Avatar from "@/components/Avatar";
-import { JUDGE_CAST, demoHref } from "@/lib/demo-cast";
+import { JUDGE_CAST } from "@/lib/demo-cast";
 import { demoEnabled } from "@/lib/env";
 import { loadRoster } from "@/lib/morning/roster";
 import { defaultLook } from "@/lib/mypage/rules";
 import { teamTheme } from "@/lib/team-theme";
+import { pickDemoAction } from "./actions";
 
 export const metadata: Metadata = { title: "デモの人をえらぶ ・ シマエナGO" };
 
@@ -28,7 +29,7 @@ async function DemoPick({ searchParams }: { searchParams: Promise<{ next?: strin
       <header className="shrink-0 space-y-1">
         <h1 className="text-2xl font-bold">デモの人をえらぶ</h1>
         <p className="text-base leading-snug">
-          架空の町の、架空の10人です。1人えらぶと、その人として雪かきGO・ソロ活動を体験できます。
+          架空の町の、架空の10人です。1人えらぶと、雪が積もった朝から、その人として雪かきを体験できます。
           <span className="text-ink-soft">（ほかの人と記録が混ざらないように）</span>
         </p>
       </header>
@@ -38,9 +39,11 @@ async function DemoPick({ searchParams }: { searchParams: Promise<{ next?: strin
           const t = p.teamId ? teamTheme(p.teamId).team : undefined;
           return (
             <li key={p.id} className="min-h-0">
-              <Link
-                href={demoHref(next, p.id)}
-                className="flex h-full items-center gap-2 rounded-2xl bg-card px-2.5 shadow-sm ring-1 ring-ink/10 hover:ring-2 hover:ring-lamp"
+              <form action={pickDemoAction} className="h-full">
+              <input type="hidden" name="as" value={p.id} />
+              <input type="hidden" name="next" value={next} />
+              <button
+                className="flex h-full w-full items-center gap-2 rounded-2xl bg-card px-2.5 text-left shadow-sm ring-1 ring-ink/10 hover:ring-2 hover:ring-lamp"
                 data-sound="tap"
               >
                 <Avatar icon={look.icon} bg={look.iconBg} size={40} team={p.teamId} />
@@ -52,7 +55,8 @@ async function DemoPick({ searchParams }: { searchParams: Promise<{ next?: strin
                     </span>
                   )}
                 </span>
-              </Link>
+              </button>
+              </form>
             </li>
           );
         })}

@@ -13,3 +13,13 @@ export function isDeployed(): boolean {
 export function demoEnabled(): boolean {
   return (process.env.DEMO_MODE ?? "on").trim().toLowerCase() !== "off";
 }
+
+/**
+ * デモはいつでも「雪の朝」（11/10 本人「デモの場合は雪が積もった朝で依頼もある状態からスタートさせて」）。
+ * 審査や見学は夜にも来るので、デモの操作が許されている間は夜の防犯ルール（19時〜6時）で止めず、空も朝にする。
+ * 本当にエリアで使うとき（DEMO_MODE=off）は、時計どおり。テストでは時計どおり（夜のルールを確かめるため）。DEMO_MORNING=off でも外せる。
+ */
+export function demoMorning(): boolean {
+  if (process.env.NODE_ENV === "test" || process.env.VITEST) return false;
+  return demoEnabled() && (process.env.DEMO_MORNING ?? "on").trim().toLowerCase() !== "off";
+}

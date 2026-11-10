@@ -4,7 +4,7 @@ import { repo } from "../repo";
 import { inboxKeyOf } from "../inbox/key";
 import { push } from "../line/client";
 import { MSG } from "../line/messages";
-import { isNight } from "../night";
+import { isClockNight } from "../night";
 import { jstDate } from "../jst";
 import { baseUrl } from "../url";
 import { agoText, alreadyAlerted, hazard, pickRecipients, type RoadReport } from "./hazards";
@@ -12,7 +12,7 @@ import { addSend, listAlertOn, listRoadReportsSince, markNotified, sendCounts } 
 
 /** 1件を知らせる。送った人数を返す（夜は 0 のまま、あとで flushRoadAlerts が送る） */
 export async function notifyRoadReport(r: RoadReport, now: Date = new Date()): Promise<number> {
-  if (isNight(now) || r.notifiedAt) return 0;
+  if (isClockNight(now) || r.notifiedAt) return 0;
   const h = hazard(r.hazard);
   if (!h) return 0;
   const recent = await listRoadReportsSince(new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString());
@@ -42,7 +42,7 @@ export async function notifyRoadReport(r: RoadReport, now: Date = new Date()): P
 
 /** 夜のあいだに届いた報告を、朝にまとめて知らせる（12時間以内のもの） */
 export async function flushRoadAlerts(now: Date = new Date()): Promise<number> {
-  if (isNight(now)) return 0;
+  if (isClockNight(now)) return 0;
   const pending = (await listRoadReportsSince(new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString())).filter((r) => !r.notifiedAt).reverse();
   let sent = 0;
   for (const r of pending) sent += await notifyRoadReport(r, now);

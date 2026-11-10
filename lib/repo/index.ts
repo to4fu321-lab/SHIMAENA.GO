@@ -571,3 +571,64 @@ export async function clearDemoSoloLogs(date: string): Promise<number> {
   const rows = await query<{ id: string }>("delete from solo_logs where date = $1 and participant_id ~ '^[hr][0-9]+$' returning id", [date]);
   return rows.length;
 }
+
+/**
+ * 退会（11/10 本人「ログアウト機能、退会機能を追加したい」）: その人の登録と記録を消す。
+ * 家（拠点）・家族の紐づけ・カード・ソロの記録・道の報告・マイページ・隊長トーク・通知の登録など、その人にひもづくものを全部。
+ * 後から作られる表（まだない表）は飛ばす。今朝の状態（JSON）に残る出撃の記録は、名簿にいない人として名前が出なくなる。
+ */
+export async function deleteParticipantData(id: string): Promise<void> {
+  if (!hasDb()) {
+    const m = mem();
+    const p = m.participants.get(id);
+    m.participants.delete(id);
+    for (const [k, b] of m.bases) if (b.requesterId === id) m.bases.delete(k);
+    m.links = m.links.filter((l) => l.requesterId !== id && (!p?.lineUserId || l.familyLineUserId !== p.lineUserId));
+    for (const [k, c] of m.cards) if (c.card.recipientId === id) m.cards.delete(k);
+    for (const [k, l] of m.soloLogs) if (l.participantId === id) m.soloLogs.delete(k);
+    if (p?.lineUserId) m.sessions.delete(p.lineUserId);
+    return;
+  }
+  const rows = await query<{ line_user_id: string | null }>("select line_user_id from participants where id = $1", [id]);
+  const line = rows[0]?.line_user_id ?? null;
+  type Step = [string, unknown[]];
+  const by = (table: string, col = "participant_id"): Step => [`delete from ${table} where ${col} = $1`, [id]];
+  const steps: Step[] = [
+    ["delete from family_links where requester_id = $1 or family_line_user_id = $2", [id, line ?? "-"]],
+    by("cards", "recipient_id"),
+    by("solo_logs"),
+    by("road_reports"),
+    by("road_alert_prefs"),
+    by("road_alert_sends"),
+    by("nakama_prefs"),
+    ["delete from meetups where from_id = $1 or to_id = $1", [id]],
+    ["delete from nakama_waves where from_id = $1 or to_id = $1", [id]],
+    ["delete from baton_reactions where participant_id = $1 or baton_id in (select id from batons where participant_id = $1)", [id]],
+    by("batons"),
+    by("participant_profiles"),
+    by("my_profiles"),
+    by("voice_logs"),
+    by("feedback_reports"),
+    by("chat_quota"),
+    by("thanks_voices", "requester_id"),
+    by("kikigaki_stories", "requester_id"),
+    by("bases", "requester_id"),
+    ...(line
+      ? ([
+          ["delete from inbox_messages where inbox_key = $1", [line]],
+          ["delete from push_subscriptions where inbox_key = $1", [line]],
+          ["delete from line_sessions where line_user_id = $1", [line]],
+        ] as Step[])
+      : []),
+    by("participants", "id"),
+  ];
+  for (const [sql, params] of steps) {
+    try {
+      await query(sql, params);
+    } catch (e) {
+      // まだ作られていない表（42P01）は飛ばす。それ以外は止める（途中で participants だけ残らないように）
+      if ((e as { code?: string }).code !== "42P01") throw e;
+    }
+  }
+  memoClear();
+}

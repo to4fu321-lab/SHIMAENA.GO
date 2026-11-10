@@ -17,7 +17,7 @@ import { weekStart } from "../game/week";
 import { repo } from "../repo";
 import { getTeam } from "../teams";
 import { baseUrl } from "../url";
-import { isNight } from "../night";
+import { isClockNight } from "../night";
 import { loadNudge, saveNudge } from "./store";
 import { shouldNudge, type NudgeCandidate } from "./rules";
 import type { Participant } from "../types";
@@ -40,7 +40,7 @@ export interface NudgeResult {
 
 /** しばらく活動のない手伝う側に声をかける */
 export async function nudgeInactive(now = new Date()): Promise<NudgeResult> {
-  if (isNight(now)) return { checked: 0, sent: 0, names: [] };
+  if (isClockNight(now)) return { checked: 0, sent: 0, names: [] };
   const roster = await loadRoster();
   const record = await loadMorning();
   const today = appToday(record, now);

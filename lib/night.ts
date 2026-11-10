@@ -1,15 +1,22 @@
 // 夜の防犯ルール（spec v1.8、本人の指示「雪かきはどの時間でもよい。防犯上、夜は自分の家以外は NG」）。
 // 夜（日本時間 19:00〜翌 6:00）は、自分の家の雪かきと、家の中でできること（アプリ・応援・コツ）だけ。
 // よその家の手伝い・見回り・雪の報告に出かけるのは、明るい時間に。決めるのは時計だけ（AI は使わない）。
+import { demoMorning } from "./env";
 import { jstHourMinute } from "./jst";
 
 /** 夜の始まりと終わり（時。日本時間）。エリア会と決めて変えてよい */
 export const NIGHT_FROM = 19; // 本人の答え「19時以降は NG」（11/4）
 export const NIGHT_UNTIL = 6;
 
-export function isNight(now: Date = new Date()): boolean {
+/** 時計だけで見た夜（通知を送るかどうかに使う。デモでも、本当の夜に人のスマホを鳴らさない） */
+export function isClockNight(now: Date = new Date()): boolean {
   const h = Number(jstHourMinute(now).slice(11, 13)); // "YYYY-MM-DDTHH:mm" の時
   return h >= NIGHT_FROM || h < NIGHT_UNTIL;
+}
+
+/** 夜か（よその家の手伝いを止めるか）。デモの間はいつでも朝として扱う（lib/env.ts の demoMorning） */
+export function isNight(now: Date = new Date()): boolean {
+  return !demoMorning() && isClockNight(now);
 }
 
 /** 夜でもしてよいソロの活動（自分の家と、家の中でできること）。道の危険は、通りがかりに見つけたら夜でも報告してよい（11/4 本人の答え） */

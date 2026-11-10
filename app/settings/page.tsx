@@ -14,6 +14,7 @@ import NudgeSwitch from "@/components/NudgeSwitch";
 import RedoRegistration from "@/components/RedoRegistration";
 import SoundToggle from "@/components/SoundToggle";
 import WatchSettings from "@/components/WatchSettings";
+import AccountActions from "@/components/AccountActions";
 import FeedbackButton from "@/components/FeedbackSheet";
 import { loadNudge } from "@/lib/nudge/store";
 import { loadRoster } from "@/lib/morning/roster";
@@ -70,7 +71,7 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       </nav>
       }
     >
-      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "notice", label: "お知らせ" }, { key: "sound", label: "音" }, { key: "watch", label: "時計" }]}>
+      <Pager tabs={[{ key: "me", label: "登録" }, { key: "redo", label: "やり直す" }, { key: "notice", label: "通知" }, { key: "sound", label: "音" }, { key: "watch", label: "時計" }, { key: "account", label: "退会" }]}>
 
       {me ? (
         <section className="rounded-3xl bg-card p-4 shadow-sm ring-1 ring-ink/10" aria-label="あなたの登録">
@@ -136,6 +137,8 @@ async function Settings({ searchParams }: { searchParams: Promise<{ as?: string 
       <SoundToggle songHref={`/song${q}`} />
 
       <WatchSettings />
+
+      <AccountActions mode={demoAs ? "demo" : me ? "line" : "guest"} name={me?.nickname} />
 
       </Pager>
     </Screen>
