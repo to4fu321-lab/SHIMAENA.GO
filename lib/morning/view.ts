@@ -13,6 +13,15 @@ export interface MorningState {
   viewerId: string;
 }
 
+/**
+ * 見ている人の出動。1軒終えてから別の家に加わったら、いま向かっている家を返す
+ * （先に終えた家を返すと、地図のボタンが「完了しました」のまま畳まれて写真を送れない）。
+ */
+export function mySortieOf(sorties: Sortie[], viewerId: string): Sortie | undefined {
+  const mine = sorties.filter((s) => s.participantId === viewerId);
+  return mine.find((s) => s.status === "going") ?? mine.at(-1);
+}
+
 export interface BaseView {
   baseId: string;
   status: Mission["status"] | "none";

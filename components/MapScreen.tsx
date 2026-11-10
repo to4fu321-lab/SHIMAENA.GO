@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { CellView, SoloCell } from "@/lib/cells";
 import type { BaseView, MorningState } from "@/lib/morning/view";
-import { progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
+import { mySortieOf, progress, snowHp, snowTotal, teamTotals, viewBases } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import type { Base, LatLng, Role, TeamId } from "@/lib/types";
 import type { Destination } from "@/lib/nav";
@@ -113,7 +113,7 @@ export default function MapScreen({
   const snow = snowTotal(state);
   const hpPct = hp.max > 0 ? (hp.current / hp.max) * 100 : 100;
   const viewerTeam = TEAMS.find((t) => t.id === viewer?.teamId);
-  const mySortie = state.sorties.find((s) => s.participantId === state.viewerId);
+  const mySortie = mySortieOf(state.sorties, state.viewerId);
   const myMission = state.missions.find((m) => m.id === mySortie?.missionId);
   const goingTo = state.sorties.filter((s) => s.participantId === state.viewerId && s.status === "going").map((s) => s.missionId);
   const myBase = bases.find((b) => b.id === myMission?.baseId);
