@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>シマエナGO 紹介動画 v4「隊長の朝」（合成ページ）</title>
+<!--
+  render.cjs が ?render=1 で開き、seek(t) で t 秒のコマを出してスクショする（1920×1080・30fps）。
+  読むもの: ../../.video/v4/timeline.js（layout.cjs が書く時間割と録画の印）、../../.video/v4/rec/<場面>/00001.jpg（record.cjs の録画）
+  ブラウザで直接開くと、下のつまみで動かして確かめられる（音はなし）。
+-->
+<style>
+  @font-face { font-family: "Zen Maru Gothic"; font-weight: 500; src: url("../../.video/v4/fonts/ZenMaruGothic-Medium.ttf"); }
+  @font-face { font-family: "Zen Maru Gothic"; font-weight: 700; src: url("../../.video/v4/fonts/ZenMaruGothic-Bold.ttf"); }
+  @font-face { font-family: "Zen Maru Gothic"; font-weight: 900; src: url("../../.video/v4/fonts/ZenMaruGothic-Black.ttf"); }
+  @font-face { font-family: "Noto Sans JP"; font-weight: 100 900; src: url("../../.video/v4/fonts/NotoSansJP.ttf"); }
+  @font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url("../../.video/v4/fonts/JetBrainsMono.ttf"); }
+  @font-face { font-family: "Shippori Mincho"; font-weight: 700; src: url("../../.video/v4/fonts/ShipporiMincho-Bold.ttf"); }
+  :root {
+    --ink:#29445c; --ink-deep:#1e3346; --night:#0e1926; --soft:#b7c7d6; --lamp:#e8834f; --lamp-deep:#c96a3a; --lamp-light:#ffcfae; --glow:#ffd59a;
+    --ice:#8fb8c9; --paper:#f4f7fa; --salvia:#2F6FE4; --marigold:#FF8A3D; --lupinus:#9B5DE5;
+    --maru:"Zen Maru Gothic","Noto Sans JP",sans-serif; --sans:"Noto Sans JP",sans-serif; --mono:"JetBrains Mono","Noto Sans JP",monospace; --min:"Shippori Mincho","Noto Sans JP",serif;
+  }
+  html,body { margin:0; background:#000; }
+  body { font-family:var(--maru); color:#fff; -webkit-font-smoothing:antialiased; }
+  #stage { position:relative; width:1920px; height:1080px; overflow:hidden; background:#000; }
+  .act { position:absolute; inset:0; overflow:hidden; display:none; }
+  .abs { position:absolute; } .full { position:absolute; inset:0; }
+  canvas.snow { position:absolute; inset:0; pointer-events:none; }
+
+  /* 字幕 = 隊長の吹き出し */
+  #sub { position:absolute; left:0; right:0; bottom:34px; display:flex; justify-content:center; align-items:flex-end; gap:6px; z-index:60; }
+  #ava { width:112px; height:112px; flex:none; margin-bottom:-6px; transform-origin:50% 90%; filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+  #bub { position:relative; max-width:1500px; padding:15px 34px 17px; border-radius:26px; background:rgba(12,22,34,.86); border:2px solid rgba(255,255,255,.14);
+    font-family:var(--sans); font-size:39px; font-weight:800; line-height:1.42; letter-spacing:.015em; text-align:center; color:#fff; box-shadow:0 10px 30px rgba(0,0,0,.28); white-space:nowrap; }
+  #bub::before { content:""; position:absolute; left:-13px; bottom:30px; border:9px solid transparent; border-right-color:rgba(12,22,34,.86); border-left:0; }
+  #sub.noava #bub::before { display:none; }
+  #note { position:absolute; left:40px; top:26px; z-index:55; font-family:var(--sans); font-size:20px; font-weight:700; letter-spacing:.03em; color:rgba(255,255,255,.6); }
+  #note.dark { color:rgba(41,68,92,.62); }
+
+  /* スマホ */
+  .ph { position:absolute; border-radius:50px; background:#0b131c; box-shadow:0 30px 60px rgba(20,40,60,.35), 0 0 0 2px rgba(255,255,255,.14) inset; will-change:transform,opacity; transform-origin:50% 50%; }
+  .ph-scr { position:absolute; inset:10px; border-radius:41px; overflow:hidden; background:#fff; }
+  .ph-scr img { position:absolute; left:0; top:0; width:100%; height:100%; display:block; }
+  .ph-label { position:absolute; left:-80px; right:-80px; top:-52px; text-align:center; font-size:25px; font-weight:700; letter-spacing:.04em; white-space:nowrap; color:var(--ink); }
+  .ph-finger { position:absolute; width:50px; height:50px; margin:-25px 0 0 -25px; border-radius:50%; background:rgba(232,131,79,.8); border:4px solid #fff; box-shadow:0 0 0 3px rgba(41,68,92,.5), 0 6px 14px rgba(0,0,0,.35); opacity:0; z-index:3; }
+  .ph-ripple { position:absolute; width:110px; height:110px; margin:-55px 0 0 -55px; border-radius:50%; border:6px solid var(--lamp); background:rgba(232,131,79,.25); opacity:0; z-index:2; }
+  .lens { position:absolute; overflow:hidden; border-radius:30px; background:#fff; box-shadow:0 26px 60px rgba(20,40,60,.32), 0 0 0 6px #fff; will-change:transform,opacity; }
+  .lens img { position:absolute; left:0; top:0; display:block; transform-origin:0 0; }
+
+  /* 文字の部品 */
+  .kick { font-family:var(--sans); font-weight:800; font-size:32px; letter-spacing:.14em; color:var(--lamp-deep); }
+  .head { font-weight:900; font-size:76px; line-height:1.22; letter-spacing:.01em; color:var(--ink-deep); }
+  .body { font-family:var(--sans); font-weight:600; font-size:35px; line-height:1.6; color:#4a637a; }
+  .chip { display:inline-flex; align-items:center; gap:10px; padding:8px 22px; border-radius:999px; font-family:var(--sans); font-weight:800; font-size:26px; white-space:nowrap; }
+  .step { position:absolute; display:flex; gap:14px; left:40px; top:70px; z-index:20; }
+  .step .chip { background:rgba(41,68,92,.1); color:rgba(41,68,92,.45); transition:none; }
+  .step .chip b { display:inline-grid; place-items:center; width:38px; height:38px; margin-left:-12px; border-radius:50%; background:rgba(41,68,92,.16); color:#fff; font-size:22px; }
+  .step .chip.on { background:var(--lamp); color:#fff; box-shadow:0 8px 20px rgba(201,106,58,.35); }
+  .step .chip.on b { background:rgba(255,255,255,.3); }
+  .step .chip.done { background:rgba(41,68,92,.82); color:#fff; }
+  .mono { font-family:var(--mono); }
+  .card { position:absolute; border-radius:28px; background:#fff; box-shadow:0 20px 50px rgba(20,40,60,.22); color:var(--ink-deep); }
+  .glass { position:absolute; border-radius:28px; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.14); }
+  #scrub[hidden] { display:none !important; }
+  #scrub { position:fixed; left:0; right:0; bottom:0; padding:8px; background:#111; color:#ccc; font:14px monospace; display:flex; gap:10px; z-index:99; }
+  #scrub input { flex:1; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="acts"></div>
+  <div id="note"></div>
+  <div id="sub"><div id="ava"></div><div id="bub"></div></div>
+</div>
+<div id="scrub" hidden><span id="tt">0.0</span><input id="rng" type="range" min="0" max="180" step="0.0333" value="0"></div>
+<script src="../../.video/v4/timeline.js"></script>
+<script src="core.js"></script>
+<script src="act1-town.js"></script>
+<script src="act2-demo.js"></script>
+<script src="act3-thanks.js"></script>
+<script src="act4-maker.js"></script>
+<script src="act5-end.js"></script>
+<script src="run.js"></script>
+</body>
+</html>
