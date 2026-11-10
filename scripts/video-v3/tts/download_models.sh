@@ -16,4 +16,7 @@ dl baaae3c0-7b22-4605-8ba5-80c959b41a48 morioki
 
 dl e9339137-2ae3-4d41-9394-fb757a7e61e6 mai
 
+# 紹介動画 v4 の語り（アプリの隊長と同じ声: 雪降白華。Tαkoe プロジェクト）
+dl 37e49039-522f-4608-b8d6-fc6716ada80e yukifuri
+
 echo done

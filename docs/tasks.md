@@ -316,3 +316,8 @@
 - [x] **T142 紹介動画 v3（3分）** — 審査基準の4項目を4章にした 2分58秒の動画を、コードから通しで作る（`scripts/video-v3/`: 台本 `script.cjs`・録画 `record.cjs`・編集 `edit.js`・絵 `compose-*.js`・音楽 `score.cjs`・声 `narrate.cjs`・通し `make.cjs`）。動く画面は本番ビルドを2倍の解像度でコマ撮り、音楽と効果音はアプリと同じ `lib/sound/` の楽器、ナレーションは仮の合成音声。説明は `docs/video/v3.md`。
   完了条件: `docs/video/shimaena-go-3min.mp4` が 180 秒以内・1920×1080・音つきでできる。`node scripts/video-v3/make.cjs` で作り直せる。
   残り（本人）: ナレーションを本人の声に差し替える／Claude の鍵を入れて画面を撮り直す（いまは鍵なしの見本の答え）。どちらも手順は `docs/video/v3.md`。
+
+## 第39段: 紹介動画 v4「隊長の朝」（11/10 本人「元の台本などは無視して、表現方法や伝え方など全てClaudeの自由にして良いので1から作成して」）
+- [x] **T143 紹介動画 v4（3分）** — 語り手をアプリの中の AI「シマエナ隊長」にした 2分58秒の動画を、1から作る（`scripts/video-v4/`: 台本 `script.cjs`・声 `narrate.cjs`・録画 `record.cjs`・絵 `act1〜5*.js`・音楽 `score.cjs`・通し `make.cjs`）。声はアプリの隊長と同じ声。「ありがとう」は合成せず、5秒を空ける。説明は `docs/video/v4.md`。
+  完了条件: `docs/video/shimaena-go-taicho.mp4` が 180 秒以内・1920×1080・音つきでできる。`node scripts/video-v4/make.cjs` で作り直せる。
+  残り（本人）: 見て、どちらの版（v3・v4）を使うか決める／Claude の鍵を入れて画面を撮り直す（いまは鍵なしの見本の答え。手順は `docs/video/v4.md`）。
