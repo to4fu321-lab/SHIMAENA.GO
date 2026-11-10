@@ -3,8 +3,9 @@ import { STYLE_NAME } from "../cards/rarity";
 import { soloStatus } from "../solo/ops";
 import { repo } from "../repo";
 import type { MeStats } from "./text";
+import { appNow } from "@/lib/clock";
 
-export async function loadMeStats(participantId: string, now: Date = new Date()): Promise<MeStats & { nickname: string }> {
+export async function loadMeStats(participantId: string, now: Date = appNow()): Promise<MeStats & { nickname: string }> {
   const [p, st, cards] = await Promise.all([
     repo().findParticipant(participantId),
     soloStatus(participantId, now),

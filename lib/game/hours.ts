@@ -2,6 +2,7 @@
 // 朝（9:00 まで）とドカ雪の日（予報 15cm 以上）は、完了した人にボーナス。
 import { jstMinutes } from "../jst";
 import { NIGHT_FROM, NIGHT_UNTIL, isNight } from "../night";
+import { appNow } from "@/lib/clock";
 
 // 夜の時間は lib/night.ts（防犯ルール）と同じものを使う
 export const WORK_START_MIN = NIGHT_UNTIL * 60;
@@ -12,7 +13,7 @@ export const MORNING_BONUS_UNTIL_MIN = 9 * 60;
 export const DOKAYUKI_CM = 15;
 
 /** よその家の雪かきをしてよい時間か（日本時間 6:00〜19:00）。夜でも自分の家の雪かきは OK（lib/night.ts） */
-export function isWorkHours(now: Date = new Date()): boolean {
+export function isWorkHours(now: Date = appNow()): boolean {
   return !isNight(now);
 }
 

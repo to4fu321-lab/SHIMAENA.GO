@@ -14,6 +14,7 @@ import { stormStatus } from "@/lib/storm";
 import { repo } from "@/lib/repo";
 import type { ClearArea, HelpStyle } from "@/lib/types";
 import { trustedViewer } from "@/lib/viewer";
+import { appNow } from "@/lib/clock";
 
 export interface AskResult {
   ok: boolean;
@@ -65,7 +66,7 @@ export async function askTodayAction(viewerId: string, style: string): Promise<A
   if (!p) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
   if ((await stormStatus()).stopped) return { ok: false, text: "警報の日はお休みです。家の中で過ごしてください。" };
   const s = STYLES.find((x) => x === style);
-  const messages = await askForHelpById(p.id, new Date(), s);
+  const messages = await askForHelpById(p.id, appNow(), s);
   revalidatePath("/ask");
   revalidatePath("/");
   revalidatePath("/map");

@@ -5,6 +5,7 @@
 import { randomBytes } from "node:crypto";
 import { hasDb, query } from "../db";
 import type { LineMessage } from "../line/types";
+import { appNow } from "@/lib/clock";
 
 /** 本人から隊長へ: 文か写真（写真そのものは保存しない。送った印だけ） */
 export type InboxIn = { text: string } | { photo: true; note?: string };
@@ -85,14 +86,14 @@ async function insert(items: InboxItem[]): Promise<void> {
 }
 
 /** 隊長からの文面を流れに足す（1つの吹き出し＝1行。順番が崩れないよう 1ms ずつずらす） */
-export async function appendOut(key: string, messages: LineMessage[], now = new Date()): Promise<InboxItem[]> {
+export async function appendOut(key: string, messages: LineMessage[], now = appNow()): Promise<InboxItem[]> {
   const items = messages.map((m, i) => ({ id: newId(), key, dir: "out" as const, body: m, at: new Date(now.getTime() + i).toISOString() }));
   await insert(items);
   return items;
 }
 
 /** 本人が送った文・写真を流れに足す */
-export async function appendIn(key: string, body: InboxIn, now = new Date()): Promise<InboxItem> {
+export async function appendIn(key: string, body: InboxIn, now = appNow()): Promise<InboxItem> {
   const item: InboxItem = { id: newId(), key, dir: "in", body, at: now.toISOString() };
   await insert([item]);
   return item;
@@ -115,7 +116,7 @@ export async function unreadCount(key: string): Promise<number> {
 }
 
 /** 流れを開いた: 隊長からの行を全部「読んだ」にする */
-export async function markRead(key: string, now = new Date()): Promise<void> {
+export async function markRead(key: string, now = appNow()): Promise<void> {
   const at = now.toISOString();
   if (!hasDb()) {
     for (const x of memList(key)) if (x.dir === "out" && !x.readAt) x.readAt = at;

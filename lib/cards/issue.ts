@@ -22,6 +22,7 @@ import { drawLater, willDraw } from "./drawn";
 import type { ArtInput } from "../claude/art";
 import { FALL_LABEL, PROP_LABEL, SKY_LABEL, type CardScene } from "./scene";
 import type { TeamId } from "../types";
+import { appNow } from "@/lib/clock";
 
 const MOOD_LABEL = { calm: "静か", lively: "にぎやか", heroic: "大仕事" } as const;
 const GROUND_CM = [3, 10, 22, 35];
@@ -94,7 +95,7 @@ export async function issueCardsForMission(
   // 初出撃: まだ1枚もカードがない人（この朝の分を入れる前に調べる）
   const firstFlightIds: string[] = [];
   for (const m of members) if ((await r.listCardsByRecipient(m.id)).length === 0) firstFlightIds.push(m.id);
-  const completedAt = sorties[0].completedAt ?? new Date().toISOString();
+  const completedAt = sorties[0].completedAt ?? appNow().toISOString();
   const base = roster.bases.find((b) => b.id === mission.baseId);
   const requester = base && byId.get(base.requesterId);
   // v1.26: この家の人が「届ける」を選んだ雪の思い出（聞き書き）があれば、カードの裏に1行・カードのあとに隊長トークへ

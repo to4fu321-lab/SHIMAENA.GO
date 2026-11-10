@@ -8,6 +8,7 @@ import { MOTIVES, motivesFromText, SUMMARY_MAX, tidyMotives, type Motive } from 
 import { isVoiceCategory, VOICE_CATEGORIES, VOICE_LABEL, type VoiceCategory } from "../voice/store";
 import { CAPTION_MAX, cleanCaption, SKIES, type Sky } from "../line/you-image";
 import { askJson, hasClaudeKey } from "./client";
+import { appNow } from "@/lib/clock";
 
 /** 会話の往復の上限（spec v1.17: 上限なしに。コストの保険で 30。最後の往復は必ず1つ選ぶ） */
 export const MAX_TURNS = 30;
@@ -168,7 +169,7 @@ export function mockConcierge(input: ConciergeInput): ConciergeAnswer {
   if (!pick && mustPick(input.turn)) pick = input.options[0]?.id ?? null;
   if (!pick) {
     // 雑談には、話題のたね（日と往復で回る）から1つ。相談らしい文には聞き返し
-    const topic = SMALLTALK_WORDS.test(t) ? SMALLTALK_TOPICS.find((x) => x.topic === (input.topics ?? topicsFor(new Date(), input.turn))[0]) : undefined;
+    const topic = SMALLTALK_WORDS.test(t) ? SMALLTALK_TOPICS.find((x) => x.topic === (input.topics ?? topicsFor(appNow(), input.turn))[0]) : undefined;
     const w = input.weather;
     const weatherLine = w && w.now !== "不明" ? `いまは${w.now}${w.tempC !== undefined ? `で${w.tempC}度` : ""}${w.snowNext24hCm !== undefined ? `、この先24時間の雪は${w.snowNext24hCm}cmの見こみ` : ""}です。` : "";
     const reply = topic

@@ -11,6 +11,7 @@ import { repo } from "./repo";
 import { bonusLog } from "./solo/feathers";
 import type { SoloBonusKind } from "./solo/missions";
 import { baseUrl } from "./url";
+import { appNow } from "@/lib/clock";
 
 export const INVITE_COOKIE = "shimaena_inv";
 const CODE = /^[A-Za-z0-9_-]{8}$/;
@@ -97,7 +98,7 @@ async function bump(code: string, field: keyof InviteStats): Promise<string | un
 }
 
 /** 誘った人に羽（ごほうびの行。活動日には数えない）。誰の印か分からなければ何もしない */
-async function featherTo(pid: string | undefined, kind: SoloBonusKind, now = new Date()): Promise<void> {
+async function featherTo(pid: string | undefined, kind: SoloBonusKind, now = appNow()): Promise<void> {
   if (!pid) return;
   try {
     const log = bonusLog(kind, pid, jstDate(now), now.toISOString(), `sl-${randomBytes(6).toString("base64url")}`);

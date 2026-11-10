@@ -3,6 +3,7 @@ import { z } from "zod";
 import { QUIZ_TYPES, type QuizType } from "../public/quiz";
 import { loadShareTexts, saveShareText } from "../sns/store";
 import { askJson, hasClaudeKey } from "./client";
+import { appNow } from "@/lib/clock";
 
 export const QUIZ_COMMENT_MAX = 40;
 export const QuizCommentSchema = z.object({ text: z.string() });
@@ -29,7 +30,7 @@ export async function quizComment(type: QuizType, today: string): Promise<{ text
     model: "light", // 短い文なので安いモデル（spec v1.6）
     });
     const text = res.text.replace(/\s+/g, " ").trim().slice(0, QUIZ_COMMENT_MAX) || mockQuizComment(type);
-    await saveShareText(key, { text, key: today, at: new Date().toISOString(), byClaude: true });
+    await saveShareText(key, { text, key: today, at: appNow().toISOString(), byClaude: true });
     return { text, byClaude: true };
   } catch (e) {
     console.error("[quiz]", e instanceof Error ? e.message : e);

@@ -22,6 +22,7 @@ import { BODY_WORDS, buildOptions, type ConciergeContext } from "./options";
 import { addVoice } from "../voice/store";
 import { loadProfile, updateProfile } from "./profile";
 import { clearSession, loadSession, saveSession } from "./session";
+import { appNow } from "@/lib/clock";
 
 /** その人の今の状況（名前・場所は含めない） */
 export async function conciergeContext(p: Participant, record: MorningRecord, now: Date): Promise<ConciergeContext> {
@@ -76,7 +77,7 @@ export async function conciergeWeather(now: Date): Promise<NonNullable<Concierge
 /**
  * 登録した人の自由な文に答える。登録していない人・お願いする側でも手伝う側でもない人は null（登録の会話へ）。
  */
-export async function concierge(lineUserId: string, text: string, now = new Date(), opts: { force?: boolean } = {}): Promise<LineMessage[] | null> {
+export async function concierge(lineUserId: string, text: string, now = appNow(), opts: { force?: boolean } = {}): Promise<LineMessage[] | null> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p || (p.role !== "helper" && p.role !== "requester")) return null;
   const record = await loadMorning();
@@ -135,7 +136,7 @@ export async function concierge(lineUserId: string, text: string, now = new Date
 }
 
 /** コンシェルジュの続きの会話があるか（あれば自由な文は先にコンシェルジュへ） */
-export async function inConversation(lineUserId: string, now = new Date()): Promise<boolean> {
+export async function inConversation(lineUserId: string, now = appNow()): Promise<boolean> {
   return Boolean(await loadSession(lineUserId, now));
 }
 

@@ -18,6 +18,7 @@ import { listRoadReportsSince } from "@/lib/road/store";
 import { destinationsFor } from "@/lib/nav";
 import { emojiGrid } from "@/lib/share";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { appNow } from "@/lib/clock";
 
 // v1.24: 完了でカードが出たあと、返事のあとで Claude が絵を描く（after()）。その時間まで関数を止めない
 export const maxDuration = 300;
@@ -40,7 +41,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   // ソロ出動の足あと（今日）。表がまだなければ出さない（画面は止めない）
   const today = appToday(record);
   // 道の危険（24時間以内）。表がまだなければ出さない。足あとと同時に読む（11/7: 画面を待たせない）
-  const now = new Date();
+  const now = appNow();
   const [soloLogs, roadRows] = await Promise.all([
     repo().listSoloLogsBetween(today, today).catch(() => []),
     listRoadReportsSince(new Date(now.getTime() - SHOW_MS).toISOString()).catch(() => []),

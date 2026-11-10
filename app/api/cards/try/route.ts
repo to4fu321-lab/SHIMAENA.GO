@@ -13,6 +13,7 @@ import { jstDate, jstMinutes } from "@/lib/jst";
 import { warmDayTopic } from "@/lib/topic/day";
 import { TOWN } from "@/lib/town";
 import type { TeamId } from "@/lib/types";
+import { appNow } from "@/lib/clock";
 
 export const maxDuration = 300;
 
@@ -28,7 +29,7 @@ export async function GET(): Promise<Response> {
     if (e instanceof AdminRequiredError) return new Response("管理の合言葉でログインしてください（/admin）", { status: 401 });
     throw e;
   }
-  const now = new Date();
+  const now = appNow();
   const date = jstDate(now);
   const topic = await warmDayTopic(date);
   const m = jstMinutes(now);

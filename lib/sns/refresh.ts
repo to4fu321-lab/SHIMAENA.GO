@@ -5,9 +5,10 @@ import { loadPublicStats } from "../public/load";
 import type { PublicStats } from "../public/stats";
 import { loadShareTexts, saveShareText } from "./store";
 import { mockShareText } from "./text";
+import { appNow } from "@/lib/clock";
 
 /** 数字が変わった種類だけ Claude に書いてもらい、保存する。キーがなければ何もしない（画面は定型を出す） */
-export async function refreshShareTexts(now = new Date(), opts: { force?: boolean } = {}): Promise<number> {
+export async function refreshShareTexts(now = appNow(), opts: { force?: boolean } = {}): Promise<number> {
   if (!hasClaudeKey()) return 0;
   const [st, stored] = await Promise.all([loadPublicStats(now), loadShareTexts()]);
   let n = 0;

@@ -7,6 +7,7 @@ import { listThread } from "@/lib/inbox/store";
 import { textOf } from "@/lib/line/flex";
 import { repo } from "@/lib/repo";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { appNow } from "@/lib/clock";
 
 const ALLOWED = /^(rc:ans=[a-z0-9]+|help:go=[\w-]{1,60}|help:no)$/;
 
@@ -27,7 +28,7 @@ export async function POST(req: Request): Promise<Response> {
   const p = await repo().findParticipant(viewerId);
   if (!p) return json({ ok: false, text: "登録が見つかりません。" }, 404);
   const key = inboxKeyOf(p);
-  const sent = await sendToCaptain(p, { kind: "postback", data, label: label || undefined }, new Date());
+  const sent = await sendToCaptain(p, { kind: "postback", data, label: label || undefined }, appNow());
   if (!sent || !key) return json({ ok: false, text: "送れませんでした。" }, 409);
   // 隊長の返事の最初の 1 行を、受け付けの通知の本文に（時計の画面に収まる長さ）
   const thread = await listThread(key, 6).catch(() => []);

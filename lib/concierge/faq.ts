@@ -8,6 +8,7 @@ import { repo } from "../repo";
 import { safetyLine } from "../safety";
 import { currentWeather, weatherOf, type CurrentWeather } from "../sky";
 import { TOWN } from "../town";
+import { appNow } from "@/lib/clock";
 
 /** よくある質問のボタンの文字（押すとこの文字がそのまま届く） */
 export const FAQ = {
@@ -30,7 +31,7 @@ export function faqKind(text: string): FaqKind | null {
 }
 
 /** 今日の雪の答え（雪の朝なら予報、ちがえば今の天気）。数字は予報と Open-Meteo のものだけ */
-export async function snowLines(now = new Date(), weather?: CurrentWeather): Promise<string[]> {
+export async function snowLines(now = appNow(), weather?: CurrentWeather): Promise<string[]> {
   const record = await loadMorning();
   const rc = record.morning.rollcall;
   const isToday = rc.date === appToday(record, now);
@@ -46,7 +47,7 @@ export async function snowLines(now = new Date(), weather?: CurrentWeather): Pro
 }
 
 /** 「隊長に相談」とよくある質問への返事。登録していない人は登録の案内 */
-export async function faqReply(lineUserId: string, kind: FaqKind, now = new Date()): Promise<LineMessage[]> {
+export async function faqReply(lineUserId: string, kind: FaqKind, now = appNow()): Promise<LineMessage[]> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (kind === "start") return MSG.consultStart(Boolean(p));
   if (kind === "guide") return MSG.consultGuide();

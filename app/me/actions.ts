@@ -8,6 +8,7 @@ import { answeredCount, normalizeProfileTurns, PROFILE_MIN_ANSWERS } from "@/lib
 import { saveProfile, waveTo, type ProfileInput } from "@/lib/mypage/ops";
 import type { MyProfile } from "@/lib/mypage/rules";
 import { trustedViewer } from "@/lib/viewer";
+import { appNow } from "@/lib/clock";
 
 const noOwner = { ok: false as const, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
 
@@ -28,7 +29,7 @@ export async function saveProfileAction(viewerId: string, input: ProfileInput): 
   const id = await trustedViewer(viewerId);
   if (!id) return noOwner;
   try {
-    const r = await saveProfile(id, input, new Date());
+    const r = await saveProfile(id, input, appNow());
     revalidatePath("/me");
     revalidatePath("/");
     return r;
@@ -42,7 +43,7 @@ export async function waveAction(viewerId: string, toId: string): Promise<{ ok: 
   const id = await trustedViewer(viewerId);
   if (!id) return noOwner;
   try {
-    const r = await waveTo(id, toId, new Date());
+    const r = await waveTo(id, toId, appNow());
     revalidatePath("/me");
     return r;
   } catch (e) {

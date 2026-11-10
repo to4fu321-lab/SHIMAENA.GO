@@ -15,16 +15,17 @@ import { PAGE_H, PAGE_W, programPage } from "./draw";
 import { bookFacts } from "./facts";
 import { loadBook, saveBook, updateBook, type Book } from "./store";
 import { writeStory, type BookPage } from "./story";
+import { appNow } from "@/lib/clock";
 
 export const TOWN_SHORT = TOWN.name.replace(/（.*）$/, "");
 
 /** いまの「今週」（アプリの今日から。デモの朝ならその週） */
-export async function currentWeekStart(now = new Date()): Promise<string> {
+export async function currentWeekStart(now = appNow()): Promise<string> {
   return weekStartOf(appToday(await loadMorning(), now));
 }
 
 /** その週の絵本を作る（同じ週があれば作り直す）。文とプログラムの絵ですぐ読める形で保存し、Claude のさし絵は返事のあとで */
-export async function makeBook(weekStart: string, now = new Date()): Promise<Book> {
+export async function makeBook(weekStart: string, now = appNow()): Promise<Book> {
   const records = await listMornings(weekStart, addDays(weekStart, 6));
   const topics: Record<string, string> = {};
   for (const r of records) {
@@ -92,6 +93,6 @@ function drawBookLater(book: Book): void {
 }
 
 /** 今週の絵本（なければ undefined） */
-export async function thisWeekBook(now = new Date()): Promise<Book | undefined> {
+export async function thisWeekBook(now = appNow()): Promise<Book | undefined> {
   return loadBook(await currentWeekStart(now));
 }

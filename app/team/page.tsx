@@ -35,6 +35,7 @@ import { TOWN } from "@/lib/town";
 import { baseUrl } from "@/lib/url";
 import type { HelperWhen } from "@/lib/types";
 import PlayOnMount from "@/components/PlayOnMount";
+import { appNow } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "今週のチーム ・ シマエナGO" };
 
@@ -60,7 +61,7 @@ async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string;
   const from = weekStart(today);
   const to = addDays(from, 6);
   const [records, solo] = await Promise.all([listMornings(from, to).catch(() => [record]), listSoloScores(from, to).catch(() => [])]);
-  const week = weeklySummary(records, roster, from, new Date().toISOString(), solo);
+  const week = weeklySummary(records, roster, from, appNow().toISOString(), solo);
   const housesBy: Record<TeamId, number> = { salvia: 0, marigold: 0, lupinus: 0 };
   for (const r of records) {
     for (const m of r.morning.missions) {

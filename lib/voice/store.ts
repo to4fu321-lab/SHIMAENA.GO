@@ -5,6 +5,7 @@
 import { randomBytes } from "node:crypto";
 import { hasDb, query } from "../db";
 import type { Motive } from "../concierge/profile";
+import { appNow } from "@/lib/clock";
 
 export const VOICE_CATEGORIES = ["feature", "confusion", "trouble", "praise"] as const;
 export type VoiceCategory = (typeof VOICE_CATEGORIES)[number];
@@ -50,7 +51,7 @@ const ensure = () =>
 const g = globalThis as { __shimaenaVoices?: Voice[]; __shimaenaImprove?: Map<string, Improvement> };
 const mem = () => (g.__shimaenaVoices ??= []);
 
-export async function addVoice(v: Omit<Voice, "id" | "at">, now = new Date()): Promise<Voice> {
+export async function addVoice(v: Omit<Voice, "id" | "at">, now = appNow()): Promise<Voice> {
   const voice: Voice = { ...v, id: `v-${randomBytes(6).toString("base64url")}`, at: now.toISOString(), summary: v.summary.slice(0, 40) };
   if (!hasDb()) {
     mem().push(voice);

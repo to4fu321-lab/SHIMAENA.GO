@@ -5,8 +5,9 @@ import { listMornings, loadMorning } from "../morning/store";
 import { appToday } from "../morning/today";
 import { repo } from "../repo";
 import { buildPublicStats, type PublicStats } from "./stats";
+import { appNow } from "@/lib/clock";
 
-export async function loadPublicStats(now: Date = new Date()): Promise<PublicStats> {
+export async function loadPublicStats(now: Date = appNow()): Promise<PublicStats> {
   const [record, roster] = await Promise.all([loadMorning(), loadRoster()]);
   const today = appToday(record, now);
   const from = weekStart(today);

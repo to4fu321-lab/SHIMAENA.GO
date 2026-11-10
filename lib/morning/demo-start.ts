@@ -10,6 +10,7 @@ import type { MorningRecord } from "./flow";
 import { announce, plan, ring } from "./ops";
 import { loadRoster } from "./roster";
 import { loadMorning } from "./store";
+import { appNow } from "@/lib/clock";
 
 export const DEMO_SNOW_CM = 12;
 
@@ -20,7 +21,7 @@ export function hasDemoWork(s: MorningRecord, today: string): boolean {
 }
 
 /** 作り直したら true */
-export async function ensureDemoMorning(now = new Date()): Promise<boolean> {
+export async function ensureDemoMorning(now = appNow()): Promise<boolean> {
   if (!demoEnabled()) return false;
   const today = jstDate(now);
   if (hasDemoWork(await loadMorning(), today)) return false;

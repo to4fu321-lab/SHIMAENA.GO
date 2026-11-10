@@ -1,6 +1,7 @@
 // 道の危険の報告（11/4 本人の指示）。冬に「知らせたい」と思う5つ。純粋なデータと計算だけ。
 import { distanceM } from "../game/help";
 import type { LatLng } from "../types";
+import { appNow } from "@/lib/clock";
 
 export type HazardId = "no_plow" | "narrow" | "no_sidewalk" | "slush" | "ice";
 
@@ -82,7 +83,7 @@ export function pickRecipients(r: RoadReport, people: AlertCandidate[]): { parti
 }
 
 /** 「12分前」「3時間前」 */
-export function agoText(at: string, now: Date = new Date()): string {
+export function agoText(at: string, now: Date = appNow()): string {
   const min = Math.max(0, Math.round((now.getTime() - Date.parse(at)) / 60000));
   if (min < 1) return "たった今";
   if (min < 60) return `${min}分前`;

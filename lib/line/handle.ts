@@ -43,6 +43,7 @@ import { MSG } from "./messages";
 import { STORM_LINES, stormHeadline, stormStatus } from "../storm";
 import { parseText, step, type RegInput, type Registration } from "./registration";
 import type { LineEvent, LineMessage } from "./types";
+import { appNow } from "@/lib/clock";
 
 const newId = (prefix: string) => `${prefix}-${randomBytes(6).toString("base64url")}`;
 
@@ -144,7 +145,7 @@ export async function applyLink(lineUserId: string, code: string, who: "self" | 
 
 /** 近くに手伝える家がないとき: ひとこと＋コンシェルジュが1つすすめる（使えなければ今までの案内） */
 async function nothingNow(lineUserId: string): Promise<LineMessage[]> {
-  const cc = await concierge(lineUserId, "近くに手伝える家がない。ほかに何ができる？", new Date(), { force: true }).catch(() => null);
+  const cc = await concierge(lineUserId, "近くに手伝える家がない。ほかに何ができる？", appNow(), { force: true }).catch(() => null);
   return cc ? [...MSG.nowNoneLead(), ...cc] : MSG.nowNothing();
 }
 
@@ -319,7 +320,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     let messages: LineMessage[] = MSG.notRegistered();
     if (p) {
       const yes = ev.postback.data.startsWith("nk:yes=");
-      const a = await answerMeetup(p.id, ev.postback.data.slice(7), yes, new Date());
+      const a = await answerMeetup(p.id, ev.postback.data.slice(7), yes, appNow());
       const place = a.matched ? (a.matched.baseNumber ? `地図の${a.matched.baseNumber}番の家で、10分だけ一緒にどうぞ。` : "それぞれの家の前で、同じ10分を。") : "";
       messages = MSG.nakamaAnswer(a.matched ? `🎉 ${a.matched.otherName}さんと${a.text}\n${place}\n${CHILD_NOTE}` : a.text, Boolean(a.matched));
     }
@@ -353,7 +354,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       const p = await r.findParticipantByLineUserId(lineUserId);
       const st = p ? await loadNudge(p.id).catch(() => undefined) : undefined;
       if (p && st?.lastAt && Date.now() - Date.parse(st.lastAt) < 3 * 86400000 && !(await answerByWords(lineUserId, ev.message.text))) {
-        await saveNudge(p.id, { ...st, skipUntil: quietUntil(new Date()) });
+        await saveNudge(p.id, { ...st, skipUntil: quietUntil(appNow()) });
         await reply(lineUserId, MSG.nudgeQuiet());
         return;
       }

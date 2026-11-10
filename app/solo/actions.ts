@@ -16,6 +16,7 @@ import { withStateLock } from "@/lib/ops/lock";
 import { stormStopText } from "@/lib/storm";
 import { findPrivateAreas, WHOLE, type PrivacyResult } from "@/lib/claude/privacy";
 import { cleanStrokes } from "@/lib/watch/strokes";
+import { appNow } from "@/lib/clock";
 
 export interface SoloActionResult {
   ok: boolean;
@@ -41,7 +42,7 @@ export async function completeSoloAction(formData: FormData): Promise<SoloAction
       photo = { bytes, mediaType };
     }
     const strokes = cleanStrokes(formData.get("strokes")); // v1.31 スコップカウンター（任意）
-    const r = await completeSolo(id, kind, { photo, note, strokes, now: new Date() });
+    const r = await completeSolo(id, kind, { photo, note, strokes, now: appNow() });
     revalidatePath("/solo");
     revalidatePath("/");
     revalidatePath("/map");
@@ -57,7 +58,7 @@ export async function startHomeAction(formData: FormData): Promise<{ ok: boolean
     if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。LINE から開いてください。" };
     const stop = await stormStopText();
     if (stop) return { ok: false, text: stop };
-    const r = await startHomeNow(id, new Date());
+    const r = await startHomeNow(id, appNow());
     revalidatePath("/");
     return r;
   });
@@ -104,7 +105,7 @@ export async function reportRoadAction(formData: FormData): Promise<SoloActionRe
   if (!thumb || thumb === "bad") return { ok: false, text: "ぼかしを入れた写真が届きませんでした。写真を撮り直してください。" };
   const note = String(formData.get("note") ?? "").trim().slice(0, 60) || undefined;
 
-  const now = new Date();
+  const now = appNow();
   const report: RoadReport = {
     id: `rd-${randomBytes(6).toString("base64url")}`,
     participantId: id,
@@ -126,7 +127,7 @@ export async function reportRoadAction(formData: FormData): Promise<SoloActionRe
   const r = await withStateLock("solo:reportRoad", () => completeSolo(id, "report_snow", { photo, note: `${h.label}${note ? `: ${note}` : ""}`, now }));
   revalidatePath("/solo");
   revalidatePath("/map");
-  const road = { id: report.id, later: isClockNight(now) };
+  const road = { id: report.id, later: isClockNight() }; // 本当の時計（夜は通知を朝まで待つ）
   if (!r.ok) return { ok: true, text: `地図に「${h.label}」を出しました。ありがとうございます！`, road };
   return { ok: true, text: `「${h.label}」を報告しました！ +${r.summary.feathers}羽`, summary: r.summary, road };
 }

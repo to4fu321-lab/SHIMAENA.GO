@@ -2,6 +2,7 @@
 // 表を増やさず、morning_state の「town_tips」の行に JSON で置く（日付のキーとはぶつからない）。DB がなければメモリ。
 import { hasDb, query } from "../db";
 import { isDeployed } from "../env";
+import { appNow } from "@/lib/clock";
 
 export interface Tip {
   id: string;
@@ -49,7 +50,7 @@ export function tipOk(text: string): boolean {
 }
 
 /** コツを1つ足す（同じ人は最新の5つまで）。載せられない文なら false */
-export async function addTip(participantId: string, text: string, now = new Date()): Promise<boolean> {
+export async function addTip(participantId: string, text: string, now = appNow()): Promise<boolean> {
   const t = [...text.trim()].slice(0, TIP_MAX).join("");
   if (!tipOk(t)) return false;
   const tips = await loadTips();

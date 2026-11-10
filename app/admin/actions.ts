@@ -51,6 +51,7 @@ import { MSG } from "@/lib/line/messages";
 import { getTeam, TEAMS } from "@/lib/teams";
 import { distanceM } from "@/lib/game/help";
 import type { LineMessage } from "@/lib/line/types";
+import { appNow } from "@/lib/clock";
 
 /** 管理の操作の入口: 合言葉のログインを確かめ、今朝の状態の鍵を取ってから動かす */
 async function guarded<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -83,7 +84,7 @@ export async function startEmptyMorning() {
       }
     }
     // 撮影・審査では本当の日付の朝にする（地図やカードの「12月14日」と、トークの日付が混ざらないように。11/8 点検）
-    await announce({ date: jstDate(new Date()), forecastCm: 12 });
+    await announce({ date: jstDate(appNow()), forecastCm: 12 });
     refresh();
   });
 }
@@ -127,7 +128,7 @@ export async function runCommander() {
 /** 降り続く日（v1.8 デモ）: 天気を見ずに、終わった家をもう一度開く（2回目・3回目） */
 export async function reopenDemo() {
   return guarded("reopenDemo", async () => {
-    await reopenIfStillSnowing(new Date(), { force: true });
+    await reopenIfStillSnowing(appNow(), { force: true });
     refresh();
   });
 }
@@ -159,7 +160,7 @@ export async function completeOne(fast?: unknown) {
       const base = roster.bases.find((b) => b.id === mission.baseId);
       const requester = base && roster.participants.find((p) => p.id === base.requesterId);
       const people = sorties.flatMap((x) => roster.participants.filter((p) => p.id === x.participantId));
-      const now = new Date();
+      const now = appNow();
       await recordHouseFeathers(people, { missionId: mission.id, baseLocation: requester?.location, today: appToday(s, now), now });
       allDone = progress(s.morning).allDone;
       // 隊長トークにも完了を届ける（来た人へ・お願いした人へ）。地図と隊長トークの話をそろえる
@@ -214,7 +215,7 @@ export async function presentReset(): Promise<string> {
     const roster = await loadRoster();
     const keys = roster.participants.filter((p) => STAGE_IDS.has(p.id) || p.id.startsWith("h")).map((p) => inboxKeyOf(p)).filter((k): k is string => Boolean(k?.startsWith(DEMO_PREFIX)));
     await Promise.all(keys.map((k) => clearThread(k).catch(() => undefined)));
-    await announce({ date: jstDate(new Date()), forecastCm: 12, fast: true, only: STAGE_IDS });
+    await announce({ date: jstDate(appNow()), forecastCm: 12, fast: true, only: STAGE_IDS });
     refresh();
     revalidatePath("/chat");
     return "リセット";
@@ -240,7 +241,7 @@ export async function presentGo(who: "a" | "b"): Promise<string> {
     const { roster, mission } = await stageMission();
     if (!mission) return "拠点7のミッションがありません（先に 1 を）";
     const p = roster.participants.find((x) => x.id === STAGE_CAST[who]);
-    const messages = await joinMission(STAGE_CAST[who], mission.id, new Date(), { extra: true });
+    const messages = await joinMission(STAGE_CAST[who], mission.id, appNow(), { extra: true });
     const k = inboxKeyOf(p);
     if (k) await push(k, messages);
     refresh();
@@ -264,7 +265,7 @@ export async function presentAllTeams(): Promise<string> {
         .filter((p) => p.role === "helper" && p.teamId === t.id && !p.lineUserId && !STAGE_IDS.has(p.id) && !busy.has(p.id))
         .sort((a, b) => (home ? distanceM(a.location, home) - distanceM(b.location, home) : 0))[0];
       if (!pick) continue;
-      await joinMission(pick.id, mission.id, new Date(), { extra: true });
+      await joinMission(pick.id, mission.id, appNow(), { extra: true });
       names.push(`${pick.nickname}さん（${t.name}）`);
     }
     refresh();
@@ -287,7 +288,7 @@ export async function presentGather(): Promise<string> {
     await update((s) => {
       const base7 = roster.bases.find((b) => b.requesterId === STAGE_CAST.c)?.id;
       const open = s.morning.missions.filter((m) => m.status !== "done" && m.status !== "no_answer" && m.baseId !== base7); // 拠点7は撮影の3チームだけ（完了のカードを少なく速く）
-      const at = new Date().toISOString();
+      const at = appNow().toISOString();
       for (const p of roster.participants) {
         if (p.role !== "helper" || !p.teamId || p.lineUserId || STAGE_IDS.has(p.id)) continue;
         if (s.morning.sorties.some((x) => x.participantId === p.id && x.status === "going")) continue;
@@ -313,7 +314,7 @@ export async function presentGather(): Promise<string> {
 /** 発表モード: A が拠点7で「終わりました」（写真なし・本人の報告として。写真の確認はスマホで撮る場面で見せる） */
 export async function presentFinish(): Promise<string> {
   return guarded("presentFinish", async () => {
-    const r = await completeManually(STAGE_CAST.a, new Date(), { fast: true });
+    const r = await completeManually(STAGE_CAST.a, appNow(), { fast: true });
     const roster = await loadRoster();
     const k = inboxKeyOf(roster.participants.find((x) => x.id === STAGE_CAST.a));
     if (k) await push(k, r.messages);
@@ -353,7 +354,7 @@ export async function makeBookNow() {
 export async function writeShareTextsNow() {
   return guarded("writeShareTextsNow", async () => {
     try {
-      const n = await refreshShareTexts(new Date(), { force: true });
+      const n = await refreshShareTexts(appNow(), { force: true });
       await update((s) => void s.log.push(n > 0 ? `SNS の投稿文を Claude が ${n} 種類書いた` : "SNS の投稿文: Claude のキーがないので定型のまま"));
     } catch (e) {
       await update((s) => void s.log.push(`SNS の投稿文に失敗: ${e instanceof Error ? e.message : String(e)}`));
@@ -523,7 +524,7 @@ export async function clearProblemsAction() {
 /** デモ用: 道の報告（滑る・細い）を町の中に2件入れる（写真なし。道の報告の地図の確認用） */
 export async function seedRoadReportsDemo() {
   return guarded("seedRoadReportsDemo", async () => {
-    const now = new Date();
+    const now = appNow();
     const [lat, lng] = TOWN.center;
     const items = [
       { hazard: "ice" as const, dLat: 0.0012, dLng: -0.0015, note: "交差点の角がつるつる", minAgo: 25 },
@@ -564,7 +565,7 @@ export async function resetRoadStage() {
  */
 export async function presentRoadAlert(): Promise<{ id: string; distance: number } | undefined> {
   await requireAdmin();
-  const now = new Date();
+  const now = appNow();
   const r = (await listRoadReportsSince(new Date(now.getTime() - 60 * 60 * 1000).toISOString())).find((x) => x.participantId === STAGE_CAST.a);
   const h = r && hazard(r.hazard);
   const b = (await loadRoster()).participants.find((p) => p.id === STAGE_CAST.b);

@@ -48,7 +48,7 @@ async function run(job: string): Promise<Response> {
     }
     switch (job) {
       case "announce": {
-        const r = await checkForecastAndAnnounce();
+        const r = await checkForecastAndAnnounce(new Date()); // 定期実行は本当の時計（デモの時計を使わない）
         return Response.json({ ok: true, job, ...r });
       }
       case "rollcall": {
@@ -57,7 +57,7 @@ async function run(job: string): Promise<Response> {
           await recordProblem("cron/road", e);
           return 0;
         });
-        const r = await morningAuto();
+        const r = await morningAuto(new Date());
         // 今日の話題（spec v1.23）を朝のうちに調べておく（カードを作る時に待たせない）。失敗しても暦の話題で描ける
         const topic = await warmDayTopic(jstDate()).then((t) => t.by, async (e) => (await recordProblem("cron/topic", e), "calendar"));
         // 今朝の雪の歌（spec v1.28）: 話題のあとで作曲しておく。失敗してもプログラムの曲になる
@@ -70,13 +70,13 @@ async function run(job: string): Promise<Response> {
       }
       case "noon":
       case "pm": {
-        const r = await laterShift(job);
+        const r = await laterShift(job, new Date());
         // 夕方の処理に乗せて、しばらく活動のない人へ隊長の声かけ（spec v1.18）。失敗しても出番の処理は返す
         const nudged = job === "pm" ? await nudgeInactive().catch(async (e) => (await recordProblem("cron/nudge", e), { checked: 0, sent: 0, names: [] })) : undefined;
         return Response.json({ ok: true, job, ...r, ...(nudged ? { nudged: nudged.sent } : {}) });
       }
       case "weekly": {
-        const r = await weeklyRecap();
+        const r = await weeklyRecap(new Date());
         return Response.json({ ok: true, job, days: r.summary.days, missionsDone: r.summary.missionsDone, sent: r.sent });
       }
       default:

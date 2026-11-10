@@ -1,6 +1,7 @@
 // 声のありがとう（spec v1.29）の保存先。DATABASE_URL があれば Neon、なければメモリ（開発用）。
 // 1軒（ミッション）に1つ。吹き込み直すと置きかわる。7日たったら消す。声は文字にしない・AI に渡さない。
 import { hasDb, query } from "../db";
+import { appNow } from "@/lib/clock";
 
 export const VOICE_MAX_SECONDS = 30;
 export const VOICE_MAX_BYTES = 2 * 1024 * 1024; // 30秒なら十分（opus で数百KB）
@@ -42,7 +43,7 @@ function cutoff(now: Date): string {
   return new Date(now.getTime() - VOICE_KEEP_DAYS * 86400_000).toISOString();
 }
 
-export async function saveThanksVoice(v: ThanksVoice, audio: Uint8Array, now = new Date()): Promise<void> {
+export async function saveThanksVoice(v: ThanksVoice, audio: Uint8Array, now = appNow()): Promise<void> {
   const b64 = Buffer.from(audio).toString("base64");
   if (!hasDb()) {
     mem().set(v.missionId, { ...v, audio: b64 });
@@ -79,7 +80,7 @@ const toVoice = (r: Row): ThanksVoice => ({
 });
 
 /** 声の情報（音そのものは含まない）。7日より古いものは無いものとする */
-export async function findThanksVoice(missionId: string, now = new Date()): Promise<ThanksVoice | undefined> {
+export async function findThanksVoice(missionId: string, now = appNow()): Promise<ThanksVoice | undefined> {
   if (!hasDb()) {
     const x = mem().get(missionId);
     if (!x || x.at < cutoff(now)) return undefined;
@@ -97,7 +98,7 @@ export async function findThanksVoice(missionId: string, now = new Date()): Prom
 export async function readThanksVoice(
   missionId: string,
   viewerId: string,
-  now = new Date(),
+  now = appNow(),
 ): Promise<{ mime: string; audio: Uint8Array } | undefined> {
   const v = await findThanksVoice(missionId, now);
   if (!v || !canListen(v, viewerId)) return undefined;

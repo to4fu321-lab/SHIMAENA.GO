@@ -26,6 +26,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import Bgm from "@/components/Bgm";
+import { appOffsetMs } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "隊長トーク ・ シマエナGO" };
 
@@ -95,6 +96,7 @@ async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }
         key={lang}
         viewerId={viewer}
         initial={bubbles}
+        offsetMs={appOffsetMs()}
         teamId={myTeam?.team.id}
         readOnly={!me}
         headerBg={myTeam?.soft}

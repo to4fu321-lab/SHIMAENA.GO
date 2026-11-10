@@ -74,6 +74,7 @@ export default function ChatScreen({
   lang: initialLang = "ja",
   canTranslate = false,
   voiceName,
+  offsetMs = 0,
 }: {
   viewerId: string;
   initial: ChatBubble[];
@@ -84,6 +85,8 @@ export default function ChatScreen({
   lang?: Lang;
   canTranslate?: boolean;
   voiceName?: string;
+  /** デモの夜の時計のずれ（lib/clock.ts）。送った直後の吹き出しの時刻をそろえる */
+  offsetMs?: number;
 }) {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>(initialLang);
@@ -220,7 +223,7 @@ export default function ChatScreen({
       if (r.bubbles.at(-1)?.from === "captain") play("message", { delay: 0.15 });
     }
   };
-  const optimistic = (text: string) => setBubbles((cur) => [...cur, { id: `tmp-${Date.now()}`, from: "me", at: new Date().toISOString(), text, buttons: [], quick: [] }]);
+  const optimistic = (text: string) => setBubbles((cur) => [...cur, { id: `tmp-${Date.now()}`, from: "me", at: new Date(Date.now() + offsetMs).toISOString(), text, buttons: [], quick: [] }]);
 
   const send = () => {
     const text = draft.trim();
@@ -252,7 +255,7 @@ export default function ChatScreen({
     if (!file || pending) return;
     setError(undefined);
     play("shutter");
-    setBubbles((cur) => [...cur, { id: `tmp-${Date.now()}`, from: "me", at: new Date().toISOString(), photo: true, buttons: [], quick: [] }]);
+    setBubbles((cur) => [...cur, { id: `tmp-${Date.now()}`, from: "me", at: new Date(Date.now() + offsetMs).toISOString(), photo: true, buttons: [], quick: [] }]);
     start(() =>
       waitFor(async () => {
         try {

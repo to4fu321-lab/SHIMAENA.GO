@@ -6,6 +6,7 @@ import { handleEvent } from "../line/handle";
 import type { LineEvent } from "../line/types";
 import { withStateLock } from "../ops/lock";
 import type { Participant } from "../types";
+import { appNow } from "@/lib/clock";
 
 export type ChatInput =
   /** shown: 自分の吹き出しに残す文字（本人が打った外国語の文・ボタンの訳。spec v1.36）。処理に渡すのは text（日本語） */
@@ -16,7 +17,7 @@ export type ChatInput =
 export const TEXT_MAX = 300;
 
 /** 本人の入力を処理する。届け先の鍵がない人（家族の代理登録の家）は何もしない（false） */
-export async function sendToCaptain(p: Participant, input: ChatInput, now = new Date()): Promise<boolean> {
+export async function sendToCaptain(p: Participant, input: ChatInput, now = appNow()): Promise<boolean> {
   const key = inboxKeyOf(p);
   if (!key) return false;
   const base = { replyToken: key, source: { type: "user" as const, userId: key }, timestamp: now.getTime() };

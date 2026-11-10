@@ -9,6 +9,7 @@ import StormBanner from "@/components/StormBanner";
 import { nakamaView } from "@/lib/nakama/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import Bgm from "@/components/Bgm";
+import { appNow } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "なかま ・ シマエナGO" };
 
@@ -18,7 +19,7 @@ async function Content({ searchParams }: { searchParams: Promise<{ as?: string; 
   const initialTab = tab && /^[0-2]$/.test(tab) ? Number(tab) : undefined;
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
-  const view = viewerId ? await nakamaView(viewerId, new Date()) : undefined;
+  const view = viewerId ? await nakamaView(viewerId, appNow()) : undefined;
   if (!viewerId || !view) {
     return (
       <main className="mx-auto min-h-dvh max-w-md space-y-4 bg-paper px-4 py-6 text-ink">

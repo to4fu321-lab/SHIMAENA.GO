@@ -32,6 +32,7 @@ import { stormStatus } from "../storm";
 import { getTeam } from "../teams";
 import { dayTopic } from "../topic/day";
 import type { Participant } from "../types";
+import { appNow } from "@/lib/clock";
 
 /** 道具の名前と、吹き出しに出す「調べたこと」 */
 export const TOOL_LABEL: Record<string, string> = {
@@ -237,7 +238,7 @@ export async function gatherFacts(p: Participant, now: Date): Promise<Record<str
 }
 
 /** 隊長エージェントで答える。失敗したら例外（呼ぶ側が今までのコンシェルジュに切りかえる） */
-export async function captainAgent(p: Participant, text: string, now = new Date()): Promise<AgentResult> {
+export async function captainAgent(p: Participant, text: string, now = appNow()): Promise<AgentResult> {
   const client = getClaudeClient();
   const [history, facts] = await Promise.all([recentTalk(p, text), gatherFacts(p, now)]);
   const model = captainChatModel();
@@ -317,7 +318,7 @@ export async function captainReply(
   lineUserId: string,
   text: string,
   fallback: (lineUserId: string, text: string) => Promise<LineMessage[] | null>,
-  now = new Date(),
+  now = appNow(),
 ): Promise<LineMessage[] | null> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p || (p.role !== "helper" && p.role !== "requester") || !hasClaudeKey()) return fallback(lineUserId, text);

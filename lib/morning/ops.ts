@@ -55,6 +55,7 @@ import { recordHouseFeathers } from "../solo/ops";
 import { refreshShareTextsLater } from "../sns/refresh";
 import { writeImprovements } from "../voice/improve";
 import { appToday } from "./today";
+import { appNow } from "@/lib/clock";
 import {
   applyLateAnswer,
   goingCount,
@@ -103,7 +104,7 @@ const ok =   await multicast(ids, MSG.announce(a.text, opts.forecastCm, a.snowNa
 }
 
 /** 前夜 21:00 の cron: Open-Meteo を見て、基準を超えていたら予告する */
-export async function checkForecastAndAnnounce(now = new Date()): Promise<{ forecastCm: number; announced: boolean; date: string }> {
+export async function checkForecastAndAnnounce(now = appNow()): Promise<{ forecastCm: number; announced: boolean; date: string }> {
   // 日曜の夜は、先に「今週の群れ」のまとめ（実況・称号・シャッフル）
   if (new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay() === 0) {
     await weeklyRecap(now);
@@ -139,7 +140,7 @@ export async function ring(opts: { fast?: boolean } = {}): Promise<{ record: Mor
     console.error("[captain] 隊長のひとことを書けませんでした（定型を使います）:", e instanceof Error ? e.message : e);
   }
   const roster = await loadRoster();
-  const n = autoAnswerHomes(s, roster, new Date().toISOString());
+  const n = autoAnswerHomes(s, roster, appNow().toISOString());
   s.log.push(`登録した家 ${n} 軒を、頼み方のとおり雪かき待ちに（毎朝の質問なし）`);
   await saveMorning(s);
   return { record: s, sent: 0 };
@@ -149,7 +150,7 @@ export async function ring(opts: { fast?: boolean } = {}): Promise<{ record: Mor
  * 6:30 の cron（spec v1.20）: きのう 6:00 から今朝 6:00 までに積もった雪（Open-Meteo）が基準（既定 10cm）以上なら、
  * 雪かき応援を自動で始める。前夜の予告がなくても（予報より積もった朝も）始める。基準に届かなければ何も送らない。
  */
-export async function morningAuto(now = new Date()): Promise<{ snowCm: number; started: boolean; sent: number }> {
+export async function morningAuto(now = appNow()): Promise<{ snowCm: number; started: boolean; sent: number }> {
   const today = jstDate(now);
   const threshold = (await loadSettings()).snowThresholdCm;
   const hourly = await fetchHourlySnow(TOWN.center, fetch, { pastDays: 1 });
@@ -185,7 +186,7 @@ const HELPER_ANSWERS: Record<string, HelperAnswer> = { "0": 0, "5": 5, "10": 10,
 const HELPER_WHEN: Record<string, HelperWhen> = { am: "am", noon: "noon", pm: "pm" };
 
 /** LINE のボタン（rc:ans=...）で届いた点呼の答えを記録する */
-export async function answerRollcall(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
+export async function answerRollcall(lineUserId: string, data: string, now = appNow()): Promise<LineMessage[]> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p) return MSG.notRegistered();
   const s = await loadMorning();
@@ -228,7 +229,7 @@ export async function tipStart(lineUserId: string, data: string): Promise<LineMe
 }
 
 /** 「教える」を押した人の次の文をコツとして受け取る。待っていなければ null */
-export async function tipReceive(lineUserId: string, text: string, now = new Date()): Promise<LineMessage[] | null> {
+export async function tipReceive(lineUserId: string, text: string, now = appNow()): Promise<LineMessage[] | null> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   const s = await loadMorning();
   if (!p || !s.awaitingTip?.includes(p.id)) return null;
@@ -259,7 +260,7 @@ function rcArgs(s: MorningRecord): [number, string | undefined, string | undefin
  * ことばで答える・頼む（spec v1.6）: 点呼の時間に送られたふつうの文を、点呼の答えと段取りにする。
  * 点呼の時間でなければ null（ふだんの案内に回す）。
  */
-export async function answerByWords(lineUserId: string, text: string, now = new Date()): Promise<LineMessage[] | null> {
+export async function answerByWords(lineUserId: string, text: string, now = appNow()): Promise<LineMessage[] | null> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p || (p.role !== "requester" && p.role !== "helper")) return null;
   const s0 = await loadMorning();
@@ -362,7 +363,7 @@ export async function plan(opts: { fast?: boolean; only?: ReadonlySet<string>; h
  * 6:40 を過ぎても点呼が開いたままなら作戦を配信する（Hobby プランの cron は1日2本までで 6:40 の分が置けないため、
  * 点呼の答えが届いたときにここを通す）。デモの日付（過去・未来）には反応しない。
  */
-export async function planIfDue(now = new Date()): Promise<boolean> {
+export async function planIfDue(now = appNow()): Promise<boolean> {
   const s = await loadMorning();
   if (s.morning.rollcall.status !== "open") return false;
   if (s.morning.rollcall.date !== jstDate(now) || jstMinutes(now) < 6 * 60 + 40) return false;
@@ -408,7 +409,7 @@ async function noticeVisit(s: MorningRecord, roster: Roster, mission: Mission, t
 }
 
 /** 「行く」「今朝は行けない」。行けない人は外し、足りなくなった家は人手不足にする */
-export async function setGoing(participantId: string, go: boolean, now = new Date()): Promise<LineMessage[]> {
+export async function setGoing(participantId: string, go: boolean, now = appNow()): Promise<LineMessage[]> {
   if (go && isNight(now)) return MSG.nightOwnHouseOnly(); // 夜はよその家に行かない（spec v1.8 防犯）
   const s = await loadMorning();
   const roster = await loadRoster();
@@ -465,7 +466,7 @@ export interface CompleteResult {
  * 写真1枚で1軒を完了にする（spec 2）。Claude が写真を確認 → その家の出撃を全部完了 → 得点 → 依頼者と仲間に通知。
  */
 /** opts.fast: 撮影ステージ用（11/8 本人「実際の AI 読み込みなどはしなくて良い。一連の流れをトータルで動かして」）。写真は Claude に送らず、決まった確認で完了にする */
-export async function completeWithPhoto(participantId: string, image: PhotoInput, now = new Date(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
+export async function completeWithPhoto(participantId: string, image: PhotoInput, now = appNow(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
@@ -510,7 +511,7 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
 }
 
 /** 「それでも完了にする」（LINE のボタン／地図のボタン）: 写真なしで、本人の報告として完了にする */
-export async function completeManually(participantId: string, now = new Date(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
+export async function completeManually(participantId: string, now = appNow(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
@@ -652,7 +653,7 @@ export async function applyThanks(
   choice: ThanksChoice,
   opts: { requesterId?: string; now?: Date } = {},
 ): Promise<{ ok: boolean; messages: LineMessage[]; record?: ThanksRecord }> {
-  const now = opts.now ?? new Date();
+  const now = opts.now ?? appNow();
   const s = await loadMorning();
   const roster = await loadRoster();
   const m = s.morning.missions.find((x) => x.id === missionId);
@@ -718,7 +719,7 @@ export async function applyVoiceThanks(
   missionId: string,
   requesterId: string,
   audio: { bytes: Uint8Array; mime: string; seconds: number },
-  now = new Date(),
+  now = appNow(),
 ): Promise<{ ok: boolean; text: string; sentTo?: number }> {
   const target = await voiceThanksTarget(missionId, requesterId);
   if (!target) return { ok: false, text: "今朝の雪かきの記録が見つかりませんでした。" };
@@ -756,7 +757,7 @@ export async function applyCheer(
   choice: CheerChoice,
   opts: { familyLineUserId?: string; now?: Date } = {},
 ): Promise<{ ok: boolean; messages: LineMessage[]; record?: CheerRecord }> {
-  const now = opts.now ?? new Date();
+  const now = opts.now ?? appNow();
   const s = await loadMorning();
   const roster = await loadRoster();
   const m = s.morning.missions.find((x) => x.id === missionId);
@@ -784,14 +785,14 @@ export async function applyCheer(
 }
 
 /** LINE のボタン（cheer:<missionId>=<1|2|3>）: その家に紐づいた家族だけ */
-export async function sendCheer(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
+export async function sendCheer(lineUserId: string, data: string, now = appNow()): Promise<LineMessage[]> {
   const parsed = parseCheer(data);
   if (!parsed) return MSG.cheerNotFound();
   return (await applyCheer(parsed.missionId, parsed.choice, { familyLineUserId: lineUserId, now })).messages;
 }
 
 /** LINE のボタン（thanks:<missionId>=<1|2|3>）: 押した人がその家の依頼者のときだけ */
-export async function sendThanks(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
+export async function sendThanks(lineUserId: string, data: string, now = appNow()): Promise<LineMessage[]> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
   if (!p) return MSG.notRegistered();
   const mt = /^thanks:(.+)=([123])$/.exec(data);
@@ -800,7 +801,7 @@ export async function sendThanks(lineUserId: string, data: string, now = new Dat
 }
 
 /** 今朝の実況（spec v1.1 9-6）: 本当の集計だけを Claude に渡して3〜4文。全軒完了で自動、/admin のボタンでも */
-export async function writeRecap(now = new Date()): Promise<string> {
+export async function writeRecap(now = appNow()): Promise<string> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const input = buildRecapInput(s, roster);
@@ -823,7 +824,7 @@ function supporterIds(): string[] {
  * 人手が足りない家のヘルプ通知を1段階すすめる: 300m → 600m → 1km → サポーター。
  * 文面には「10分でもOK」の小タスクを添える。同じ人には2回送らない。
  */
-export async function notifyHelp(missionId: string, now = new Date()): Promise<{ ring: string; notified: number } | null> {
+export async function notifyHelp(missionId: string, now = appNow()): Promise<{ ring: string; notified: number } | null> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const m = s.morning.missions.find((x) => x.id === missionId);
@@ -865,7 +866,7 @@ export async function notifyHelp(missionId: string, now = new Date()): Promise<{
 }
 
 /** 間に合っていない家のヘルプ通知を、5分おきに次の輪へ。Webhook と /admin のボタンから呼ぶ */
-export async function escalateHelpIfDue(now = new Date()): Promise<number> {
+export async function escalateHelpIfDue(now = appNow()): Promise<number> {
   const s = await loadMorning();
   let n = 0;
   for (const m of s.morning.missions) {
@@ -910,7 +911,7 @@ export async function notifyNoAnswer(missionId: string): Promise<void> {
 export async function joinMission(
   participantId: string,
   missionId: string,
-  now = new Date(),
+  now = appNow(),
   opts: { extra?: boolean } = {},
 ): Promise<LineMessage[]> {
   if (isNight(now)) return MSG.nightOwnHouseOnly(); // 夜はよその家に行かない（spec v1.8 防犯）
@@ -955,7 +956,7 @@ export interface JoinNearbyResult {
  * 地図の「10分だけ参加」: 近く（1km）で人手が足りない家があれば加わり、なければ作業中の家に偵察・補給（10分）で加わる。
  * どこかに向かっている最中の人には何も出さない（まず自分の家を）。
  */
-export async function joinNearby(participantId: string, minutes: NowMinutes = 10, now = new Date()): Promise<JoinNearbyResult> {
+export async function joinNearby(participantId: string, minutes: NowMinutes = 10, now = appNow()): Promise<JoinNearbyResult> {
   if (isNight(now)) return { joined: false, messages: MSG.nightOwnHouseOnly() };
   const s = await loadMorning();
   const roster = await loadRoster();
@@ -985,7 +986,7 @@ type TeamIdStr = "salvia" | "marigold" | "lupinus";
  * 日曜: 今週の実況・チーム順位・称号・週の目標ボーナス・翌週のシャッフル。
  * みんなに実況、称号の人にひとこと、手伝う側に来週のチーム、家族に今週の回数を LINE で。
  */
-export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> {
+export async function weeklyRecap(now = appNow()): Promise<WeeklyRecapResult> {
   const today = jstDate(now);
   const from = weekStart(today);
   const roster = await loadRoster();
@@ -1045,14 +1046,14 @@ export const ASK_MAX_RECIPIENTS = 5;
  * お願いする側の「雪かきを頼む」: その人の家を今日の雪かき待ちにして地図に出し、300m 以内の手伝える人へ LINE で知らせる。
  * 雪の朝でない日は、その日の記録を新しく始める（出動・写真・完了・カードの流れはそのまま使える）。
  */
-export async function askForHelp(lineUserId: string, now = new Date(), style?: HelpStyle): Promise<LineMessage[]> {
+export async function askForHelp(lineUserId: string, now = appNow(), style?: HelpStyle): Promise<LineMessage[]> {
   const roster = await loadRoster();
   const p = roster.participants.find((x) => x.lineUserId === lineUserId);
   return askForHelpOf(p, roster, now, style);
 }
 
 /** 画面（/ask）から: 参加者 ID で頼む。style がなければ登録した頼み方（spec v1.20） */
-export async function askForHelpById(participantId: string, now = new Date(), style?: HelpStyle): Promise<LineMessage[]> {
+export async function askForHelpById(participantId: string, now = appNow(), style?: HelpStyle): Promise<LineMessage[]> {
   const roster = await loadRoster();
   return askForHelpOf(roster.participants.find((x) => x.id === participantId), roster, now, style);
 }
@@ -1127,7 +1128,7 @@ async function askForHelpOf(p: Participant | undefined, roster: Roster, now: Dat
 }
 
 /** いま、この人に手伝える家があるか（「出動する」を行き止まりにしないため。spec v1.10） */
-export async function helpOpenFor(participantId: string, minutes: NowMinutes = 60, now = new Date()): Promise<boolean> {
+export async function helpOpenFor(participantId: string, minutes: NowMinutes = 60, now = appNow()): Promise<boolean> {
   if (isNight(now)) return true; // 夜は offerTaskNow が夜の案内を返す
   const s = await loadMorning();
   if (s.morning.rollcall.status !== "planned") return false;
@@ -1137,7 +1138,7 @@ export async function helpOpenFor(participantId: string, minutes: NowMinutes = 6
   return pickTaskNow(s, roster, p, minutes) !== null;
 }
 
-export async function offerTaskNow(participantId: string, minutes: NowMinutes, now = new Date()): Promise<LineMessage[]> {
+export async function offerTaskNow(participantId: string, minutes: NowMinutes, now = appNow()): Promise<LineMessage[]> {
   if (isNight(now)) return MSG.nightOwnHouseOnly();
   const s = await loadMorning();
   const roster = await loadRoster();
@@ -1169,7 +1170,7 @@ export const REOPEN_SNOW_CM = 3;
  * 降り続いていれば、終わった家をもう一度「雪かき待ち」に（2回目・3回目）。
  * force: /admin のデモ用（天気を見ずに開く）。開いた家の数を返す
  */
-export async function reopenIfStillSnowing(now = new Date(), opts: { force?: boolean } = {}): Promise<number> {
+export async function reopenIfStillSnowing(now = appNow(), opts: { force?: boolean } = {}): Promise<number> {
   const s = await loadMorning();
   if (s.morning.rollcall.status !== "planned") return 0;
   let since: ((doneAt: string) => boolean) | undefined;
@@ -1192,7 +1193,7 @@ export async function reopenIfStillSnowing(now = new Date(), opts: { force?: boo
  * お昼（11:30）・夕方（16:30）の出番: 降り続いていれば終わった家を開き直し、
  * 点呼で「お昼」「夕方」と答えた人に、まだ待っている家の数といま雪かき中の人数を送る。
  */
-export async function laterShift(when: "noon" | "pm", now = new Date()): Promise<{ reopened: number; sent: number }> {
+export async function laterShift(when: "noon" | "pm", now = appNow()): Promise<{ reopened: number; sent: number }> {
   const reopened = await reopenIfStillSnowing(now).catch(async (e) => {
     await recordProblem("laterShift/reopen", e);
     return 0;

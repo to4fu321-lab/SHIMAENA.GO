@@ -6,6 +6,7 @@ import { hasDb, query } from "../db";
 import { jstDate } from "../jst";
 import { recordProblem } from "../ops/problems";
 import { isDemoViewer } from "../viewer";
+import { appNow } from "@/lib/clock";
 
 export type ChatKind = "text" | "photo";
 
@@ -55,7 +56,7 @@ export function quotaApplies(participantId: string): boolean {
 }
 
 /** 1回ぶん数えて、まだ Claude を呼んでよければ true。上限を超えていれば false（モック応答にする）。日付は本当の日本時間 */
-export async function takeChatQuota(participantId: string, kind: ChatKind, now = new Date()): Promise<boolean> {
+export async function takeChatQuota(participantId: string, kind: ChatKind, now = appNow()): Promise<boolean> {
   if (!quotaApplies(participantId)) return true;
   const date = jstDate(now);
   let n: number;

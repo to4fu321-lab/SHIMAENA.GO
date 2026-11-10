@@ -22,6 +22,7 @@ import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { demoEnabled } from "@/lib/env";
+import { appNow } from "@/lib/clock";
 
 // v1.24: 完了でカードが出たあと、返事のあとで Claude が絵を描く（after()）。その時間まで関数を止めない
 export const maxDuration = 300;
@@ -72,7 +73,7 @@ async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: stri
   const shorts = listShort(record, roster);
   // 本人の記録・町の集計・道の設定は互いに関係ないので、まとめて同時に読む（11/7: 画面を待たせない）
   const [status, stats, meStats, roadAlerts] = await Promise.all([
-    soloStatus(me.id, new Date()),
+    soloStatus(me.id, appNow()),
     loadPublicStats(),
     loadMeStats(me.id),
     getAlertPref(me.id).catch(() => undefined),

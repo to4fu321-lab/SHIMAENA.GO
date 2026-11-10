@@ -4,8 +4,9 @@ import { weekStart } from "../game/week";
 import { loadMorning } from "../morning/store";
 import { appToday } from "../morning/today";
 import { countByCategory, listVoicesBetween, saveImprovement, type Improvement } from "./store";
+import { appNow } from "@/lib/clock";
 
-export async function writeImprovements(now = new Date()): Promise<Improvement> {
+export async function writeImprovements(now = appNow()): Promise<Improvement> {
   const to = appToday(await loadMorning(), now); // アプリの「今日」（デモの朝なら点呼の日付）に合わせる
   const from = weekStart(to);
   const voices = await listVoicesBetween(from, to);

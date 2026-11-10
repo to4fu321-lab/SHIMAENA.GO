@@ -2,6 +2,7 @@
 // 家の名前・住所・人の名前は入れない。アプリはカレンダーを読まない・書きかえない。
 import { MEET_MINUTES, slotOf } from "./slots";
 import type { HelperWhen } from "../types";
+import { appNow } from "@/lib/clock";
 
 export interface CalEvent {
   uid: string;
@@ -61,7 +62,7 @@ export function fold(line: string): string {
   return out.join("\r\n ");
 }
 
-export function buildIcs(ev: CalEvent, now: Date = new Date()): string {
+export function buildIcs(ev: CalEvent, now: Date = appNow()): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",

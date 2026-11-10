@@ -7,6 +7,7 @@ import type { MorningRecord } from "../morning/flow";
 import type { Roster } from "../morning/roster";
 import type { HelperWhen, Participant, TeamId } from "../types";
 import { bestSlot, countSlots, demoWish, SLOTS, slotOpen, templateSlotLine, type TimeWish } from "./slots";
+import { appNow } from "@/lib/clock";
 
 export interface TeamTimeView {
   /** 時間を選べる日か（前夜の予告のあと〜その日の 19 時） */
@@ -23,7 +24,7 @@ export interface TeamTimeView {
 }
 
 /** 選べる日か。デモの世界（本当の日付から離れた朝）は、点呼が閉じていなければ選べる */
-export function timeActive(record: Pick<MorningRecord, "morning">, now: Date = new Date()): boolean {
+export function timeActive(record: Pick<MorningRecord, "morning">, now: Date = appNow()): boolean {
   const rc = record.morning.rollcall;
   if (rc.status === "closed") return false;
   const real = jstDate(now);
@@ -49,7 +50,7 @@ export function teamTimeView(
   opts: { demo: boolean; now?: Date },
 ): TeamTimeView | undefined {
   if (!me.teamId) return undefined;
-  const now = opts.now ?? new Date();
+  const now = opts.now ?? appNow();
   const rc = record.morning.rollcall;
   const real = jstDate(now);
   const nowMin = jstMinutes(now);

@@ -21,6 +21,7 @@ import { shareTextsFor } from "@/lib/sns/refresh";
 import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { appNow } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "つなぐ ・ シマエナGO" };
 
@@ -41,7 +42,7 @@ async function ConnectContent({ searchParams }: { searchParams: Promise<{ as?: s
   const site = baseUrl();
   const [texts, nakama, meStats, invites] = await Promise.all([
     shareTextsFor(stats),
-    me ? nakamaView(me.id, new Date()).catch(() => undefined) : undefined,
+    me ? nakamaView(me.id, appNow()).catch(() => undefined) : undefined,
     me ? loadMeStats(me.id).catch(() => undefined) : undefined,
     me ? readInviteStats(me.id).catch(() => undefined) : undefined,
   ]);

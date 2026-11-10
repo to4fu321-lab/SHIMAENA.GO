@@ -2,6 +2,7 @@
 // 相談のたびに Claude が読み取り、ここに残す（原文・名前・体のこと・住所は残さない）。方向はいつでも変わってよい（新しい相談で上書き）。
 // 保存先は participant_profiles 表。DB がなければメモリ。
 import { hasDb, query } from "../db";
+import { appNow } from "@/lib/clock";
 
 export const MOTIVES = ["connect", "exercise", "community", "game"] as const;
 export type Motive = (typeof MOTIVES)[number];
@@ -53,7 +54,7 @@ export async function loadProfile(participantId: string): Promise<Profile | unde
 }
 
 /** 新しく読み取れた方向があれば入れ替え、なければ前のまま。要約も同じ */
-export async function updateProfile(participantId: string, next: { motives: Motive[]; summary: string }, now = new Date()): Promise<Profile> {
+export async function updateProfile(participantId: string, next: { motives: Motive[]; summary: string }, now = appNow()): Promise<Profile> {
   const before = await loadProfile(participantId).catch(() => undefined);
   const motives = next.motives.length > 0 ? tidyMotives(next.motives) : (before?.motives ?? []);
   const summary = (next.summary.trim() || before?.summary || "").slice(0, SUMMARY_MAX);

@@ -10,6 +10,7 @@ import { appToday } from "../morning/today";
 import { recordProblem } from "../ops/problems";
 import { composeFallback, moodOf, tidySong, BAR_CHOICES, BPM_MAX, BPM_MIN, EXPLAIN_MAX, MELODY_HIGH, MELODY_LOW, TITLE_MAX, type SnowSong, type SongFacts } from "../sound/snow-song";
 import { dayTopic } from "../topic/day";
+import { appNow } from "@/lib/clock";
 
 const Note = z.object({ bar: z.number(), beat: z.number(), midi: z.number(), len: z.number() });
 const SongSchema = z.object({
@@ -28,7 +29,7 @@ const SongSchema = z.object({
 });
 
 /** その日の曲の材料を、今朝の状態と今日の話題から集める */
-export async function songFacts(date: string, now = new Date()): Promise<SongFacts> {
+export async function songFacts(date: string, now = appNow()): Promise<SongFacts> {
   const s = await loadMorning();
   const rc = s.morning.rollcall;
   const same = rc.date === date && rc.status !== "closed";
@@ -132,6 +133,6 @@ export function songDateAllowed(date: string, today: string): boolean {
 }
 
 /** ホームなどで使う「今日」（今朝の状態の日付に合わせる。lib/morning/today.ts と同じ） */
-export async function songDate(now = new Date()): Promise<string> {
+export async function songDate(now = appNow()): Promise<string> {
   return appToday(await loadMorning(), now);
 }

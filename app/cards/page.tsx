@@ -16,6 +16,7 @@ import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import LoginButton from "@/components/LoginButton";
 import Bgm from "@/components/Bgm";
 import RecentRecords from "@/components/RecentRecords";
+import { appNow } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "活動カード ・ シマエナGO" };
 
@@ -59,7 +60,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
   const cards = me ? await repo().listCardsByRecipient(me.id).catch(() => []) : [];
   const reward = nextReward(cards.length);
-  const solo = me ? await soloStatus(me.id, new Date()) : undefined;
+  const solo = me ? await soloStatus(me.id, appNow()) : undefined;
   const recent = solo?.recent.slice(0, 3) ?? [];
   const q = demoAs ? `?as=${demoAs}` : "";
   const hasBook = (await listBooks(1).catch(() => [])).length > 0; // 町の週刊絵本（spec v1.27）

@@ -13,6 +13,7 @@ import { loadMorning, saveMorning } from "@/lib/morning/store";
 import { withStateLock } from "@/lib/ops/lock";
 import { getTeam } from "@/lib/teams";
 import { trustedViewer } from "@/lib/viewer";
+import { appNow } from "@/lib/clock";
 
 export interface TimeResult {
   ok: boolean;
@@ -31,7 +32,7 @@ export async function chooseTimeAction(viewerId: string, when: string): Promise<
   const demo = demoEnabled();
 
   // 1) 選びを残す。そろう時間と人数を数える
-  const now = new Date();
+  const now = appNow();
   const saved = await withStateLock("team:chooseTime", async () => {
     const s = await loadMorning();
     if (!timeActive(s, now)) return { error: "いまは雪の日ではないので、時間は選べません。雪の予告が出たら選べます。" } as const;

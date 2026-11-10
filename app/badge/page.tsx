@@ -20,6 +20,7 @@ import { teamTerm, teamTheme } from "@/lib/team-theme";
 import { TOWN } from "@/lib/town";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import Bgm from "@/components/Bgm";
+import { appNow, appOffsetMs } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "雪かき中の印 ・ シマエナGO" };
 
@@ -34,7 +35,7 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
   const q = demoAs ? `?as=${demoAs}` : "";
   const theme = me && onTeam(me) && me.teamId ? teamTheme(me.teamId) : undefined;
-  const now = new Date();
+  const now = appNow();
   const night = isNight(now);
   const password = theme && !night ? passwordOf(jstDate(now)) : undefined;
 
@@ -93,7 +94,7 @@ async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string
             <p className="mt-1 text-4xl font-bold" style={{ color: theme.deep }}>
               {password ?? "（準備中）"}
             </p>
-            <LiveClock className="mt-1 text-3xl font-bold" />
+            <LiveClock className="mt-1 text-3xl font-bold" offsetMs={appOffsetMs()} />
           </div>
         )}
       </section>

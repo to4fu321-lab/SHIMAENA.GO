@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { answerMeetup, leaveBaton, proposeMeetup, reactToBaton, setNextWish, setTodayMode } from "@/lib/nakama/ops";
 import { trustedViewer } from "@/lib/viewer";
+import { appNow } from "@/lib/clock";
 
 export interface NakamaResult {
   ok: boolean;
@@ -28,7 +29,7 @@ export async function todayModeAction(viewerId: string, mode: string): Promise<N
   return safe(async () => {
     const id = await who(viewerId);
     if (!id) return noOwner;
-    const r = await setTodayMode(id, mode, new Date());
+    const r = await setTodayMode(id, mode, appNow());
     revalidatePath("/nakama");
     return r;
   });
@@ -46,7 +47,7 @@ export async function proposeAction(viewerId: string, toId: string, window: stri
   return safe(async () => {
     const id = await who(viewerId);
     if (!id) return noOwner;
-    const r = await proposeMeetup(id, toId, window, new Date());
+    const r = await proposeMeetup(id, toId, window, appNow());
     revalidatePath("/nakama");
     return r;
   });
@@ -56,7 +57,7 @@ export async function answerAction(viewerId: string, meetupId: string, accept: b
   return safe(async () => {
     const id = await who(viewerId);
     if (!id) return noOwner;
-    const r = await answerMeetup(id, meetupId, accept, new Date());
+    const r = await answerMeetup(id, meetupId, accept, appNow());
     revalidatePath("/nakama");
     return r;
   });
@@ -69,7 +70,7 @@ export async function batonAction(
   return safe(async () => {
     const id = await who(viewerId);
     if (!id) return noOwner;
-    const r = await leaveBaton(id, input, new Date());
+    const r = await leaveBaton(id, input, appNow());
     revalidatePath("/nakama");
     return r;
   });

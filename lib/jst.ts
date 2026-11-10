@@ -1,4 +1,5 @@
 // 日本時間（JST, +09:00）の日付と時刻。サーバーは UTC で動くので、ここを通して扱う。
+import { appNow } from "@/lib/clock";
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -7,18 +8,18 @@ function shifted(d: Date): Date {
 }
 
 /** YYYY-MM-DD（JST） */
-export function jstDate(d: Date = new Date()): string {
+export function jstDate(d: Date = appNow()): string {
   return shifted(d).toISOString().slice(0, 10);
 }
 
 /** 0 時からの分（JST） */
-export function jstMinutes(d: Date = new Date()): number {
+export function jstMinutes(d: Date = appNow()): number {
   const t = shifted(d);
   return t.getUTCHours() * 60 + t.getUTCMinutes();
 }
 
 /** YYYY-MM-DDTHH:mm（JST、Open-Meteo の時刻と同じ形） */
-export function jstHourMinute(d: Date = new Date()): string {
+export function jstHourMinute(d: Date = appNow()): string {
   return shifted(d).toISOString().slice(0, 16);
 }
 
@@ -38,7 +39,7 @@ export function jstIso(ymd: string, minutes: number): string {
 }
 
 /** 日本時間で今月の1日 0:00 を ISO で（「今月の数」に使う） */
-export function monthStartIso(now = new Date()): string {
+export function monthStartIso(now = appNow()): string {
   const ym = jstDate(now).slice(0, 7);
   return new Date(`${ym}-01T00:00:00+09:00`).toISOString();
 }

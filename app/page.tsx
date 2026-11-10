@@ -21,8 +21,8 @@ import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
-import { demoEnabled, demoMorning } from "@/lib/env";
-import { isClockNight } from "@/lib/night";
+import { demoEnabled } from "@/lib/env";
+import { demoShiftActive } from "@/lib/clock";
 import { captainLine, captainRotation, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
 import { soloStatus } from "@/lib/solo/ops";
@@ -41,6 +41,7 @@ import { activeHelpers } from "@/lib/morning/rounds";
 import { isDokayuki, isWorkHours, MORNING_BONUS_UNTIL_MIN } from "@/lib/game/hours";
 import Bgm from "@/components/Bgm";
 import GoButton, { type GoReason } from "@/components/GoButton";
+import { appNow } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かきで、町が変わる" };
 
@@ -59,9 +60,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
     parseSkyParam(skyParam) ? Promise.resolve({} as Awaited<ReturnType<typeof currentWeather>>) : currentWeather(TOWN.center),
   ]);
   const m = record.morning;
-  // デモの夜は「雪の朝 7:10」として見せる（11/10 本人「デモは雪が積もった朝から」）。昼は時計どおり
-  const demoDawn = demoMorning() && isClockNight();
-  const nowMin = demoDawn ? 7 * 60 + 10 : jstMinutes();
+  // デモの夜は、時計を雪かきができる時間にもどしている（lib/clock.ts）。空はその時刻の雪の空
+  const demoDawn = demoShiftActive();
+  const nowMin = jstMinutes();
   // 背景の空: いまの天気と時間（デモでは ?sky=night-snow のように上書きできる）
   const sky = parseSkyParam(skyParam) ?? {
     time: timeOfDay(nowMin),
@@ -108,7 +109,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const myTeam = onTeam(me) && me?.teamId ? teamTheme(me.teamId) : undefined;
   // 左上の鳥は、マイページ（spec v1.32）のアイコン。押すとマイページ（アイコン・紹介・なかま帳）
   // 本人の記録・夜の人数・応援・アイコンは互いに関係ないので、まとめて同時に読む（ホームは8秒ごとに取り直すので、待ち時間を短く）
-  const now = new Date();
+  const now = appNow();
   const night = !open;
   const [st, homeToday, cheerBtn, news, myIcon] = await Promise.all([
     me ? soloStatus(me.id, now).catch(() => undefined) : undefined,

@@ -3,6 +3,7 @@
 // 体・病気のことばを含む文は、ここに残さない（呼ぶ側で入れない）。
 import { hasDb, query } from "../db";
 import type { ConciergeTurn } from "../claude/concierge";
+import { appNow } from "@/lib/clock";
 
 export interface ConciergeSession {
   turn: number;
@@ -19,7 +20,7 @@ const g = globalThis as { __shimaenaConcierge?: Map<string, ConciergeSession> };
 const mem = () => (g.__shimaenaConcierge ??= new Map());
 
 /** 続きの会話（10分以内）。なければ undefined */
-export async function loadSession(lineUserId: string, now = new Date()): Promise<ConciergeSession | undefined> {
+export async function loadSession(lineUserId: string, now = appNow()): Promise<ConciergeSession | undefined> {
   let s: ConciergeSession | undefined;
   if (hasDb()) {
     try {

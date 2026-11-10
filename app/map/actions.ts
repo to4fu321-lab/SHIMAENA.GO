@@ -10,6 +10,7 @@ import { completeManually, completeWithPhoto, joinMission, joinNearby, reportSho
 import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
 import { stormStopText } from "@/lib/storm";
+import { appNow } from "@/lib/clock";
 
 export interface ActionResult {
   ok: boolean;
@@ -88,7 +89,7 @@ export async function finishAction(formData: FormData): Promise<ActionResult> {
     if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
     // 撮影ステージ（/admin/stage）から: 合言葉でログインした人の画面で、撮影の印があるときだけ、写真を Claude に送らず決まった確認で進める
     const stage = (await cookies()).get("shimaena_stage")?.value === "1" && ["ok", "open"].includes(await adminGate());
-    const r = await completeWithPhoto(id, { bytes, mediaType }, new Date(), { fast: stage });
+    const r = await completeWithPhoto(id, { bytes, mediaType }, appNow(), { fast: stage });
     revalidatePath("/map");
     return { ok: r.done, text: firstText(r.messages), clear: r.clear, canManual: r.retry };
   });

@@ -16,6 +16,7 @@ import { soloStatus } from "@/lib/solo/ops";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import Bgm from "@/components/Bgm";
+import { appNow } from "@/lib/clock";
 
 export const metadata: Metadata = { title: "カード図鑑 ・ シマエナGO" };
 
@@ -30,7 +31,7 @@ async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: str
   const col = collection(cards);
   const reward = nextReward(cards.length);
   const title = record.weekly?.titles.find((t) => t.participantId === viewerId);
-  const solo = me ? await soloStatus(me.id, new Date()) : undefined;
+  const solo = me ? await soloStatus(me.id, appNow()) : undefined;
   const todayLogs = solo ? solo.recent.filter((l) => l.date === solo.today) : [];
   const q = as ? `?as=${as}` : "";
 

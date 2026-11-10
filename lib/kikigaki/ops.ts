@@ -7,9 +7,10 @@ import { baseUrl } from "../url";
 import { drawMemory, programMemory } from "./art";
 import { motifsOf, shouldDeliver, type Turn } from "./core";
 import { newStoryId, saveStory, storyOf, type Story } from "./store";
+import { appNow } from "@/lib/clock";
 
 /** やりとりから、お話と絵を作って保存する（届けるかどうかは、まだ決めていない＝届けない） */
-export async function createStory(requesterId: string, turns: Turn[], now = new Date()): Promise<Story> {
+export async function createStory(requesterId: string, turns: Turn[], now = appNow()): Promise<Story> {
   const id = newStoryId();
   const text = await writeStory(turns);
   let svg: string | undefined;
@@ -89,7 +90,7 @@ export async function deliverStory(s: Story, missionId: string, keys: (string | 
 }
 
 /** デモ用: 架空のお話を1件入れる（届ける、を選んだ状態）。キーがなくても見せられるように */
-export async function seedDemoStory(requesterId: string, now = new Date()): Promise<Story> {
+export async function seedDemoStory(requesterId: string, now = appNow()): Promise<Story> {
   const turns: Turn[] = [
     { q: "子どものころの雪の日で、いちばん覚えていることは何ですか？", a: "兄と裏の坂で、みかん箱をそりにして日が暮れるまで滑ったこと。手袋がかちかちに凍ってね。" },
     { q: "そのころの雪かきは、だれと、どんな道具でしていましたか？", a: "父が木のスコップで、朝いちばんに玄関から道まで一本道をつけてくれた。その音で目がさめたの。" },

@@ -7,6 +7,7 @@ import { hasDb, query } from "../db";
 import { askJson, askWithWebSearch, hasClaudeKey } from "../claude/client";
 import { recordProblem } from "../ops/problems";
 import { calendarTopics, type MotifHint } from "./calendar";
+import { appNow } from "@/lib/clock";
 
 export interface TopicItem {
   /** カードに出す名前（10字まで） */
@@ -55,7 +56,7 @@ const TopicSchema = z.object({
 });
 
 function calendarDay(date: string): DayTopic {
-  return { date, items: calendarTopics(date).map((t) => ({ label: t.label, hint: `${t.label}を思わせる小さな絵`, motif: t.motif })), by: "calendar", at: new Date().toISOString() };
+  return { date, items: calendarTopics(date).map((t) => ({ label: t.label, hint: `${t.label}を思わせる小さな絵`, motif: t.motif })), by: "calendar", at: appNow().toISOString() };
 }
 
 /** Claude が Web で調べる（キーがあるときだけ呼ぶ） */
@@ -128,7 +129,7 @@ export async function warmDayTopic(date: string): Promise<DayTopic> {
     if (hasClaudeKey()) {
       try {
         const items = await searchDay(date);
-        if (items.length > 0) t = { date, items, by: "web", at: new Date().toISOString() };
+        if (items.length > 0) t = { date, items, by: "web", at: appNow().toISOString() };
       } catch (e) {
         await recordProblem("topic/search", e);
       }
