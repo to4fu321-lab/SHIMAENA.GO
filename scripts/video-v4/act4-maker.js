@@ -1,5 +1,5 @@
-// 第4幕「作った人と、作り方」: 初心者がスマホから日本語で頼んだ7日間 → 夜の点検ループ → 隊長の決まり → この動画のこと。
-ACTS.push({ from: "maker", to: "meta", make(root) {
+// 第4幕「作った人と、作り方」: 初心者がスマホから日本語で頼んだ7日間 → 夜の点検ループ → 隊長の決まり（ドンッ、と3つ）→ 一言。
+ACTS.push({ from: "maker", to: "motto", xf: 0.15, make(root) {
   // 本人が実際に送った指示（docs/devlog.md の「本人「…」」から）
   const ASKS = ["隊長の言葉がずっと同じ", "アイコンをもっと分かりやすく。言葉を読まないと分からないのは NG", "仲間を増やす仕掛けに進めて", "物足りない。続けて改善", "README 長すぎる", "事実の羅列では心は動かない", "雪かきできなくても、ツルツルで危ない道の共有で手伝えるようにしたい", "もっと可愛い形で", "チャット来た時、下に自動スクロールしないのがある", "PC表示対応にして欲しい"];
   const C = TL.commits;
@@ -38,26 +38,18 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
         <div style="margin:26px auto 0;width:150px;height:150px;border-radius:50%;border:10px solid #ff9c8a;display:grid;place-items:center;font-size:96px;font-weight:900;color:#ff9c8a;line-height:1">✕</div>
         <div style="margin-top:26px;font-size:60px;font-weight:900">${b}</div><div style="margin-top:10px;font-family:var(--sans);font-size:30px;font-weight:700;color:#a9d3e6">→ ${c}</div></div>`).join("")}
     </div>
-    <div class="full" id="a4m"><div class="abs" style="left:0;right:0;top:250px;text-align:center"><div id="a4m1" style="font-size:136px;font-weight:900;line-height:1.3">${SPARK("#e8834f", 110)} AI は、段取りを。</div><div id="a4m2" style="font-size:136px;font-weight:900;line-height:1.3;color:#ffd59a;text-shadow:0 0 70px rgba(255,170,90,.4)">人は、会いに行く。</div></div></div>
-    <div class="full" id="a4x">
-      <div class="abs kick" style="left:170px;top:150px;color:#ffb37f">この動画の、頼まれ方（原文）</div>
-      <div class="abs" id="a4x1" style="left:170px;top:214px;width:960px;padding:36px 44px;border-radius:44px 44px 10px 44px;background:#e8834f;font-family:var(--sans);font-size:47px;font-weight:800;line-height:1.55;box-shadow:0 24px 60px rgba(0,0,0,.4)">元の台本などは無視して、<br>表現方法や伝え方など<span style="background:#fff;color:#c96a3a;padding:2px 12px;border-radius:12px;margin:0 6px">全てClaudeの自由</span>に<br>して良いので1から作成して。</div>
-      <div class="abs" id="a4x2" style="left:1240px;top:300px;width:560px;text-align:center"></div>
-      <div class="abs" id="a4x3" style="left:170px;top:650px;right:120px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">${["構成", "台本", "絵", "音楽", "声", "編集"].map((w) => `<span class="chip a4tag" style="background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.22);font-size:36px;padding:10px 30px">${w}</span>`).join("")}<span class="a4tag" style="font-size:40px;font-weight:700;margin-left:10px">＝ ぜんぶ、Claude がコードで作りました。</span></div>
-    </div>`;
+    <div class="full" id="a4m"><div class="abs" style="left:0;right:0;top:250px;text-align:center"><div id="a4m1" style="font-size:136px;font-weight:900;line-height:1.3">${SPARK("#e8834f", 110)} AI は、段取りを。</div><div id="a4m2" style="font-size:136px;font-weight:900;line-height:1.3;color:#ffd59a;text-shadow:0 0 70px rgba(255,170,90,.4)">人は、会いに行く。</div></div></div>`;
   const q = (s) => root.querySelector(s), qa = (s) => [...root.querySelectorAll(s)];
   const A = q("#a4a"), who = q("#a4who"), wk = q("#a4wk"), list = q("#a4list"), lines = q("#a4lines"), logEl = q("#a4log"), loop = q("#a4loop"), ring = q("#a4ring");
-  const R = q("#a4r"), M = q("#a4m"), X = q("#a4x");
+  const R = q("#a4r"), M = q("#a4m");
   // スマホの中のやりとり（本人の指示 → コミット）
   list.innerHTML = ASKS.map((a, i) => `<div class="a4b" style="align-self:flex-end;max-width:330px;padding:12px 18px;border-radius:22px 22px 6px 22px;background:#e8834f;color:#fff;font-family:var(--sans);font-size:23px;font-weight:700;line-height:1.4">${a}</div><div class="a4b" style="align-self:flex-start;padding:8px 14px;border-radius:14px;background:#fff;color:#4a637a;font-family:var(--mono);font-size:17px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.08)">✓ commit ${C[(i * 5 + 3) % C.length].h}</div>`).join("");
   const bubs = qa(".a4b");
   lines.innerHTML = C.map((c) => `<div><span style="color:#ffb37f">${c.h}</span>  <span style="color:#7f96ab">${c.d}</span>  ${c.s.replace(/</g, "&lt;")}</div>`).join("");
-  const cap = captain(260); q("#a4x2").append(cap); cap.style.position = "relative"; cap.style.margin = "0 auto"; cap.mood("happy");
-  q("#a4x2").append($(`<div style="margin-top:20px;display:inline-block;padding:16px 34px;border-radius:30px;background:#fff;color:#1e3346;font-size:44px;font-weight:900">では、ぼくが話します。</div>`));
-  const vs = qa(".a4v"), ns = qa(".a4n"), ticks = qa(".a4tick"), sts = qa(".a4st"), rules = qa(".a4rule"), tags = qa(".a4tag");
+  const vs = qa(".a4v"), ns = qa(".a4n"), ticks = qa(".a4tick"), sts = qa(".a4st"), rules = qa(".a4rule");
   const sn = snow(41, 70, { size: 3 }); root.insertBefore(sn, A);
-  const t0 = T("maker"), tw = T("week"), tr = T("rules"), tm = T("motto"), tx = T("meta"), te = E("meta");
-  const c29 = L("c29"), c31 = L("c31"), c32 = L("c32"), c33 = L("c33"), c36 = L("c36"), d36 = LE("c36") - c36, c37 = L("c37"), c38 = L("c38");
+  const t0 = T("maker"), tw = T("week"), tr = T("rules"), tm = T("motto");
+  const c29 = L("c29"), c31 = L("c31"), c32 = L("c32"), c33 = L("c33"), c36 = L("c36"), d36 = LE("c36") - c36, c37 = L("c37");
   return (t) => {
     sn.update(t, 0.35);
     A.style.opacity = win(t, t0 - 1, t0, tr - 0.1, tr + 0.4);
@@ -84,17 +76,11 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
     sts.forEach((s, i) => show(s, t, c33 + 0.9 + i * 0.22, { dy: 10 }));
     // 決まり
     R.style.opacity = win(t, tr, tr + 0.4, tm - 0.15, tm + 0.3);
-    rules.forEach((r, i) => show(r, t, c36 + d36 * [0, 0.38, 0.68][i] - 0.1, { dy: 40, scale: 0.92 }));
+    rules.forEach((r, i) => { const at = c36 + d36 * [0, 0.38, 0.68][i] - 0.05; r.style.opacity = t >= at ? 1 : 0; r.style.transform = `scale(${slam(t, at, 1.6)})`; });
+    R.style.transform = `translate(${[0, 0.38, 0.68].reduce((a, k) => a + shake(t, c36 + d36 * k + 0.15), 0)}px,0)`;
     // 一言
-    M.style.opacity = win(t, tm, tm + 0.3, tx - 0.1, tx + 0.35);
+    M.style.opacity = win(t, tm, tm + 0.3);
     show(q("#a4m1"), t, c37 - 0.1, { dy: 30 }); show(q("#a4m2"), t, c37 + (LE("c37") - c37) * 0.5, { dy: 30 });
-    // この動画のこと
-    X.style.opacity = win(t, tx, tx + 0.35);
-    show(q("#a4x1"), t, tx + 0.2, { scale: 0.9, ease: Ease.back, d: 0.6 });
-    show(q("#a4x2"), t, c38 + (LE("c38") - c38) * 0.62, { scale: 0.8, ease: Ease.back });
-    const f = Math.round(t * FPS), env = TL.env[f] || 0;
-    cap.style.transform = `translateY(${-env * 10}px) rotate(${Math.sin(t * 7) * env * 4}deg)`;
-    tags.forEach((g, i) => show(g, t, c38 + 1.2 + i * 0.16, { dy: 16 }));
     return { note: t >= tw && t < tr ? "※ コミットとテストの数は、このリポジトリの実数（11/2〜11/8 のコミット・npm test）" : "" };
   };
 } });

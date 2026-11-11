@@ -1,5 +1,5 @@
 // 第3幕「ありがとう」: 隊長がやらない仕事。声は合成しない。だから動画の中でも、そこは空けておく。
-ACTS.push({ from: "thanks", to: "blank", make(root) {
+ACTS.push({ from: "thanks", to: "blank", xf: 0.2, make(root) {
   root.innerHTML = `
     <div class="full" style="background:radial-gradient(90% 90% at 30% 45%, #3a3350 0%, #1b2436 55%, #0e1622 100%)"></div>
     <div class="full" id="a3s"></div>

@@ -220,6 +220,9 @@ const want = (name) => !ONLY || ONLY.includes(name);
       await sleep(2500);
     }, { settle: 2500 });
 
+    // 同じ家（拠点7）に、同じチームの人も加わる（録らない。なかま帳に仲間が載るように）
+    for (const who of ["h13", "h16", "h19"]) await goAs(who, 7).catch(() => {});
+
     // ---- 4) 終わりました → 写真1枚 → 完了 → カード ----
     addClock(8);
     await record("finish", [{ key: "a", url: "/map?as=h1" }], async ({ page, mark, tap }) => {
@@ -295,6 +298,26 @@ const want = (name) => !ONLY || ONLY.includes(name);
       for (let i = 0; i < 3; i++) if (await next.count()) { await tap("next" + i, next.first()).catch(() => {}); await sleep(1900); }
       await sleep(800);
     });
+
+    // ---- 7) ほかの入口: なかま帳・バトン・ソロ活動（v4）----
+    const tryTap = async (tap, k, loc, wait = 1500) => { try { if (await loc.count()) { await tap(k, loc.first()); await sleep(wait); return true; } } catch (e) { console.log("  押せませんでした:", k, e.message.split("\n")[0]); } return false; };
+    await record("nakama", [{ key: "a", url: "/nakama?as=h1" }], async ({ page, tap }) => {
+      await sleep(2200);
+      await tryTap(tap, "with", page.getByRole("button", { name: /誰かと一緒に/ }).or(page.getByRole("radio", { name: /誰かと一緒に/ })), 3200);
+      await sleep(600);
+    }, { settle: 2500 }).catch((e) => console.log("nakama は撮れませんでした:", e.message));
+    await record("baton", [{ key: "a", url: "/connect?as=h1" }], async ({ page, tap }) => {
+      await sleep(1200);
+      await tryTap(tap, "tab", page.getByRole("tab", { name: /バトン/ }), 1700);
+      await tryTap(tap, "write", page.getByRole("button", { name: /バトンを渡す/ }), 1700);
+      await tryTap(tap, "phrase", page.getByRole("button", { name: /続きをお願いします/ }).or(page.getByRole("radio", { name: /続きをお願いします/ })), 2200);
+      await sleep(600);
+    }, { settle: 2500 }).catch((e) => console.log("baton は撮れませんでした:", e.message));
+    await record("solo", [{ key: "a", url: "/solo?as=h1" }], async ({ page, tap }) => {
+      await sleep(2200);
+      await tryTap(tap, "go", page.getByRole("button", { name: /雪かきGO/ }), 5200);
+      await sleep(600);
+    }, { settle: 2500 }).catch((e) => console.log("solo は撮れませんでした:", e.message));
 
     console.log("できた:", path.join(OUT, "scenes.json"));
   } finally {

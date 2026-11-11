@@ -36,6 +36,11 @@ const mixc = (a, b, k) => { const A = hex(a), B = hex(b); return `rgb(${A.map((v
 const $ = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; };
 function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
+/** ドンッと置いたあとのゆれ（px）。at の瞬間から 0.45 秒でおさまる */
+const shake = (t, at, amp = 14) => { const d = t - at; return d < 0 || d > 0.45 ? 0 : Math.sin(d * 70) * amp * Math.exp(-d * 9); };
+/** ドンッ: 大きい所から落ちてくる（0.22 秒）。返り値は transform の scale */
+const slam = (t, at, from = 1.9) => lerp(from, 1, Ease.out5((t - at) / 0.22));
+
 /** 出入り: tIn で下から浮かんで出る。out があれば消える。返り値は出具合（0〜1） */
 function show(el, t, tIn, o = {}) {
   const { dy = 26, dx = 0, d = 0.55, out, dOut = 0.35, scale, ease = Ease.out, base = "" } = o;

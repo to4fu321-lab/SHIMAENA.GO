@@ -23,5 +23,10 @@ module.exports = function cues(V) {
     done: [1, 2, 3, 4, 5, 6].map((i) => inv(map, mk("map", "done" + i))),
     finTap: c22 + 1.0, shutter: c22 + 1.45, checks: [c22 + 3.6, c22 + 4.1], clear: c23 - 0.3,
     cardTap: T("card") + 0.9,
+    // ドンッ、と置く瞬間（数字2つ・決まり3つ）と、ほかの入口3つの切りかわり
+    slams: [L("c09") + 0.9, L("c10") + 0.1],
+    rules: [0, 0.38, 0.68].map((k) => L("c36") + (LE("c36") - L("c36")) * k - 0.05),
+    more: [T("more"), L("c52") - 0.15, L("c53") - 0.15],
+    sparkHalf: L("c11") + (LE("c11") - L("c11")) * 0.5,
   };
 };

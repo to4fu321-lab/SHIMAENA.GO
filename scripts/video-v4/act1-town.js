@@ -31,10 +31,10 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     const wx = cx - h.side * w * 0.2;
     lights.push(`<g id="win${i}" opacity="0"><ellipse cx="${wx}" cy="${top + 74}" rx="150" ry="120" fill="url(#glow)"/><rect x="${wx - 36}" y="${top + 44}" width="72" height="60" rx="5" fill="#ffd596"/><path d="M${wx} ${top + 44} V${top + 104} M${wx - 36} ${top + 74} H${wx + 36}" stroke="#b9853f" stroke-width="4"/>${lone ? "" : `<circle cx="${wx + 4}" cy="${top + 84}" r="11" fill="#6b4a2a"/><path d="M${wx - 14} ${top + 104} q18 -22 36 0 Z" fill="#6b4a2a"/>`}</g>`);
     if (lone) {
-      // 掘る人のいない家: ドアまで雪。足あとなし
+      // 雪かきをする人のいない家: ドアまで雪。足あとなし
       base.push(`<path d="M${cx - w / 2 - 60} ${G + 6} C${cx - w / 4} ${G - 58} ${dx - 40} ${G - 66} ${dx + 10} ${G - 62} C${dx + 90} ${G - 56} ${cx + w / 2 + 20} ${G - 30} ${cx + w / 2 + 80} ${G + 6} Z" fill="#f4f8fb"/><path d="M${cx - w / 4} ${G - 36} C${dx - 30} ${G - 54} ${dx + 40} ${G - 52} ${cx + w / 2} ${G - 22}" fill="none" stroke="#c9d8e5" stroke-width="4" stroke-linecap="round" opacity=".7"/>`);
     } else {
-      // 掘った道と、よけた雪の山
+      // 雪かきした道と、よけた雪の山
       base.push(`<polygon points="${dx - 30},${G} ${dx + 30},${G} ${dx + 58},${G + 150} ${dx - 58},${G + 150}" fill="#8fa5b8" opacity=".55"/><ellipse cx="${dx - 96}" cy="${G + 30}" rx="62" ry="34" fill="#f4f8fb"/><ellipse cx="${dx + 100}" cy="${G + 26}" rx="52" ry="28" fill="#f4f8fb"/>`);
     }
   }
@@ -63,7 +63,8 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     <div class="full" id="a1spot"></div>
     <div class="full" id="a1dim" style="background:#08111b;opacity:0"></div>
     <div class="full" id="a1fg"></div>
-    <div class="full" id="a1txt"></div>`;
+    <div class="full" id="a1txt"></div>
+    <div class="full" id="a1flash" style="background:#fff;opacity:0"></div>`;
   const q = (s) => root.querySelector(s);
   const sky = q("#a1sky"), stars = q("#a1stars"), world = q("#a1world"), tint = q("#a1tint"), lightsEl = q("#a1lights"), spot = q("#a1spot"), dim = q("#a1dim"), fg = q("#a1fg"), txt = q("#a1txt");
   { const rs = rng(5); stars.innerHTML = Array.from({ length: 90 }, () => `<i class="abs" style="left:${rs() * 1920}px;top:${rs() * 560}px;width:${1.5 + rs() * 2.5}px;height:${1.5 + rs() * 2.5}px;border-radius:50%;background:#fff;opacity:${0.3 + rs() * 0.6}"></i>`).join(""); }
@@ -132,13 +133,13 @@ ACTS.push({ from: "hello", to: "title", make(root) {
       p.puff.setAttribute("cx", (60 - k * 150).toFixed(1)); p.puff.setAttribute("cy", (-70 - Math.sin(k * 3.14) * 70 + k * 60).toFixed(1));
       p.puff.setAttribute("opacity", c > 1.5 && c < 2.8 ? 0.95 : 0); p.puff.setAttribute("r", 9 - k * 4);
     }
-    // 窓の灯り: はじめは掘る人のいない家だけ。「若い人も近くに」で、近所の窓がともる
+    // 窓の灯り: はじめは雪かきをする人のいない家だけ。「若い人も近くに」で、近所の窓がともる
     houses.forEach((h, i) => { const k = h.i === LONE ? 1 : pr(t, ts + 0.5 + Math.abs(i - LONE) * 0.28 + (i % 2) * 0.12, 0.5); wins[i].setAttribute("opacity", k.toFixed(2)); });
-    // 「この家には、掘る人がいません」→ 光の輪。「通りからは見えません」で輪が消えて、ほかの家と同じに見える
+    // 「この家には、雪かきをする人がいません」→ 光の輪。「通りからは見えません」で輪が消えて、ほかの家と同じに見える
     const half = c07 + (LE("c07") - c07) * 0.52;
     const sp = win(t, c07 - 0.2, c07 + 0.7, half + 0.2, half + 1.6);
     spot.style.background = `radial-gradient(circle at 50% 46%, rgba(8,17,27,0) ${lerp(900, 250, sp)}px, rgba(8,17,27,${0.78 * sp}) ${lerp(1300, 470, sp)}px)`;
-    dim.style.opacity = Math.max(win(t, half + 0.3, half + 1.6, tn, tn + 0.01) * 0.35, win(t, tn - 0.01, tn + 0.9, ts - 0.2, ts + 0.9) * 0.8, win(t, ts + 0.2, ts + 1.2, tt, tt + 1.0) * 0.25);
+    dim.style.opacity = Math.max(win(t, half + 0.3, half + 1.6, tn, tn + 0.01) * 0.35, win(t, tn - 0.01, tn + 0.35, ts - 0.2, ts + 0.9) * 0.9, win(t, ts + 0.2, ts + 1.2, tt, tt + 1.0) * 0.25);
 
     // あいさつ: 隊長が枝にとまる
     const land = t0 + 1.55, fly = pr(t, t0 + 0.35, 1.2, Ease.out), exit = pr(t, tq - 0.35, 0.9, Ease.in);
@@ -158,8 +159,13 @@ ACTS.push({ from: "hello", to: "title", make(root) {
 
     // 数字
     const a9 = L("c09"), a10 = L("c10");
-    show(n1, t, a9 + 0.9, { out: ts - 0.25 }); show(n2, t, a10 + 0.1, { out: ts - 0.25 }); show(src, t, a9 + 1.4, { out: ts - 0.25, dy: 0 });
-    v1.textContent = Math.round(94 * pr(t, a9 + 0.9, 1.4, Ease.out5)); v2.textContent = Math.round(68 * pr(t, a10 + 0.1, 1.2, Ease.out5));
+    // 数字は、音楽を止めて「ドンッ」と置く（静かな朝との落差）
+    const out9 = 1 - clamp((t - (ts - 0.25)) / 0.3);
+    n1.style.opacity = (t >= a9 + 0.9 ? 1 : 0) * out9; n1.style.transform = `scale(${slam(t, a9 + 0.9)})`;
+    n2.style.opacity = (t >= a10 + 0.1 ? 1 : 0) * out9; n2.style.transform = `scale(${slam(t, a10 + 0.1)})`;
+    txt.style.transform = `translate(${shake(t, a9 + 1.1) + shake(t, a10 + 0.3)}px,${shake(t, a9 + 1.12, 9) + shake(t, a10 + 0.32, 9)}px)`;
+    show(src, t, a9 + 1.4, { out: ts - 0.25, dy: 0 });
+    v1.textContent = 94; v2.textContent = 68;
     // きっかけ
     show(k1, t, sparkHalf - 0.1, { out: tt - 0.2 }); show(k2, t, sparkHalf + 0.9, { out: tt - 0.2, scale: 0.86, ease: Ease.back, d: 0.6 });
 
@@ -173,6 +179,8 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     rings.innerHTML = [0, 0.45, 0.9, 1.6, 2.05].map((d) => { const k = clamp((t - call - d) / 1.7); return k > 0 && k < 1 ? `<circle cx="${roofX}" cy="${roofY - 50}" r="${60 + k * 900}" fill="none" stroke="#ffd59a" stroke-width="${10 * (1 - k) + 2}" opacity="${(1 - k) * 0.9}"/>` : ""; }).join("");
     arcEls.forEach((a, k) => a.setAttribute("stroke-dashoffset", (1 - pr(t, L("c13") + 0.9 + k * 0.16, 0.9, Ease.io)).toFixed(3)));
     show(logo, t, L("c13") - 0.15, { scale: 0.8, ease: Ease.back, d: 0.7 });
+    // 題字で、ぱっと明るく（白いひらめき）
+    root.querySelector("#a1flash").style.opacity = t > L("c13") - 0.2 ? Math.max(0, 0.75 - (t - (L("c13") - 0.2)) * 1.6) : 0;
     tl.forEach((c, i) => show(c, t, L("c13") + 1.0 + i * 0.5, { dy: 20, scale: 0.8, ease: Ease.back }));
     return { noAva: t < tq - 0.3, note: t < tq ? "シマエナGO ─ 雪の朝、ご近所で雪かきを助け合うアプリ　／　語り: シマエナ隊長（アプリの中の AI）" : t < tt ? "※ 町と人は、架空のイメージです" : "" };
   };

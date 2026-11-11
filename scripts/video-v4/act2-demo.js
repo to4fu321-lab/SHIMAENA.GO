@@ -1,5 +1,6 @@
 // 第2幕「10分間」: 本物のアプリの録画で、隊長の3つの仕事（知らせる・割り振る・確かめる）を見せる。
-ACTS.push({ from: "ask", to: "card", make(root) {
+// 終わりに、ほかの入口（ソロ活動・バトン・なかま）をテンポよく3つ。
+ACTS.push({ from: "ask", to: "more", xf: 0.3, make(root) {
   const PW = 366, PY = 134;
   root.innerHTML = `
     <div class="full" style="background:linear-gradient(180deg,#d6e6f1 0%,#eef4f9 58%,#dfeaf2 100%)"></div>
@@ -10,7 +11,9 @@ ACTS.push({ from: "ask", to: "card", make(root) {
       <div class="abs mono" id="a2time" style="left:0;right:0;top:40px;text-align:center;font-size:40px;font-weight:800;color:#1e3346">6:30</div>
       <div class="abs" id="a2min" style="left:0;right:0;top:88px;text-align:center;font-family:var(--sans);font-size:19px;font-weight:800;color:#c96a3a">0分</div>
     </div>
-    <div class="full" id="a2s"></div>`;
+    <div class="full" id="a2s"></div>
+    <div class="full" id="a2more" style="opacity:0;overflow:hidden"></div>
+    <div class="full" id="a2go" style="opacity:0;background:radial-gradient(circle at 50% 50%, #ffb37f 0%, #e8834f 55%, #c96a3a 100%);display:grid;place-items:center"><div id="a2gotxt" style="font-size:420px;font-weight:900;letter-spacing:.02em;color:#fff;text-shadow:0 14px 0 rgba(120,50,20,.35)">GO!</div></div>`;
   const q = (s) => root.querySelector(s);
   const stage = q("#a2s"), pills = [...q("#a2step").children], stepEl = q("#a2step"), clock = q("#a2clock"), arc = q("#a2arc"), timeEl = q("#a2time"), minEl = q("#a2min");
   const sn = snow(21, 90, { color: "#9fc0d6", size: 3.6 }); root.insertBefore(sn, stage);
@@ -75,7 +78,26 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     <div class="body" style="margin-top:22px;font-size:30px;white-space:nowrap">その朝の空・雪・人数・チームの色から、<br>SVG で描く。<br>描いたあと、自分で見て1回なおす。</div>
     <div class="body" style="margin-top:22px;font-size:21px;color:#7890a5">※ この録画の絵は、API キーなしで動かしたときの見本です</div>`);
 
-  const tA = T("ask"), tR = T("ring"), tRe = T("reason"), tG = T("go"), tM = T("map"), tF = T("finish"), tC = T("card"), tE = E("card");
+  // ── ほかの入口: ソロ活動・バトン・なかま帳（色の帯が斜めに入れかわる）──
+  const moreEl = q("#a2more"), goEl = q("#a2go"), goBig = q("#a2gotxt");
+  const MORE = [
+    { rec: "solo", line: "c51", color: "#2F6FE4", pale: "#dbe8ff", icon: "🧤", kick: "ひとりの日は", head: "ソロ活動", body: "自分の家の雪かき・道の見回り。<br>10分で、チームの点になる。" },
+    { rec: "baton", line: "c52", color: "#FF8A3D", pale: "#ffe9d6", icon: "🎽", kick: "途中まででも", head: "バトン", body: "「続きをお願いします」と、<br>次の人へ渡せる。" },
+    { rec: "nakama", line: "c53", color: "#9B5DE5", pale: "#eee2ff", icon: "👋", kick: "だれかと一緒に", head: "なかま", body: "前回の仲間とも、新しい人とも、ゆるく合流。<br>毎週、顔見知りが増えていく。" },
+  ].filter((m) => REC[m.rec]).map((m, i) => {
+    const el = $(`<div class="full" style="background:${m.pale}">
+      <div class="abs" style="left:-200px;top:-200px;width:1100px;height:1500px;background:${m.color};opacity:.14;transform:rotate(12deg)"></div>
+      <div class="abs a2mt" style="left:860px;top:210px;width:1000px">
+        <div style="display:flex;align-items:center;gap:22px"><span style="display:inline-grid;place-items:center;width:110px;height:110px;border-radius:32px;background:${m.color};font-size:64px;box-shadow:0 14px 30px rgba(20,40,60,.25)">${m.icon}</span><span class="kick" style="font-size:40px;color:${m.color}">${m.kick}</span></div>
+        <div style="font-size:190px;font-weight:900;line-height:1.15;color:#1e3346;margin-top:14px;white-space:nowrap">${m.head}</div>
+        <div class="body" style="font-size:42px;font-weight:700;color:#3d566d;margin-top:10px">${m.body}</div>
+        <div style="margin-top:26px;font-size:60px;font-weight:900;color:${m.color}">${i + 1}<span style="font-size:34px;color:#8aa0b3"> / 3</span></div>
+      </div></div>`);
+    const ph = phone(m.rec, "a", { w: 392 }); el.append(ph); moreEl.append(el);
+    return { ...m, el, ph, txt: el.querySelector(".a2mt"), at: i === 0 ? T("more") : L(m.line) - 0.15, dur: REC[m.rec].seconds };
+  });
+
+  const tA = T("ask"), tR = T("ring"), tRe = T("reason"), tG = T("go"), tM = T("map"), tF = T("finish"), tC = T("card"), tE = E("card"), tMo = T("more"), tEnd = E("more");
   const c17 = L("c17"), c22 = L("c22"), c23 = L("c23");
   // 場面ごとの出入り（0〜1）と、横からすべりこむ動き
   const seg = (t, a, b) => win(t, a, a + 0.45, b - 0.3, b);
@@ -86,7 +108,7 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     sn.update(t, 0.7);
     // 10分の時計: 6:30（知らせる）→ 6:40（玄関が開く）
     const k10 = kf(t, [[c17, 0], [c23, 1]], Ease.lin);
-    show(clock, t, tRe - 0.2, { dy: -20 });
+    show(clock, t, tRe - 0.2, { dy: -20, out: tMo - 0.1, dOut: 0.2 });
     arc.setAttribute("stroke-dashoffset", (1 - k10).toFixed(4));
     const m = Math.round(k10 * 10);
     timeEl.textContent = "6:" + (30 + m); minEl.textContent = m + "分";
@@ -131,9 +153,10 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     pMap.at(250 - slide(t, tM), PY, { op: o }); pMap.frame(mr);
     lMap.at(700, 150, { op: o * pr(t, tM + 0.5, 0.5), scale: lerp(0.9, 1, pr(t, tM + 0.5, 0.6, Ease.back)) }); lMap.frame(mr);
     teamTxt.style.opacity = o;
-    const sw = pr(t, L("c21") + 0.2, 0.9, Ease.io), order = [[0, 1, 2], [2, 0, 1]];
+    const c21 = L("c20") + (LE("c20") - L("c20")) * 0.55;
+    const sw = pr(t, c21 + 0.2, 0.9, Ease.io), order = [[0, 1, 2], [2, 0, 1]];
     teamEls.forEach((e, i) => { const y = lerp(order[0][i], order[1][i], sw) * 150, x = Math.sin(sw * 3.14) * (i === 1 ? 50 : -40); e.style.transform = `translate(${x + slide(t, tM + 0.3 + i * 0.12)}px,${y - i * 150}px)`; e.style.opacity = pr(t, tM + 0.3 + i * 0.12, 0.4); });
-    show(shuf, t, L("c21") + 0.1, { scale: 0.9, ease: Ease.back });
+    show(shuf, t, c21 + 0.1, { scale: 0.9, ease: Ease.back });
 
     // 確かめる → 10分
     o = seg(t, tF, tE);
@@ -152,6 +175,23 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     const co = seg(t, tC + 0.1, tE + 0.3);
     lCard.at(770, 150, { op: co * pr(t, tC + 2.0, 0.5), scale: lerp(0.85, 1, pr(t, tC + 2.0, 0.6, Ease.back)) }); lCard.frame(fr);
     cardTxt.style.opacity = co; cardTxt.style.transform = `translateX(${slide(t, tC + 0.3)}px)`;
+    // 「行く」を押した瞬間: 画面いっぱいの GO!（0.5 秒）
+    const gd = t - tapGo;
+    goEl.style.opacity = gd >= 0 && gd < 0.62 ? win(gd, 0, 0.05, 0.4, 0.62) : 0;
+    goBig.style.transform = `scale(${0.5 + Ease.out5(gd / 0.3) * 0.55 + Math.max(0, gd) * 0.25}) rotate(-4deg)`;
+
+    // ほかの入口: 1つずつ、横からぱっと入れかわる
+    moreEl.style.opacity = t >= tMo - 0.02 ? 1 : 0;
+    MORE.forEach((m, i) => {
+      const next = MORE[i + 1] ? MORE[i + 1].at : tEnd + 1;
+      const k = Ease.out5((t - m.at) / 0.32);
+      m.el.style.display = t >= m.at && t < next + 0.32 ? "block" : "none";
+      m.el.style.zIndex = i + 1;
+      m.el.style.clipPath = `polygon(${(1 - k) * 100}% 0, 100% 0, 100% 100%, ${(1 - k) * 112 - 12}% 100%)`;
+      m.ph.at(330, 44 + (1 - Ease.back((t - m.at - 0.05) / 0.45)) * 90, { rot: -3 + k * 3 });
+      m.ph.frame(kf(t, [[m.at, 0.7], [next, m.dur - 0.2]], Ease.lin));
+      m.txt.style.transform = `translateX(${(1 - Ease.out5((t - m.at - 0.08) / 0.4)) * 160}px)`;
+    });
     return { dark: true, note: "※ 画面はすべて実際のアプリの録画です（町と人は架空のデモ。AI の応答は、API キーなしのときの見本）" };
   };
 } });

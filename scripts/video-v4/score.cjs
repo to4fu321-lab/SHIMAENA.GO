@@ -1,9 +1,12 @@
 // 動画の音楽と効果音を作る。楽器はアプリと同じ lib/sound（Web Audio 合成。音ファイルなし）。書き出しの土台は scripts/video-v3/audio/entry.ts。
 // 使い方: node scripts/video-v4/score.cjs → .video/v4/audio/music.wav と sfx.wav
-// 音楽の流れ:
-//   あいさつ: 風だけ → 静かな朝〜数字: エレピの静かな前奏 → 題字: 鈴 → 10分間の前半: 「しらかばの朝」（アプリの朝の曲）
-//   「行く」を押した瞬間から「出撃！」→ 完了の瞬間に「灯りがともる」→ 「ありがとう」に向けて消える → 空けておく所は、風だけ
-//   作り方: 「出撃！」の刻み → 決まり: 止める → 「人は、会いに行く。」で和音ひとつ → くっつく〜初雪: 「灯りがともる」の広がる所 → おわりの和音
+// 音楽の流れ（緩急をつける: 鳴らす所と、止める所をはっきり分ける）:
+//   あいさつ: 鈴がぱっと鳴る → 「まじめに話します」で、ぴたっと止まる（風だけ）
+//   静かな朝: エレピの静かな前奏 → 数字: 音楽を止めて「ドンッ」2つ → きっかけ: 和音ひとつ → 題字: 鈴
+//   登録: 「しらかばの朝」→ 6:30 に届いた瞬間から「出撃！」→「行く」でサビ → 完了の瞬間に「灯りがともる」
+//   ほかの入口（ソロ・バトン・なかま帳）: 「出撃！」のサビで、いちばん速く → 「ありがとう」で、ぴたっと止める。空けておく所は風だけ
+//   作り方: 「出撃！」の刻み → 決まり: 止めて「ドンッ」3つ → 「人は、会いに行く。」で和音ひとつ
+//   くっつく〜初雪: 「灯りがともる」の広がる所を、ゆっくり → おわりの和音
 const { chromium } = require("playwright");
 const esbuild = require("esbuild");
 const fs = require("fs");
@@ -16,22 +19,34 @@ const BAR = { morning: (60 / 82) * 4, mission: (60 / 120) * 4, clear: (60 / 100)
 const seq = (n, f) => Array.from({ length: n }, (_, i) => f(i));
 
 const music = [];
-music.push({ kind: "swell", at: 0.2, dur: T("quiet") + 1.5, gain: 0.9, fadeIn: 1.0, fadeOut: 2.0 });
-const preAt = T("quiet") + 0.3, preN = Math.max(4, Math.floor((L("c12") - preAt) / BAR.prelude));
-music.push({ kind: "prelude", at: preAt, n: preN, gain: 1.15, fadeIn: 1.0, fadeOut: 2.4 });
-music.push({ kind: "fanfare", at: L("c13") - 0.2, gain: 1.1 });
-const mEnd = C.goTap - 0.12, mN = Math.max(2, Math.min(8, Math.floor((mEnd - (L("c13") + 1.6)) / BAR.morning)));
-music.push({ kind: "song", song: "morning", at: mEnd - mN * BAR.morning, bars: seq(mN, (i) => i), gain: 1.0, fadeIn: 0.8 });
-music.push({ kind: "riser", at: C.goTap - 1.55, dur: 1.5, gain: 0.9 });
-music.push({ kind: "song", song: "mission", at: C.goTap, bars: seq(Math.ceil((C.clear - C.goTap) / BAR.mission) + 1, (i) => i % 8), gain: 0.92, until: C.clear + 0.05, untilFade: 0.3 });
-const cUntil = L("c27") - 0.1;
-music.push({ kind: "song", song: "clear", intro: true, at: C.clear + 0.05, bars: seq(Math.ceil((cUntil - C.clear - 1.2) / BAR.clear) + 1, (i) => i % 8), gain: 1.0, until: cUntil, untilFade: Math.min(4.2, cUntil - L("c26") + 0.6) });
-music.push({ kind: "swell", at: T("blank") - 0.8, dur: E("blank") - T("blank") + 1.6, gain: 0.55, fadeIn: 1.2, fadeOut: 1.2 });
-const kAt = T("maker") + 0.3, kUntil = T("rules") + 0.5, kN = Math.ceil((kUntil - kAt) / BAR.mission);
-music.push({ kind: "song", song: "mission", at: kAt, bars: seq(kN, (i) => (i < 6 ? i % 4 : 4 + ((i - 6) % 4))), gain: 0.78, fadeIn: 0.5, until: kUntil, untilFade: 1.2 });
-music.push({ kind: "warm", at: L("c37") - 0.25, dur: T("huddle") - L("c37") + 1.0, gain: 1.15 });
-const hAt = T("huddle") + 0.2, endAt = L("c43") - 0.2, wideN = Math.max(2, Math.min(4, Math.round((T("firstsnow") + 1.0 - hAt) / BAR.clear)));
-music.push({ kind: "song", song: "clear", at: hAt, bars: seq(wideN, (i) => 12 + i), gain: 1.05, fadeIn: 0.6 });
+const song = (name, at, until, bar0, o = {}) => music.push({ kind: "song", song: name, at, bars: seq(Math.ceil((until - at) / BAR[name]) + 1, bar0), until, untilFade: 0.25, ...o });
+// あいさつ
+music.push({ kind: "fanfare", at: 0.35, gain: 1.0, until: L("c02") - 0.35, untilFade: 0.12 });
+music.push({ kind: "swell", at: L("c02") - 0.6, dur: T("quiet") - L("c02") + 2.4, gain: 0.9, fadeIn: 1.2, fadeOut: 2.0 });
+// 静かな朝 → 数字（止める）→ きっかけ → 題字
+const preAt = T("quiet") + 0.3, preN = Math.max(2, Math.ceil((T("numbers") - preAt) / BAR.prelude));
+music.push({ kind: "prelude", at: preAt, n: preN, gain: 1.15, fadeIn: 1.0, until: C.slams[0] - 0.25, untilFade: 0.5 });
+music.push({ kind: "swell", at: T("numbers"), dur: T("spark") - T("numbers") + 1, gain: 0.5, fadeIn: 0.6, fadeOut: 1.0 });
+music.push({ kind: "warm", at: C.sparkHalf + 0.8, dur: L("c13") - C.sparkHalf, gain: 1.0 });
+music.push({ kind: "fanfare", at: L("c13") - 0.2, gain: 1.15 });
+// 10分間
+const ringAt = C.arrive[0] - 0.05;
+const mN = Math.max(2, Math.min(8, Math.floor((ringAt - (L("c13") + 1.6)) / BAR.morning)));
+music.push({ kind: "song", song: "morning", at: ringAt - mN * BAR.morning, bars: seq(mN, (i) => i), gain: 1.0, fadeIn: 0.8 });
+music.push({ kind: "riser", at: ringAt - 1.5, dur: 1.5, gain: 0.7 });
+song("mission", ringAt, C.goTap - 0.02, (i) => i % 4, { gain: 0.85 });
+music.push({ kind: "riser", at: C.goTap - 1.3, dur: 1.3, gain: 0.9 });
+song("mission", C.goTap, C.clear + 0.05, (i) => 8 + (i % 8), { gain: 0.95 });
+song("clear", C.clear + 0.05, T("more") - 0.02, (i) => i % 8, { intro: true, gain: 1.0 });
+// ほかの入口: いちばん速く → 「ありがとう」で止める
+song("mission", T("more"), T("thanks") + 0.25, (i) => 8 + (i % 8), { gain: 1.0, untilFade: 0.35 });
+music.push({ kind: "swell", at: T("blank") - 0.8, dur: E("blank") - T("blank") + 1.2, gain: 0.55, fadeIn: 1.2, fadeOut: 0.6 });
+// 作り方 → 決まり（止める）→ 一言
+song("mission", T("maker") + 0.1, C.rules[0] - 0.3, (i) => (i < 6 ? i % 4 : 4 + ((i - 6) % 4)), { gain: 0.8, untilFade: 0.2 });
+music.push({ kind: "warm", at: L("c37") - 0.25, dur: T("huddle") - L("c37") + 1.4, gain: 1.2 });
+// くっつく → 初雪 → 題字
+const hAt = T("huddle") + 0.4, endAt = L("c43") - 0.2, wideN = Math.max(2, Math.min(4, Math.round((T("firstsnow") + 1.0 - hAt) / BAR.clear)));
+music.push({ kind: "song", song: "clear", at: hAt, bars: seq(wideN, (i) => 12 + i), gain: 1.0, fadeIn: 1.0 });
 const qAt = hAt + wideN * BAR.clear;
 if (endAt - qAt > 1.2) music.push({ kind: "song", song: "clear", at: qAt, bars: seq(Math.ceil((endAt - qAt) / BAR.clear), (i) => 8 + (i % 4)), gain: 1.0, until: endAt, untilFade: 0.8 });
 music.push({ kind: "ending", at: endAt, dur: Math.max(5, TL.seconds - endAt - 0.1), gain: 1.2 });
@@ -40,22 +55,23 @@ music.push({ kind: "ending", at: endAt, dur: Math.max(5, TL.seconds - endAt - 0.
 const sfx = [];
 const add = (name, at, gain = 1) => sfx.push({ name, at: +at.toFixed(3), gain });
 add("flap", 0.45, 0.7); add("chirp", C.land, 0.8);
+C.slams.forEach((t) => add("cardStamp", t, 1.0));
 add("flap", T("title") + 0.15, 0.6); add("chirp", L("c12") + 0.5, 0.7); add("chirp", L("c12") + 0.95, 0.5);
 C.askTaps.forEach((t) => add("tap", t, 0.8));
 add("message", C.arrive[0], 1.0); add("message", C.arrive[1], 0.75);
 [L("c17"), L("c18"), L("c22")].forEach((t) => add("countPop", t - 0.05, 0.5));
 add("toast", T("reason") + 0.9, 0.5);
-add("go", C.goTap, 1.0);
+add("go", C.goTap, 1.0); add("missionStart", C.goTap + 0.05, 0.8);
 C.done.forEach((t, i) => add("lamp", t, 0.45 + (i % 2) * 0.1));
 add("tap", C.finTap, 0.8); add("shutter", C.shutter, 0.9); C.checks.forEach((t) => add("quizOk", t, 0.45));
 add("missionClear", C.clear, 1.0);
 add("tap", C.cardTap, 0.7); add("cardFlip", C.cardTap + 0.5, 0.7); add("cardSparkle", T("card") + 2.0, 0.6);
-add("tap", L("c26") + 0.9, 0.6); add("tap", L("c27") + 0.3, 0.6);
+C.more.forEach((t) => { add("send", t, 0.9); add("countPop", t + 0.12, 0.6); });
+add("tap", L("c26") + 0.9, 0.5); add("tap", L("c27") + 0.3, 0.5);
 const d32 = LE("c32") - L("c32"); [0, 0.3, 0.66].forEach((k) => add("countPop", L("c32") + d32 * k, 0.55));
 add("toast", L("c33") - 0.1, 0.45);
-const d36 = LE("c36") - L("c36"); [0, 0.38, 0.68].forEach((k) => add("toggleOff", L("c36") + d36 * k - 0.05, 0.6));
-add("send", T("meta") + 0.25, 0.7); add("peekPop", L("c38") + (LE("c38") - L("c38")) * 0.62, 0.7);
-[0.5, 0.15, 0, 0.3, 0.65].forEach((d, i) => add("flap", T("huddle") + 0.15 + d, 0.4));
+C.rules.forEach((t) => add("cardStamp", t, 1.0));
+[0.5, 0.15, 0, 0.3, 0.65].forEach((d) => add("flap", T("huddle") + 0.15 + d, 0.4));
 add("chirp", T("huddle") + 1.2, 0.5);
 add("chirp", L("c45") + 1.6, 0.6);
 

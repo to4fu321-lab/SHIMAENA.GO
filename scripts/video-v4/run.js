@@ -1,19 +1,19 @@
 // 場面を時間で切りかえて動かす。seek(t) は、そのコマの絵がそろったら終わる Promise を返す。
-const XF = 0.5; // 幕と幕のつなぎ（秒）
+const XF = 0.5; // 幕と幕のつなぎ（秒）。幕が xf を持っていればそちら（短い = ぱっと切りかわる、長い = ゆっくり溶ける）
 const actsEl = document.getElementById("acts");
 const RUN = ACTS.map((a, i) => {
   const root = $(`<div class="act" style="z-index:${i + 1}"></div>`);
   actsEl.append(root);
-  return { ...a, root, start: T(a.from), end: E(a.to), update: a.make(root) };
+  return { ...a, root, xf: a.xf ?? XF, start: T(a.from), end: E(a.to), update: a.make(root) };
 });
 function seek(t) {
   t = clamp(t, 0, TL.seconds - 0.001);
   let cur = null;
   RUN.forEach((a, i) => {
-    const on = t >= a.start && t < a.end + (i < RUN.length - 1 ? XF : 0);
+    const on = t >= a.start && t < a.end + (i < RUN.length - 1 ? RUN[i + 1].xf : 0);
     a.root.style.display = on ? "block" : "none";
     if (!on) return;
-    a.root.style.opacity = i === 0 ? 1 : clamp((t - a.start) / XF);
+    a.root.style.opacity = i === 0 ? 1 : clamp((t - a.start) / a.xf);
     const o = a.update(t) || {};
     if (t < a.end) cur = { a, o };
   });

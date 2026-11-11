@@ -1,5 +1,5 @@
 // 第5幕「くっついて乗り切る」: 枝の上でくっつくシマエナガ → 初雪（作者の写真）→ 題字。
-ACTS.push({ from: "huddle", to: "end", make(root) {
+ACTS.push({ from: "huddle", to: "end", xf: 1.1, make(root) {
   const KINDS = ["salvia", "marigold", "lamp", "lupinus", "ice"];
   root.innerHTML = `
     <div class="full" style="background:linear-gradient(180deg,#0a1420 0%,#16273c 55%,#263c58 100%)"></div>
@@ -18,10 +18,11 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
       </div>
     </div>
     <div class="full" id="a5e" style="opacity:0;background:linear-gradient(180deg,#15263b 0%,#34507a 62%,#e9a98a 135%)">
-      <div class="abs" id="a5row" style="left:0;right:0;top:92px;height:170px;display:flex;justify-content:center"></div>
-      <div class="abs" id="a5tag" style="left:0;right:0;top:290px;text-align:center;font-family:var(--min);font-size:112px;font-weight:700;letter-spacing:.06em;text-shadow:0 8px 40px rgba(0,0,0,.35)">寒い冬は、くっついて乗り切る。</div>
-      <div class="abs" id="a5logo" style="left:0;right:0;top:470px;text-align:center;font-size:150px;font-weight:900;letter-spacing:.02em">シマエナ<span style="color:#ffb37f">GO</span></div>
-      <div class="abs" id="a5qr" style="left:50%;top:690px;transform:translateX(-50%);display:flex;align-items:center;gap:26px;padding:16px 34px 16px 16px;border-radius:26px;background:#fff;color:#1e3346;box-shadow:0 18px 50px rgba(0,0,0,.35)"><img src="${ASSET.qr}" width="150" height="150"><div><div style="font-family:var(--sans);font-size:26px;font-weight:800;color:#c96a3a">登録なしで、いま触れます</div><div class="mono" style="font-size:38px;font-weight:800;margin-top:4px">shimaena-go.vercel.app</div></div></div>
+      <div class="abs" id="a5row" style="left:0;right:0;top:64px;height:170px;display:flex;justify-content:center"></div>
+      <div class="abs" id="a5tag" style="left:0;right:0;top:256px;text-align:center;font-family:var(--min);font-size:112px;font-weight:700;letter-spacing:.06em;text-shadow:0 8px 40px rgba(0,0,0,.35)">寒い冬は、くっついて乗り切る。</div>
+      <div class="abs" id="a5logo" style="left:0;right:0;top:426px;text-align:center;font-size:150px;font-weight:900;letter-spacing:.02em">シマエナ<span style="color:#ffb37f">GO</span></div>
+      <div class="abs" id="a5qr" style="left:50%;top:640px;transform:translateX(-50%);display:flex;align-items:center;gap:26px;padding:16px 34px 16px 16px;border-radius:26px;background:#fff;color:#1e3346;box-shadow:0 18px 50px rgba(0,0,0,.35)"><img src="${ASSET.qr}" width="150" height="150"><div><div style="font-family:var(--sans);font-size:26px;font-weight:800;color:#c96a3a">登録なしで、いま触れます</div><div class="mono" style="font-size:38px;font-weight:800;margin-top:4px">shimaena-go.vercel.app</div></div></div>
+      <div class="abs" id="a5meta" style="left:0;right:0;top:850px;text-align:center;font-family:var(--sans);font-size:28px;font-weight:700;color:rgba(255,255,255,.88)">この動画も、「全て Claude の自由に」と頼まれて、Claude が1から作りました。</div>
     </div>`;
   const q = (s) => root.querySelector(s);
   const H = q("#a5h"), birdsEl = q("#a5birds"), Pp = q("#a5p"), Ee = q("#a5e"), img = q("#a5img"), row = q("#a5row");
@@ -54,6 +55,7 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
     show(q("#a5tag"), t, c43 - 0.15, { dy: 30, d: 0.8 });
     show(q("#a5logo"), t, c44 - 0.25, { scale: 0.8, ease: Ease.back, d: 0.6 });
     const qr = q("#a5qr"), kq = pr(t, c44 + 0.7, 0.6); qr.style.opacity = kq; qr.style.transform = `translateX(-50%) translateY(${(1 - kq) * 26}px)`;
+    show(q("#a5meta"), t, c44 + 1.3, { dy: 0 });
     const hop = t > c45 ? Math.abs(Math.sin((t - c45) * 6)) * Math.exp(-(t - c45) * 0.9) * 26 : 0;
     row.style.opacity = pr(t, c43 - 0.3, 0.6); row.style.transform = `translateY(${-hop}px)`;
     return { note: t >= te ? "声: Tαkoe:AivisSpeech:雪降白華（合成音声・アプリの隊長と同じ声）／音楽・効果音: アプリと同じ Web Audio 合成／地図: © OpenStreetMap contributors／画面の町と人は架空です" : "" };

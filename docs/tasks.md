@@ -321,3 +321,4 @@
 - [x] **T143 紹介動画 v4（3分）** — 語り手をアプリの中の AI「シマエナ隊長」にした 2分58秒の動画を、1から作る（`scripts/video-v4/`: 台本 `script.cjs`・声 `narrate.cjs`・録画 `record.cjs`・絵 `act1〜5*.js`・音楽 `score.cjs`・通し `make.cjs`）。声はアプリの隊長と同じ声。「ありがとう」は合成せず、5秒を空ける。説明は `docs/video/v4.md`。
   完了条件: `docs/video/shimaena-go-taicho.mp4` が 180 秒以内・1920×1080・音つきでできる。`node scripts/video-v4/make.cjs` で作り直せる。
   残り（本人）: 見て、どちらの版（v3・v4）を使うか決める／Claude の鍵を入れて画面を撮り直す（いまは鍵なしの見本の答え。手順は `docs/video/v4.md`）。
+- [x] **T144 紹介動画 v4 の直し（11/11）** — 「掘る」→「雪かき」／ソロ活動・バトン・なかまの場面を足す／音と絵に緩急（`docs/video/v4.md` の「緩急」）。
