@@ -19,7 +19,9 @@ const music = [];
 music.push({ kind: "swell", at: 0.2, dur: T("quiet") + 1.5, gain: 0.9, fadeIn: 1.0, fadeOut: 2.0 });
 const preAt = T("quiet") + 0.3, preN = Math.max(4, Math.floor((L("c12") - preAt) / BAR.prelude));
 music.push({ kind: "prelude", at: preAt, n: preN, gain: 1.15, fadeIn: 1.0, fadeOut: 2.4 });
-music.push({ kind: "fanfare", at: L("c13") - 0.2, gain: 1.1 });
+// 題字の前に、ためてから鳴らす（抑揚: 静か → ためる → 開く）
+music.push({ kind: "riser", at: L("c13") - 0.2 - 1.6, dur: 1.6, gain: 0.8 });
+music.push({ kind: "fanfare", at: L("c13") - 0.2, gain: 1.2 });
 const mEnd = C.goTap - 0.12, mN = Math.max(2, Math.min(8, Math.floor((mEnd - (L("c13") + 1.6)) / BAR.morning)));
 music.push({ kind: "song", song: "morning", at: mEnd - mN * BAR.morning, bars: seq(mN, (i) => i), gain: 1.0, fadeIn: 0.8 });
 music.push({ kind: "riser", at: C.goTap - 1.55, dur: 1.5, gain: 0.9 });
@@ -29,11 +31,13 @@ music.push({ kind: "song", song: "clear", intro: true, at: C.clear + 0.05, bars:
 music.push({ kind: "swell", at: T("blank") - 0.8, dur: E("blank") - T("blank") + 1.6, gain: 0.55, fadeIn: 1.2, fadeOut: 1.2 });
 const kAt = T("maker") + 0.3, kUntil = T("rules") + 0.5, kN = Math.ceil((kUntil - kAt) / BAR.mission);
 music.push({ kind: "song", song: "mission", at: kAt, bars: seq(kN, (i) => (i < 6 ? i % 4 : 4 + ((i - 6) % 4))), gain: 0.78, fadeIn: 0.5, until: kUntil, untilFade: 1.2 });
+music.push({ kind: "riser", at: L("c37") - 0.25 - 1.4, dur: 1.4, gain: 0.6 });
 music.push({ kind: "warm", at: L("c37") - 0.25, dur: T("huddle") - L("c37") + 1.0, gain: 1.15 });
 const hAt = T("huddle") + 0.2, endAt = L("c43") - 0.2, wideN = Math.max(2, Math.min(4, Math.round((T("firstsnow") + 1.0 - hAt) / BAR.clear)));
 music.push({ kind: "song", song: "clear", at: hAt, bars: seq(wideN, (i) => 12 + i), gain: 1.05, fadeIn: 0.6 });
 const qAt = hAt + wideN * BAR.clear;
 if (endAt - qAt > 1.2) music.push({ kind: "song", song: "clear", at: qAt, bars: seq(Math.ceil((endAt - qAt) / BAR.clear), (i) => 8 + (i % 4)), gain: 1.0, until: endAt, untilFade: 0.8 });
+music.push({ kind: "riser", at: endAt - 1.5, dur: 1.5, gain: 0.75 });
 music.push({ kind: "ending", at: endAt, dur: Math.max(5, TL.seconds - endAt - 0.1), gain: 1.2 });
 
 // 効果音（アプリが鳴らすのと同じ音を、同じ瞬間に）
@@ -54,6 +58,17 @@ add("tap", C.cardTap, 0.7); add("cardFlip", C.cardTap + 0.5, 0.7); add("cardSpar
 const vPass = L("c51") + 0.55; add("tap", vPass, 0.7); add("send", vPass + 0.12, 0.8); add("message", vPass + 1.0, 0.7); add("quizOk", vPass + 1.25, 0.45);
 const d53 = LE("c53") - L("c53"); add("toast", T("nakama") + 0.7, 0.45);
 [0, 1, 2, 3].forEach((w) => add(w === 3 ? "cheer" : "countPop", L("c53") + 0.15 + (w * (d53 + 0.5)) / 4 + 0.15, w === 3 ? 0.5 : 0.55));
+// 隊長トーク（送る → 調べる → 答えが届く）・ソロ（GO → 点が入る）。時刻は act2b-tsunagu.js と同じ式
+const c60 = L("c60"), vSend = c60 + 0.9, vAns = c60 + (LE("c60") - c60) * 0.6;
+add("send", vSend, 0.8); [0, 1, 2].forEach((i) => add("countTick", vSend + 0.55 + i * 0.42, 0.5)); add("message", vAns, 0.9);
+const c61 = L("c61"), vGo = c61 + (LE("c61") - c61) * 0.42;
+add("go", vGo, 0.7); [0.35, 0.6, 0.85, 1.1].forEach((d) => add("countTick", vGo + d, 0.45)); add("countPop", vGo + 1.35, 0.6);
+// 数字（94%・68%）: 上がっていく間はカチカチ、止まったらポン
+[[L("c09") + 0.9, 1.6], [L("c10") + 0.1, 1.4]].forEach(([at, d]) => { for (let i = 0; i < 9; i++) add("countTick", at + (d * (1 - Math.pow(1 - i / 9, 2))) * 0.8, 0.32); add("countPop", at + d * 0.85, 0.6); });
+// これから（ご近所 → 町内会 → 行政）
+[T("gov") + 0.5, L("c62") + 0.7, L("c62") + 2.0].forEach((t, i) => add(i === 2 ? "quizOk" : "toast", t, 0.5));
+// カメラが切り替わる所に、小さな風切り音
+for (const s of TL.scenes) if (s.start > 1 && !["thanks", "blank", "quiet", "huddle", "end"].includes(s.id)) add("cardRise", s.start - 0.12, 0.28);
 add("tap", L("c26") + 0.9, 0.6); add("tap", L("c27") + 0.3, 0.6);
 const d32 = LE("c32") - L("c32"); [0, 0.3, 0.66].forEach((k) => add("countPop", L("c32") + d32 * k, 0.55));
 add("toast", L("c33") - 0.1, 0.45);

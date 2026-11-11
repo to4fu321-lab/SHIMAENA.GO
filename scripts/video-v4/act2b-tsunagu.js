@@ -1,6 +1,6 @@
 // 第2幕のつづき「つながる」: バトン（途中まででも、次の人へ）と、なかま帳（一緒に雪かきをした人が残る。ひと冬で顔見知りが増える）。
 // 11/11 本人「バトンや仲間の話もして欲しい、出会い繋がりができることを」。スマホの中は本物のアプリの録画。
-ACTS.push({ from: "baton", to: "nakama", make(root) {
+ACTS.push({ from: "chat", to: "nakama", make(root) {
   const PW = 366, PY = 134;
   root.innerHTML = `
     <div class="full" style="background:linear-gradient(180deg,#fdebdc 0%,#fff6ee 55%,#fbe6d6 100%)"></div>
@@ -14,6 +14,35 @@ ACTS.push({ from: "baton", to: "nakama", make(root) {
   const has = (r) => !!REC[r];
   const tB = T("baton"), tN = T("nakama"), tE = E("nakama");
   const c50 = L("c50"), c51 = L("c51"), c52 = L("c52"), c53 = L("c53"), d53 = LE("c53") - c53;
+
+  // ── 隊長トーク（迷ったら聞く。公開版では本物の Claude が、天気と道を確かめてから答える）──
+  const tC = T("chat"), tS = T("solo"), c60 = L("c60"), e60 = LE("c60"), c61 = L("c61"), e61 = LE("c61");
+  const pC = has("chat") ? add(phone("chat", "a", { w: PW, label: lab("田中さん → 隊長トーク") })) : null;
+  const cTxt = panel(690, 150, 1160, `<div class="kick">隊長トーク</div><div class="head" style="margin-top:8px;font-size:74px;white-space:nowrap">迷ったら、隊長に聞く。</div>`);
+  const cm = pC ? REC.chat.marks : {};
+  const cAns = cm.answer?.box ? (() => { const b = cm.answer.box, pad = 10, x0 = Math.max(0, b.x - pad), y0 = Math.max(50, b.y - pad), x1 = Math.min(390, b.x + b.w + pad), y1 = Math.min(770, b.y + b.h + pad); return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; })() : null;
+  const cW = cAns ? Math.round(cAns.w * Math.min(560 / cAns.w, 380 / cAns.h)) : 0;
+  const lAns = cAns ? add(lens("chat", "a", cAns, cW)) : null;
+  const cQ = panel(700, 318, 700, `<div style="display:inline-block;white-space:nowrap;background:#b9e88f;color:#1e3346;border-radius:28px 28px 6px 28px;padding:14px 28px;font-family:var(--sans);font-size:32px;font-weight:800;box-shadow:0 12px 30px rgba(60,90,40,.18)">「10分しかないけど、行ってもいい？」</div>`);
+  const cSteps = ["天気と道を確かめる", "今朝の町を調べる", "返事を書く"].map((w, i) => panel(1320, 322 + i * 84, 540, `<span class="chip" style="background:#fff;color:#1e3346;font-size:30px;padding:12px 26px;box-shadow:0 10px 24px rgba(120,70,30,.14)"><b style="color:#c96a3a;margin-right:10px">${i + 1}</b>${w}</span>`));
+  const cLab = panel(700, 418, 600, `<span class="chip" style="background:#1e3346;color:#fff;font-size:24px;padding:6px 20px">隊長の答え（そのままの画面）</span>`);
+  const cRule = panel(1320, 600, 540, `<div class="body" style="font-size:25px;color:#7a6a5e">段取りと作業の話だけ。<br>体調や医療のことは、判断しません。</div>`);
+  const cSend = cm.send ? cm.send.t : 5, cAt = cm.answer ? cm.answer.t : cSend + 4, vSend = c60 + 0.9, vAns = c60 + (e60 - c60) * 0.6;
+  const cPts = pC ? [[tC, (cm.focus?.t ?? 2) - 0.6], [vSend - 0.45, (cm.typed?.t ?? 4) + 0.1], [vSend, cSend], [vSend + 0.5, cSend + 0.9], [vAns - 0.45, cSend + 7.5], [vAns - 0.43, cAt - 0.5], [tS + 0.5, cAt + (tS + 0.5 - vAns) + 0.4]] : [];
+
+  // ── ソロミッション（行けない朝は、自分の家の前でもいい）──
+  const pS = has("solo") ? add(phone("solo", "a", { w: PW, label: lab("田中さんの「ソロミッション」") })) : null;
+  const sTxt = panel(690, 150, 1160, `<div class="kick">ソロミッション</div><div class="head" style="margin-top:8px;font-size:70px;white-space:nowrap">行けない朝は、<span style="color:#c96a3a">自分の家の前</span>でも。</div>`);
+  const sm = pS ? REC.solo.marks : {};
+  const sNum = panel(700, 350, 1150, `<div style="display:flex;gap:34px">
+      <div class="card" style="position:relative;flex:1;padding:26px 34px"><div class="kick" style="font-size:24px">あなたに</div><div style="font-family:var(--maru);font-weight:900;color:#c96a3a;line-height:1.05"><span style="font-size:56px">+</span><span id="tbS1" style="font-size:150px">0</span><span style="font-size:52px"> 羽</span></div></div>
+      <div class="card" style="position:relative;flex:1;padding:26px 34px"><div class="kick" style="font-size:24px">チームに</div><div style="font-family:var(--maru);font-weight:900;color:#2F6FE4;line-height:1.05"><span style="font-size:56px">+</span><span id="tbS2" style="font-size:150px">0</span><span style="font-size:52px"> 点</span></div></div>
+    </div>`);
+  const sBar = panel(700, 640, 1150, `<div style="font-family:var(--sans);font-size:26px;font-weight:800;color:#4a637a;margin-bottom:10px">チームの得点（みんなの10分 ＋ ひとりの雪かき）</div><div style="height:30px;border-radius:15px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(47,111,228,.2)"><div id="tbSb" style="height:100%;width:0;border-radius:15px;background:linear-gradient(90deg,#2F6FE4,#7FA6F0)"></div></div>`);
+  const sSteps = panel(700, 750, 1150, `<div style="display:flex;gap:16px">${["📷 雪を撮る", "🧹 雪かき", "✨ 撮って報告"].map((w) => `<span class="chip" style="background:#fff;color:#1e3346;font-size:30px;padding:10px 26px;box-shadow:0 10px 24px rgba(120,70,30,.14)">${w}</span>`).join("")}</div>`);
+  const s1 = q("#tbS1"), s2 = q("#tbS2"), sb = q("#tbSb");
+  const sGo = sm.go ? sm.go.t : 6, vGo = c61 + (e61 - c61) * 0.42;
+  const sPts = pS ? [[tS, (sm.next0?.t ?? 2) - 0.5], [tS + 0.9, (sm.card?.t ?? 3) + 0.3], [vGo - 0.4, sGo - 0.4], [vGo + 0.5, sGo + 0.5], [tB + 0.5, (sm.started?.t ?? sGo + 3) + 1.5]] : [];
 
   // ── バトン ──
   const pA = has("baton") ? add(phone("baton", "a", { w: PW, label: lab("田中さん（途中で時間切れ）") })) : null;
@@ -58,8 +87,28 @@ ACTS.push({ from: "baton", to: "nakama", make(root) {
   const slide = (t, a) => (1 - pr(t, a, 0.6, Ease.out5)) * 70;
   return (t) => {
     sn.update(t, 0.6);
+    // 隊長トーク
+    let o = seg(t, tC - 0.1, tS + 0.25);
+    if (pC) { pC.at(250 - slide(t, tC), PY, { op: o }); pC.frame(kf(t, cPts, Ease.lin)); }
+    cTxt.style.opacity = o; cTxt.style.transform = `translateX(${slide(t, tC + 0.15)}px)`;
+    show(cQ, t, vSend + 0.1, { scale: 0.8, ease: Ease.back }); cQ.style.opacity = o * pr(t, vSend + 0.1, 0.3);
+    cSteps.forEach((el, i) => { show(el, t, vSend + 0.55 + i * 0.42, { dx: 30, dy: 0 }); el.style.opacity = o * pr(t, vSend + 0.55 + i * 0.42, 0.3) * (t > vAns ? 0.55 : 1); });
+    show(cLab, t, vAns - 0.1, { dy: 10 }); cLab.style.opacity = o * pr(t, vAns - 0.1, 0.3);
+    if (lAns) { lAns.at(700, 470, { op: o * pr(t, vAns, 0.35), scale: lerp(0.85, 1, pr(t, vAns, 0.55, Ease.back)) }); lAns.frame(Math.max(kf(t, cPts, Ease.lin), cAt + 0.3)); }
+    show(cRule, t, vAns + 0.5, { dy: 12 }); cRule.style.opacity = o * pr(t, vAns + 0.5, 0.3);
+
+    // ソロ
+    o = seg(t, tS, tB + 0.25);
+    if (pS) { pS.at(250 - slide(t, tS), PY, { op: o }); pS.frame(kf(t, sPts, Ease.lin)); }
+    sTxt.style.opacity = o; sTxt.style.transform = `translateX(${slide(t, tS + 0.15)}px)`;
+    const sk = pr(t, vGo + 0.25, 1.1, Ease.out5);
+    show(sNum, t, c61 + 0.3, { dy: 30 }); sNum.style.opacity = o * pr(t, c61 + 0.3, 0.35);
+    s1.textContent = Math.round(8 * sk); s2.textContent = Math.round(5 * sk);
+    show(sBar, t, vGo + 0.1, { dy: 16 }); sBar.style.opacity = o * pr(t, vGo + 0.1, 0.3); sb.style.width = lerp(46, 64, sk) * pr(t, vGo + 0.1, 0.6) + "%";
+    show(sSteps, t, c61 + 0.9, { dy: 16 }); sSteps.style.opacity = o * pr(t, c61 + 0.9, 0.3);
+
     // バトン
-    let o = seg(t, tB - 0.1, tN + 0.25);
+    o = seg(t, tB, tN + 0.25);
     if (pA) { pA.at(250 - slide(t, tB), PY, { op: o }); pA.frame(kf(t, bPts, Ease.lin)); }
     if (pB) { pB.at(1300 + slide(t, tB + 0.2), PY, { op: o * (0.45 + 0.55 * pr(t, vPass + 0.7, 0.4)) }); pB.frame(kf(t, [[vPass + 0.6, 0.2], [vPass + 0.9, gTab - 0.3], [vPass + 1.6, gTab + 0.5], [tN + 0.5, gTab + 3.2]], Ease.lin)); }
     bTxt.style.opacity = o; bTxt.style.transform = `translateX(${slide(t, tB + 0.15)}px)`;
@@ -92,6 +141,6 @@ ACTS.push({ from: "baton", to: "nakama", make(root) {
     weekEl.style.opacity = o * pr(t, c53 - 0.1, 0.3); wk.textContent = w >= 3 ? "ひと冬" : `第${Math.max(0, w) + 1}週`;
     wk.style.transform = `scale(${1 + Math.max(0, 1 - Math.abs(t - wT(Math.max(0, w)) - 0.15) * 5) * 0.2})`;
     count.style.opacity = o * pr(t, c53 - 0.1, 0.3); cnt.textContent = met;
-    return { dark: true, note: "※ スマホの中は実際のアプリの録画です。右の図は、ひと冬で知り合いが増えていくイメージ" };
+    return { dark: true, note: t < tS ? (REC._meta?.prod ? "※ スマホの中は、公開中のアプリの録画です（隊長の答えは本物の Claude。待ち時間は早送り）" : "※ スマホの中は実際のアプリの録画です（隊長の答えは、API キーなしのときの見本）") : t < tN ? "※ スマホの中は実際のアプリの録画です" : "※ スマホの中は実際のアプリの録画です。右の図は、ひと冬で知り合いが増えていくイメージ" };
   };
 } });

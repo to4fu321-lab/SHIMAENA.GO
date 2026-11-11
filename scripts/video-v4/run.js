@@ -15,6 +15,7 @@ function seek(t) {
     if (!on) return;
     a.root.style.opacity = i === 0 ? 1 : clamp((t - a.start) / XF);
     const o = a.update(t) || {};
+    applyCamera(a.root, t);
     if (t < a.end) cur = { a, o };
   });
   const o = cur ? cur.o : {};

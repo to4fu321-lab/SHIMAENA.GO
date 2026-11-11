@@ -17,6 +17,16 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
         <div id="a5c" style="font-family:var(--sans);font-size:24px;font-weight:600;color:rgba(255,255,255,.6);margin-top:40px">写真: 作者が撮った、その朝の公園</div>
       </div>
     </div>
+    <div class="full" id="a5g" style="opacity:0;background:linear-gradient(180deg,#0f2034 0%,#1d3554 60%,#2c4a70 100%)">
+      <div class="abs" style="left:0;right:0;top:86px;text-align:center"><span class="chip" style="background:#ffd59a;color:#1e3346;font-size:30px;padding:8px 28px">これから</span></div>
+      <div class="abs" id="a5gh" style="left:0;right:0;top:140px;text-align:center;font-size:84px;font-weight:900;letter-spacing:.02em">まず、一つの町内で。<span style="color:#ffd59a">その先へ。</span></div>
+      <svg class="abs" style="left:0;top:0;overflow:visible" width="1920" height="1080">
+        <path class="a5gl" d="M600 590 L750 590" fill="none" stroke="#ffd59a" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        <path class="a5gl" d="M1170 590 L1320 590" fill="none" stroke="#ffd59a" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+      ${[["ご近所", "シマエナGO", "雪の朝の10分", 180, "#fff", "#1e3346"], ["町内会", "除雪の当番・見守り", "誰の家がまだか、地図で共有", 750, "#ffe9cf", "#1e3346"], ["行政", "道路の除雪・福祉除雪", "担い手不足を、近所の力で補う", 1320, "#d7e8ff", "#1e3346"]].map(([a, b, c, x, bg, fg], i) => `<div class="abs a5gn" style="left:${x}px;top:380px;width:420px;height:420px;border-radius:44px;background:${bg};color:${fg};box-shadow:0 26px 60px rgba(0,0,0,.35);text-align:center;padding-top:${i === 0 ? 24 : 54}px">${i === 0 ? `<div style="height:120px;display:flex;justify-content:center">${mascot(SCARF.lamp, 120, "happy")}</div>` : `<div style="font-size:96px;line-height:1.1">${i === 1 ? "🏘️" : "🏛️"}</div>`}<div style="font-size:${i === 0 ? 60 : 72}px;font-weight:900;margin-top:${i === 0 ? 0 : 10}px">${a}</div><div style="font-family:var(--sans);font-size:32px;font-weight:800;margin-top:6px;color:#4a637a">${b}</div><div style="font-family:var(--sans);font-size:25px;font-weight:700;margin-top:12px;color:#7a6a5e;padding:0 16px;line-height:1.4">${c}</div></div>`).join("")}
+      <div class="abs" id="a5gf" style="left:0;right:0;top:268px;text-align:center;font-family:var(--sans);font-size:38px;font-weight:700;color:#dbe7f1">近所の10分が、町の除雪のすき間をうめる。</div>
+    </div>
     <div class="full" id="a5e" style="opacity:0;background:linear-gradient(180deg,#15263b 0%,#34507a 62%,#e9a98a 135%)">
       <div class="abs" id="a5row" style="left:0;right:0;top:92px;height:170px;display:flex;justify-content:center"></div>
       <div class="abs" id="a5tag" style="left:0;right:0;top:290px;text-align:center;font-family:var(--min);font-size:112px;font-weight:700;letter-spacing:.06em;text-shadow:0 8px 40px rgba(0,0,0,.35)">寒い冬は、くっついて乗り切る。</div>
@@ -28,13 +38,13 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
   const sn = snow(51, 200, { size: 4.2 }); root.append(sn);
   const birds = KINDS.map((k, i) => { const el = $(`<div class="abs" style="width:230px;height:230px;transform-origin:50% 88%"></div>`); el.set = (m) => { if (el._m !== m) { el._m = m; el.innerHTML = mascot(SCARF[k], 230, m); } }; el.set("normal"); birdsEl.append(el); return el; });
   row.innerHTML = KINDS.map((k, i) => `<div style="margin:0 -22px;transform:translateY(${[10, 0, -8, 0, 10][i]}px) rotate(${(i - 2) * 3}deg)">${mascot(SCARF[k], 170, "happy")}</div>`).join("");
-  const th = T("huddle"), tf = T("firstsnow"), te = T("end"), tE = E("end"), c40 = L("c40"), c41 = L("c41"), c42 = L("c42"), c43 = L("c43"), c44 = L("c44"), c45 = L("c45");
+  const th = T("huddle"), tf = T("firstsnow"), tg = T("gov"), te = T("end"), tE = E("end"), c40 = th + 0.1, c41 = L("c41"), c62 = L("c62"), Gg = q("#a5g"), gl = [...root.querySelectorAll(".a5gl")], gn = [...root.querySelectorAll(".a5gn")], c43 = L("c43"), c44 = L("c44"), c45 = L("c45");
   const branchY = (x) => 678 - (x - 300) * 0.045;
   return (t) => {
     sn.update(t, t < te ? 1 : 0.6);
     H.style.opacity = 1 - pr(t, tf - 0.1, 0.6, Ease.lin);
     // 1羽ずつ飛んできて、まん中へ寄ってくっつく
-    const sq = pr(t, c40 + (LE("c40") - c40) * 0.45, 1.3, Ease.io);
+    const sq = pr(t, c40 + 0.9, 1.1, Ease.io);
     birds.forEach((b, i) => {
       const at = th + 0.15 + [0.5, 0.15, 0, 0.3, 0.65][i], f = pr(t, at, 0.95, Ease.out), land = at + 0.95;
       const tx = 960 - 115 + (i - 2) * lerp(196, 136, sq), ty = branchY(tx + 115) - 205;
@@ -45,10 +55,17 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
       b.style.zIndex = 5 - Math.abs(i - 2);
     });
     // 初雪
-    Pp.style.opacity = win(t, tf - 0.1, tf + 0.6, te - 0.1, te + 0.6);
+    Pp.style.opacity = win(t, tf - 0.1, tf + 0.6, tg - 0.1, tg + 0.5);
     img.style.transform = `scale(${1 + clamp((t - tf) / 9) * 0.1})`;
     q("#a5card").style.transform = `rotate(${-2.2 + pr(t, tf, 1.2) * 0.8}deg) translateY(${(1 - pr(t, tf, 0.9, Ease.out5)) * 60}px)`;
-    show(q("#a5d"), t, c41 - 0.2); show(q("#a5f"), t, c41 + 0.5, { dy: 30 }); show(q("#a5n"), t, c42 - 0.1, { dy: 30 }); show(q("#a5c"), t, c41 + 1.2, { dy: 0 });
+    show(q("#a5d"), t, c41 - 0.2); show(q("#a5f"), t, c41 + 0.5, { dy: 30 }); show(q("#a5n"), t, c41 + 1.9, { dy: 30 }); show(q("#a5c"), t, c41 + 1.2, { dy: 0 });
+    // これから: ご近所 → 町内会 → 行政（構想）
+    Gg.style.opacity = win(t, tg - 0.1, tg + 0.5, te - 0.1, te + 0.6);
+    show(q("#a5gh"), t, tg + 0.25, { dy: 30 });
+    const gT = [tg + 0.5, c62 + 0.7, c62 + 2.0];
+    gn.forEach((n, i) => show(n, t, gT[i], { scale: 0.7, ease: Ease.back, d: 0.6 }));
+    gl.forEach((l, i) => l.setAttribute("stroke-dashoffset", (1 - pr(t, gT[i + 1] - 0.45, 0.5, Ease.io)).toFixed(3)));
+    show(q("#a5gf"), t, c62 + 2.6, { dy: 16 });
     // 題字
     Ee.style.opacity = pr(t, te - 0.1, 0.7, Ease.lin);
     show(q("#a5tag"), t, c43 - 0.15, { dy: 30, d: 0.8 });
@@ -56,6 +73,6 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
     const qr = q("#a5qr"), kq = pr(t, c44 + 0.7, 0.6); qr.style.opacity = kq; qr.style.transform = `translateX(-50%) translateY(${(1 - kq) * 26}px)`;
     const hop = t > c45 ? Math.abs(Math.sin((t - c45) * 6)) * Math.exp(-(t - c45) * 0.9) * 26 : 0;
     row.style.opacity = pr(t, c43 - 0.3, 0.6); row.style.transform = `translateY(${-hop}px)`;
-    return { note: t >= te ? "声: 合成音声（AivisSpeech モデル「まい」）／音楽・効果音: アプリと同じ Web Audio 合成／地図: © OpenStreetMap contributors／画面の町と人は架空です" : "" };
+    return { note: t >= tg && t < te ? "※ 町内会・行政との連携は、これからの構想です（いまのアプリには、まだありません）" : t >= te ? "声: 合成音声（AivisSpeech モデル「まい」）／音楽・効果音: アプリと同じ Web Audio 合成／地図: © OpenStreetMap contributors／画面の町と人は架空です" : "" };
   };
 } });

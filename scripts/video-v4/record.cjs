@@ -307,6 +307,54 @@ const want = (name) => !ONLY || ONLY.includes(name);
       await sleep(6500);
     }, { settle: 2000 });
 
+    // ---- 4a) 隊長トーク: 文字で聞く → 隊長（Claude）が答える ----
+    await record("chat", [{ key: "a", url: "/chat?as=h1" }], async ({ page, mark, tap }) => {
+      await sleep(1200);
+      await page.evaluate(`(() => { const el = ${chatScroller}; if (el) el.scrollTop = el.scrollHeight; })()`); await sleep(500);
+      const box = page.getByPlaceholder("隊長に話す");
+      await tap("focus", box); await sleep(300);
+      const count = () => page.evaluate(() => document.querySelectorAll("main *").length);
+      await box.pressSequentially("10分しかないけど、行ってもいい？", { delay: 85 });
+      mark("typed"); await sleep(500);
+      const n0 = await count();
+      await tap("send", page.getByRole("button", { name: "送る" }).first());
+      await sleep(1500);
+      // 返事が届くまで待つ（本番は Claude。通信が切れた表示が出たら開き直す。返事は保存されている）
+      const t0 = Date.now(); let n1 = await count();
+      for (let i = 0; i < 600; i++) {
+        if (await page.getByText(/うまくいきませんでした/).count()) { console.log("  （トークを開き直す）"); await sleep(PROD ? 25000 : 500); await page.reload({ waitUntil: "networkidle" }); await sleep(1500); break; }
+        const n = await count(); const busy = await page.getByText(/隊長が.*(見て|調べて|考えて)|返事を書いて/).count();
+        if (n !== n1) { n1 = n; } else if (n > n0 + 2 && !busy && Date.now() - t0 > 2500) break;
+        await sleep(300);
+      }
+      await page.evaluate(`(() => { const el = ${chatScroller}; if (el) el.scrollTop = el.scrollHeight; })()`); await sleep(600);
+      const ans = await page.evaluate(() => {
+        const main = document.querySelector("main") || document.body;
+        const me = [...main.querySelectorAll("*")].filter((e) => e.children.length === 0 && /10分しかないけど/.test(e.textContent)).at(-1);
+        if (!me) return null;
+        const after = [...main.querySelectorAll("p, span, div")].filter((e) => e.children.length === 0 && e.textContent.trim().length > 8 && (me.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING) && e.getBoundingClientRect().top > 40 && e.getBoundingClientRect().bottom < 760);
+        if (!after.length) return null;
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+        for (const e of after.slice(0, 4)) { const r = e.getBoundingClientRect(); x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom); }
+        return { box: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, text: after.slice(0, 4).map((e) => e.textContent.trim()).join(" / ").slice(0, 200) };
+      });
+      mark("answer", ans ? { box: ans.box } : {});
+      console.log("  隊長の答え:", ans?.text ?? "（見つからず）");
+      await sleep(4500);
+    }, { settle: 1500 });
+
+    // ---- 4a') ソロミッション: 自分の家の雪かきでもいい ----
+    await record("solo", [{ key: "a", url: "/solo?as=h1" }], async ({ page, mark, tap }) => {
+      await sleep(1500);
+      for (let i = 0; i < 3 && !(await page.getByRole("button", { name: /雪かきGO/ }).isVisible().catch(() => false)); i++) { await tap("next" + i, page.locator("button", { hasText: /^›$/ }).last()); await sleep(900); }
+      const card = await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find((e) => /雪かきGO/.test(e.textContent)); let el = b; for (let i = 0; i < 6 && el; i++) { el = el.parentElement; if (el && /自分の家の雪かき/.test(el.textContent)) break; } const r = (el || b)?.getBoundingClientRect(); return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null; });
+      mark("card", card ? { box: card } : {});
+      await sleep(2600);
+      await tap("go", page.getByRole("button", { name: /雪かきGO/ }).first()); await sleep(3500);
+      mark("started");
+      await sleep(2500);
+    }, { settle: 1500 });
+
     // ---- 4b) 次の人へバトン（途中まででも渡せる）→ 近所の人の画面に届く ----
     await record("baton", [{ key: "a", url: "/connect?as=h1" }], async ({ page, tap, mark }) => {
       await sleep(1000);

@@ -99,22 +99,25 @@ ACTS.push({ from: "hello", to: "title", make(root) {
       <path d="M648 700 C760 626 812 556 842 474" fill="none" stroke="#f4f8fb" stroke-width="11" stroke-linecap="round"/><path d="M292 772 C318 700 292 646 246 598" fill="none" stroke="#f4f8fb" stroke-width="10" stroke-linecap="round"/>
     </svg></div>
     <div class="abs" id="a1tag" style="left:1010px;top:300px"><span class="chip" style="background:rgba(255,255,255,.94);color:#1e3346;font-size:34px;padding:12px 30px;box-shadow:0 12px 30px rgba(0,0,0,.3)">${SPARK("#e8834f", 44)} 中身は Claude</span></div>
-    <div class="abs" id="a1ten" style="left:1010px;top:270px;width:860px"><div style="font-size:54px;font-weight:700;color:#dbe7f1;letter-spacing:.04em">ある雪の朝の、</div><div style="font-size:150px;font-weight:900;line-height:1.1;letter-spacing:.01em">10<span style="font-size:96px">分間</span><span style="font-size:70px;font-weight:700;color:#dbe7f1">の話。</span></div>
+    <div class="abs" id="a1ten" style="left:1010px;top:270px;width:860px"><div style="font-size:60px;font-weight:800;color:#dbe7f1;letter-spacing:.03em;line-height:1.35">雪かきを、<br>ご近所と出会う</div><div style="font-size:150px;font-weight:900;line-height:1.1;letter-spacing:.01em;color:#ffd59a">10<span style="font-size:96px">分</span><span style="font-size:70px;font-weight:800;color:#fff">に変える。</span></div>
       <div class="chip mono" style="margin-top:22px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.2);font-size:28px">12月14日（月）　AM 6:30　積雪 12cm</div></div>`;
   const cap = captain(390); cap.style.left = "0px"; cap.style.top = "0px"; fg.append(cap);
   const branch = q("#a1branch"), tag = q("#a1tag"), ten = q("#a1ten");
 
   // ── 文字 ──
   txt.innerHTML = `
-    <div class="abs" id="a1n" style="left:0;right:0;top:200px;display:flex;justify-content:center;gap:150px">
-      <div id="a1n1" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#ffcfae"><span id="a1v1">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">雪かきの手伝いを頼む世帯のうち、<br><b style="color:#ffcfae">70歳以上だけ</b>の世帯</div></div>
-      <div id="a1n2" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#a9d3e6"><span id="a1v2">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">手伝う近所の人のうち、<br><b style="color:#a9d3e6">70歳以上</b>の人</div></div>
+    <div class="abs" id="a1n" style="left:0;right:0;top:160px;display:flex;justify-content:center;gap:150px">
+      <div id="a1n1" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#ffcfae"><span id="a1v1">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">雪かきの手伝いを頼む世帯のうち、<br><b style="color:#ffcfae">70歳以上だけ</b>の世帯</div><div class="a1pg" data-n="9.4" data-c="#ffcfae" style="margin-top:22px;display:flex;justify-content:center;gap:10px"></div></div>
+      <div id="a1n2" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#a9d3e6"><span id="a1v2">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">手伝う近所の人のうち、<br><b style="color:#a9d3e6">70歳以上</b>の人</div><div class="a1pg" data-n="6.8" data-c="#a9d3e6" style="margin-top:22px;display:flex;justify-content:center;gap:10px"></div></div>
     </div>
     <div class="abs" id="a1src" style="left:0;right:0;top:92px;text-align:center;font-family:var(--sans);font-size:21px;font-weight:600;color:rgba(255,255,255,.62);line-height:1.6">出典: 札幌市社会福祉協議会「令和5年度 福祉除雪事業アンケート調査」（福祉除雪の利用世帯）／札幌市保健福祉局「福祉除雪事業の見直し（案）」2025年12月（地域協力員）</div>
     <div class="abs" id="a1k" style="left:0;right:0;top:120px;text-align:center"><div id="a1k1" style="font-size:66px;font-weight:700;color:#e3edf5">足りないのは、</div><div id="a1k2" style="font-size:170px;font-weight:900;line-height:1.25;letter-spacing:.04em;color:#ffd59a;text-shadow:0 0 60px rgba(255,180,90,.45)">きっかけ。</div></div>
     <div class="abs" id="a1t" style="left:0;right:0;top:92px;text-align:center"><div id="a1logo" style="font-size:190px;font-weight:900;line-height:1.1;letter-spacing:.02em;text-shadow:0 10px 40px rgba(10,25,45,.45)">シマエナ<span style="color:#ffb37f">GO</span></div>
       <div id="a1tl" style="margin-top:14px;display:flex;justify-content:center;gap:18px">${["雪の朝", "近所の3チームが", "10分だけ", "助けに行く"].map((w) => `<span class="chip" style="background:rgba(255,255,255,.95);color:#1e3346;font-size:40px;padding:10px 30px;box-shadow:0 10px 26px rgba(10,25,45,.3)">${w}</span>`).join("")}</div></div>`;
   const n1 = q("#a1n1"), n2 = q("#a1n2"), v1 = q("#a1v1"), v2 = q("#a1v2"), src = q("#a1src"), k1 = q("#a1k1"), k2 = q("#a1k2"), logo = q("#a1logo"), tl = [...q("#a1tl").children];
+  // 10人の絵: 数字が上がるのに合わせて、左から1人ずつ色がつく（94% → 10人のうち 9.4人）
+  const PERSON = (id) => `<svg width="46" height="78" viewBox="0 0 46 78"><defs><clipPath id="${id}"><rect class="pgc" x="0" y="0" width="0" height="78"/></clipPath></defs><g fill="rgba(255,255,255,.2)"><circle cx="23" cy="13" r="12"/><path d="M5 76 V44 C5 32 13 27 23 27 C33 27 41 32 41 44 V76 Z"/></g><g class="pgf" clip-path="url(#${id})"><circle cx="23" cy="13" r="12"/><path d="M5 76 V44 C5 32 13 27 23 27 C33 27 41 32 41 44 V76 Z"/></g></svg>`;
+  const pgs = [...txt.querySelectorAll(".a1pg")].map((el, gi) => { el.innerHTML = Array.from({ length: 10 }, (_, i) => PERSON(`pg${gi}_${i}`)).join(""); el.querySelectorAll(".pgf").forEach((g) => g.setAttribute("fill", el.dataset.c)); return { n: +el.dataset.n, clips: [...el.querySelectorAll(".pgc")], svgs: [...el.querySelectorAll("svg")] }; });
   const cap2 = captain(150), cap2Box = q("#a1cap2"); cap2Box.append(cap2);
   const arcs = q("#a1arcs"), rings = q("#a1rings");
   const lone = houses[LONE], roofX = lone.cx, roofY = G - lone.h - lone.rh - 14;
@@ -181,7 +184,11 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     // 数字
     const a9 = L("c09"), a10 = L("c10");
     show(n1, t, a9 + 0.9, { out: ts - 0.25 }); show(n2, t, a10 + 0.1, { out: ts - 0.25 }); show(src, t, a9 + 1.4, { out: ts - 0.25, dy: 0 });
-    v1.textContent = Math.round(94 * pr(t, a9 + 0.9, 1.4, Ease.out5)); v2.textContent = Math.round(68 * pr(t, a10 + 0.1, 1.2, Ease.out5));
+    const k1n = pr(t, a9 + 0.9, 1.6, Ease.out5), k2n = pr(t, a10 + 0.1, 1.4, Ease.out5);
+    v1.textContent = Math.round(94 * k1n); v2.textContent = Math.round(68 * k2n);
+    [k1n, k2n].forEach((k, gi) => pgs[gi].clips.forEach((c, i) => { const f = clamp(pgs[gi].n * k - i); c.setAttribute("width", (46 * f).toFixed(1)); pgs[gi].svgs[i].style.transform = `translateY(${-Math.sin(clamp(pgs[gi].n * k - i + 0.5, 0, 1) * Math.PI) * 10}px)`; }));
+    // 数字は、出るときに大きく弾んでから落ち着く
+    v1.parentElement.style.transform = `scale(${1 + (1 - k1n) * 0.25})`; v2.parentElement.style.transform = `scale(${1 + (1 - k2n) * 0.25})`;
     // きっかけ
     show(k1, t, sparkHalf - 0.1, { out: tt - 0.2 }); show(k2, t, sparkHalf + 0.9, { out: tt - 0.2, scale: 0.86, ease: Ease.back, d: 0.6 });
 
