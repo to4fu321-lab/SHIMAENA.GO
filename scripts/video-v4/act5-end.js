@@ -56,6 +56,6 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
     const qr = q("#a5qr"), kq = pr(t, c44 + 0.7, 0.6); qr.style.opacity = kq; qr.style.transform = `translateX(-50%) translateY(${(1 - kq) * 26}px)`;
     const hop = t > c45 ? Math.abs(Math.sin((t - c45) * 6)) * Math.exp(-(t - c45) * 0.9) * 26 : 0;
     row.style.opacity = pr(t, c43 - 0.3, 0.6); row.style.transform = `translateY(${-hop}px)`;
-    return { note: t >= te ? "声: Tαkoe:AivisSpeech:雪降白華（合成音声・アプリの隊長と同じ声）／音楽・効果音: アプリと同じ Web Audio 合成／地図: © OpenStreetMap contributors／画面の町と人は架空です" : "" };
+    return { note: t >= te ? "声: 合成音声（AivisSpeech モデル「まい」）／音楽・効果音: アプリと同じ Web Audio 合成／地図: © OpenStreetMap contributors／画面の町と人は架空です" : "" };
   };
 } });

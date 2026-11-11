@@ -22,7 +22,7 @@ ACTS.push({ from: "thanks", to: "blank", make(root) {
   return (t) => {
     sn.update(t, 0.6);
     ph.at(330 - (1 - pr(t, t0, 0.6, Ease.out5)) * 70, 134, { op: 1 });
-    ph.frame(kf(t, [[t0, 0.8], [c26 + 0.9, mk("thanks", "mic")], [c27 - 0.3, 4.0], [c27 + 0.3, mk("thanks", "talk")], [tb, mk("thanks", "talk") + (tb - c27 - 0.3)]], Ease.lin));
+    ph.frame(kf(t, [[t0, mk("thanks", "mic") - (c26 + 0.9 - t0)], [c26 + 0.9, mk("thanks", "mic")], [c26 + 1.3, mk("thanks", "mic") + 0.4], [c26 + 1.32, mk("thanks", "talk") - 1.3], [c27 + 0.3, mk("thanks", "talk")], [tb, mk("thanks", "talk") + (tb - c27 - 0.3)]], Ease.lin));
     show(big, t, c26 + 0.5, { scale: 0.85, ease: Ease.back, d: 0.7 });
     show(sub, t, c26 + (LE("c26") - c26) * 0.5);
     nos.forEach((n, i) => show(n, t, c27 + d27 * [0.42, 0.62, 0.78][i], { dx: 40, dy: 0 }));

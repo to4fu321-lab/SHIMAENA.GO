@@ -1,5 +1,5 @@
 // 台本（script.cjs）の語りを、隊長の声で合成する。
-// 声: アプリの隊長と同じ「雪降白華」（Tαkoe プロジェクト。lib/speech/aivis.ts の既定の声）。手元で動く合成の道具は scripts/video-v3/tts（README を見て setup.sh）。
+// 声の設定は voice.cjs（聞き取りやすさで選んだ「まい」）。手元で動く合成の道具は scripts/video-v3/tts（README を見て setup.sh）。
 //   node scripts/video-v4/narrate.cjs          … まだない行・文が変わった行だけ作る → .video/v4/voice/<id>.wav と voice.json（長さ）
 //   node scripts/video-v4/narrate.cjs c12,c13  … その行だけ作り直す
 const { execFileSync, spawnSync } = require("child_process");

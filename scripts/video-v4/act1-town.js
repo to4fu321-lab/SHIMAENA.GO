@@ -31,10 +31,10 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     const wx = cx - h.side * w * 0.2;
     lights.push(`<g id="win${i}" opacity="0"><ellipse cx="${wx}" cy="${top + 74}" rx="150" ry="120" fill="url(#glow)"/><rect x="${wx - 36}" y="${top + 44}" width="72" height="60" rx="5" fill="#ffd596"/><path d="M${wx} ${top + 44} V${top + 104} M${wx - 36} ${top + 74} H${wx + 36}" stroke="#b9853f" stroke-width="4"/>${lone ? "" : `<circle cx="${wx + 4}" cy="${top + 84}" r="11" fill="#6b4a2a"/><path d="M${wx - 14} ${top + 104} q18 -22 36 0 Z" fill="#6b4a2a"/>`}</g>`);
     if (lone) {
-      // 掘る人のいない家: ドアまで雪。足あとなし
+      // 雪かきをする人のいない家: ドアまで雪。足あとなし
       base.push(`<path d="M${cx - w / 2 - 60} ${G + 6} C${cx - w / 4} ${G - 58} ${dx - 40} ${G - 66} ${dx + 10} ${G - 62} C${dx + 90} ${G - 56} ${cx + w / 2 + 20} ${G - 30} ${cx + w / 2 + 80} ${G + 6} Z" fill="#f4f8fb"/><path d="M${cx - w / 4} ${G - 36} C${dx - 30} ${G - 54} ${dx + 40} ${G - 52} ${cx + w / 2} ${G - 22}" fill="none" stroke="#c9d8e5" stroke-width="4" stroke-linecap="round" opacity=".7"/>`);
     } else {
-      // 掘った道と、よけた雪の山
+      // 雪かきをした道と、よけた雪の山
       base.push(`<polygon points="${dx - 30},${G} ${dx + 30},${G} ${dx + 58},${G + 150} ${dx - 58},${G + 150}" fill="#8fa5b8" opacity=".55"/><ellipse cx="${dx - 96}" cy="${G + 30}" rx="62" ry="34" fill="#f4f8fb"/><ellipse cx="${dx + 100}" cy="${G + 26}" rx="52" ry="28" fill="#f4f8fb"/>`);
     }
   }
@@ -43,12 +43,30 @@ ACTS.push({ from: "hello", to: "title", make(root) {
   // 雪かきをする人（ひとりずつ）
   const people = houses.filter((h) => h.i !== LONE).map((h) => {
     const px = h.cx + h.w * 0.14 * h.side - h.side * 4, py = G + 78, f = h.side;
-    return { h, px, py, f, html: `<g id="p${h.i}" transform="translate(${px} ${py}) scale(${f * 1.15} 1.15)">
-      <ellipse cx="0" cy="3" rx="38" ry="8" fill="#1c3046" opacity=".28"/>
-      <g class="lean"><rect x="-17" y="-36" width="14" height="36" rx="6" fill="#1f2c39"/><rect x="3" y="-36" width="14" height="36" rx="6" fill="#1f2c39"/>
-      <rect x="-25" y="-100" width="50" height="72" rx="23" fill="${h.coat}"/><rect x="-21" y="-106" width="42" height="13" rx="6" fill="#f4efe6"/>
-      <circle cx="0" cy="-122" r="20" fill="#f1d6c2"/><path d="M-21 -125 a21 21 0 0 1 42 0 Z" fill="${h.hat}"/><circle cx="0" cy="-148" r="6.5" fill="#fff"/><circle cx="9" cy="-119" r="2.4" fill="#2a3442"/>
-      <g class="arm"><line x1="12" y1="-86" x2="70" y2="-10" stroke="#8a6a4a" stroke-width="6" stroke-linecap="round"/><path d="M60 -20 l28 16 l-10 16 l-28 -16 Z" fill="#cdd9e3"/><line x1="4" y1="-88" x2="32" y2="-58" stroke="${h.coat}" stroke-width="14" stroke-linecap="round"/><circle cx="33" cy="-57" r="8.5" fill="#2a3442"/></g></g>
+    // 人: 帽子（ぼんぼん）・マフラー・ミトン・長ぐつ。両手でスコップを持って、雪をすくって横へ投げる
+    const dark = mixc(h.coat, "#101820", 0.28), scarf = h.hat, mitt = mixc(h.hat, "#ffffff", 0.25);
+    return { h, px, py, f, html: `<g id="p${h.i}" transform="translate(${px} ${py}) scale(${f * 1.34} 1.34)">
+      <ellipse cx="2" cy="4" rx="46" ry="9" fill="#1c3046" opacity=".3"/>
+      <g class="lean">
+        <path d="M-11 -46 L-15 -8" stroke="#243446" stroke-width="16" stroke-linecap="round"/><path d="M9 -46 L15 -8" stroke="#2c3e52" stroke-width="16" stroke-linecap="round"/>
+        <path d="M-27 -12 h20 q8 0 8 8 v6 h-28 Z" fill="#161f29"/><path d="M5 -12 h20 q8 0 8 8 v6 h-28 Z" fill="#1b2631"/>
+        <path d="M-27 -110 Q-33 -72 -27 -42 Q0 -30 27 -42 Q34 -76 25 -110 Q0 -124 -27 -110 Z" fill="${h.coat}"/>
+        <path d="M-27 -54 Q0 -43 27 -54" fill="none" stroke="#000" stroke-opacity=".17" stroke-width="5"/>
+        <circle cx="12" cy="-92" r="2.6" fill="#fff" opacity=".55"/><circle cx="13" cy="-76" r="2.6" fill="#fff" opacity=".55"/>
+        <g class="tail"><path d="M-16 -112 l-17 25 l12 6 l13 -24 Z" fill="${mixc(scarf, "#101820", 0.2)}"/></g>
+        <rect x="-23" y="-123" width="47" height="16" rx="8" fill="${scarf}"/>
+        <circle cx="3" cy="-143" r="23.5" fill="#f3dccb"/>
+        <path d="M-21.5 -147 Q-21 -174 4 -174 Q28 -174 27.5 -148 Z" fill="${h.hat}"/><rect x="-24" y="-155" width="54" height="12" rx="6" fill="${mixc(h.hat, "#ffffff", 0.3)}"/><circle cx="3" cy="-178" r="8.5" fill="#fff"/>
+        <circle cx="14.5" cy="-141" r="2.9" fill="#27323f"/><ellipse cx="17" cy="-132.5" rx="5.2" ry="3.2" fill="#f0a5a5" opacity=".75"/><path d="M12 -127.5 q4 2.6 8 0" fill="none" stroke="#27323f" stroke-width="2" stroke-linecap="round"/>
+        <g class="arm">
+          <path d="M-6 -100 Q6 -80 20 -58" fill="none" stroke="${dark}" stroke-width="15" stroke-linecap="round"/>
+          <line x1="6" y1="-74" x2="80" y2="-8" stroke="#8a6a4a" stroke-width="7" stroke-linecap="round"/>
+          <path d="M67 -21 l31 15 l-12 21 l-31 -15 Z" fill="#d5e0e9" stroke="#9fb1c1" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="20" cy="-60" r="9.5" fill="${mitt}"/>
+          <path d="M10 -102 Q36 -88 46 -40" fill="none" stroke="${h.coat}" stroke-width="15" stroke-linecap="round"/><circle cx="46" cy="-38" r="9.5" fill="${mitt}"/>
+        </g>
+        <g class="breath" fill="#fff"><circle cx="34" cy="-136" r="5"/><circle cx="44" cy="-142" r="7"/><circle cx="57" cy="-150" r="9"/></g>
+      </g>
       <circle class="puff" cx="0" cy="0" r="9" fill="#fff"/></g>` };
   });
   const defs = `<defs><linearGradient id="gnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9f0f6"/><stop offset="1" stop-color="#c3d2df"/></linearGradient><radialGradient id="glow"><stop offset="0" stop-color="#ffd596" stop-opacity=".75"/><stop offset="1" stop-color="#ffd596" stop-opacity="0"/></radialGradient></defs>`;
@@ -69,7 +87,7 @@ ACTS.push({ from: "hello", to: "title", make(root) {
   { const rs = rng(5); stars.innerHTML = Array.from({ length: 90 }, () => `<i class="abs" style="left:${rs() * 1920}px;top:${rs() * 560}px;width:${1.5 + rs() * 2.5}px;height:${1.5 + rs() * 2.5}px;border-radius:50%;background:#fff;opacity:${0.3 + rs() * 0.6}"></i>`).join(""); }
   const sn = snow(3, 240, { size: 4.6 }), snFar = snow(8, 200, { size: 2.2, min: 1, speed: 0.6 });
   root.insertBefore(snFar, world); root.insertBefore(sn, fg);
-  const P = people.map((p) => { const g = q("#p" + p.h.i); return { ...p, g, lean: g.querySelector(".lean"), arm: g.querySelector(".arm"), puff: g.querySelector(".puff") }; });
+  const P = people.map((p) => { const g = q("#p" + p.h.i); return { ...p, g, lean: g.querySelector(".lean"), arm: g.querySelector(".arm"), puff: g.querySelector(".puff"), breath: g.querySelector(".breath"), tail: g.querySelector(".tail") }; });
   const wins = houses.map((h) => q("#win" + h.i));
   const lampg = [...root.querySelectorAll(".lampg")];
 
@@ -126,15 +144,19 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     // 雪かきの人
     for (const p of P) {
       const c = (t * p.h.sp + p.h.ph) % 6.2832, s = Math.sin(c), up = Math.max(0, s);
-      p.arm.setAttribute("transform", `rotate(${(-8 - up * 46).toFixed(1)} 6 -88)`);
+      p.arm.setAttribute("transform", `rotate(${(-6 - up * 44).toFixed(1)} 4 -100)`);
+      // 白い息（すくう前に、ふうっと）とマフラーのゆれ
+      const bk = ((t * 0.5 + p.h.ph) % 1);
+      p.breath.setAttribute("opacity", (Math.sin(bk * 3.14) * 0.55).toFixed(2)); p.breath.setAttribute("transform", `translate(${(bk * 14).toFixed(1)} ${(-bk * 10).toFixed(1)})`);
+      p.tail.setAttribute("transform", `rotate(${(Math.sin(t * 2.4 + p.h.ph) * 9).toFixed(1)} -16 -112)`);
       p.lean.setAttribute("transform", `rotate(${(6 - up * 9).toFixed(1)} 0 0)`);
       const k = clamp((c - 1.5) / 1.3);
       p.puff.setAttribute("cx", (60 - k * 150).toFixed(1)); p.puff.setAttribute("cy", (-70 - Math.sin(k * 3.14) * 70 + k * 60).toFixed(1));
       p.puff.setAttribute("opacity", c > 1.5 && c < 2.8 ? 0.95 : 0); p.puff.setAttribute("r", 9 - k * 4);
     }
-    // 窓の灯り: はじめは掘る人のいない家だけ。「若い人も近くに」で、近所の窓がともる
+    // 窓の灯り: はじめは雪かきをする人のいない家だけ。「若い人も近くに」で、近所の窓がともる
     houses.forEach((h, i) => { const k = h.i === LONE ? 1 : pr(t, ts + 0.5 + Math.abs(i - LONE) * 0.28 + (i % 2) * 0.12, 0.5); wins[i].setAttribute("opacity", k.toFixed(2)); });
-    // 「この家には、掘る人がいません」→ 光の輪。「通りからは見えません」で輪が消えて、ほかの家と同じに見える
+    // 「この家には、雪かきをする人がいません」→ 光の輪。「通りからは見えません」で輪が消えて、ほかの家と同じに見える
     const half = c07 + (LE("c07") - c07) * 0.52;
     const sp = win(t, c07 - 0.2, c07 + 0.7, half + 0.2, half + 1.6);
     spot.style.background = `radial-gradient(circle at 50% 46%, rgba(8,17,27,0) ${lerp(900, 250, sp)}px, rgba(8,17,27,${0.78 * sp}) ${lerp(1300, 470, sp)}px)`;

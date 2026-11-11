@@ -1,5 +1,5 @@
 // 第4幕「作った人と、作り方」: 初心者がスマホから日本語で頼んだ7日間 → 夜の点検ループ → 隊長の決まり → この動画のこと。
-ACTS.push({ from: "maker", to: "meta", make(root) {
+ACTS.push({ from: "maker", to: "motto", make(root) {
   // 本人が実際に送った指示（docs/devlog.md の「本人「…」」から）
   const ASKS = ["隊長の言葉がずっと同じ", "アイコンをもっと分かりやすく。言葉を読まないと分からないのは NG", "仲間を増やす仕掛けに進めて", "物足りない。続けて改善", "README 長すぎる", "事実の羅列では心は動かない", "雪かきできなくても、ツルツルで危ない道の共有で手伝えるようにしたい", "もっと可愛い形で", "チャット来た時、下に自動スクロールしないのがある", "PC表示対応にして欲しい"];
   const C = TL.commits;
@@ -56,8 +56,8 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
   q("#a4x2").append($(`<div style="margin-top:20px;display:inline-block;padding:16px 34px;border-radius:30px;background:#fff;color:#1e3346;font-size:44px;font-weight:900">では、ぼくが話します。</div>`));
   const vs = qa(".a4v"), ns = qa(".a4n"), ticks = qa(".a4tick"), sts = qa(".a4st"), rules = qa(".a4rule"), tags = qa(".a4tag");
   const sn = snow(41, 70, { size: 3 }); root.insertBefore(sn, A);
-  const t0 = T("maker"), tw = T("week"), tr = T("rules"), tm = T("motto"), tx = T("meta"), te = E("meta");
-  const c29 = L("c29"), c31 = L("c31"), c32 = L("c32"), c33 = L("c33"), c36 = L("c36"), d36 = LE("c36") - c36, c37 = L("c37"), c38 = L("c38");
+  const t0 = T("maker"), tw = T("week"), tr = T("rules"), tm = T("motto"), tx = E("motto") + 9;
+  const c29 = L("c29"), c31 = L("c31"), c32 = L("c32"), c33 = L("c33"), c36 = L("c36"), d36 = LE("c36") - c36, c37 = L("c37"), c38 = 1e9;
   return (t) => {
     sn.update(t, 0.35);
     A.style.opacity = win(t, t0 - 1, t0, tr - 0.1, tr + 0.4);
@@ -91,7 +91,7 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
     // この動画のこと
     X.style.opacity = win(t, tx, tx + 0.35);
     show(q("#a4x1"), t, tx + 0.2, { scale: 0.9, ease: Ease.back, d: 0.6 });
-    show(q("#a4x2"), t, c38 + (LE("c38") - c38) * 0.62, { scale: 0.8, ease: Ease.back });
+    show(q("#a4x2"), t, c38 + 0 * 0.62, { scale: 0.8, ease: Ease.back });
     const f = Math.round(t * FPS), env = TL.env[f] || 0;
     cap.style.transform = `translateY(${-env * 10}px) rotate(${Math.sin(t * 7) * env * 4}deg)`;
     tags.forEach((g, i) => show(g, t, c38 + 1.2 + i * 0.16, { dy: 16 }));

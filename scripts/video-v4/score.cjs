@@ -42,7 +42,7 @@ const add = (name, at, gain = 1) => sfx.push({ name, at: +at.toFixed(3), gain })
 add("flap", 0.45, 0.7); add("chirp", C.land, 0.8);
 add("flap", T("title") + 0.15, 0.6); add("chirp", L("c12") + 0.5, 0.7); add("chirp", L("c12") + 0.95, 0.5);
 C.askTaps.forEach((t) => add("tap", t, 0.8));
-add("message", C.arrive[0], 1.0); add("message", C.arrive[1], 0.75);
+C.arrive.forEach((t, i) => add("message", t, 1.0 - i * 0.15));
 [L("c17"), L("c18"), L("c22")].forEach((t) => add("countPop", t - 0.05, 0.5));
 add("toast", T("reason") + 0.9, 0.5);
 add("go", C.goTap, 1.0);
@@ -50,11 +50,14 @@ C.done.forEach((t, i) => add("lamp", t, 0.45 + (i % 2) * 0.1));
 add("tap", C.finTap, 0.8); add("shutter", C.shutter, 0.9); C.checks.forEach((t) => add("quizOk", t, 0.45));
 add("missionClear", C.clear, 1.0);
 add("tap", C.cardTap, 0.7); add("cardFlip", C.cardTap + 0.5, 0.7); add("cardSparkle", T("card") + 2.0, 0.6);
+// バトン（渡す → 飛ぶ → 受け取る）と、なかま帳（週ごとに顔見知りが増える）。時刻は act2b-tsunagu.js と同じ式
+const vPass = L("c51") + 0.55; add("tap", vPass, 0.7); add("send", vPass + 0.12, 0.8); add("message", vPass + 1.0, 0.7); add("quizOk", vPass + 1.25, 0.45);
+const d53 = LE("c53") - L("c53"); add("toast", T("nakama") + 0.7, 0.45);
+[0, 1, 2, 3].forEach((w) => add(w === 3 ? "cheer" : "countPop", L("c53") + 0.15 + (w * (d53 + 0.5)) / 4 + 0.15, w === 3 ? 0.5 : 0.55));
 add("tap", L("c26") + 0.9, 0.6); add("tap", L("c27") + 0.3, 0.6);
 const d32 = LE("c32") - L("c32"); [0, 0.3, 0.66].forEach((k) => add("countPop", L("c32") + d32 * k, 0.55));
 add("toast", L("c33") - 0.1, 0.45);
 const d36 = LE("c36") - L("c36"); [0, 0.38, 0.68].forEach((k) => add("toggleOff", L("c36") + d36 * k - 0.05, 0.6));
-add("send", T("meta") + 0.25, 0.7); add("peekPop", L("c38") + (LE("c38") - L("c38")) * 0.62, 0.7);
 [0.5, 0.15, 0, 0.3, 0.65].forEach((d, i) => add("flap", T("huddle") + 0.15 + d, 0.4));
 add("chirp", T("huddle") + 1.2, 0.5);
 add("chirp", L("c45") + 1.6, 0.6);
