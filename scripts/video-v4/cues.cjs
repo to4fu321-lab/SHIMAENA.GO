@@ -14,7 +14,7 @@ module.exports = function cues(V) {
   const ask = [[T("ask"), 0.6], [T("ring"), 7.0]];
   // 地図: act2-demo.js の mapPts と同じ（完了した瞬間を、等しい間隔に並べる）
   const dones = Object.keys(REC.map.marks).filter((n) => /^done/.test(n)).map((n) => mk("map", n)).sort((a, b) => a - b);
-  const t1 = T("map") + 1.1, step = (T("finish") - 0.5 - t1) / dones.length;
+  const t1 = T("map") + 1.1, step = (T("finish") - 1.5 - t1) / dones.length;
   return {
     TL, T, E, L, LE,
     land: T("hello") + 1.55,

@@ -43,7 +43,7 @@ async function waitForServer() {
 }
 
 const scenes = fs.existsSync(path.join(OUT, "scenes.json")) && ONLY ? JSON.parse(fs.readFileSync(path.join(OUT, "scenes.json"), "utf8")) : {};
-const want = (name) => !ONLY || ONLY.includes(name);
+const want = (name) => !ONLY || ONLY.includes(name) || (name === "helpgo" && ONLY.includes("help"));
 
 (async () => {
   setClock("2026-12-14T06:27:00");
@@ -226,6 +226,43 @@ const want = (name) => !ONLY || ONLY.includes(name);
       await sleep(3200);
     }, { settle: 2500 });
 
+    // ---- 2b) 人手が足りない → 知らせを送る → ほかのチームの人が「行く」 ----
+    const teamOf = async (who) => { await op.goto(`${B}/me?as=${who}`, { waitUntil: "networkidle" }); await sleep(800); return op.evaluate(() => (document.body.innerText.match(/サルビア|マリーゴールド|ルピナス/) || [])[0] || null); };
+    if (want("help")) {
+      await record("help", [{ key: "a", url: "/map?as=h1" }], async ({ page, mark, tap }) => {
+        await sleep(1500);
+        await tap("short", page.locator("button", { hasText: /人手が/ }).first()); await sleep(1300);
+        await tap("send", page.getByRole("button", { name: "知らせを送る" }).first());
+        await sleep(PROD ? 9000 : 3500);
+        mark("sent");
+        await sleep(2500);
+      }, { settle: 1500 });
+      const myTeam = await teamOf("h1");
+      let helper = null, helperTeam = null;
+      for (const who of ["h4", "h7", "h8", "h9", "h10", "h12", "h13", "h14", "h15"]) {
+        const tm = await teamOf(who);
+        if (!tm || tm === myTeam) continue;
+        await op.goto(`${B}/chat?as=${who}`, { waitUntil: "networkidle" }); await sleep(1200);
+        if (await goButton(op, myBase)) { helper = who; helperTeam = tm; break; }
+      }
+      console.log("  ヘルプに来る人:", helper, helperTeam, "（田中さんは", myTeam, "）");
+      scenes._help = { helper, helperTeam, myTeam };
+      if (helper) await record("helpgo", [{ key: "b", url: `/chat?as=${helper}` }], async ({ page, mark, tap }) => {
+        await sleep(1200);
+        await page.evaluate(`(() => { const el = ${chatScroller}; if (el) el.scrollTop = el.scrollHeight; })()`); await sleep(900);
+        const btn = await goButton(page, myBase);
+        if (!btn) return;
+        await btn.scrollIntoViewIfNeeded().catch(() => {}); await sleep(700);
+        mark("shown");
+        await sleep(1600);
+        await tap("go", btn);
+        await page.getByText(/集合です/).last().waitFor({ timeout: 120000 }).catch(() => {});
+        if (await page.getByText(/うまくいきませんでした/).count()) { console.log("  （トークを開き直す）"); await sleep(PROD ? 20000 : 500); await page.reload({ waitUntil: "networkidle" }); await sleep(1500); await page.evaluate(`(() => { const el = ${chatScroller}; if (el) el.scrollTop = el.scrollHeight; })()`); await sleep(800); }
+        mark("reply");
+        await sleep(3500);
+      }, { settle: 1500 });
+    }
+
     // ほかのチームの人も動く（録らない）
     // 同じ家（拠点7）に、ほかの人も来る（あとで「なかま帳」に残る）
     for (const who of ["h11", "h2", "h3", "h5", "h6"]) await goAs(who, myBase).catch(() => {});
@@ -263,22 +300,31 @@ const want = (name) => !ONLY || ONLY.includes(name);
         console.log("  地図を下へ", shift, "px");
       }
       // 家の印（番号の丸と四角）がある範囲を記録する（合成で、そこを大きく映す）
-      const bbox = await page.evaluate(() => {
+      const bboxNow = () => page.evaluate(() => {
         const els = [...document.querySelectorAll(".leaflet-marker-icon, .leaflet-overlay-pane path")];
         let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
         for (const e of els) { const r = e.getBoundingClientRect(); if (r.width < 4 || r.width > 200 || r.top < 60 || r.bottom > 760) continue; x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom); }
         return x1 > x0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0, n: els.length } : null;
       });
+      const bbox = await bboxNow();
       mark("bbox", bbox ? { box: bbox } : {});
-      for (let i = 1; i <= (PROD ? 4 : 6); i++) {
-        // ほかの人の完了の画面は「前に見た完了」とちがうと出る。覚えを消しておくと、覚えるだけで出ない（地図の色だけが変わる）
-        await page.evaluate(() => sessionStorage.removeItem("shimaena:lastClear"));
-        const before = await page.evaluate(() => document.querySelector("main")?.innerText ?? document.body.innerText);
-        await admin("4 1軒、完了にする");
-        for (let k = 0; k < (PROD ? 600 : 40); k++) { if ((await page.evaluate(() => document.querySelector("main")?.innerText ?? document.body.innerText)) !== before) break; await sleep(150); }
-        mark("done" + i);
-        await sleep(900);
+      // 全部の家が終わるまで（「あと◯軒」が 0 になるまで）。本番は1軒ごとに Claude の返事を待つ
+      const left = () => page.evaluate(() => { const m = (document.querySelector("main")?.innerText ?? document.body.innerText).match(/あと\s*(\d+)\s*軒/); return m ? +m[1] : -1; });
+      for (let i = 1; i <= 14; i++) {
+        const k0 = await left();
+        if (k0 === 0 || (k0 < 0 && i > 1)) break;
+        await admin("4 1軒、完了にする").catch((e) => console.log("  （運営の操作:", e.message.split("\n")[0].slice(0, 60), "）"));
+        let k = k0;
+        for (let n = 0; n < (PROD ? 1600 : 60) && (k = await left()) === k0; n++) await sleep(150);
+        if (k === k0) { console.log("  （これ以上、完了にできる家がありません）"); break; }
+        await sleep(500);
+        const b = await bboxNow(); // 地図の見え方が変わることがある（全部終わると引く）ので、そのつど印の範囲を測る
+        mark("done" + i, b ? { box: b } : {});
+        await sleep(700);
       }
+      await sleep(1200);
+      const bAll = await bboxNow();
+      mark("all", bAll ? { box: bAll } : {});
       await sleep(2500);
     }, { settle: 2500 });
 

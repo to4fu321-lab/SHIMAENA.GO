@@ -33,9 +33,9 @@ ACTS.push({ from: "maker", to: "motto", make(root) {
     </div>
     <div class="full" id="a4r">
       <div class="abs kick" id="a4rk" style="left:0;right:0;top:120px;text-align:center;color:#ffb37f;font-size:38px">隊長の決まり</div>
-      ${[["点数・安全", "ぼくが決めない", "プログラムが計算する"], ["体のこと", "判断しない", "段取りと作業の話だけ"], ["ありがとう", "書かない", "人の声のまま"]].map(([a, b, c], i) => `<div class="glass a4rule" style="left:${150 + i * 560}px;top:222px;width:500px;height:500px;text-align:center">
+      ${[["点数・安全", "ぼくが決めない", "プログラムが計算する"], ["体のこと", "判断しない", "段取りと作業の話だけ"], ["ありがとう", "人が伝える", "AI は書かない・要約しない"]].map(([a, b, c], i) => `<div class="glass a4rule" style="left:${150 + i * 560}px;top:222px;width:500px;height:500px;text-align:center">
         <div style="margin-top:44px;font-family:var(--sans);font-size:38px;font-weight:800;color:#c9d7e4">${a}</div>
-        <div style="margin:26px auto 0;width:150px;height:150px;border-radius:50%;border:10px solid #ff9c8a;display:grid;place-items:center;font-size:96px;font-weight:900;color:#ff9c8a;line-height:1">✕</div>
+        <div style="margin:26px auto 0;width:150px;height:150px;border-radius:50%;border:10px solid ${i === 2 ? "#ffd59a" : "#ff9c8a"};display:grid;place-items:center;font-size:96px;font-weight:900;color:${i === 2 ? "#ffd59a" : "#ff9c8a"};line-height:1">${i === 2 ? "♥" : "✕"}</div>
         <div style="margin-top:26px;font-size:60px;font-weight:900">${b}</div><div style="margin-top:10px;font-family:var(--sans);font-size:30px;font-weight:700;color:#a9d3e6">→ ${c}</div></div>`).join("")}
     </div>
     <div class="full" id="a4m"><div class="abs" style="left:0;right:0;top:250px;text-align:center"><div id="a4m1" style="font-size:136px;font-weight:900;line-height:1.3">${SPARK("#e8834f", 110)} AI は、段取りを。</div><div id="a4m2" style="font-size:136px;font-weight:900;line-height:1.3;color:#ffd59a;text-shadow:0 0 70px rgba(255,170,90,.4)">人は、会いに行く。</div></div></div>

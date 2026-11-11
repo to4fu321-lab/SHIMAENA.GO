@@ -132,6 +132,8 @@ function lens(rec, key, region, boxW) {
   const img = el.querySelector("img");
   el.frame = (recT) => setFrame(img, ph.dir, ph.frames, recT);
   el.at = (x, y, p = {}) => { el.style.left = x + "px"; el.style.top = y + "px"; el.style.opacity = p.op ?? 1; el.style.transform = `scale(${p.scale ?? 1})`; };
+  /** 映す範囲を変える（録画の途中で画面の見え方が変わったとき） */
+  el.region = (r, w) => { const k = w / r.w; el.style.width = w + "px"; el.style.height = Math.round(r.h * k) + "px"; img.style.width = 390 * k + "px"; img.style.height = 844 * k + "px"; img.style.left = -r.x * k + "px"; img.style.top = -r.y * k + "px"; };
   return el;
 }
 /** 録画の印（秒） */

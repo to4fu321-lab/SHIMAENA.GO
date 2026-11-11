@@ -13,7 +13,7 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
   const panel = (x, y, w, html) => add($(`<div class="abs" style="left:${x}px;top:${y}px;width:${w}px">${html}</div>`));
   const has = (r) => !!REC[r];
   const tB = T("baton"), tN = T("nakama"), tE = E("nakama");
-  const c50 = L("c50"), c51 = L("c51"), c52 = L("c52"), c53 = L("c53"), d53 = LE("c53") - c53;
+  const c51 = L("c51"), c52 = L("c52"), c53 = c52 + (LE("c52") - c52) * 0.5, d53 = LE("c52") - c53;
 
   // ── 隊長トーク（迷ったら聞く。公開版では本物の Claude が、天気と道を確かめてから答える）──
   const tC = T("chat"), tS = T("solo"), c60 = L("c60"), e60 = LE("c60"), c61 = L("c61"), e61 = LE("c61");
@@ -32,22 +32,25 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
 
   // ── ソロミッション（行けない朝は、自分の家の前でもいい）──
   const pS = has("solo") ? add(phone("solo", "a", { w: PW, label: lab("田中さんの「ソロミッション」") })) : null;
-  const sTxt = panel(690, 150, 1160, `<div class="kick">ソロミッション</div><div class="head" style="margin-top:8px;font-size:70px;white-space:nowrap">行けない朝は、<span style="color:#c96a3a">自分の家の前</span>でも。</div>`);
+  const sTxt = panel(690, 150, 1160, `<div class="kick">ソロミッション</div><div class="head" style="margin-top:8px;font-size:66px;white-space:nowrap">行けない朝は、<span style="color:#c96a3a">ひとりでできること</span>を。</div>`);
   const sm = pS ? REC.solo.marks : {};
-  const sNum = panel(700, 350, 1150, `<div style="display:flex;gap:34px">
-      <div class="card" style="position:relative;flex:1;padding:26px 34px"><div class="kick" style="font-size:24px">あなたに</div><div style="font-family:var(--maru);font-weight:900;color:#c96a3a;line-height:1.05"><span style="font-size:56px">+</span><span id="tbS1" style="font-size:150px">0</span><span style="font-size:52px"> 羽</span></div></div>
-      <div class="card" style="position:relative;flex:1;padding:26px 34px"><div class="kick" style="font-size:24px">チームに</div><div style="font-family:var(--maru);font-weight:900;color:#2F6FE4;line-height:1.05"><span style="font-size:56px">+</span><span id="tbS2" style="font-size:150px">0</span><span style="font-size:52px"> 点</span></div></div>
-    </div>`);
-  const sBar = panel(700, 640, 1150, `<div style="font-family:var(--sans);font-size:26px;font-weight:800;color:#4a637a;margin-bottom:10px">チームの得点（みんなの10分 ＋ ひとりの雪かき）</div><div style="height:30px;border-radius:15px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(47,111,228,.2)"><div id="tbSb" style="height:100%;width:0;border-radius:15px;background:linear-gradient(90deg,#2F6FE4,#7FA6F0)"></div></div>`);
-  const sSteps = panel(700, 750, 1150, `<div style="display:flex;gap:16px">${["📷 雪を撮る", "🧹 雪かき", "✨ 撮って報告"].map((w) => `<span class="chip" style="background:#fff;color:#1e3346;font-size:30px;padding:10px 26px;box-shadow:0 10px 24px rgba(120,70,30,.14)">${w}</span>`).join("")}</div>`);
-  const s1 = q("#tbS1"), s2 = q("#tbS2"), sb = q("#tbSb");
+  // ソロでできる2つ: 自分の家の雪かき／危ない道を知らせる（点はアプリの実数）
+  const sOpt = (id, icon, title, sub, a, b) => `<div class="card" id="${id}" style="position:relative;flex:1;padding:24px 30px"><div style="display:flex;align-items:center;gap:16px"><span style="font-size:64px;line-height:1">${icon}</span><div><div style="font-family:var(--maru);font-size:42px;font-weight:900;color:#1e3346;white-space:nowrap">${title}</div><div style="font-family:var(--sans);font-size:24px;font-weight:700;color:#7a6a5e;margin-top:2px">${sub}</div></div></div>
+      <div style="display:flex;gap:26px;margin-top:14px;font-family:var(--maru);font-weight:900;line-height:1.05"><div style="color:#c96a3a"><span style="font-size:40px">+</span><span class="tbSn" data-n="${a}" style="font-size:96px">0</span><span style="font-size:34px"> 羽</span></div><div style="color:#2F6FE4"><span style="font-size:40px">チーム +</span><span class="tbSn" data-n="${b}" style="font-size:96px">0</span><span style="font-size:34px"> 点</span></div></div></div>`;
+  const sNum = panel(700, 330, 1150, `<div style="display:flex;gap:30px">${sOpt("tbSa", "🧹", "自分の家の雪かき", "写真を撮って報告", 8, 5)}${sOpt("tbSb2", "📷", "危ない道を知らせる", "つるつる・道が細い など", 5, 3)}</div>`);
+  const sBar = panel(700, 690, 1150, `<div style="font-family:var(--sans);font-size:26px;font-weight:800;color:#4a637a;margin-bottom:10px">チームの得点（みんなの10分 ＋ ひとりの雪かき・知らせ）</div><div style="height:30px;border-radius:15px;background:#fff;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(47,111,228,.2)"><div id="tbSb" style="height:100%;width:0;border-radius:15px;background:linear-gradient(90deg,#2F6FE4,#7FA6F0)"></div></div>`);
+  const sSteps = panel(700, 800, 1150, `<div class="body" style="font-size:27px;color:#7a6a5e">それも、町の力になります。</div>`);
+  const sns = [...sNum.querySelectorAll(".tbSn")], sA = q("#tbSa"), sB2 = q("#tbSb2");
+  const sb = q("#tbSb");
   const sGo = sm.go ? sm.go.t : 6, vGo = c61 + (e61 - c61) * 0.42;
-  const sPts = pS ? [[tS, (sm.next0?.t ?? 2) - 0.5], [tS + 0.9, (sm.card?.t ?? 3) + 0.3], [vGo - 0.4, sGo - 0.4], [vGo + 0.5, sGo + 0.5], [tB + 0.5, (sm.started?.t ?? sGo + 3) + 1.5]] : [];
+  // 録画は「道の危険を知らせる」のカードから始まり、次へ →「自分の家の雪かき」→ GO。語りに合わせて、家 → 危ない道の順に光らせる
+  const vRoad = c61 + (e61 - c61) * 0.62, sNext = sm.next0?.t ?? 2;
+  const sPts = pS ? [[tS, 0.3], [c61 + 0.2, sNext - 0.3], [c61 + 0.9, (sm.card?.t ?? 3) + 0.2], [vGo - 0.4, sGo - 0.4], [vGo + 0.5, sGo + 0.5], [tB + 0.5, (sm.started?.t ?? sGo + 3) + 1.5]] : [];
 
   // ── バトン ──
   const pA = has("baton") ? add(phone("baton", "a", { w: PW, label: lab("田中さん（途中で時間切れ）") })) : null;
   const pB = has("batonget") ? add(phone("batonget", "b", { w: PW, label: lab("近所の人（あとから通る）") })) : null;
-  const bTxt = panel(690, 190, 560, `<div class="kick">次の人へ、バトン</div><div class="head" style="margin-top:10px;font-size:74px">途中まででも、<br>いい。</div>
+  const bTxt = panel(690, 190, 560, `<div class="kick">次の人へ、バトン</div><div class="head" style="margin-top:10px;font-size:74px">途中まででも、<br>いい。次の人へ。</div>
     <div class="body" style="margin-top:22px;font-size:31px">「ここまで雪かきしました」<br>「続きをお願いします」<br>名前は出ません。</div>`);
   const fly = add($(`<svg class="abs" style="left:640px;top:600px;overflow:visible" width="640" height="240" viewBox="0 0 640 240">
       <path id="tbPath" d="M0 150 C160 30 480 30 640 150" fill="none" stroke="#e8834f" stroke-width="9" stroke-linecap="round" stroke-dasharray="2 20" opacity=".7"/>
@@ -56,7 +59,7 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
   const got = panel(760, 770, 500, `<span class="chip" style="background:#1e7a52;color:#fff;font-size:30px;padding:10px 26px">✓ 続きを、引き受ける</span>`);
   // 押す瞬間を、語りに合わせて等しい間隔に並べる（「渡す」は「バトンを渡せば」の所で）
   const bm = pA ? ["tab", "give", "msg", "half", "pass"].filter((n) => REC.baton.marks[n]).map((n) => mk("baton", n)) : [];
-  const vPass = c51 + 0.55, v0 = tB + 0.55;
+  const vPass = c51 + (LE("c51") - c51) * 0.6, v0 = tB + 0.35;
   const bPts = [];
   bm.forEach((m, i) => { const v = lerp(v0, vPass, bm.length > 1 ? i / (bm.length - 1) : 1); bPts.push([v - 0.4, m - 0.4], [v + 0.3, m + 0.3]); });
   if (bm.length) { const last = bm[bm.length - 1], end = REC.baton.marks.passed ? mk("baton", "passed") : last + 3; bPts.push([vPass + 0.32, Math.max(last + 0.3, end - 0.6)], [tN + 0.5, end + 1.2]); }
@@ -101,11 +104,13 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
     o = seg(t, tS, tB + 0.25);
     if (pS) { pS.at(250 - slide(t, tS), PY, { op: o }); pS.frame(kf(t, sPts, Ease.lin)); }
     sTxt.style.opacity = o; sTxt.style.transform = `translateX(${slide(t, tS + 0.15)}px)`;
-    const sk = pr(t, vGo + 0.25, 1.1, Ease.out5);
-    show(sNum, t, c61 + 0.3, { dy: 30 }); sNum.style.opacity = o * pr(t, c61 + 0.3, 0.35);
-    s1.textContent = Math.round(8 * sk); s2.textContent = Math.round(5 * sk);
-    show(sBar, t, vGo + 0.1, { dy: 16 }); sBar.style.opacity = o * pr(t, vGo + 0.1, 0.3); sb.style.width = lerp(46, 64, sk) * pr(t, vGo + 0.1, 0.6) + "%";
-    show(sSteps, t, c61 + 0.9, { dy: 16 }); sSteps.style.opacity = o * pr(t, c61 + 0.9, 0.3);
+    show(sNum, t, c61 + 0.2, { dy: 30 }); sNum.style.opacity = o * pr(t, c61 + 0.2, 0.35);
+    const kA = pr(t, c61 + 0.9, 1.0, Ease.out5), kB = pr(t, vRoad, 1.0, Ease.out5);
+    sns.forEach((el, i) => (el.textContent = Math.round(+el.dataset.n * (i < 2 ? kA : kB))));
+    sA.style.transform = `scale(${1 + Math.max(0, 1 - Math.abs(t - c61 - 1.1) * 2.5) * 0.05})`; sB2.style.transform = `scale(${1 + Math.max(0, 1 - Math.abs(t - vRoad - 0.2) * 2.5) * 0.05})`;
+    sB2.style.opacity = 0.45 + 0.55 * pr(t, vRoad - 0.2, 0.4);
+    show(sBar, t, c61 + 1.2, { dy: 16 }); sBar.style.opacity = o * pr(t, c61 + 1.2, 0.3); sb.style.width = lerp(40, 40 + 14 * kA + 9 * kB, 1) * pr(t, c61 + 1.2, 0.6) + "%";
+    show(sSteps, t, vRoad + 1.0, { dy: 16 }); sSteps.style.opacity = o * pr(t, vRoad + 1.0, 0.3);
 
     // バトン
     o = seg(t, tB, tN + 0.25);

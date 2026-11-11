@@ -4,12 +4,12 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   root.innerHTML = `
     <div class="full" style="background:linear-gradient(180deg,#d6e6f1 0%,#eef4f9 58%,#dfeaf2 100%)"></div>
     <svg class="abs" style="left:0;bottom:0" width="1920" height="300" viewBox="0 0 1920 300"><path d="M0 190 C300 120 520 210 820 160 C1120 110 1400 200 1920 130 L1920 300 L0 300 Z" fill="#fff" opacity=".75"/><path d="M0 240 C400 190 900 260 1300 215 C1600 185 1800 230 1920 215 L1920 300 L0 300 Z" fill="#fff"/></svg>
-    <div class="step" id="a2step"><span class="chip"><b>1</b>知らせる</span><span class="chip"><b>2</b>割り振る</span><span class="chip"><b>3</b>確かめる</span></div>
+    <div class="full hud" style="z-index:20;pointer-events:none"><div class="step" id="a2step"><span class="chip"><b>1</b>知らせる</span><span class="chip"><b>2</b>割り振る</span><span class="chip"><b>3</b>確かめる</span></div>
     <div class="abs" id="a2clock" style="right:44px;top:30px;width:150px;height:150px">
       <svg width="150" height="150" viewBox="0 0 150 150"><circle cx="75" cy="75" r="62" fill="#fff" stroke="#d3e0ea" stroke-width="12"/><circle id="a2arc" cx="75" cy="75" r="62" fill="none" stroke="#e8834f" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 75 75)"/></svg>
       <div class="abs mono" id="a2time" style="left:0;right:0;top:40px;text-align:center;font-size:40px;font-weight:800;color:#1e3346">6:30</div>
       <div class="abs" id="a2min" style="left:0;right:0;top:88px;text-align:center;font-family:var(--sans);font-size:19px;font-weight:800;color:#c96a3a">0分</div>
-    </div>
+    </div></div>
     <div class="full" id="a2s"></div>`;
   const q = (s) => root.querySelector(s);
   const stage = q("#a2s"), pills = [...q("#a2step").children], stepEl = q("#a2step"), clock = q("#a2clock"), arc = q("#a2arc"), timeEl = q("#a2time"), minEl = q("#a2min");
@@ -49,6 +49,18 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   const goTxt = panel(800, 300, 320, `<div style="text-align:center"><div class="head" style="font-size:60px">「行く」</div><svg width="300" height="70" viewBox="0 0 300 70"><path id="a2arr" d="M10 35 H270 M240 10 L275 35 L240 60" fill="none" stroke="#e8834f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><div class="body" style="font-weight:800;color:#1e3346;font-size:30px;margin-top:6px">家の人にも<br>「向かっています」</div></div>`);
   const arr = q("#a2arr");
 
+  // ── ヘルプ: 人手が足りない → 近くの人に知らせる → ほかのチームの人も来られる ──
+  const HP = REC._help || {}, hasH = !!REC.help, hasHg = !!(REC.helpgo && REC.helpgo.marks.go);
+  const pHa = hasH ? add(phone("help", "a", { w: PW, label: lab(`田中さん（${HP.myTeam || "サルビア"}）`) })) : null;
+  const pHb = hasHg ? add(phone("helpgo", "b", { w: PW, label: lab(`ほかのチームの人（${HP.helperTeam || "別のチーム"}）`) })) : null;
+  const helpTxt = panel(700, 190, 560, `<div class="kick" style="color:#c0392b">ヘルプ</div><div class="head" style="margin-top:8px;font-size:66px;line-height:1.25">人手が足りない<br>→ 近くに知らせる</div>
+    <svg width="520" height="70" viewBox="0 0 520 70" style="margin-top:18px"><path id="a2harr" d="M10 35 H490 M460 10 L495 35 L460 60" fill="none" stroke="#c0392b" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+    <div id="a2hc" style="margin-top:22px;display:flex;flex-direction:column;gap:14px;align-items:flex-start"><span class="chip" style="background:#fff;color:#1e3346;font-size:30px;padding:10px 24px;box-shadow:0 10px 24px rgba(40,70,100,.14)">ほかのチームも、助けに行ける</span><span class="chip" style="background:#fff;color:#1e3346;font-size:30px;padding:10px 24px;box-shadow:0 10px 24px rgba(40,70,100,.14)">10分だけでも OK</span></div>`);
+  const harr = q("#a2harr"), hChips = [...q("#a2hc").children];
+  const tH = SC.help ? T("help") : T("map"), c21 = SC.help ? L("c21") : tH, e21 = SC.help ? LE("c21") : tH + 1;
+  const hm = hasH ? REC.help.marks : {}, hg = hasHg ? REC.helpgo.marks : {};
+  const vShort = c21 + 0.5, vSend = c21 + 1.5, vB = c21 + (e21 - c21) * 0.52, vGo2 = vB + 1.3;
+
   // ── 地図（チーム戦）──
   const pMap = add(phone("map", "a", { w: PW, label: lab("町の地図") }));
   const mb = REC.map.marks.bbox?.box;
@@ -59,8 +71,11 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     const pad = 14, x0 = Math.max(0, mb.x - pad), x1 = Math.min(390, mb.x + mb.w + pad), y0 = Math.max(64, mb.y - pad), y1 = mb.y + mb.h + pad;
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   })();
-  const mapW = Math.round(mapBox.w * Math.min(760 / mapBox.w, 668 / mapBox.h));
-  const lMap = add(lens("map", "a", mapBox, mapW));
+  const mapW0 = Math.round(mapBox.w * Math.min(760 / mapBox.w, 668 / mapBox.h));
+  const padBox = (b) => { const pad = 14, x0 = Math.max(0, b.x - pad), x1 = Math.min(390, b.x + b.w + pad), y0 = Math.max(64, b.y - pad), y1 = b.y + b.h + pad; return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; };
+  const mapBoxes = Object.values(REC.map.marks).filter((m) => m.box).map((m) => ({ t: m.t, r: padBox(m.box) })).sort((a, b) => a.t - b.t);
+  const lMap = add(lens("map", "a", mapBox, mapW0));
+  const allDone = panel(700, 150 + 668 + 16, 760, `<div style="text-align:center"><span class="chip" style="background:#1e7a52;color:#fff;font-size:32px;padding:10px 28px">✓ 全部の家に、色がつきました</span></div>`);
   const teams = [["salvia", "サルビア", "#2F6FE4"], ["marigold", "マリーゴールド", "#FF8A3D"], ["lupinus", "ルピナス", "#9B5DE5"]];
   const teamTxt = panel(1500, 170, 400, `<div class="kick">3チーム戦</div>` + teams.map(([k, n, c], i) => `<div class="a2team" style="position:absolute;left:0;top:${60 + i * 150}px;display:flex;align-items:center;gap:14px">${mascot(SCARF[k], 120)}<span class="chip" style="background:${c};color:#fff;font-size:27px;padding:6px 20px">${n}</span></div>`).join("") +
     `<div id="a2shuf" style="position:absolute;left:0;top:530px;width:400px"><span class="chip" style="background:#1e3346;color:#fff;font-size:30px">■ 終わった家</span><div class="body" style="font-size:28px;margin-top:12px;font-weight:700">四角がチームの色に。<br>個人の順位は出さない。</div></div>`);
@@ -98,8 +113,9 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   const ringRec = (t, k, i) => { const a = mk("ring", "arrive-" + k), at = arriveAt + i * 0.28; return kf(t, [[tR, 0.3], [at - 0.02, 0.8], [at, a - 0.2], [tRe + 0.4, a - 0.2 + (tRe + 0.4 - at)]], Ease.lin); };
   const mapPts = (() => {
     const dones = Object.keys(REC.map.marks).filter((n) => /^done/.test(n)).map((n) => mk("map", n)).sort((a, b) => a - b);
-    const t1 = tM + 1.1, step = (tF - 0.5 - t1) / dones.length, pts = [[tM, mk("map", "fold") - 0.5], [t1, mk("map", "fold") + 1.4]];
+    const t1 = tM + 1.1, step = (tF - 1.5 - t1) / dones.length, pts = [[tM, mk("map", "fold") - 0.5], [t1, mk("map", "fold") + 1.4]];
     dones.forEach((d, i) => { pts.push([t1 + i * step + step * 0.25, d - 0.5], [t1 + (i + 1) * step, d + 0.9]); });
+    if (REC.map.marks.all) pts.push([tF - 1.2, mk("map", "all") + 0.2], [tF + 0.4, mk("map", "all") + 1.2]);
     return pts;
   })();
   const tapGo = tG + 0.85;
@@ -145,15 +161,28 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     pGc.at(1180 + slide(t, tG), PY, { op: o }); pGc.frame(kf(t, [[tG, g0 - (tapGo - tG)], [tapGo + 0.75, g0], [tapGo + 0.77, gCo - 0.15], [tM + 0.3, gCo + 1.2]], Ease.lin));
     goTxt.style.opacity = o * pr(t, tapGo - 0.2, 0.3); arr.setAttribute("stroke-dashoffset", (1 - pr(t, tapGo + 0.1, 0.7, Ease.io)).toFixed(3));
 
+    // ヘルプ
+    o = SC.help ? seg(t, tH, tM + 0.2) : 0;
+    if (pHa) { pHa.at(250 - slide(t, tH), PY, { op: o }); pHa.frame(kf(t, [[tH, (hm.short?.t ?? 2) - 0.9], [vShort, hm.short?.t ?? 2], [vSend, hm.send?.t ?? 4], [vSend + 0.5, (hm.send?.t ?? 4) + 0.6], [vSend + 0.52, (hm.sent?.t ?? 8) - 0.4], [tM + 0.3, (hm.sent?.t ?? 8) + 2]], Ease.lin)); }
+    if (pHb) { pHb.at(1300 + slide(t, tH + 0.2), PY, { op: o * (0.4 + 0.6 * pr(t, vB - 0.2, 0.4)) }); pHb.frame(kf(t, [[tH, (hg.shown?.t ?? 2) - 0.2], [vGo2 - 0.3, (hg.go?.t ?? 4) - 0.3], [vGo2 + 0.3, (hg.go?.t ?? 4) + 0.3], [vGo2 + 0.32, (hg.reply?.t ?? 8) - 0.2], [tM + 0.3, (hg.reply?.t ?? 8) + 1.6]], Ease.lin)); }
+    helpTxt.style.opacity = o * pr(t, tH + 0.3, 0.4); helpTxt.style.transform = `translateX(${slide(t, tH + 0.15)}px)`;
+    harr.setAttribute("stroke-dashoffset", (1 - pr(t, vSend + 0.2, 0.8, Ease.io)).toFixed(3));
+    hChips.forEach((c, i) => show(c, t, vB + 0.1 + i * 0.9, { dx: 20, dy: 0 }));
+
     // 地図
     o = seg(t, tM, tF + 0.2);
     const mr = kf(t, mapPts, Ease.lin);
+    // 録画の途中で地図の見え方が変わる（全部終わると引く）ので、その時の印の範囲を映す
+    const mbNow = mapBoxes.filter((b) => b.t <= mr + 0.05).at(-1) ?? mapBoxes[0];
+    if (mbNow && mbNow !== lMap._b) { lMap._b = mbNow; lMap._w = Math.round(mbNow.r.w * Math.min(760 / mbNow.r.w, 668 / mbNow.r.h)); lMap.region(mbNow.r, lMap._w); }
+    const mapW = lMap._w ?? mapW0;
     pMap.at(250 - slide(t, tM), PY, { op: o }); pMap.frame(mr);
     lMap.at(700 + (760 - mapW) / 2, 150, { op: o * pr(t, tM + 0.5, 0.5), scale: lerp(0.9, 1, pr(t, tM + 0.5, 0.6, Ease.back)) }); lMap.frame(mr);
     teamTxt.style.opacity = o;
     const sw = 0, order = [[0, 1, 2], [2, 0, 1]];
     teamEls.forEach((e, i) => { const y = lerp(order[0][i], order[1][i], sw) * 150, x = Math.sin(sw * 3.14) * (i === 1 ? 50 : -40); e.style.transform = `translate(${x + slide(t, tM + 0.3 + i * 0.12)}px,${y - i * 150}px)`; e.style.opacity = pr(t, tM + 0.3 + i * 0.12, 0.4); });
     show(shuf, t, L("c20") + 0.9, { scale: 0.9, ease: Ease.back });
+    show(allDone, t, tF - 1.25, { scale: 0.8, ease: Ease.back }); allDone.style.opacity = o * pr(t, tF - 1.25, 0.3);
 
     // 確かめる → 10分
     o = seg(t, tF, tE);
