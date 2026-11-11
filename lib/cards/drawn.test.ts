@@ -21,4 +21,18 @@ describe("Claude の絵を、あとから差しかえる（v1.24）", () => {
     expect(got.svg).toContain('fill="#123456"');
     expect(got.backSvg).toContain("見直した絵");
   });
+
+  it("描くのが間に合わないときは、切り上げて型の絵に戻す（「描いています」のまま残さない）", async () => {
+    const { repo } = await import("../repo");
+    const { renderCardSvg, renderCardBackSvg, isPendingSvg } = await import("./svg");
+    const { drawLater } = await import("./drawn");
+    const { drawPicture } = await import("../claude/art");
+    vi.mocked(drawPicture).mockImplementationOnce(() => new Promise(() => {})); // いつまでも描き終わらない
+    const art = { style: "kawaii" as const, designName: "t", designNameEn: "t", rarityLabel: "朝の群れ", stars: 1 as const, members: [{ name: "a" }], date: "2026-12-14", townName: "町", snowKg: 1, snowKgComparison: "x", serial: 1, issuedCount: 1, pending: true, scene: { sky: "day" as const, fall: "powder" as const, ground: 1 as const, props: ["shovel" as const, "tea" as const], mood: "calm" as const, why: "前の理由", code: "ab12" } };
+    const card = { id: "c-late", recipientId: "h1", rollcallId: "rc", missionId: "m2", serial: 1, issuedCount: 1, designName: "t", designNameEn: "t", rarityLabel: "x", stars: 1 as const, style: "kawaii" as const, snowKg: 1, snowKgComparison: "x", memberNames: ["a"], teamIds: [], createdAt: new Date().toISOString() };
+    await repo().insertCard(card, renderCardSvg(art), renderCardBackSvg(art, { thanks: "ありがとう", subtasks: [], firstFlight: false }));
+    expect(isPendingSvg((await repo().getCard("c-late"))!.svg)).toBe(true);
+    drawLater([{ id: "c-late", art }], { date: "2026-12-14", completedAtJst: "07:05", sky: "昼の光", fall: "粉雪", groundCm: 10, members: [], style: "kawaii", mood: "静か", props: [], designName: "t", seed: "s" }, { budgetMs: 50 });
+    await vi.waitFor(async () => expect(isPendingSvg((await repo().getCard("c-late"))!.svg)).toBe(false));
+  });
 });
