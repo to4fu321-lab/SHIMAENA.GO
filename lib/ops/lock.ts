@@ -14,6 +14,8 @@ const WAIT_MS = 60_000;
 const STEP_MS = 150;
 
 const held = new AsyncLocalStorage<string>();
+/** いま順番の鍵の中にいるか（テストと見張り用） */
+export const isLockHeld = (): boolean => Boolean(held.getStore());
 const g = globalThis as { __shimaenaLockChain?: Promise<unknown>; __shimaenaLockTable?: boolean };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

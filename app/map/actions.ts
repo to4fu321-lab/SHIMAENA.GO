@@ -6,7 +6,7 @@ import { adminGate } from "@/lib/admin-auth";
 import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
 import type { ClearSummary } from "@/lib/morning/clear";
-import { completeManually, completeWithPhoto, joinMission, joinNearby, reportShort, setGoing } from "@/lib/morning/ops";
+import { completeManually, completeWithPhoto, joinMission, precheckPhoto, joinNearby, reportShort, setGoing } from "@/lib/morning/ops";
 import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
 import { stormStopText } from "@/lib/storm";
@@ -78,16 +78,18 @@ export async function fiveMinutesAction(viewerId: string): Promise<ActionResult>
 
 /** 完了写真（画面で縮小した JPEG）を受け取り、Claude が確認して完了にする */
 export async function finishAction(formData: FormData): Promise<ActionResult> {
+  const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
+  if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。" };
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, text: "写真を選んでください。" };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mediaType = sniffImageType(bytes);
+  if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
+  // 撮影ステージ（/admin/stage）から: 合言葉でログインした人の画面で、撮影の印があるときだけ、写真を Claude に送らず決まった確認で進める
+  const stage = (await cookies()).get("shimaena_stage")?.value === "1" && ["ok", "open"].includes(await adminGate());
+  // 写真の確認（Claude・30〜60秒）は鍵の外で先に。待つあいだも、ほかの人の「行く」などが止まらない
+  if (!stage) await precheckPhoto(id, { bytes, mediaType });
   return withStateLock("map:finishAction", async () => {
-    const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
-    if (!id) return { ok: false, text: "この画面の持ち主を確かめられませんでした。" };
-    const file = formData.get("photo");
-    if (!(file instanceof File) || file.size === 0) return { ok: false, text: "写真を選んでください。" };
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const mediaType = sniffImageType(bytes);
-    if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
-    // 撮影ステージ（/admin/stage）から: 合言葉でログインした人の画面で、撮影の印があるときだけ、写真を Claude に送らず決まった確認で進める
-    const stage = (await cookies()).get("shimaena_stage")?.value === "1" && ["ok", "open"].includes(await adminGate());
     const r = await completeWithPhoto(id, { bytes, mediaType }, new Date(), { fast: stage });
     revalidatePath("/map");
     return { ok: r.done, text: firstText(r.messages), clear: r.clear, canManual: r.retry };
