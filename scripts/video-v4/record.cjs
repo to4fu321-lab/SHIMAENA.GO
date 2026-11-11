@@ -72,17 +72,19 @@ const want = (name) => !ONLY || ONLY.includes(name);
       if (await pw.count()) { await pw.fill(process.env.ADMIN_PW || ""); await op.getByRole("button", { name: "開く" }).click(); await op.getByRole("button", { name: /前夜の予告/ }).waitFor({ timeout: 20000 }); }
       if (tab) { await op.getByRole("tab", { name: tab }).click(); await sleep(400); }
       const before = await op.locator("header").first().innerText().catch(() => "");
+      // 本番は Claude の返事を待つ。サーバーの返事が返るまで次を押さない（重ねて押すと順番待ちになり、ほかの画面までエラーになる）
+      const done = PROD ? op.waitForResponse((r) => r.request().method() === "POST" && /\/admin/.test(r.url()), { timeout: 330000 }).catch(() => null) : null;
       await op.getByRole("button", { name: label }).first().click();
       await sleep(2200);
-      // 本番は Claude の返事を待つので、画面が落ち着くまで待つ
-      if (PROD) { await op.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {}); await sleep(1500); }
+      if (PROD) { await done; await op.waitForLoadState("networkidle", { timeout: 60000 }).catch(() => {}); await sleep(1500); }
       void before;
     };
     /** 架空の人として「行く（10分でも）」を押す（録らない） */
     const goAs = async (as, base) => {
       await op.goto(`${B}/chat?as=${as}`, { waitUntil: "networkidle" });
       await sleep(1200);
-      const btn = await goButton(op, base);
+      const any = op.getByRole("button", { name: /行く（10分でも）/ });
+      const btn = (await goButton(op, base)) || ((await any.count()) ? any.last() : null);
       if (btn) { await btn.click(); await sleep(PROD ? 5000 : 2500); console.log(`  ${as} も拠点${base}へ`); }
     };
     const goButton = async (page, base) => {
@@ -176,13 +178,24 @@ const want = (name) => !ONLY || ONLY.includes(name);
     }, { settle: 2000 });
 
     // ---- 2) 行く（田中さん）→ 家の人（小林さん）に「向かっています」と合言葉 ----
-    await record("go", [{ key: "a", url: "/chat?as=h1" }, { key: "c", url: "/chat?as=r7" }], async ({ pages, mark, tap }) => {
+    await op.goto(`${B}/chat?as=h1`, { waitUntil: "networkidle" }); await sleep(1500);
+    const myBase = await op.evaluate(() => {
+      const gos = [...document.querySelectorAll("button")].filter((b) => /行く（10分でも）/.test(b.textContent));
+      const go = gos.at(-1); if (!go) return 7;
+      const leaves = [...document.querySelectorAll("p, span, div")].filter((e) => e.children.length === 0 && /拠点\d+/.test(e.textContent) && (e.compareDocumentPosition(go) & Node.DOCUMENT_POSITION_FOLLOWING));
+      return +(leaves.at(-1)?.textContent.match(/拠点(\d+)/)?.[1] ?? 7);
+    });
+    console.log("  田中さんの行き先: 拠点" + myBase);
+    scenes._base = { base: myBase };
+    await record("go", [{ key: "a", url: "/chat?as=h1" }, { key: "c", url: `/chat?as=r${myBase}` }], async ({ pages, mark, tap }) => {
       await sleep(1200);
-      const btn = (await goButton(pages.a, 7)) || pages.a.getByRole("button", { name: /行く（10分でも）/ }).last();
+      const btn = (await goButton(pages.a, myBase)) || pages.a.getByRole("button", { name: /行く（10分でも）/ }).last();
       const countC = () => pages.c.evaluate(() => document.querySelectorAll("main *").length);
       const c0 = await countC();
       await tap("go", btn);
-      await pages.a.getByText(/集合です/).first().waitFor({ timeout: 60000 }).catch(() => {});
+      await pages.a.getByText(/集合です/).first().waitFor({ timeout: 120000 }).catch(() => {});
+      // 通信の失敗の表示が出たら、開き直す（行き先は保存されているので、返事だけが残る）
+      if (await pages.a.getByText(/うまくいきませんでした/).count()) { console.log("  （トークを開き直す）"); await pages.a.reload({ waitUntil: "networkidle" }); await sleep(1500); await pages.a.evaluate(`(() => { const el = ${chatScroller}; if (el) el.scrollTop = el.scrollHeight; })()`); await sleep(800); }
       mark("reply", { phone: "a" });
       const end = Date.now() + (PROD ? 40000 : 12000);
       while (Date.now() < end && (await countC()) === c0) await sleep(150);
@@ -206,15 +219,24 @@ const want = (name) => !ONLY || ONLY.includes(name);
 
     // ほかのチームの人も動く（録らない）
     // 同じ家（拠点7）に、ほかの人も来る（あとで「なかま帳」に残る）
-    for (const who of ["h11", "h2", "h3", "h5", "h6"]) await goAs(who, 7).catch(() => {});
+    for (const who of ["h11", "h2", "h3", "h5", "h6"]) await goAs(who, myBase).catch(() => {});
 
     // ---- 3) 町の地図: ほかの家が次々に終わって、チームの色に染まる ----
     addClock(6);
     await record("map", [{ key: "a", url: "/map?as=h1" }], async ({ page, mark }) => {
+      // ほかの人の完了画面は「前に見た完了」とちがうと出る。前に見たものを毎回「なし」と答えると、覚えるだけで出ない（地図の色だけが変わる）
+      await page.evaluate(() => { const g = Storage.prototype.getItem; Storage.prototype.getItem = function (k) { return k === "shimaena:lastClear" ? null : g.call(this, k); }; });
       await sleep(800);
       const fold = page.locator('[aria-label="シートを畳んで地図を大きくする"]');
       if (await fold.count()) { const b = await fold.boundingBox(); mark("fold", b ? { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + 14), tap: true } : {}); await sleep(450); await fold.press("Enter"); await page.evaluate(() => document.activeElement?.blur?.()); }
       await sleep(1500);
+      // 家の印が画面の外にあるときは、全部入るまで地図を引く（本番は家が10軒あり、広い）
+      for (let z = 0; z < 3; z++) {
+        const out = await page.evaluate(() => [...document.querySelectorAll(".leaflet-marker-icon")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && (r.left < 4 || r.right > innerWidth - 4 || r.top < 150 || r.bottom > 700); }).length);
+        if (!out) break;
+        await page.locator(".leaflet-control-zoom-out").click({ force: true }); await sleep(1100);
+        console.log("  地図を引く（外の印", out, "）");
+      }
       // 上に浮いている「道の危険を知らせる」ボタンが家の印にかぶるときは、指で地図を下へずらす（印を全部見せるため）
       const shift = await page.evaluate(() => {
         const btn = [...document.querySelectorAll("button, a")].find((e) => /道の危険を知らせる/.test(e.textContent || "") && e.getBoundingClientRect().top < 300);
@@ -238,7 +260,7 @@ const want = (name) => !ONLY || ONLY.includes(name);
         return x1 > x0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0, n: els.length } : null;
       });
       mark("bbox", bbox ? { box: bbox } : {});
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= (PROD ? 4 : 6); i++) {
         // ほかの人の完了の画面は「前に見た完了」とちがうと出る。覚えを消しておくと、覚えるだけで出ない（地図の色だけが変わる）
         await page.evaluate(() => sessionStorage.removeItem("shimaena:lastClear"));
         const before = await page.evaluate(() => document.querySelector("main")?.innerText ?? document.body.innerText);
@@ -264,10 +286,11 @@ const want = (name) => !ONLY || ONLY.includes(name);
       await chooser.setFiles(photo);
       const clearH = page.getByRole("heading", { name: /あなたの10分で/ });
       const anyway = page.getByRole("button", { name: /それでも完了にする/ });
-      for (let i = 0; i < 800; i++) { if (await clearH.count()) break; if (await anyway.count()) { console.log("  （写真の確認で「まだ」→ それでも完了にする）"); await anyway.first().click(); } await sleep(150); }
+      for (let i = 0; i < 1600; i++) { if (await clearH.count()) break; if (await anyway.count()) { console.log("  （写真の確認で「まだ」→ それでも完了にする）"); await anyway.first().click(); } await sleep(150); }
       mark("clear");
       await sleep(5200);
       const card = page.getByRole("button", { name: /カードを見る/ });
+      if (!(await card.count())) { console.log("  （完了画面にカードがありません）"); await sleep(3000); return; }
       await tap("card", card);
       await page.getByText(/カードを発行しました/).first().waitFor({ timeout: 120000 }).catch(() => {});
       mark("cardshown");
