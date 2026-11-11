@@ -55,12 +55,12 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   const mapBox = (() => {
     if (!mb) return { x: 28, y: 178, w: 216, h: 190 };
     // 印の範囲に少し余白をつけ、窓の形（760:668）に合わせる
-    const AR = 760 / 668, pad = 16; let w = mb.w + pad * 2, h = mb.h + pad * 2;
-    if (w / h < AR) w = h * AR; else h = w / AR;
-    const cx = mb.x + mb.w / 2, cy = mb.y + mb.h / 2;
-    return { x: Math.max(0, Math.min(390 - w, cx - w / 2)), y: Math.max(64, cy - h / 2), w, h };
+    // 窓は 760×668 に収まるいちばん大きい形（スマホの幅 390 より広くは切り出せない）
+    const pad = 14, x0 = Math.max(0, mb.x - pad), x1 = Math.min(390, mb.x + mb.w + pad), y0 = Math.max(64, mb.y - pad), y1 = mb.y + mb.h + pad;
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   })();
-  const lMap = add(lens("map", "a", mapBox, 760));
+  const mapW = Math.round(mapBox.w * Math.min(760 / mapBox.w, 668 / mapBox.h));
+  const lMap = add(lens("map", "a", mapBox, mapW));
   const teams = [["salvia", "サルビア", "#2F6FE4"], ["marigold", "マリーゴールド", "#FF8A3D"], ["lupinus", "ルピナス", "#9B5DE5"]];
   const teamTxt = panel(1500, 170, 400, `<div class="kick">3チーム戦</div>` + teams.map(([k, n, c], i) => `<div class="a2team" style="position:absolute;left:0;top:${60 + i * 150}px;display:flex;align-items:center;gap:14px">${mascot(SCARF[k], 120)}<span class="chip" style="background:${c};color:#fff;font-size:27px;padding:6px 20px">${n}</span></div>`).join("") +
     `<div id="a2shuf" style="position:absolute;left:0;top:530px;width:400px"><span class="chip" style="background:#1e3346;color:#fff;font-size:30px">■ 終わった家</span><div class="body" style="font-size:28px;margin-top:12px;font-weight:700">四角がチームの色に。<br>個人の順位は出さない。</div></div>`);
@@ -86,7 +86,7 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   const lCard = add(lens(CR, "a", { x: 44, y: 128, w: 302, h: 424 }, 470));
   const cardTxt = panel(1300, 230, 600, `<div class="kick">お礼は、その朝だけのカード</div><div class="head" style="margin-top:10px;font-size:68px">${SPARK("#e8834f", 60)} が毎回、<br>ゼロから描く。</div>
     <div class="body" style="margin-top:22px;font-size:30px;white-space:nowrap">その朝の空・雪・人数・チームの色から、<br>SVG で描く。<br>描いたあと、自分で見て1回なおす。</div>
-    <div class="body" style="margin-top:22px;font-size:21px;color:#7890a5">${REC._meta?.prod && !REC.card ? "※ この絵は、公開中のアプリで Claude が描いたものです" : "※ この録画の絵は、API キーなしで動かしたときの見本です"}</div>`);
+    <div class="body" style="margin-top:22px;font-size:21px;color:#7890a5">${REC._meta?.prod && !REC.card && !REC.finish.local ? "※ この絵は、公開中のアプリで Claude が描いたものです" : "※ この録画の絵は、API キーなしで動かしたときの見本です"}</div>`);
 
   const tA = T("ask"), tR = T("ring"), tRe = T("reason"), tG = T("go"), tM = T("map"), tF = T("finish"), tC = T("card"), tE = E("card");
   const c17 = L("c17"), c22 = L("c22"), c23 = L("c23");
@@ -149,7 +149,7 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     o = seg(t, tM, tF + 0.2);
     const mr = kf(t, mapPts, Ease.lin);
     pMap.at(250 - slide(t, tM), PY, { op: o }); pMap.frame(mr);
-    lMap.at(700, 150, { op: o * pr(t, tM + 0.5, 0.5), scale: lerp(0.9, 1, pr(t, tM + 0.5, 0.6, Ease.back)) }); lMap.frame(mr);
+    lMap.at(700 + (760 - mapW) / 2, 150, { op: o * pr(t, tM + 0.5, 0.5), scale: lerp(0.9, 1, pr(t, tM + 0.5, 0.6, Ease.back)) }); lMap.frame(mr);
     teamTxt.style.opacity = o;
     const sw = 0, order = [[0, 1, 2], [2, 0, 1]];
     teamEls.forEach((e, i) => { const y = lerp(order[0][i], order[1][i], sw) * 150, x = Math.sin(sw * 3.14) * (i === 1 ? 50 : -40); e.style.transform = `translate(${x + slide(t, tM + 0.3 + i * 0.12)}px,${y - i * 150}px)`; e.style.opacity = pr(t, tM + 0.3 + i * 0.12, 0.4); });
@@ -175,6 +175,6 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     const co = seg(t, tC + 0.1, tE + 0.3);
     lCard.at(770, 150, { op: co * pr(t, tC + 2.0, 0.5), scale: lerp(0.85, 1, pr(t, tC + 2.0, 0.6, Ease.back)) }); lCard.frame(fr);
     cardTxt.style.opacity = co; cardTxt.style.transform = `translateX(${slide(t, tC + 0.3)}px)`;
-    return { dark: true, note: REC._meta?.prod ? (REC.card && t >= tC ? "※ このカードの場面だけ、API キーなしで動かしたときの録画です（絵は見本）" : "※ 画面は、公開中のアプリの録画です（町と人は架空のデモ。AI の答えは本物の Claude）") : "※ 画面はすべて実際のアプリの録画です（町と人は架空のデモ。AI の応答は、API キーなしのときの見本）" };
+    return { dark: true, note: REC._meta?.prod ? (REC.finish.local && t >= tF ? "※ この場面（写真 → 完了 → カード）は、API キーなしで動かしたときの録画です（写真の確認とカードの絵は見本）" : REC.card && t >= tC ? "※ このカードの場面だけ、API キーなしで動かしたときの録画です（絵は見本）" : "※ 画面は、公開中のアプリの録画です（町と人は架空のデモ。AI の答えは本物の Claude）") : "※ 画面はすべて実際のアプリの録画です（町と人は架空のデモ。AI の応答は、API キーなしのときの見本）" };
   };
 } });

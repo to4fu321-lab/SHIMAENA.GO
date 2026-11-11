@@ -152,6 +152,7 @@ const want = (name) => !ONLY || ONLY.includes(name);
     }), [find, to, ms]);
 
     // ---- 0) 朝をまっさらに ----
+    if (PROD) await admin(/見本の状態に戻す/, "ほか"); // 前の録画が途中で止まっていても、同じ所から始める
     await admin("0 前夜の予告");
 
     // お願いする家（小林さん・拠点7）の登録画面: おまかせ → 玄関前
@@ -204,6 +205,13 @@ const want = (name) => !ONLY || ONLY.includes(name);
       await sleep(4500);
     }, { settle: 2000 });
 
+    if (!want("go")) await goAs("h1", myBase).catch(() => {}); // 場面を選んで撮り直すときも、田中さんは「行く」を押しておく
+    // 割り当てが画面に出るまで待つ（本番は少し遅れて届く）
+    for (let i = 0; i < 40; i++) {
+      await op.goto(`${B}/map?as=h1`, { waitUntil: "networkidle" }); await sleep(1500);
+      if (await op.evaluate(() => [...document.querySelectorAll("span")].some((e) => e.textContent.trim() === "シマエナ隊長から"))) break;
+      await sleep(4000);
+    }
     // 地図の下の「シマエナ隊長から」（Claude が決めた人数と理由）
     await record("reason", [{ key: "a", url: "/map?as=h1" }], async ({ page, mark }) => {
       await sleep(1600);
@@ -220,7 +228,6 @@ const want = (name) => !ONLY || ONLY.includes(name);
 
     // ほかのチームの人も動く（録らない）
     // 同じ家（拠点7）に、ほかの人も来る（あとで「なかま帳」に残る）
-    if (!want("go")) await goAs("h1", myBase).catch(() => {});
     for (const who of ["h11", "h2", "h3", "h5", "h6"]) await goAs(who, myBase).catch(() => {});
 
     // ---- 3) 町の地図: ほかの家が次々に終わって、チームの色に染まる ----
