@@ -18,14 +18,14 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
       </div>
     </div>
     <div class="full" id="a5g" style="opacity:0;background:linear-gradient(180deg,#0f2034 0%,#1d3554 60%,#2c4a70 100%)">
-      <div class="abs" id="a5gh" style="left:0;right:0;top:120px;text-align:center;font-size:84px;font-weight:900;letter-spacing:.02em">雪かきで、<span style="color:#ffd59a">ポイント</span>がたまる。</div>
-      <div class="abs" id="a5gp" style="left:0;right:0;top:250px;text-align:center;font-family:var(--maru);font-weight:900;color:#ffd59a;line-height:1"><span style="font-size:70px">+</span><span id="a5gn" style="font-size:150px">0</span><span style="font-size:60px;color:#fff"> ポイント</span><span style="font-family:var(--sans);font-size:28px;font-weight:700;color:#dbe7f1;margin-left:14px">（1軒の手伝いで 10羽）</span></div>
-      <div class="abs" id="a5gc" style="left:0;right:0;top:432px;text-align:center"><span class="chip" style="background:#ffd59a;color:#1e3346;font-size:30px;padding:8px 28px">これから</span></div>
+      <div class="abs" id="a5gh" style="left:0;right:0;top:100px;text-align:center;font-size:84px;font-weight:900;letter-spacing:.02em">雪かきで、<span style="color:#ffd59a">ポイント</span>がたまる。</div>
+      <div class="abs" id="a5gp" style="left:0;right:0;top:214px;text-align:center;font-family:var(--maru);font-weight:900;color:#ffd59a;line-height:1"><span style="font-size:70px">+</span><span id="a5gn" style="font-size:150px">0</span><span style="font-size:60px;color:#fff"> ポイント</span><span style="font-family:var(--sans);font-size:28px;font-weight:700;color:#dbe7f1;margin-left:14px">（1軒の手伝いで 10羽）</span></div>
+      <div class="abs" id="a5gc" style="left:0;right:0;top:388px;text-align:center"><span class="chip" style="background:#ffd59a;color:#1e3346;font-size:30px;padding:8px 28px">これから</span></div>
       <svg class="abs" style="left:0;top:0;overflow:visible" width="1920" height="1080">
-        <path class="a5gl" d="M560 680 L750 680" fill="none" stroke="#ffd59a" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
-        <path class="a5gl" d="M1170 680 L1360 680" fill="none" stroke="#ffd59a" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        <path class="a5gl" d="M560 620 L750 620" fill="none" stroke="#ffd59a" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        <path class="a5gl" d="M1170 620 L1360 620" fill="none" stroke="#ffd59a" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
       </svg>
-      ${[["雪かき", "シマエナGO", "手伝う・自分の家・危ない道の知らせ", 180, "#fff"], ["行政・スポンサー", "ポイントを支える", "除雪や見守りとも、つなぐ", 750, "#d7e8ff"], ["地元のお店", "ポイントが使える", "パン屋・銭湯・商店街 など", 1360, "#ffe9cf"]].map(([a, b, c, x, bg], i) => `<div class="abs a5gn" style="left:${x}px;top:510px;width:380px;height:340px;border-radius:44px;background:${bg};color:#1e3346;box-shadow:0 26px 60px rgba(0,0,0,.35);text-align:center;padding-top:${i === 0 ? 16 : 30}px">${i === 0 ? `<div style="height:104px;display:flex;justify-content:center">${mascot(SCARF.lamp, 104, "happy")}</div>` : `<div style="font-size:84px;line-height:1.1">${i === 1 ? "🏛️" : "🏪"}</div>`}<div style="font-size:${a.length > 5 ? 44 : 60}px;font-weight:900;margin-top:${i === 0 ? 0 : 8}px;white-space:nowrap">${a}</div><div style="font-family:var(--sans);font-size:30px;font-weight:800;margin-top:6px;color:#4a637a">${b}</div><div style="font-family:var(--sans);font-size:23px;font-weight:700;margin-top:8px;color:#7a6a5e;padding:0 14px;line-height:1.4">${c}</div></div>`).join("")}
+      ${[["雪かき", "シマエナGO", "手伝い・自分の家・道の知らせ", 180, "#fff"], ["行政・スポンサー", "ポイントを支える", "除雪や見守りとも、つなぐ", 750, "#d7e8ff"], ["地元のお店", "ポイントが使える", "パン屋・銭湯・商店街 など", 1360, "#ffe9cf"]].map(([a, b, c, x, bg], i) => `<div class="abs a5gn" style="left:${x}px;top:458px;width:380px;height:330px;border-radius:44px;background:${bg};color:#1e3346;box-shadow:0 26px 60px rgba(0,0,0,.35);text-align:center;padding-top:${i === 0 ? 16 : 30}px">${i === 0 ? `<div style="height:104px;display:flex;justify-content:center">${mascot(SCARF.lamp, 104, "happy")}</div>` : `<div style="font-size:84px;line-height:1.1">${i === 1 ? "🏛️" : "🏪"}</div>`}<div style="font-size:${a.length > 5 ? 44 : 60}px;font-weight:900;margin-top:${i === 0 ? 0 : 8}px;white-space:nowrap">${a}</div><div style="font-family:var(--sans);font-size:30px;font-weight:800;margin-top:6px;color:#4a637a">${b}</div><div style="font-family:var(--sans);font-size:23px;font-weight:700;margin-top:8px;color:#7a6a5e;padding:0 14px;line-height:1.4">${c}</div></div>`).join("")}
       <div class="abs" id="a5coin" style="left:0;top:0;width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c9,#ffc45a 60%,#e59a1f);box-shadow:0 8px 20px rgba(0,0,0,.35);display:grid;place-items:center;font-family:var(--maru);font-size:34px;font-weight:900;color:#8a5a00">P</div>
     </div>
     <div class="full" id="a5e" style="opacity:0;background:linear-gradient(180deg,#15263b 0%,#34507a 62%,#e9a98a 135%)">
@@ -67,7 +67,7 @@ ACTS.push({ from: "huddle", to: "end", make(root) {
     // コインが、雪かきから お店へ 転がっていく
     const ck = pr(t, c63 + 1.2, 2.2, Ease.io);
     coin.style.opacity = win(t, c63 + 1.0, c63 + 1.3, c63 + 3.6, c63 + 4.0);
-    coin.style.transform = `translate(${lerp(520, 1380, ck)}px,${648 - Math.abs(Math.sin(ck * Math.PI * 3)) * 46}px) rotate(${ck * 720}deg)`;
+    coin.style.transform = `translate(${lerp(520, 1380, ck)}px,${588 - Math.abs(Math.sin(ck * Math.PI * 3)) * 46}px) rotate(${ck * 720}deg)`;
     // 題字
     Ee.style.opacity = pr(t, te - 0.1, 0.7, Ease.lin);
     show(q("#a5tag"), t, c43 - 0.15, { dy: 30, d: 0.8 });
