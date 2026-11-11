@@ -7,6 +7,8 @@ module.exports = {
     c01: { speed: 1.15, style_weight: 1.4 }, c45: { speed: 1.15, style_weight: 1.3 },
     // 「AI は、段取りを。人は、会いに行く。」は、ゆっくり
     c37: { speed: 1.08 },
+    // 仕上がりを音声認識にかけて、聞き取りにくかった行（「ぼく」→「おく」など）は、別のテイクから、正しく聞き取れたものを選んだ
+    c12: { seed: 2 }, c13: { seed: 4, speed: 1.16 }, c15: { seed: 8, speed: 1.16 }, c18: { seed: 2 }, c23: { seed: 3, speed: 1.16 }, c24: { seed: 2 }, c36: { seed: 1 },
   },
   credit: "AivisSpeech モデル「まい」",
 };
