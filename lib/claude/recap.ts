@@ -45,6 +45,7 @@ export async function recapText(input: RecapInput): Promise<Recap> {
     input,
     schema: RecapSchema,
     effort: "low",
+    model: "light", // 短い文なので速いモデル（11/11 本人の了承: 短い文の仕事は Haiku）
   });
   return { text: res.text.trim() || mockRecap(input).text };
 }

@@ -89,6 +89,7 @@ export async function readWords(input: WordsInput): Promise<Words> {
     input: { text: input.text.slice(0, 300), role: input.role },
     schema: WordsSchema,
     effort: "low",
+    model: "light", // 短い文なので速いモデル（11/11 本人の了承: 短い文の仕事は Haiku）
   });
   return tidyWords(res, input.role);
 }
