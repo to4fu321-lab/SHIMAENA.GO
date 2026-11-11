@@ -68,6 +68,9 @@ ACTS.push({ from: "ask", to: "card", make(root) {
 
   // ── 確かめる ──
   const pFin = add(phone("finish", "a", { w: PW, label: lab("田中さん（手伝う人）") }));
+  // カードの場面だけ別の録画（rec/card）があれば、そちらを使う（公開版の完了画面にカードが出なかったとき）
+  const CR = REC.card ? "card" : "finish";
+  const pCard = CR === "finish" ? pFin : add(phone("card", "a", { w: PW, label: lab("田中さん（手伝う人）") }));
   const PWd = 780, PHt = Math.round((PWd * 768) / 1408);
   const photo = add($(`<div class="abs" style="left:720px;top:150px;width:${PWd}px;height:${PHt}px;border-radius:26px;overflow:hidden;box-shadow:0 22px 50px rgba(20,40,60,.3),0 0 0 6px #fff">
       <img src="${ASSET.before}" style="position:absolute;inset:0;width:100%;height:100%"><div id="a2aft" style="position:absolute;inset:0;overflow:hidden"><img src="${ASSET.after}" style="position:absolute;left:0;top:0;width:${PWd}px;height:${PHt}px"></div>
@@ -80,10 +83,10 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   const ten = panel(1530, 150, 360, `<div style="text-align:center"><div style="font-size:170px;font-weight:900;line-height:1;color:#e8834f">10<span style="font-size:80px">分</span></div><div class="body" style="font-weight:800;color:#1e3346;font-size:30px;margin-top:6px">1軒の玄関が、開く。</div></div>`);
 
   // ── カード ──
-  const lCard = add(lens("finish", "a", { x: 44, y: 128, w: 302, h: 424 }, 470));
+  const lCard = add(lens(CR, "a", { x: 44, y: 128, w: 302, h: 424 }, 470));
   const cardTxt = panel(1300, 230, 600, `<div class="kick">お礼は、その朝だけのカード</div><div class="head" style="margin-top:10px;font-size:68px">${SPARK("#e8834f", 60)} が毎回、<br>ゼロから描く。</div>
     <div class="body" style="margin-top:22px;font-size:30px;white-space:nowrap">その朝の空・雪・人数・チームの色から、<br>SVG で描く。<br>描いたあと、自分で見て1回なおす。</div>
-    <div class="body" style="margin-top:22px;font-size:21px;color:#7890a5">${REC._meta?.prod ? "※ この絵は、公開中のアプリで Claude が描いたものです" : "※ この録画の絵は、API キーなしで動かしたときの見本です"}</div>`);
+    <div class="body" style="margin-top:22px;font-size:21px;color:#7890a5">${REC._meta?.prod && !REC.card ? "※ この絵は、公開中のアプリで Claude が描いたものです" : "※ この録画の絵は、API キーなしで動かしたときの見本です"}</div>`);
 
   const tA = T("ask"), tR = T("ring"), tRe = T("reason"), tG = T("go"), tM = T("map"), tF = T("finish"), tC = T("card"), tE = E("card");
   const c17 = L("c17"), c22 = L("c22"), c23 = L("c23");
@@ -154,23 +157,24 @@ ACTS.push({ from: "ask", to: "card", make(root) {
 
     // 確かめる → 10分
     o = seg(t, tF, tE);
-    const f0 = mk("finish", "finish"), fc = mk("finish", "clear"), fk = mk("finish", "card"), fs = Math.max(fk + 0.4, (REC.finish.marks.cardshown?.t ?? fk + 2.6) - 2.4);
+    const f0 = mk("finish", "finish"), fc = mk("finish", "clear"), fk = mk(CR, "card"), fs = Math.max(fk + 0.4, (REC[CR].marks.cardshown?.t ?? fk + 2.6) - 2.4);
     const fr = t < tC ? kf(t, [[tF, f0 - (c22 + 1.0 - tF)], [c22 + 1.0, f0], [c22 + 1.5, f0 + 0.5], [c23 - 0.4, f0 + 0.5], [c23 - 0.38, fc - 0.1], [tC, fc - 0.1 + (tC - c23 + 0.38)]], Ease.lin)
       : kf(t, [[tC, fk - 0.9], [tC + 0.9, fk], [tC + 1.25, fk + 0.35], [tC + 1.27, fs], [tE + 0.4, fs + (tE + 0.4 - tC - 1.27)]], Ease.lin);
-    pFin.at(250 - slide(t, tF), PY, { op: o }); pFin.frame(fr);
+    if (pCard === pFin) { pFin.at(250 - slide(t, tF), PY, { op: o }); pFin.frame(fr); }
+    else { pFin.at(250 - slide(t, tF), PY, { op: t < tC ? o : 0 }); if (t < tC) pFin.frame(fr); pCard.at(250, PY, { op: t >= tC ? o : 0 }); if (t >= tC) pCard.frame(fr); }
     const po = seg(t, c22 + 1.3, tC + 0.15), wipe = pr(t, c22 + 2.5, 1.5, Ease.io);
     photo.style.opacity = po; photo.style.transform = `scale(${lerp(0.9, 1, pr(t, c22 + 1.3, 0.55, Ease.back))})`;
     aft.style.width = wipe * 100 + "%"; scan.style.left = `calc(${wipe * 100}% - 3px)`; scan.style.opacity = wipe > 0.01 && wipe < 0.99 ? 1 : 0;
     pl.textContent = wipe > 0.5 ? "雪かきのあと（この1枚を送る）" : "雪かきの前";
     checks.style.opacity = po;
     cks.forEach((c, i) => show(c, t, c22 + 3.6 + i * 0.5, { dy: 14, scale: 0.8, ease: Ease.back }));
-    lClear.at(720, 150 + PHt + 104, { op: seg(t, c23 - 0.1, tC + 0.15), scale: lerp(0.9, 1, pr(t, c23 - 0.1, 0.5, Ease.back)) }); lClear.frame(t < tC ? Math.max(fr, fc + 0.5) : fc + 3);
+    lClear.at(720, 150 + PHt + 104, { op: seg(t, c23 - 0.1, tC + 0.15), scale: lerp(0.9, 1, pr(t, c23 - 0.1, 0.5, Ease.back)) }); lClear.frame(t < tC ? Math.max(fr, fc + 0.5) : fc + 0.6);
     ten.style.opacity = seg(t, c23, tC + 0.15); ten.style.transform = `scale(${lerp(0.7, 1, pr(t, c23, 0.5, Ease.back))})`;
 
     // カード
     const co = seg(t, tC + 0.1, tE + 0.3);
     lCard.at(770, 150, { op: co * pr(t, tC + 2.0, 0.5), scale: lerp(0.85, 1, pr(t, tC + 2.0, 0.6, Ease.back)) }); lCard.frame(fr);
     cardTxt.style.opacity = co; cardTxt.style.transform = `translateX(${slide(t, tC + 0.3)}px)`;
-    return { dark: true, note: REC._meta?.prod ? "※ 画面はすべて、公開中のアプリの録画です（町と人は架空のデモ。AI の答えは本物の Claude）" : "※ 画面はすべて実際のアプリの録画です（町と人は架空のデモ。AI の応答は、API キーなしのときの見本）" };
+    return { dark: true, note: REC._meta?.prod ? (REC.card && t >= tC ? "※ このカードの場面だけ、API キーなしで動かしたときの録画です（絵は見本）" : "※ 画面は、公開中のアプリの録画です（町と人は架空のデモ。AI の答えは本物の Claude）") : "※ 画面はすべて実際のアプリの録画です（町と人は架空のデモ。AI の応答は、API キーなしのときの見本）" };
   };
 } });

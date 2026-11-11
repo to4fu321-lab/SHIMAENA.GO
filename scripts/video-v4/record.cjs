@@ -178,6 +178,7 @@ const want = (name) => !ONLY || ONLY.includes(name);
     }, { settle: 2000 });
 
     // ---- 2) 行く（田中さん）→ 家の人（小林さん）に「向かっています」と合言葉 ----
+    if (!want("ring")) await admin("1 6:30"); // 場面を選んで撮り直すときも、朝の状態は作る
     await op.goto(`${B}/chat?as=h1`, { waitUntil: "networkidle" }); await sleep(1500);
     const myBase = await op.evaluate(() => {
       const gos = [...document.querySelectorAll("button")].filter((b) => /行く（10分でも）/.test(b.textContent));
@@ -219,6 +220,7 @@ const want = (name) => !ONLY || ONLY.includes(name);
 
     // ほかのチームの人も動く（録らない）
     // 同じ家（拠点7）に、ほかの人も来る（あとで「なかま帳」に残る）
+    if (!want("go")) await goAs("h1", myBase).catch(() => {});
     for (const who of ["h11", "h2", "h3", "h5", "h6"]) await goAs(who, myBase).catch(() => {});
 
     // ---- 3) 町の地図: ほかの家が次々に終わって、チームの色に染まる ----
@@ -233,7 +235,8 @@ const want = (name) => !ONLY || ONLY.includes(name);
       // 家の印が画面の外にあるときは、全部入るまで地図を引く（本番は家が10軒あり、広い）
       for (let z = 0; z < 3; z++) {
         const out = await page.evaluate(() => [...document.querySelectorAll(".leaflet-marker-icon")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 4 && (r.left < 4 || r.right > innerWidth - 4 || r.top < 150 || r.bottom > 700); }).length);
-        if (!out) break;
+        const all = await page.evaluate(() => document.querySelectorAll(".leaflet-marker-icon").length);
+        if (out * 2 < all) break; // 少しだけ外にあるなら、引かない（引くと印が重なって見えなくなる）
         await page.locator(".leaflet-control-zoom-out").click({ force: true }); await sleep(1100);
         console.log("  地図を引く（外の印", out, "）");
       }
