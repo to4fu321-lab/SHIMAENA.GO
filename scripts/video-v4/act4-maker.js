@@ -13,7 +13,7 @@ ACTS.push({ from: "maker", to: "motto", make(root) {
         </div></div>
       <div class="abs" id="a4who" style="left:680px;top:150px;width:1160px">
         <div class="kick" style="color:#ffb37f">ぼくを作った人</div>
-        <div id="a4w1" style="font-size:104px;font-weight:900;line-height:1.2;margin-top:6px">学生服の営業。</div>
+        <div id="a4w1" style="font-size:84px;font-weight:900;line-height:1.2;margin-top:6px;white-space:nowrap">学用品メーカーの営業。</div>
         <div id="a4w2" class="body" style="color:#c9d7e4;font-size:40px;margin-top:8px">札幌に来て15年。毎年、雪かきで腰を痛める。</div>
         <div id="a4w3" style="font-size:84px;font-weight:900;line-height:1.25;margin-top:56px;color:#ffd59a">プログラミングは、初めて。</div>
         <div id="a4w4" class="body" style="color:#c9d7e4;font-size:40px;margin-top:8px">スマホから、日本語で、Claude Code に頼んだ。</div>
