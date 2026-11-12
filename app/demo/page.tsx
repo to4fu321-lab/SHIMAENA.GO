@@ -10,6 +10,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { defaultLook } from "@/lib/mypage/rules";
 import { teamTheme } from "@/lib/team-theme";
 import { pickDemoAction } from "./actions";
+import PickButton from "./PickButton";
 
 export const metadata: Metadata = { title: "デモの人をえらぶ ・ シマエナGO" };
 
@@ -42,10 +43,7 @@ async function DemoPick({ searchParams }: { searchParams: Promise<{ next?: strin
               <form action={pickDemoAction} className="h-full">
               <input type="hidden" name="as" value={p.id} />
               <input type="hidden" name="next" value={next} />
-              <button
-                className="flex h-full w-full items-center gap-2 rounded-2xl bg-card px-2.5 text-left shadow-sm ring-1 ring-ink/10 hover:ring-2 hover:ring-lamp"
-                data-sound="tap"
-              >
+              <PickButton>
                 <Avatar icon={look.icon} bg={look.iconBg} size={40} team={p.teamId} />
                 <span className="min-w-0">
                   <span className="block truncate text-base font-bold leading-tight">{p.nickname}</span>
@@ -55,7 +53,7 @@ async function DemoPick({ searchParams }: { searchParams: Promise<{ next?: strin
                     </span>
                   )}
                 </span>
-              </button>
+              </PickButton>
               </form>
             </li>
           );
