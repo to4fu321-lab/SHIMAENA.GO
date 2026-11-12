@@ -31,10 +31,10 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     const wx = cx - h.side * w * 0.2;
     lights.push(`<g id="win${i}" opacity="0"><ellipse cx="${wx}" cy="${top + 74}" rx="150" ry="120" fill="url(#glow)"/><rect x="${wx - 36}" y="${top + 44}" width="72" height="60" rx="5" fill="#ffd596"/><path d="M${wx} ${top + 44} V${top + 104} M${wx - 36} ${top + 74} H${wx + 36}" stroke="#b9853f" stroke-width="4"/>${lone ? "" : `<circle cx="${wx + 4}" cy="${top + 84}" r="11" fill="#6b4a2a"/><path d="M${wx - 14} ${top + 104} q18 -22 36 0 Z" fill="#6b4a2a"/>`}</g>`);
     if (lone) {
-      // 掘る人のいない家: ドアまで雪。足あとなし
+      // 雪かきをする人のいない家: ドアまで雪。足あとなし
       base.push(`<path d="M${cx - w / 2 - 60} ${G + 6} C${cx - w / 4} ${G - 58} ${dx - 40} ${G - 66} ${dx + 10} ${G - 62} C${dx + 90} ${G - 56} ${cx + w / 2 + 20} ${G - 30} ${cx + w / 2 + 80} ${G + 6} Z" fill="#f4f8fb"/><path d="M${cx - w / 4} ${G - 36} C${dx - 30} ${G - 54} ${dx + 40} ${G - 52} ${cx + w / 2} ${G - 22}" fill="none" stroke="#c9d8e5" stroke-width="4" stroke-linecap="round" opacity=".7"/>`);
     } else {
-      // 掘った道と、よけた雪の山
+      // 雪かきをした道と、よけた雪の山
       base.push(`<polygon points="${dx - 30},${G} ${dx + 30},${G} ${dx + 58},${G + 150} ${dx - 58},${G + 150}" fill="#8fa5b8" opacity=".55"/><ellipse cx="${dx - 96}" cy="${G + 30}" rx="62" ry="34" fill="#f4f8fb"/><ellipse cx="${dx + 100}" cy="${G + 26}" rx="52" ry="28" fill="#f4f8fb"/>`);
     }
   }
@@ -43,12 +43,30 @@ ACTS.push({ from: "hello", to: "title", make(root) {
   // 雪かきをする人（ひとりずつ）
   const people = houses.filter((h) => h.i !== LONE).map((h) => {
     const px = h.cx + h.w * 0.14 * h.side - h.side * 4, py = G + 78, f = h.side;
-    return { h, px, py, f, html: `<g id="p${h.i}" transform="translate(${px} ${py}) scale(${f * 1.15} 1.15)">
-      <ellipse cx="0" cy="3" rx="38" ry="8" fill="#1c3046" opacity=".28"/>
-      <g class="lean"><rect x="-17" y="-36" width="14" height="36" rx="6" fill="#1f2c39"/><rect x="3" y="-36" width="14" height="36" rx="6" fill="#1f2c39"/>
-      <rect x="-25" y="-100" width="50" height="72" rx="23" fill="${h.coat}"/><rect x="-21" y="-106" width="42" height="13" rx="6" fill="#f4efe6"/>
-      <circle cx="0" cy="-122" r="20" fill="#f1d6c2"/><path d="M-21 -125 a21 21 0 0 1 42 0 Z" fill="${h.hat}"/><circle cx="0" cy="-148" r="6.5" fill="#fff"/><circle cx="9" cy="-119" r="2.4" fill="#2a3442"/>
-      <g class="arm"><line x1="12" y1="-86" x2="70" y2="-10" stroke="#8a6a4a" stroke-width="6" stroke-linecap="round"/><path d="M60 -20 l28 16 l-10 16 l-28 -16 Z" fill="#cdd9e3"/><line x1="4" y1="-88" x2="32" y2="-58" stroke="${h.coat}" stroke-width="14" stroke-linecap="round"/><circle cx="33" cy="-57" r="8.5" fill="#2a3442"/></g></g>
+    // 人: 帽子（ぼんぼん）・マフラー・ミトン・長ぐつ。両手でスコップを持って、雪をすくって横へ投げる
+    const dark = mixc(h.coat, "#101820", 0.28), scarf = h.hat, mitt = mixc(h.hat, "#ffffff", 0.25);
+    return { h, px, py, f, html: `<g id="p${h.i}" transform="translate(${px} ${py}) scale(${f * 1.34} 1.34)">
+      <ellipse cx="2" cy="4" rx="46" ry="9" fill="#1c3046" opacity=".3"/>
+      <g class="lean">
+        <path d="M-11 -46 L-15 -8" stroke="#243446" stroke-width="16" stroke-linecap="round"/><path d="M9 -46 L15 -8" stroke="#2c3e52" stroke-width="16" stroke-linecap="round"/>
+        <path d="M-27 -12 h20 q8 0 8 8 v6 h-28 Z" fill="#161f29"/><path d="M5 -12 h20 q8 0 8 8 v6 h-28 Z" fill="#1b2631"/>
+        <path d="M-27 -110 Q-33 -72 -27 -42 Q0 -30 27 -42 Q34 -76 25 -110 Q0 -124 -27 -110 Z" fill="${h.coat}"/>
+        <path d="M-27 -54 Q0 -43 27 -54" fill="none" stroke="#000" stroke-opacity=".17" stroke-width="5"/>
+        <circle cx="12" cy="-92" r="2.6" fill="#fff" opacity=".55"/><circle cx="13" cy="-76" r="2.6" fill="#fff" opacity=".55"/>
+        <g class="tail"><path d="M-16 -112 l-17 25 l12 6 l13 -24 Z" fill="${mixc(scarf, "#101820", 0.2)}"/></g>
+        <rect x="-23" y="-123" width="47" height="16" rx="8" fill="${scarf}"/>
+        <circle cx="3" cy="-143" r="23.5" fill="#f3dccb"/>
+        <path d="M-21.5 -147 Q-21 -174 4 -174 Q28 -174 27.5 -148 Z" fill="${h.hat}"/><rect x="-24" y="-155" width="54" height="12" rx="6" fill="${mixc(h.hat, "#ffffff", 0.3)}"/><circle cx="3" cy="-178" r="8.5" fill="#fff"/>
+        <circle cx="14.5" cy="-141" r="2.9" fill="#27323f"/><ellipse cx="17" cy="-132.5" rx="5.2" ry="3.2" fill="#f0a5a5" opacity=".75"/><path d="M12 -127.5 q4 2.6 8 0" fill="none" stroke="#27323f" stroke-width="2" stroke-linecap="round"/>
+        <g class="arm">
+          <path d="M-6 -100 Q6 -80 20 -58" fill="none" stroke="${dark}" stroke-width="15" stroke-linecap="round"/>
+          <line x1="6" y1="-74" x2="80" y2="-8" stroke="#8a6a4a" stroke-width="7" stroke-linecap="round"/>
+          <path d="M67 -21 l31 15 l-12 21 l-31 -15 Z" fill="#d5e0e9" stroke="#9fb1c1" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="20" cy="-60" r="9.5" fill="${mitt}"/>
+          <path d="M10 -102 Q36 -88 46 -40" fill="none" stroke="${h.coat}" stroke-width="15" stroke-linecap="round"/><circle cx="46" cy="-38" r="9.5" fill="${mitt}"/>
+        </g>
+        <g class="breath" fill="#fff"><circle cx="34" cy="-136" r="5"/><circle cx="44" cy="-142" r="7"/><circle cx="57" cy="-150" r="9"/></g>
+      </g>
       <circle class="puff" cx="0" cy="0" r="9" fill="#fff"/></g>` };
   });
   const defs = `<defs><linearGradient id="gnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9f0f6"/><stop offset="1" stop-color="#c3d2df"/></linearGradient><radialGradient id="glow"><stop offset="0" stop-color="#ffd596" stop-opacity=".75"/><stop offset="1" stop-color="#ffd596" stop-opacity="0"/></radialGradient></defs>`;
@@ -69,7 +87,7 @@ ACTS.push({ from: "hello", to: "title", make(root) {
   { const rs = rng(5); stars.innerHTML = Array.from({ length: 90 }, () => `<i class="abs" style="left:${rs() * 1920}px;top:${rs() * 560}px;width:${1.5 + rs() * 2.5}px;height:${1.5 + rs() * 2.5}px;border-radius:50%;background:#fff;opacity:${0.3 + rs() * 0.6}"></i>`).join(""); }
   const sn = snow(3, 240, { size: 4.6 }), snFar = snow(8, 200, { size: 2.2, min: 1, speed: 0.6 });
   root.insertBefore(snFar, world); root.insertBefore(sn, fg);
-  const P = people.map((p) => { const g = q("#p" + p.h.i); return { ...p, g, lean: g.querySelector(".lean"), arm: g.querySelector(".arm"), puff: g.querySelector(".puff") }; });
+  const P = people.map((p) => { const g = q("#p" + p.h.i); return { ...p, g, lean: g.querySelector(".lean"), arm: g.querySelector(".arm"), puff: g.querySelector(".puff"), breath: g.querySelector(".breath"), tail: g.querySelector(".tail") }; });
   const wins = houses.map((h) => q("#win" + h.i));
   const lampg = [...root.querySelectorAll(".lampg")];
 
@@ -81,22 +99,27 @@ ACTS.push({ from: "hello", to: "title", make(root) {
       <path d="M648 700 C760 626 812 556 842 474" fill="none" stroke="#f4f8fb" stroke-width="11" stroke-linecap="round"/><path d="M292 772 C318 700 292 646 246 598" fill="none" stroke="#f4f8fb" stroke-width="10" stroke-linecap="round"/>
     </svg></div>
     <div class="abs" id="a1tag" style="left:1010px;top:300px"><span class="chip" style="background:rgba(255,255,255,.94);color:#1e3346;font-size:34px;padding:12px 30px;box-shadow:0 12px 30px rgba(0,0,0,.3)">${SPARK("#e8834f", 44)} 中身は Claude</span></div>
-    <div class="abs" id="a1ten" style="left:1010px;top:270px;width:860px"><div style="font-size:54px;font-weight:700;color:#dbe7f1;letter-spacing:.04em">ある雪の朝の、</div><div style="font-size:150px;font-weight:900;line-height:1.1;letter-spacing:.01em">10<span style="font-size:96px">分間</span><span style="font-size:70px;font-weight:700;color:#dbe7f1">の話。</span></div>
+    <div class="abs" id="a1ten" style="left:1010px;top:270px;width:860px"><div style="font-size:100px;font-weight:900;line-height:1.3;letter-spacing:.01em"><span style="color:#ffd59a">雪かき</span>の解決と、<br><span style="color:#a9d3e6">地域のつながり</span>。</div>
       <div class="chip mono" style="margin-top:22px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.2);font-size:28px">12月14日（月）　AM 6:30　積雪 12cm</div></div>`;
   const cap = captain(390); cap.style.left = "0px"; cap.style.top = "0px"; fg.append(cap);
   const branch = q("#a1branch"), tag = q("#a1tag"), ten = q("#a1ten");
 
   // ── 文字 ──
   txt.innerHTML = `
-    <div class="abs" id="a1n" style="left:0;right:0;top:200px;display:flex;justify-content:center;gap:150px">
-      <div id="a1n1" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#ffcfae"><span id="a1v1">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">雪かきの手伝いを頼む世帯のうち、<br><b style="color:#ffcfae">70歳以上だけ</b>の世帯</div></div>
-      <div id="a1n2" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#a9d3e6"><span id="a1v2">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">手伝う近所の人のうち、<br><b style="color:#a9d3e6">70歳以上</b>の人</div></div>
+    <div class="abs" id="a1n" style="left:0;right:0;top:160px;display:flex;justify-content:center;gap:150px">
+      <div id="a1n1" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#ffcfae"><span id="a1v1">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">雪かきの手伝いを頼む世帯のうち、<br><b style="color:#ffcfae">70歳以上だけ</b>の世帯</div><div class="a1pg" data-n="9.4" data-c="#ffcfae" style="margin-top:22px;display:flex;justify-content:center;gap:4px"></div></div>
+      <div id="a1n2" style="width:700px;text-align:center"><div style="font-size:250px;font-weight:900;line-height:1;color:#a9d3e6"><span id="a1v2">0</span><span style="font-size:130px">%</span></div><div style="margin-top:18px;font-family:var(--sans);font-size:36px;font-weight:700;line-height:1.5">手伝う近所の人のうち、<br><b style="color:#a9d3e6">70歳以上</b>の人</div><div class="a1pg" data-n="6.8" data-c="#a9d3e6" style="margin-top:22px;display:flex;justify-content:center;gap:4px"></div></div>
     </div>
     <div class="abs" id="a1src" style="left:0;right:0;top:92px;text-align:center;font-family:var(--sans);font-size:21px;font-weight:600;color:rgba(255,255,255,.62);line-height:1.6">出典: 札幌市社会福祉協議会「令和5年度 福祉除雪事業アンケート調査」（福祉除雪の利用世帯）／札幌市保健福祉局「福祉除雪事業の見直し（案）」2025年12月（地域協力員）</div>
     <div class="abs" id="a1k" style="left:0;right:0;top:120px;text-align:center"><div id="a1k1" style="font-size:66px;font-weight:700;color:#e3edf5">足りないのは、</div><div id="a1k2" style="font-size:170px;font-weight:900;line-height:1.25;letter-spacing:.04em;color:#ffd59a;text-shadow:0 0 60px rgba(255,180,90,.45)">きっかけ。</div></div>
     <div class="abs" id="a1t" style="left:0;right:0;top:92px;text-align:center"><div id="a1logo" style="font-size:190px;font-weight:900;line-height:1.1;letter-spacing:.02em;text-shadow:0 10px 40px rgba(10,25,45,.45)">シマエナ<span style="color:#ffb37f">GO</span></div>
       <div id="a1tl" style="margin-top:14px;display:flex;justify-content:center;gap:18px">${["雪の朝", "近所の3チームが", "10分だけ", "助けに行く"].map((w) => `<span class="chip" style="background:rgba(255,255,255,.95);color:#1e3346;font-size:40px;padding:10px 30px;box-shadow:0 10px 26px rgba(10,25,45,.3)">${w}</span>`).join("")}</div></div>`;
   const n1 = q("#a1n1"), n2 = q("#a1n2"), v1 = q("#a1v1"), v2 = q("#a1v2"), src = q("#a1src"), k1 = q("#a1k1"), k2 = q("#a1k2"), logo = q("#a1logo"), tl = [...q("#a1tl").children];
+  // 10人の絵: 数字が上がるのに合わせて、左から1人ずつ色がつく（94% → 10人のうち 9.4人）
+  // 高齢の人の絵（腰が曲がり、杖をつく）
+  const SHAPE = `<circle cx="27" cy="14" r="11"/><path d="M12 80 V52 C12 38 14 30 24 27 C34 24 41 30 41 42 V80 Z"/><path d="M40 44 L52 52" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M52 48 V80" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M47 48 H57" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+  const PERSON = (id) => `<svg width="60" height="82" viewBox="0 0 60 82"><defs><clipPath id="${id}"><rect class="pgc" x="0" y="0" width="0" height="82"/></clipPath></defs><g fill="rgba(255,255,255,.2)" stroke="rgba(255,255,255,.2)">${SHAPE}</g><g class="pgf" clip-path="url(#${id})">${SHAPE}</g></svg>`;
+  const pgs = [...txt.querySelectorAll(".a1pg")].map((el, gi) => { el.innerHTML = Array.from({ length: 10 }, (_, i) => PERSON(`pg${gi}_${i}`)).join(""); el.querySelectorAll(".pgf").forEach((g) => { g.setAttribute("fill", el.dataset.c); g.setAttribute("stroke", el.dataset.c); }); return { n: +el.dataset.n, clips: [...el.querySelectorAll(".pgc")], svgs: [...el.querySelectorAll("svg")] }; });
   const cap2 = captain(150), cap2Box = q("#a1cap2"); cap2Box.append(cap2);
   const arcs = q("#a1arcs"), rings = q("#a1rings");
   const lone = houses[LONE], roofX = lone.cx, roofY = G - lone.h - lone.rh - 14;
@@ -126,15 +149,19 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     // 雪かきの人
     for (const p of P) {
       const c = (t * p.h.sp + p.h.ph) % 6.2832, s = Math.sin(c), up = Math.max(0, s);
-      p.arm.setAttribute("transform", `rotate(${(-8 - up * 46).toFixed(1)} 6 -88)`);
+      p.arm.setAttribute("transform", `rotate(${(-6 - up * 44).toFixed(1)} 4 -100)`);
+      // 白い息（すくう前に、ふうっと）とマフラーのゆれ
+      const bk = ((t * 0.5 + p.h.ph) % 1);
+      p.breath.setAttribute("opacity", (Math.sin(bk * 3.14) * 0.55).toFixed(2)); p.breath.setAttribute("transform", `translate(${(bk * 14).toFixed(1)} ${(-bk * 10).toFixed(1)})`);
+      p.tail.setAttribute("transform", `rotate(${(Math.sin(t * 2.4 + p.h.ph) * 9).toFixed(1)} -16 -112)`);
       p.lean.setAttribute("transform", `rotate(${(6 - up * 9).toFixed(1)} 0 0)`);
       const k = clamp((c - 1.5) / 1.3);
       p.puff.setAttribute("cx", (60 - k * 150).toFixed(1)); p.puff.setAttribute("cy", (-70 - Math.sin(k * 3.14) * 70 + k * 60).toFixed(1));
       p.puff.setAttribute("opacity", c > 1.5 && c < 2.8 ? 0.95 : 0); p.puff.setAttribute("r", 9 - k * 4);
     }
-    // 窓の灯り: はじめは掘る人のいない家だけ。「若い人も近くに」で、近所の窓がともる
+    // 窓の灯り: はじめは雪かきをする人のいない家だけ。「若い人も近くに」で、近所の窓がともる
     houses.forEach((h, i) => { const k = h.i === LONE ? 1 : pr(t, ts + 0.5 + Math.abs(i - LONE) * 0.28 + (i % 2) * 0.12, 0.5); wins[i].setAttribute("opacity", k.toFixed(2)); });
-    // 「この家には、掘る人がいません」→ 光の輪。「通りからは見えません」で輪が消えて、ほかの家と同じに見える
+    // 「この家には、雪かきをする人がいません」→ 光の輪。「通りからは見えません」で輪が消えて、ほかの家と同じに見える
     const half = c07 + (LE("c07") - c07) * 0.52;
     const sp = win(t, c07 - 0.2, c07 + 0.7, half + 0.2, half + 1.6);
     spot.style.background = `radial-gradient(circle at 50% 46%, rgba(8,17,27,0) ${lerp(900, 250, sp)}px, rgba(8,17,27,${0.78 * sp}) ${lerp(1300, 470, sp)}px)`;
@@ -159,7 +186,11 @@ ACTS.push({ from: "hello", to: "title", make(root) {
     // 数字
     const a9 = L("c09"), a10 = L("c10");
     show(n1, t, a9 + 0.9, { out: ts - 0.25 }); show(n2, t, a10 + 0.1, { out: ts - 0.25 }); show(src, t, a9 + 1.4, { out: ts - 0.25, dy: 0 });
-    v1.textContent = Math.round(94 * pr(t, a9 + 0.9, 1.4, Ease.out5)); v2.textContent = Math.round(68 * pr(t, a10 + 0.1, 1.2, Ease.out5));
+    const k1n = pr(t, a9 + 0.9, 1.6, Ease.out5), k2n = pr(t, a10 + 0.1, 1.4, Ease.out5);
+    v1.textContent = Math.round(94 * k1n); v2.textContent = Math.round(68 * k2n);
+    [k1n, k2n].forEach((k, gi) => pgs[gi].clips.forEach((c, i) => { const f = clamp(pgs[gi].n * k - i); c.setAttribute("width", (60 * f).toFixed(1)); pgs[gi].svgs[i].style.transform = `translateY(${-Math.sin(clamp(pgs[gi].n * k - i + 0.5, 0, 1) * Math.PI) * 10}px)`; }));
+    // 数字は、出るときに大きく弾んでから落ち着く
+    v1.parentElement.style.transform = `scale(${1 + (1 - k1n) * 0.25})`; v2.parentElement.style.transform = `scale(${1 + (1 - k2n) * 0.25})`;
     // きっかけ
     show(k1, t, sparkHalf - 0.1, { out: tt - 0.2 }); show(k2, t, sparkHalf + 0.9, { out: tt - 0.2, scale: 0.86, ease: Ease.back, d: 0.6 });
 

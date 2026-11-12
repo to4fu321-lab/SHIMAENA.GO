@@ -12,15 +12,16 @@ module.exports = function cues(V) {
   const inv = (pts, r) => { for (let i = 1; i < pts.length; i++) if (r <= pts[i][1]) { const [a, ra] = pts[i - 1], [b, rb] = pts[i]; return a + ((r - ra) / (rb - ra)) * (b - a); } return pts[pts.length - 1][0]; };
   const c17 = L("c17"), c22 = L("c22"), c23 = L("c23");
   const ask = [[T("ask"), 0.6], [T("ring"), 7.0]];
-  const ring = [[T("ring"), 0.2], [c17 + 0.15, 3.9], [c17 + 0.6, 4.4], [c17 + 1.4, 7.9], [T("reason"), 11.9]];
-  const map = [[T("map"), 2.2], [L("c20") + 1.4, 5.7], [T("finish"), 28.6]];
+  // 地図: act2-demo.js の mapPts と同じ（完了した瞬間を、等しい間隔に並べる）
+  const dones = Object.keys(REC.map.marks).filter((n) => /^done/.test(n)).map((n) => mk("map", n)).sort((a, b) => a - b);
+  const t1 = T("map") + 1.1, step = (T("finish") - 1.5 - t1) / dones.length;
   return {
     TL, T, E, L, LE,
     land: T("hello") + 1.55,
     askTaps: ["omakase", "genkan"].map((n) => inv(ask, mk("ask", n))),
-    arrive: [inv(ring, mk("ring", "arrive-b")), inv(ring, mk("ring", "arrive-a"))],
+    arrive: [c17 + 0.3, c17 + 0.58, c17 + 0.86],
     goTap: T("go") + 0.85,
-    done: [1, 2, 3, 4, 5, 6].map((i) => inv(map, mk("map", "done" + i))),
+    done: dones.map((_, i) => t1 + i * step + step * 0.25 + (step * 0.75) * (0.5 / 1.4)),
     finTap: c22 + 1.0, shutter: c22 + 1.45, checks: [c22 + 3.6, c22 + 4.1], clear: c23 - 0.3,
     cardTap: T("card") + 0.9,
   };

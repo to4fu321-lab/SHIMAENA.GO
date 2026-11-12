@@ -462,6 +462,36 @@ export interface CompleteResult {
 }
 
 /**
+ * 順番の鍵の外で、先に写真を Claude に確かめてもらう（11/11）。
+ * 写真の確認は 30〜60 秒かかる。鍵を持ったまま待つと、そのあいだ近所の人の「行く」などが全部うしろで待たされる。
+ * ここでは読むだけ（保存しない）。結果は覚えておき、鍵の中の completeWithPhoto が同じ人・同じ写真ならそれを使う。
+ * 出撃中でない・同じ写真がもう受け付け済み・失敗したときは何もしない（鍵の中で、今までどおり処理する）。
+ */
+export async function precheckPhoto(participantId: string, image: PhotoInput, now = new Date()): Promise<void> {
+  try {
+    const s = await loadMorning();
+    const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
+    if (!sortie || !s.morning.missions.some((m) => m.id === sortie.missionId)) return;
+    const fp = photoFingerprint(image.bytes);
+    if (await photoSeen(appToday(s, now), fp)) return;
+    const check = await checkPhoto(image);
+    for (const [k, v] of prechecked) if (Date.now() - v.at > PRECHECK_TTL_MS) prechecked.delete(k);
+    prechecked.set(`${participantId}:${fp}`, { check, at: Date.now() });
+  } catch (e) {
+    console.error("[photo] 先の確認に失敗（鍵の中でもう一度確かめます）:", e instanceof Error ? e.message : e);
+  }
+}
+const PRECHECK_TTL_MS = 10 * 60_000;
+const prechecked = new Map<string, { check: PhotoCheck; at: number }>();
+/** 先に確かめた結果を1回だけ取り出す */
+function takePrechecked(participantId: string, fp: string): PhotoCheck | undefined {
+  const key = `${participantId}:${fp}`;
+  const hit = prechecked.get(key);
+  prechecked.delete(key);
+  return hit && Date.now() - hit.at <= PRECHECK_TTL_MS ? hit.check : undefined;
+}
+
+/**
  * 写真1枚で1軒を完了にする（spec 2）。Claude が写真を確認 → その家の出撃を全部完了 → 得点 → 依頼者と仲間に通知。
  */
 /** opts.fast: 撮影ステージ用（11/8 本人「実際の AI 読み込みなどはしなくて良い。一連の流れをトータルで動かして」）。写真は Claude に送らず、決まった確認で完了にする */
@@ -486,7 +516,7 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
     const demo: PhotoCheck = { cleared: true, passable: true, icy: false, comment: "玄関前から道路まで、通れるようになっています。お疲れさまでした。（撮影用の決まった文）" };
     return finishMission(s, roster, sortie, mission, demo, participantId, now, { fast: true });
   }
-  const check = await checkPhoto(image);
+  const check = takePrechecked(participantId, fp) ?? (await checkPhoto(image));
   // 雪質が気温と食い違えば「ふつうの雪」に戻す（写真の見た目だけで決めつけない。spec v1.8）
   const type = consistentSnowType(check.snowType, s.morning.rollcall.tempMinC);
   if (type !== check.snowType) {

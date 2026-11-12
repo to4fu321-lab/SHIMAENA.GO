@@ -10,8 +10,13 @@ async function startCast(page, dir, t0 = Date.now() / 1000) {
   const cdp = await page.context().newCDPSession(page);
   const frames = [];
   let n = 0;
+  // CAST_MAX_FPS: 長い録画（待ち時間が多い場面）で、保存するコマを間引く（ディスクを使い切らないように）
+  const minGap = process.env.CAST_MAX_FPS ? 1 / Number(process.env.CAST_MAX_FPS) : 0;
+  let lastT = -1;
   cdp.on("Page.screencastFrame", (ev) => {
     const t = (ev.metadata.timestamp ?? Date.now() / 1000) - t0;
+    if (minGap && t - lastT < minGap) { cdp.send("Page.screencastFrameAck", { sessionId: ev.sessionId }).catch(() => {}); return; }
+    lastT = t;
     const file = `c${String(++n).padStart(5, "0")}.jpg`;
     fs.writeFileSync(path.join(dir, file), Buffer.from(ev.data, "base64"));
     frames.push({ t: +t.toFixed(4), file });

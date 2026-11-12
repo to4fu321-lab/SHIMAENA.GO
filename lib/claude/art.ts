@@ -80,7 +80,7 @@ const RULES =
   "text・image・style 属性・CSS・外のファイルは使えません（使うと消えます）。属性で色や線を書きます。";
 
 /** その時の材料から、Claude に1枚の絵をゼロから描いてもらう（見直し1回つき）。キーがなければ undefined */
-export async function drawPicture(input: ArtInput, opts: { review?: boolean } = {}): Promise<DrawnArt | undefined> {
+export async function drawPicture(input: ArtInput, opts: { review?: boolean; until?: number } = {}): Promise<DrawnArt | undefined> {
   if (!hasClaudeKey()) return undefined;
   const started = Date.now();
   const modelId = process.env.CARD_ART_MODEL?.trim() || undefined;
@@ -115,7 +115,8 @@ export async function drawPicture(input: ArtInput, opts: { review?: boolean } = 
   let why = first.why;
   let rounds = 1;
   // 見直し: 描いた絵を画像にして見せ、直してもらう（4分の予算のうち、1回目で2分半を超えたら見直さない）
-  if (opts.review !== false && Date.now() - started < 150_000) {
+  // until（締切）があるときは、見直しに 100 秒残っていなければ見直さない（締切を過ぎると、1回目の絵まで捨てることになる）
+  if (opts.review !== false && Date.now() - started < 150_000 && (opts.until === undefined || opts.until - Date.now() > 100_000)) {
     try {
       const png = await svgToPng(wrapPicture(draft.svg), { width: PIC_W });
       const second = await askJsonLong({

@@ -4,12 +4,12 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   root.innerHTML = `
     <div class="full" style="background:linear-gradient(180deg,#d6e6f1 0%,#eef4f9 58%,#dfeaf2 100%)"></div>
     <svg class="abs" style="left:0;bottom:0" width="1920" height="300" viewBox="0 0 1920 300"><path d="M0 190 C300 120 520 210 820 160 C1120 110 1400 200 1920 130 L1920 300 L0 300 Z" fill="#fff" opacity=".75"/><path d="M0 240 C400 190 900 260 1300 215 C1600 185 1800 230 1920 215 L1920 300 L0 300 Z" fill="#fff"/></svg>
-    <div class="step" id="a2step"><span class="chip"><b>1</b>知らせる</span><span class="chip"><b>2</b>割り振る</span><span class="chip"><b>3</b>確かめる</span></div>
+    <div class="full hud" style="z-index:20;pointer-events:none"><div class="step" id="a2step"><span class="chip"><b>1</b>知らせる</span><span class="chip"><b>2</b>割り振る</span><span class="chip"><b>3</b>確かめる</span></div>
     <div class="abs" id="a2clock" style="right:44px;top:30px;width:150px;height:150px">
       <svg width="150" height="150" viewBox="0 0 150 150"><circle cx="75" cy="75" r="62" fill="#fff" stroke="#d3e0ea" stroke-width="12"/><circle id="a2arc" cx="75" cy="75" r="62" fill="none" stroke="#e8834f" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 75 75)"/></svg>
       <div class="abs mono" id="a2time" style="left:0;right:0;top:40px;text-align:center;font-size:40px;font-weight:800;color:#1e3346">6:30</div>
       <div class="abs" id="a2min" style="left:0;right:0;top:88px;text-align:center;font-family:var(--sans);font-size:19px;font-weight:800;color:#c96a3a">0分</div>
-    </div>
+    </div></div>
     <div class="full" id="a2s"></div>`;
   const q = (s) => root.querySelector(s);
   const stage = q("#a2s"), pills = [...q("#a2step").children], stepEl = q("#a2step"), clock = q("#a2clock"), arc = q("#a2arc"), timeEl = q("#a2time"), minEl = q("#a2min");
@@ -35,7 +35,8 @@ ACTS.push({ from: "ask", to: "card", make(root) {
 
   // ── 割り振る ──
   const pRe = add(phone("reason", "a", { w: PW, label: lab("町の地図（田中さん）") }));
-  const lRe = add(lens("reason", "a", { x: 8, y: 548, w: 374, h: 100 }, 1080));
+  const rb = REC.reason.marks.box?.box, reBox = rb ? { x: Math.max(0, rb.x - 6), y: rb.y - 6, w: Math.min(390, rb.w + 12), h: rb.h + 12 } : { x: 8, y: 548, w: 374, h: 100 };
+  const lRe = add(lens("reason", "a", reBox, 1080));
   const reTxt = panel(720, 190, 1120, `<div class="kick">${SPARK("#c96a3a", 30)}　Claude が決めた人数と、その理由</div>`);
   const reCard = panel(720, 610, 1080, `<div style="display:flex;gap:18px;align-items:stretch">
       <div class="card" style="position:relative;flex:1;padding:22px 28px"><div class="kick" style="font-size:22px">わたすもの</div><div class="body" style="font-size:28px;color:#1e3346;font-weight:700;margin-top:6px">予報・頼み方・家の位置<br>採点表 <span class="mono" style="font-size:25px">rubric.json</span></div></div>
@@ -48,16 +49,43 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   const goTxt = panel(800, 300, 320, `<div style="text-align:center"><div class="head" style="font-size:60px">「行く」</div><svg width="300" height="70" viewBox="0 0 300 70"><path id="a2arr" d="M10 35 H270 M240 10 L275 35 L240 60" fill="none" stroke="#e8834f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><div class="body" style="font-weight:800;color:#1e3346;font-size:30px;margin-top:6px">家の人にも<br>「向かっています」</div></div>`);
   const arr = q("#a2arr");
 
+  // ── ヘルプ: 人手が足りない → 近くの人に知らせる → ほかのチームの人も来られる ──
+  const HP = REC._help || {}, hasH = !!REC.help, hasHg = !!(REC.helpgo && REC.helpgo.marks.go);
+  const pHa = hasH ? add(phone("help", "a", { w: PW, label: lab(`田中さん（${HP.myTeam || "サルビア"}）`) })) : null;
+  const pHb = hasHg ? add(phone("helpgo", "b", { w: PW, label: lab(`ほかのチームの人（${HP.helperTeam || "別のチーム"}）`) })) : null;
+  const helpTxt = panel(700, 190, 560, `<div class="kick" style="color:#c0392b">ヘルプ</div><div class="head" style="margin-top:8px;font-size:66px;line-height:1.25">人手が足りない<br>→ 近くに知らせる</div>
+    <svg width="520" height="70" viewBox="0 0 520 70" style="margin-top:18px"><path id="a2harr" d="M10 35 H490 M460 10 L495 35 L460 60" fill="none" stroke="#c0392b" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+    <div id="a2hc" style="margin-top:22px;display:flex;flex-direction:column;gap:14px;align-items:flex-start"><span class="chip" style="background:#fff;color:#1e3346;font-size:30px;padding:10px 24px;box-shadow:0 10px 24px rgba(40,70,100,.14)">ほかのチームも、助けに行ける</span><span class="chip" style="background:#fff;color:#1e3346;font-size:30px;padding:10px 24px;box-shadow:0 10px 24px rgba(40,70,100,.14)">10分だけでも OK</span></div>`);
+  const harr = q("#a2harr"), hChips = [...q("#a2hc").children];
+  const tH = SC.help ? T("help") : T("map"), c21 = SC.help ? L("c21") : tH, e21 = SC.help ? LE("c21") : tH + 1;
+  const hm = hasH ? REC.help.marks : {}, hg = hasHg ? REC.helpgo.marks : {};
+  const vShort = c21 + 0.5, vSend = c21 + 1.5, vB = c21 + (e21 - c21) * 0.52, vGo2 = vB + 1.3;
+
   // ── 地図（チーム戦）──
   const pMap = add(phone("map", "a", { w: PW, label: lab("町の地図") }));
-  const lMap = add(lens("map", "a", { x: 28, y: 178, w: 216, h: 190 }, 760));
+  const mb = REC.map.marks.bbox?.box;
+  const mapBox = (() => {
+    if (!mb) return { x: 28, y: 178, w: 216, h: 190 };
+    // 印の範囲に少し余白をつけ、窓の形（760:668）に合わせる
+    // 窓は 760×668 に収まるいちばん大きい形（スマホの幅 390 より広くは切り出せない）
+    const pad = 14, x0 = Math.max(0, mb.x - pad), x1 = Math.min(390, mb.x + mb.w + pad), y0 = Math.max(64, mb.y - pad), y1 = mb.y + mb.h + pad;
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  })();
+  const mapW0 = Math.round(mapBox.w * Math.min(760 / mapBox.w, 668 / mapBox.h));
+  const padBox = (b) => { const pad = 14, x0 = Math.max(0, b.x - pad), x1 = Math.min(390, b.x + b.w + pad), y0 = Math.max(64, b.y - pad), y1 = b.y + b.h + pad; return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; };
+  const mapBoxes = Object.values(REC.map.marks).filter((m) => m.box).map((m) => ({ t: m.t, r: padBox(m.box) })).sort((a, b) => a.t - b.t);
+  const lMap = add(lens("map", "a", mapBox, mapW0));
+  const allDone = panel(700, 150 + 668 + 16, 760, `<div style="text-align:center"><span class="chip" style="background:#1e7a52;color:#fff;font-size:32px;padding:10px 28px">✓ 全部の家に、色がつきました</span></div>`);
   const teams = [["salvia", "サルビア", "#2F6FE4"], ["marigold", "マリーゴールド", "#FF8A3D"], ["lupinus", "ルピナス", "#9B5DE5"]];
   const teamTxt = panel(1500, 170, 400, `<div class="kick">3チーム戦</div>` + teams.map(([k, n, c], i) => `<div class="a2team" style="position:absolute;left:0;top:${60 + i * 150}px;display:flex;align-items:center;gap:14px">${mascot(SCARF[k], 120)}<span class="chip" style="background:${c};color:#fff;font-size:27px;padding:6px 20px">${n}</span></div>`).join("") +
-    `<div id="a2shuf" style="position:absolute;left:0;top:530px;width:400px"><span class="chip" style="background:#1e3346;color:#fff;font-size:30px">🔀 毎週シャッフル</span><div class="body" style="font-size:28px;margin-top:12px;font-weight:700">個人の順位は出さない。<br>となりの人は、来週の仲間。</div></div>`);
+    `<div id="a2shuf" style="position:absolute;left:0;top:530px;width:400px"><span class="chip" style="background:#1e3346;color:#fff;font-size:30px">■ 終わった家</span><div class="body" style="font-size:28px;margin-top:12px;font-weight:700">四角がチームの色に。<br>個人の順位は出さない。</div></div>`);
   const teamEls = [...teamTxt.querySelectorAll(".a2team")], shuf = q("#a2shuf");
 
   // ── 確かめる ──
   const pFin = add(phone("finish", "a", { w: PW, label: lab("田中さん（手伝う人）") }));
+  // カードの場面だけ別の録画（rec/card）があれば、そちらを使う（公開版の完了画面にカードが出なかったとき）
+  const CR = REC.card ? "card" : "finish";
+  const pCard = CR === "finish" ? pFin : add(phone("card", "a", { w: PW, label: lab("田中さん（手伝う人）") }));
   const PWd = 780, PHt = Math.round((PWd * 768) / 1408);
   const photo = add($(`<div class="abs" style="left:720px;top:150px;width:${PWd}px;height:${PHt}px;border-radius:26px;overflow:hidden;box-shadow:0 22px 50px rgba(20,40,60,.3),0 0 0 6px #fff">
       <img src="${ASSET.before}" style="position:absolute;inset:0;width:100%;height:100%"><div id="a2aft" style="position:absolute;inset:0;overflow:hidden"><img src="${ASSET.after}" style="position:absolute;left:0;top:0;width:${PWd}px;height:${PHt}px"></div>
@@ -70,17 +98,26 @@ ACTS.push({ from: "ask", to: "card", make(root) {
   const ten = panel(1530, 150, 360, `<div style="text-align:center"><div style="font-size:170px;font-weight:900;line-height:1;color:#e8834f">10<span style="font-size:80px">分</span></div><div class="body" style="font-weight:800;color:#1e3346;font-size:30px;margin-top:6px">1軒の玄関が、開く。</div></div>`);
 
   // ── カード ──
-  const lCard = add(lens("finish", "a", { x: 44, y: 128, w: 302, h: 424 }, 470));
+  const lCard = add(lens(CR, "a", { x: 44, y: 128, w: 302, h: 424 }, 470));
   const cardTxt = panel(1300, 230, 600, `<div class="kick">お礼は、その朝だけのカード</div><div class="head" style="margin-top:10px;font-size:68px">${SPARK("#e8834f", 60)} が毎回、<br>ゼロから描く。</div>
     <div class="body" style="margin-top:22px;font-size:30px;white-space:nowrap">その朝の空・雪・人数・チームの色から、<br>SVG で描く。<br>描いたあと、自分で見て1回なおす。</div>
-    <div class="body" style="margin-top:22px;font-size:21px;color:#7890a5">※ この録画の絵は、API キーなしで動かしたときの見本です</div>`);
+    <div class="body" style="margin-top:22px;font-size:21px;color:#7890a5">${REC._meta?.prod && !REC.card && !REC.finish.local ? "※ この絵は、公開中のアプリで Claude が描いたものです" : "※ この録画の絵は、API キーなしで動かしたときの見本です"}</div>`);
 
   const tA = T("ask"), tR = T("ring"), tRe = T("reason"), tG = T("go"), tM = T("map"), tF = T("finish"), tC = T("card"), tE = E("card");
   const c17 = L("c17"), c22 = L("c22"), c23 = L("c23");
   // 場面ごとの出入り（0〜1）と、横からすべりこむ動き
   const seg = (t, a, b) => win(t, a, a + 0.45, b - 0.3, b);
   const slide = (t, a) => (1 - pr(t, a, 0.6, Ease.out5)) * 70;
-  const ringRec = (t) => kf(t, [[tR, 0.2], [c17 + 0.15, 3.9], [c17 + 0.6, 4.4], [c17 + 1.4, 7.9], [tRe, 11.9]], Ease.lin);
+  // 録画の時間合わせは、録画の印（届いた・押した・完了した瞬間）から決める。本番は Claude を待つ時間があるので、待ちは飛ばす
+  const arriveAt = c17 + 0.3;
+  const ringRec = (t, k, i) => { const a = mk("ring", "arrive-" + k), at = arriveAt + i * 0.28; return kf(t, [[tR, 0.3], [at - 0.02, 0.8], [at, a - 0.2], [tRe + 0.4, a - 0.2 + (tRe + 0.4 - at)]], Ease.lin); };
+  const mapPts = (() => {
+    const dones = Object.keys(REC.map.marks).filter((n) => /^done/.test(n)).map((n) => mk("map", n)).sort((a, b) => a - b);
+    const t1 = tM + 1.1, step = (tF - 1.5 - t1) / dones.length, pts = [[tM, mk("map", "fold") - 0.5], [t1, mk("map", "fold") + 1.4]];
+    dones.forEach((d, i) => { pts.push([t1 + i * step + step * 0.25, d - 0.5], [t1 + (i + 1) * step, d + 0.9]); });
+    if (REC.map.marks.all) pts.push([tF - 1.2, mk("map", "all") + 0.2], [tF + 0.4, mk("map", "all") + 1.2]);
+    return pts;
+  })();
   const tapGo = tG + 0.85;
   return (t) => {
     sn.update(t, 0.7);
@@ -104,11 +141,10 @@ ACTS.push({ from: "ask", to: "card", make(root) {
 
     // 知らせる
     o = seg(t, tR, tRe + 0.2);
-    const rr = ringRec(t);
-    pR.forEach((p, i) => { p.at(ringX[i], PY + (1 - pr(t, tR + i * 0.1, 0.6, Ease.out5)) * 60, { op: o }); p.frame(rr); });
-    ["a", "b", "c"].forEach((k, i) => { const dt = rr - mk("ring", "arrive-" + k); waves[i].innerHTML = dt > 0 && o > 0.5 ? [0, 0.35, 0.7].map((d) => { const u = clamp((dt - d) / 1.3); return u > 0 && u < 1 ? `<i class="abs" style="left:${-190 - u * 46}px;top:${-392 - u * 46}px;width:${380 + u * 92}px;height:${784 + u * 92}px;border-radius:${56 + u * 30}px;border:${7 * (1 - u) + 2}px solid #e8834f;opacity:${(1 - u) * 0.8}"></i>` : ""; }).join("") : ""; });
+    pR.forEach((p, i) => { p.at(ringX[i], PY + (1 - pr(t, tR + i * 0.1, 0.6, Ease.out5)) * 60, { op: o }); p.frame(ringRec(t, "abc"[i], i)); });
+    ["a", "b", "c"].forEach((k, i) => { const dt = t - (arriveAt + i * 0.28); waves[i].innerHTML = dt > 0 && o > 0.5 ? [0, 0.35, 0.7].map((d) => { const u = clamp((dt - d) / 1.3); return u > 0 && u < 1 ? `<i class="abs" style="left:${-190 - u * 46}px;top:${-392 - u * 46}px;width:${380 + u * 92}px;height:${784 + u * 92}px;border-radius:${56 + u * 30}px;border:${7 * (1 - u) + 2}px solid #e8834f;opacity:${(1 - u) * 0.8}"></i>` : ""; }).join("") : ""; });
     ringTxt.style.opacity = o; ringTxt.style.transform = `translateX(${slide(t, tR + 0.3)}px)`;
-    const bd = rr - mk("ring", "arrive-b");
+    const bd = t - arriveAt;
     bell.style.transform = `rotate(${bd > 0 && bd < 3 ? Math.sin(bd * 22) * 22 * Math.exp(-bd * 1.2) : 0}deg)`;
 
     // 割り振る
@@ -119,39 +155,55 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     reTxt.style.opacity = o * pr(t, tRe + 0.7, 0.4); reCard.style.opacity = o * pr(t, L("c18") + 1.9, 0.5); reCard.style.transform = `translateY(${(1 - pr(t, L("c18") + 1.9, 0.6)) * 26}px)`;
 
     // 行く
-    o = seg(t, tG, tM + 0.2);
-    const gr = kf(t, [[tG, 1.0], [tapGo, mk("go", "go")], [tM, 6.2]], Ease.lin);
-    pGa.at(380 - slide(t, tG), PY, { op: o }); pGa.frame(gr);
-    pGc.at(1180 + slide(t, tG), PY, { op: o }); pGc.frame(gr);
+    o = seg(t, tG, tH + 0.2);
+    const g0 = mk("go", "go"), gRe = Math.max(g0 + 0.3, mk("go", "reply") - 0.15), gCo = mk("go", "coming");
+    pGa.at(380 - slide(t, tG), PY, { op: o }); pGa.frame(kf(t, [[tG, g0 - (tapGo - tG)], [tapGo, g0], [tapGo + 0.3, g0 + 0.3], [tapGo + 0.32, gRe], [tH + 0.3, gRe + (tH + 0.3 - tapGo)]], Ease.lin));
+    pGc.at(1180 + slide(t, tG), PY, { op: o }); pGc.frame(kf(t, [[tG, g0 - (tapGo - tG)], [tapGo + 0.75, g0], [tapGo + 0.77, gCo - 0.15], [tH + 0.3, gCo + 1.2]], Ease.lin));
     goTxt.style.opacity = o * pr(t, tapGo - 0.2, 0.3); arr.setAttribute("stroke-dashoffset", (1 - pr(t, tapGo + 0.1, 0.7, Ease.io)).toFixed(3));
+
+    // ヘルプ
+    o = SC.help ? seg(t, tH, tM + 0.2) : 0;
+    if (pHa) { pHa.at(250 - slide(t, tH), PY, { op: o }); pHa.frame(kf(t, [[tH, (hm.short?.t ?? 2) - 0.9], [vShort, hm.short?.t ?? 2], [vSend, hm.send?.t ?? 4], [vSend + 0.5, (hm.send?.t ?? 4) + 0.6], [vSend + 0.52, (hm.sent?.t ?? 8) - 0.4], [tM + 0.3, (hm.sent?.t ?? 8) + 2]], Ease.lin)); }
+    if (pHb) { pHb.at(1300 + slide(t, tH + 0.2), PY, { op: o * (0.4 + 0.6 * pr(t, vB - 0.2, 0.4)) }); pHb.frame(kf(t, [[tH, (hg.shown?.t ?? 2) - 0.2], [vGo2 - 0.3, (hg.go?.t ?? 4) - 0.3], [vGo2 + 0.3, (hg.go?.t ?? 4) + 0.3], [vGo2 + 0.32, (hg.reply?.t ?? 8) - 0.2], [tM + 0.3, (hg.reply?.t ?? 8) + 1.6]], Ease.lin)); }
+    helpTxt.style.opacity = o * pr(t, tH + 0.3, 0.4); helpTxt.style.transform = `translateX(${slide(t, tH + 0.15)}px)`;
+    harr.setAttribute("stroke-dashoffset", (1 - pr(t, vSend + 0.2, 0.8, Ease.io)).toFixed(3));
+    hChips.forEach((c, i) => show(c, t, vB + 0.1 + i * 0.9, { dx: 20, dy: 0 }));
 
     // 地図
     o = seg(t, tM, tF + 0.2);
-    const mr = kf(t, [[tM, 2.2], [L("c20") + 1.4, 5.7], [tF, 28.6]], Ease.lin);
+    const mr = kf(t, mapPts, Ease.lin);
+    // 録画の途中で地図の見え方が変わる（全部終わると引く）ので、その時の印の範囲を映す
+    const mbNow = mapBoxes.filter((b) => b.t <= mr + 0.05).at(-1) ?? mapBoxes[0];
+    if (mbNow && mbNow !== lMap._b) { lMap._b = mbNow; lMap._w = Math.round(mbNow.r.w * Math.min(760 / mbNow.r.w, 668 / mbNow.r.h)); lMap.region(mbNow.r, lMap._w); }
+    const mapW = lMap._w ?? mapW0;
     pMap.at(250 - slide(t, tM), PY, { op: o }); pMap.frame(mr);
-    lMap.at(700, 150, { op: o * pr(t, tM + 0.5, 0.5), scale: lerp(0.9, 1, pr(t, tM + 0.5, 0.6, Ease.back)) }); lMap.frame(mr);
+    lMap.at(700 + (760 - mapW) / 2, 150, { op: o * pr(t, tM + 0.5, 0.5), scale: lerp(0.9, 1, pr(t, tM + 0.5, 0.6, Ease.back)) }); lMap.frame(mr);
     teamTxt.style.opacity = o;
-    const sw = pr(t, L("c21") + 0.2, 0.9, Ease.io), order = [[0, 1, 2], [2, 0, 1]];
+    const sw = 0, order = [[0, 1, 2], [2, 0, 1]];
     teamEls.forEach((e, i) => { const y = lerp(order[0][i], order[1][i], sw) * 150, x = Math.sin(sw * 3.14) * (i === 1 ? 50 : -40); e.style.transform = `translate(${x + slide(t, tM + 0.3 + i * 0.12)}px,${y - i * 150}px)`; e.style.opacity = pr(t, tM + 0.3 + i * 0.12, 0.4); });
-    show(shuf, t, L("c21") + 0.1, { scale: 0.9, ease: Ease.back });
+    show(shuf, t, L("c20") + 0.9, { scale: 0.9, ease: Ease.back });
+    show(allDone, t, tF - 1.25, { scale: 0.8, ease: Ease.back }); allDone.style.opacity = o * pr(t, tF - 1.25, 0.3);
 
     // 確かめる → 10分
     o = seg(t, tF, tE);
-    const fr = t < tC ? kf(t, [[tF, 1.0], [c22 + 1.0, mk("finish", "finish")], [c22 + 1.5, 3.0], [c23 - 0.4, 3.0], [c23 - 0.25, 3.25], [tC, 7.6]], Ease.lin) : kf(t, [[tC, 7.6], [tC + 0.9, mk("finish", "card")], [tE, 15.4]], Ease.lin);
-    pFin.at(250 - slide(t, tF), PY, { op: o }); pFin.frame(fr);
+    const f0 = mk("finish", "finish"), fc = mk("finish", "clear"), fk = mk(CR, "card"), fs = Math.max(fk + 0.4, (REC[CR].marks.cardshown?.t ?? fk + 2.6) - 2.4);
+    const fr = t < tC ? kf(t, [[tF, f0 - (c22 + 1.0 - tF)], [c22 + 1.0, f0], [c22 + 1.5, f0 + 0.5], [c23 - 0.4, f0 + 0.5], [c23 - 0.38, fc - 0.1], [tC, fc - 0.1 + (tC - c23 + 0.38)]], Ease.lin)
+      : kf(t, [[tC, fk - 0.9], [tC + 0.9, fk], [tC + 1.25, fk + 0.35], [tC + 1.27, fs], [tE + 0.4, fs + (tE + 0.4 - tC - 1.27)]], Ease.lin);
+    if (pCard === pFin) { pFin.at(250 - slide(t, tF), PY, { op: o }); pFin.frame(fr); }
+    else { pFin.at(250 - slide(t, tF), PY, { op: t < tC ? o : 0 }); if (t < tC) pFin.frame(fr); pCard.at(250, PY, { op: t >= tC ? o : 0 }); if (t >= tC) pCard.frame(fr); }
     const po = seg(t, c22 + 1.3, tC + 0.15), wipe = pr(t, c22 + 2.5, 1.5, Ease.io);
     photo.style.opacity = po; photo.style.transform = `scale(${lerp(0.9, 1, pr(t, c22 + 1.3, 0.55, Ease.back))})`;
     aft.style.width = wipe * 100 + "%"; scan.style.left = `calc(${wipe * 100}% - 3px)`; scan.style.opacity = wipe > 0.01 && wipe < 0.99 ? 1 : 0;
     pl.textContent = wipe > 0.5 ? "雪かきのあと（この1枚を送る）" : "雪かきの前";
     checks.style.opacity = po;
     cks.forEach((c, i) => show(c, t, c22 + 3.6 + i * 0.5, { dy: 14, scale: 0.8, ease: Ease.back }));
-    lClear.at(720, 150 + PHt + 104, { op: seg(t, c23 - 0.1, tC + 0.15), scale: lerp(0.9, 1, pr(t, c23 - 0.1, 0.5, Ease.back)) }); lClear.frame(Math.max(fr, 3.6));
+    lClear.at(720, 150 + PHt + 104, { op: seg(t, c23 - 0.1, tC + 0.15), scale: lerp(0.9, 1, pr(t, c23 - 0.1, 0.5, Ease.back)) }); lClear.frame(t < tC ? Math.max(fr, fc + 0.5) : fc + 0.6);
     ten.style.opacity = seg(t, c23, tC + 0.15); ten.style.transform = `scale(${lerp(0.7, 1, pr(t, c23, 0.5, Ease.back))})`;
 
     // カード
     const co = seg(t, tC + 0.1, tE + 0.3);
     lCard.at(770, 150, { op: co * pr(t, tC + 2.0, 0.5), scale: lerp(0.85, 1, pr(t, tC + 2.0, 0.6, Ease.back)) }); lCard.frame(fr);
     cardTxt.style.opacity = co; cardTxt.style.transform = `translateX(${slide(t, tC + 0.3)}px)`;
-    return { dark: true, note: "※ 画面はすべて実際のアプリの録画です（町と人は架空のデモ。AI の応答は、API キーなしのときの見本）" };
+    return { dark: true, note: REC._meta?.prod ? (REC.finish.local && t >= tF ? "※ この場面（写真 → 完了 → カード）は、API キーなしで動かしたときの録画です（写真の確認とカードの絵は見本）" : REC.card && t >= tC ? "※ このカードの場面だけ、API キーなしで動かしたときの録画です（絵は見本）" : "※ 画面は、公開中のアプリの録画です（町と人は架空のデモ。AI の答えは本物の Claude）") : "※ 画面はすべて実際のアプリの録画です（町と人は架空のデモ。AI の応答は、API キーなしのときの見本）" };
   };
 } });

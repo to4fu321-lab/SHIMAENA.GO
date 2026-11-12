@@ -4,6 +4,7 @@ import { inboxKeyOf } from "../inbox/key";
 import { appendIn } from "../inbox/store";
 import { handleEvent } from "../line/handle";
 import type { LineEvent } from "../line/types";
+import { precheckPhoto } from "../morning/ops";
 import { withStateLock } from "../ops/lock";
 import type { Participant } from "../types";
 
@@ -33,6 +34,7 @@ export async function sendToCaptain(p: Participant, input: ChatInput, now = new 
     ev = { ...base, type: "postback", postback: { data: input.data } } satisfies PostbackEvent;
   } else {
     await appendIn(key, { photo: true }, now);
+    await precheckPhoto(p.id, { bytes: input.bytes, mediaType: input.mediaType }, now); // 写真の確認は鍵の外で先に（map の finishAction と同じ）
     ev = { ...base, type: "message", message: { id: `${now.getTime()}`, type: "image", content: { bytes: input.bytes, mediaType: input.mediaType } } } satisfies MessageEvent;
   }
   await withStateLock(`chat:${input.kind}`, () => handleEvent(ev));

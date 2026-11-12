@@ -18,11 +18,11 @@ ACTS.push({ from: "thanks", to: "blank", make(root) {
       <div style="margin-top:44px;display:flex;flex-direction:column;gap:16px">${["AI は、書かない。", "文字にも、しない。", "要約も、しない。"].map((w) => `<div class="a3no" style="display:flex;align-items:center;gap:20px;font-size:50px;font-weight:700"><span style="display:inline-grid;place-items:center;width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.1);border:3px solid #ff9c8a;color:#ff9c8a;font-size:38px;font-weight:900">✕</span>${w}</div>`).join("")}</div>
     </div>`); stage.append(txt);
   const big = q("#a3big"), sub = q("#a3sub"), nos = [...root.querySelectorAll(".a3no")];
-  const t0 = T("thanks"), tb = T("blank"), te = E("blank"), c26 = L("c26"), c27 = L("c27"), c28 = L("c28"), d27 = LE("c27") - c27;
+  const t0 = T("thanks"), tb = T("blank"), te = E("blank"), c26 = L("c26"), c27 = L("c27"), c28 = LE("c27") - 0.6, d27 = LE("c27") - c27;
   return (t) => {
     sn.update(t, 0.6);
     ph.at(330 - (1 - pr(t, t0, 0.6, Ease.out5)) * 70, 134, { op: 1 });
-    ph.frame(kf(t, [[t0, 0.8], [c26 + 0.9, mk("thanks", "mic")], [c27 - 0.3, 4.0], [c27 + 0.3, mk("thanks", "talk")], [tb, mk("thanks", "talk") + (tb - c27 - 0.3)]], Ease.lin));
+    ph.frame(kf(t, [[t0, mk("thanks", "mic") - (c26 + 0.9 - t0)], [c26 + 0.9, mk("thanks", "mic")], [c26 + 1.3, mk("thanks", "mic") + 0.4], [c26 + 1.32, mk("thanks", "talk") - 1.3], [c27 + 0.3, mk("thanks", "talk")], [tb, mk("thanks", "talk") + (tb - c27 - 0.3)]], Ease.lin));
     show(big, t, c26 + 0.5, { scale: 0.85, ease: Ease.back, d: 0.7 });
     show(sub, t, c26 + (LE("c26") - c26) * 0.5);
     nos.forEach((n, i) => show(n, t, c27 + d27 * [0.42, 0.62, 0.78][i], { dx: 40, dy: 0 }));

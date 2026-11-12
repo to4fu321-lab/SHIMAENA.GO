@@ -1,5 +1,5 @@
 // 第4幕「作った人と、作り方」: 初心者がスマホから日本語で頼んだ7日間 → 夜の点検ループ → 隊長の決まり → この動画のこと。
-ACTS.push({ from: "maker", to: "meta", make(root) {
+ACTS.push({ from: "maker", to: "motto", make(root) {
   // 本人が実際に送った指示（docs/devlog.md の「本人「…」」から）
   const ASKS = ["隊長の言葉がずっと同じ", "アイコンをもっと分かりやすく。言葉を読まないと分からないのは NG", "仲間を増やす仕掛けに進めて", "物足りない。続けて改善", "README 長すぎる", "事実の羅列では心は動かない", "雪かきできなくても、ツルツルで危ない道の共有で手伝えるようにしたい", "もっと可愛い形で", "チャット来た時、下に自動スクロールしないのがある", "PC表示対応にして欲しい"];
   const C = TL.commits;
@@ -13,8 +13,8 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
         </div></div>
       <div class="abs" id="a4who" style="left:680px;top:150px;width:1160px">
         <div class="kick" style="color:#ffb37f">ぼくを作った人</div>
-        <div id="a4w1" style="font-size:104px;font-weight:900;line-height:1.2;margin-top:6px">学生服の営業。</div>
-        <div id="a4w2" class="body" style="color:#c9d7e4;font-size:40px;margin-top:8px">札幌に来て15年。毎年、雪かきで腰を痛める。</div>
+        <div id="a4w1" style="font-size:58px;font-weight:900;line-height:1.3;margin-top:6px;white-space:nowrap">日本一周して、<span style="color:#ffd59a">北海道に惚れ込んで</span>移住。</div>
+        <div id="a4w2" class="body" style="color:#c9d7e4;font-size:40px;margin-top:8px">関東から札幌へ。毎年、雪かきで腰を痛める。</div>
         <div id="a4w3" style="font-size:84px;font-weight:900;line-height:1.25;margin-top:56px;color:#ffd59a">プログラミングは、初めて。</div>
         <div id="a4w4" class="body" style="color:#c9d7e4;font-size:40px;margin-top:8px">スマホから、日本語で、Claude Code に頼んだ。</div>
       </div>
@@ -33,9 +33,9 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
     </div>
     <div class="full" id="a4r">
       <div class="abs kick" id="a4rk" style="left:0;right:0;top:120px;text-align:center;color:#ffb37f;font-size:38px">隊長の決まり</div>
-      ${[["点数・安全", "ぼくが決めない", "プログラムが計算する"], ["体のこと", "判断しない", "段取りと作業の話だけ"], ["ありがとう", "書かない", "人の声のまま"]].map(([a, b, c], i) => `<div class="glass a4rule" style="left:${150 + i * 560}px;top:222px;width:500px;height:500px;text-align:center">
+      ${[["点数・安全", "ぼくが決めない", "プログラムが計算する"], ["体のこと", "判断しない", "段取りと作業の話だけ"], ["ありがとう", "人が伝える", "AI は書かない・要約しない"]].map(([a, b, c], i) => `<div class="glass a4rule" style="left:${150 + i * 560}px;top:222px;width:500px;height:500px;text-align:center">
         <div style="margin-top:44px;font-family:var(--sans);font-size:38px;font-weight:800;color:#c9d7e4">${a}</div>
-        <div style="margin:26px auto 0;width:150px;height:150px;border-radius:50%;border:10px solid #ff9c8a;display:grid;place-items:center;font-size:96px;font-weight:900;color:#ff9c8a;line-height:1">✕</div>
+        <div style="margin:26px auto 0;width:150px;height:150px;border-radius:50%;border:10px solid ${i === 2 ? "#ffd59a" : "#ff9c8a"};display:grid;place-items:center;font-size:96px;font-weight:900;color:${i === 2 ? "#ffd59a" : "#ff9c8a"};line-height:1">${i === 2 ? "♥" : "✕"}</div>
         <div style="margin-top:26px;font-size:60px;font-weight:900">${b}</div><div style="margin-top:10px;font-family:var(--sans);font-size:30px;font-weight:700;color:#a9d3e6">→ ${c}</div></div>`).join("")}
     </div>
     <div class="full" id="a4m"><div class="abs" style="left:0;right:0;top:250px;text-align:center"><div id="a4m1" style="font-size:136px;font-weight:900;line-height:1.3">${SPARK("#e8834f", 110)} AI は、段取りを。</div><div id="a4m2" style="font-size:136px;font-weight:900;line-height:1.3;color:#ffd59a;text-shadow:0 0 70px rgba(255,170,90,.4)">人は、会いに行く。</div></div></div>
@@ -56,8 +56,8 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
   q("#a4x2").append($(`<div style="margin-top:20px;display:inline-block;padding:16px 34px;border-radius:30px;background:#fff;color:#1e3346;font-size:44px;font-weight:900">では、ぼくが話します。</div>`));
   const vs = qa(".a4v"), ns = qa(".a4n"), ticks = qa(".a4tick"), sts = qa(".a4st"), rules = qa(".a4rule"), tags = qa(".a4tag");
   const sn = snow(41, 70, { size: 3 }); root.insertBefore(sn, A);
-  const t0 = T("maker"), tw = T("week"), tr = T("rules"), tm = T("motto"), tx = T("meta"), te = E("meta");
-  const c29 = L("c29"), c31 = L("c31"), c32 = L("c32"), c33 = L("c33"), c36 = L("c36"), d36 = LE("c36") - c36, c37 = L("c37"), c38 = L("c38");
+  const t0 = T("maker"), tw = T("week"), tr = T("rules"), tm = T("motto"), tx = E("motto") + 9;
+  const c29 = L("c29"), c31 = L("c31"), c32 = L("c32"), c33 = L("c33"), c36 = L("c36"), d36 = LE("c36") - c36, c37 = L("c37"), c38 = 1e9;
   return (t) => {
     sn.update(t, 0.35);
     A.style.opacity = win(t, t0 - 1, t0, tr - 0.1, tr + 0.4);
@@ -91,7 +91,7 @@ ACTS.push({ from: "maker", to: "meta", make(root) {
     // この動画のこと
     X.style.opacity = win(t, tx, tx + 0.35);
     show(q("#a4x1"), t, tx + 0.2, { scale: 0.9, ease: Ease.back, d: 0.6 });
-    show(q("#a4x2"), t, c38 + (LE("c38") - c38) * 0.62, { scale: 0.8, ease: Ease.back });
+    show(q("#a4x2"), t, c38 + 0 * 0.62, { scale: 0.8, ease: Ease.back });
     const f = Math.round(t * FPS), env = TL.env[f] || 0;
     cap.style.transform = `translateY(${-env * 10}px) rotate(${Math.sin(t * 7) * env * 4}deg)`;
     tags.forEach((g, i) => show(g, t, c38 + 1.2 + i * 0.16, { dy: 16 }));
