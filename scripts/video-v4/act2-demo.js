@@ -155,10 +155,10 @@ ACTS.push({ from: "ask", to: "card", make(root) {
     reTxt.style.opacity = o * pr(t, tRe + 0.7, 0.4); reCard.style.opacity = o * pr(t, L("c18") + 1.9, 0.5); reCard.style.transform = `translateY(${(1 - pr(t, L("c18") + 1.9, 0.6)) * 26}px)`;
 
     // 行く
-    o = seg(t, tG, tM + 0.2);
+    o = seg(t, tG, tH + 0.2);
     const g0 = mk("go", "go"), gRe = Math.max(g0 + 0.3, mk("go", "reply") - 0.15), gCo = mk("go", "coming");
-    pGa.at(380 - slide(t, tG), PY, { op: o }); pGa.frame(kf(t, [[tG, g0 - (tapGo - tG)], [tapGo, g0], [tapGo + 0.3, g0 + 0.3], [tapGo + 0.32, gRe], [tM + 0.3, gRe + (tM + 0.3 - tapGo)]], Ease.lin));
-    pGc.at(1180 + slide(t, tG), PY, { op: o }); pGc.frame(kf(t, [[tG, g0 - (tapGo - tG)], [tapGo + 0.75, g0], [tapGo + 0.77, gCo - 0.15], [tM + 0.3, gCo + 1.2]], Ease.lin));
+    pGa.at(380 - slide(t, tG), PY, { op: o }); pGa.frame(kf(t, [[tG, g0 - (tapGo - tG)], [tapGo, g0], [tapGo + 0.3, g0 + 0.3], [tapGo + 0.32, gRe], [tH + 0.3, gRe + (tH + 0.3 - tapGo)]], Ease.lin));
+    pGc.at(1180 + slide(t, tG), PY, { op: o }); pGc.frame(kf(t, [[tG, g0 - (tapGo - tG)], [tapGo + 0.75, g0], [tapGo + 0.77, gCo - 0.15], [tH + 0.3, gCo + 1.2]], Ease.lin));
     goTxt.style.opacity = o * pr(t, tapGo - 0.2, 0.3); arr.setAttribute("stroke-dashoffset", (1 - pr(t, tapGo + 0.1, 0.7, Ease.io)).toFixed(3));
 
     // ヘルプ
