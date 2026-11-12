@@ -50,7 +50,7 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
   // ── バトン ──
   const pA = has("baton") ? add(phone("baton", "a", { w: PW, label: lab("田中さん（途中で時間切れ）") })) : null;
   const pB = has("batonget") ? add(phone("batonget", "b", { w: PW, label: lab("近所の人（あとから通る）") })) : null;
-  const bTxt = panel(690, 190, 560, `<div class="kick">次の人へ、バトン</div><div class="head" style="margin-top:10px;font-size:74px">途中まででも、<br>いい。次の人へ。</div>
+  const bTxt = panel(690, 190, 560, `<div class="kick">次の人へ、バトン</div><div class="head" style="margin-top:10px;font-size:68px;white-space:nowrap">途中まででも、いい。<br>次の人へ。</div>
     <div class="body" style="margin-top:22px;font-size:31px">「ここまで雪かきしました」<br>「続きをお願いします」<br>名前は出ません。</div>`);
   const fly = add($(`<svg class="abs" style="left:640px;top:600px;overflow:visible" width="640" height="240" viewBox="0 0 640 240">
       <path id="tbPath" d="M0 150 C160 30 480 30 640 150" fill="none" stroke="#e8834f" stroke-width="9" stroke-linecap="round" stroke-dasharray="2 20" opacity=".7"/>
