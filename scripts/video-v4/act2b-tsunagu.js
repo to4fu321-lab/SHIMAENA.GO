@@ -45,7 +45,22 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
   const sGo = sm.go ? sm.go.t : 6, vGo = c61 + (e61 - c61) * 0.42;
   // 録画は「道の危険を知らせる」のカードから始まり、次へ →「自分の家の雪かき」→ GO。語りに合わせて、家 → 危ない道の順に光らせる
   const vRoad = c61 + (e61 - c61) * 0.62, sNext = sm.next0?.t ?? 2;
-  const sPts = pS ? [[tS, 0.3], [c61 + 0.2, sNext - 0.3], [c61 + 0.9, (sm.card?.t ?? 3) + 0.2], [vGo - 0.4, sGo - 0.4], [vGo + 0.5, sGo + 0.5], [tB + 0.5, (sm.started?.t ?? sGo + 3) + 1.5]] : [];
+  const sPts = pS ? [[tS, 0.3], [c61 + 0.2, sNext - 0.3], [c61 + 0.9, (sm.card?.t ?? 3) + 0.2], [vGo - 0.4, sGo - 0.4], [vGo + 0.5, sGo + 0.5], [(SC.road ? T("road") : tB) + 0.5, (sm.started?.t ?? sGo + 3) + 1.5]] : [];
+
+  // ── 道の危険を知らせる（種類をえらぶ → 写真 → 報告する。実際のアプリの録画）──
+  const hasR = has("road") && SC.road, tRd = SC.road ? T("road") : tB, c64 = SC.road ? L("c64") : tB, e64 = SC.road ? LE("c64") : tB + 1;
+  const pR = hasR ? add(phone("road", "a", { w: PW, label: lab("田中さん → 道の危険を知らせる") })) : null;
+  const rTxt = panel(690, 150, 1160, `<div class="kick" style="color:#c0392b">道の危険を知らせる</div><div class="head" style="margin-top:8px;font-size:68px;white-space:nowrap">危ない道は、<span style="color:#c96a3a">写真で知らせる</span>。</div>`);
+  const KINDS = ["除雪まだ", "道が細い", "歩道なし", "ぐさぐさ", "つるつる"];
+  const rKinds = panel(700, 330, 1150, `<div style="display:flex;gap:14px;flex-wrap:wrap">${KINDS.map((w) => `<span class="chip tbK" style="background:#fff;color:#1e3346;font-size:34px;padding:12px 28px;box-shadow:0 10px 24px rgba(120,70,30,.14)">${w}</span>`).join("")}</div>`);
+  const kEls = [...rKinds.querySelectorAll(".tbK")];
+  const rSteps = ["どんな危険かを、えらぶ", "写真を1枚", "場所つきで、近所の地図へ"].map((w, i) => panel(700, 450 + i * 92, 760, `<div style="display:flex;align-items:center;gap:18px"><span style="width:60px;height:60px;border-radius:50%;background:#c96a3a;color:#fff;display:grid;place-items:center;font-family:var(--maru);font-size:34px;font-weight:900">${i + 1}</span><span style="font-family:var(--maru);font-size:42px;font-weight:900;color:#1e3346">${w}</span></div>`));
+  const rPts2 = panel(1500, 470, 360, `<div class="card" style="position:relative;padding:22px 28px;text-align:center"><div style="font-family:var(--maru);font-weight:900;color:#c96a3a;line-height:1.05"><span style="font-size:40px">+</span><span id="tbR1" style="font-size:110px">0</span><span style="font-size:36px"> 羽</span></div><div style="font-family:var(--maru);font-weight:900;color:#2F6FE4;font-size:38px;margin-top:4px">チーム +<span id="tbR2">0</span> 点</div></div>`);
+  const rNote = panel(700, 740, 1150, `<div class="body" style="font-size:26px;color:#7a6a5e">車のナンバー・表札・顔は、AI がぼかします。</div>`);
+  const r1 = q("#tbR1"), r2 = q("#tbR2");
+  const rm = hasR ? REC.road.marks : {};
+  const vK = c64 + 0.5, vP = c64 + 1.5, vS = c64 + (e64 - c64) * 0.5, vDone = vS + 0.8;
+  const rPts = hasR ? [[tRd, (rm.go?.t ?? 4) + 0.6], [vK - 0.3, (rm.kind?.t ?? 6) - 0.3], [vK + 0.3, (rm.kind?.t ?? 6) + 0.3], [vP - 0.3, (rm.photo?.t ?? 8) - 0.3], [vP + 0.2, (rm.photo?.t ?? 8) + 0.2], [vP + 0.22, (rm.picked?.t ?? 11) - 0.1], [vS - 0.3, (rm.send?.t ?? 11.5) - 0.3], [vS + 0.3, (rm.send?.t ?? 11.5) + 0.3], [vDone, (rm.reported?.t ?? 13) - 0.1], [tB + 0.5, (rm.reported?.t ?? 13) + (tB + 0.5 - vDone)]] : [];
 
   // ── バトン ──
   const pA = has("baton") ? add(phone("baton", "a", { w: PW, label: lab("田中さん（途中で時間切れ）") })) : null;
@@ -101,7 +116,7 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
     show(cRule, t, vAns + 0.5, { dy: 12 }); cRule.style.opacity = o * pr(t, vAns + 0.5, 0.3);
 
     // ソロ
-    o = seg(t, tS, tB + 0.25);
+    o = seg(t, tS, tRd + 0.25);
     if (pS) { pS.at(250 - slide(t, tS), PY, { op: o }); pS.frame(kf(t, sPts, Ease.lin)); }
     sTxt.style.opacity = o; sTxt.style.transform = `translateX(${slide(t, tS + 0.15)}px)`;
     show(sNum, t, c61 + 0.2, { dy: 30 }); sNum.style.opacity = o * pr(t, c61 + 0.2, 0.35);
@@ -111,6 +126,17 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
     sB2.style.opacity = 0.45 + 0.55 * pr(t, vRoad - 0.2, 0.4);
     show(sBar, t, c61 + 1.2, { dy: 16 }); sBar.style.opacity = o * pr(t, c61 + 1.2, 0.3); sb.style.width = lerp(40, 40 + 14 * kA + 9 * kB, 1) * pr(t, c61 + 1.2, 0.6) + "%";
     show(sSteps, t, vRoad + 1.0, { dy: 16 }); sSteps.style.opacity = o * pr(t, vRoad + 1.0, 0.3);
+
+    // 道の危険を知らせる
+    o = SC.road ? seg(t, tRd, tB + 0.25) : 0;
+    if (pR) { pR.at(250 - slide(t, tRd), PY, { op: o }); pR.frame(kf(t, rPts, Ease.lin)); }
+    rTxt.style.opacity = o; rTxt.style.transform = `translateX(${slide(t, tRd + 0.15)}px)`;
+    rKinds.style.opacity = o * pr(t, tRd + 0.5, 0.4);
+    kEls.forEach((el, i) => { const on = i === 4 && t >= vK; el.style.background = on ? "#c0392b" : "#fff"; el.style.color = on ? "#fff" : "#1e3346"; el.style.transform = `scale(${on ? 1 + Math.max(0, 1 - (t - vK) * 3) * 0.2 : 1})`; });
+    rSteps.forEach((el, i) => { const at = [vK, vP, vS][i]; show(el, t, at - 0.15, { dx: 30, dy: 0 }); el.style.opacity = o * pr(t, at - 0.15, 0.3); });
+    const rk = pr(t, vDone, 0.9, Ease.out5);
+    show(rPts2, t, vDone - 0.1, { scale: 0.8, ease: Ease.back }); rPts2.style.opacity = o * pr(t, vDone - 0.1, 0.3); r1.textContent = Math.round(5 * rk); r2.textContent = Math.round(3 * rk);
+    show(rNote, t, vP + 0.6, { dy: 12 }); rNote.style.opacity = o * pr(t, vP + 0.6, 0.3);
 
     // バトン
     o = seg(t, tB, tN + 0.25);
@@ -146,6 +172,6 @@ ACTS.push({ from: "chat", to: "nakama", make(root) {
     weekEl.style.opacity = o * pr(t, c53 - 0.1, 0.3); wk.textContent = w >= 3 ? "ひと冬" : `第${Math.max(0, w) + 1}週`;
     wk.style.transform = `scale(${1 + Math.max(0, 1 - Math.abs(t - wT(Math.max(0, w)) - 0.15) * 5) * 0.2})`;
     count.style.opacity = o * pr(t, c53 - 0.1, 0.3); cnt.textContent = met;
-    return { dark: true, note: t < tS ? (REC._meta?.prod ? "※ スマホの中は、公開中のアプリの録画です（隊長の答えは本物の Claude。待ち時間は早送り）" : "※ スマホの中は実際のアプリの録画です（隊長の答えは、API キーなしのときの見本）") : t < tN ? "※ スマホの中は実際のアプリの録画です" : "※ スマホの中は実際のアプリの録画です。右の図は、ひと冬で知り合いが増えていくイメージ" };
+    return { dark: true, note: t < tS ? (REC._meta?.prod ? "※ スマホの中は、公開中のアプリの録画です（隊長の答えは本物の Claude。待ち時間は早送り）" : "※ スマホの中は実際のアプリの録画です（隊長の答えは、API キーなしのときの見本）") : SC.road && t >= tRd && t < tB ? "※ スマホの中は実際のアプリの録画です（この場面は、API キーなしで動かしたときの録画）" : t < tN ? "※ スマホの中は実際のアプリの録画です" : "※ スマホの中は実際のアプリの録画です。右の図は、ひと冬で知り合いが増えていくイメージ" };
   };
 } });

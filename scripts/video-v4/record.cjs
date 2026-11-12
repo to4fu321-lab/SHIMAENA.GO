@@ -401,6 +401,31 @@ const want = (name) => !ONLY || ONLY.includes(name) || (name === "helpgo" && ONL
       await sleep(2500);
     }, { settle: 1500 });
 
+    // ---- 4a'') 道の危険を知らせる: 種類をえらぶ → 写真 → 報告する → 町の地図に出る ----
+    await record("road", [{ key: "a", url: "/solo?as=h1" }], async ({ page, mark, tap }) => {
+      await sleep(1500);
+      const stop = page.getByRole("button", { name: /やめる/ }).first(); // 前の場面のソロが続いていたら、やめてから
+      if (await stop.isVisible().catch(() => false)) { await stop.click().catch(() => {}); await sleep(1200); }
+      for (let i = 0; i < 3 && !(await page.getByRole("button", { name: /お知らせGO/ }).isVisible().catch(() => false)); i++) { await page.locator("button", { hasText: /^‹$/ }).last().click().catch(() => {}); await sleep(900); }
+      mark("card");
+      await sleep(1800);
+      await tap("go", page.getByRole("button", { name: /お知らせGO/ }).first()); await sleep(1600);
+      await tap("kind", page.locator("button", { hasText: "つるつる" }).last()); await sleep(1100);
+      const [chooser] = await Promise.all([page.waitForEvent("filechooser"), tap("photo", page.locator("button", { hasText: /写真を撮る/ }).first())]);
+      await chooser.setFiles(path.join(ROOT, "public/demo/entrance-before.jpg"));
+      await sleep(PROD ? 6000 : 2500);
+      mark("picked");
+      const send = page.locator("button", { hasText: /^報告する$/ }).first();
+      for (let i = 0; i < 100 && !(await send.isEnabled().catch(() => false)); i++) await sleep(200);
+      await tap("send", send);
+      const before = await page.evaluate(() => (document.querySelector("main") || document.body).innerText);
+      for (let i = 0; i < (PROD ? 500 : 80); i++) { if ((await page.evaluate(() => (document.querySelector("main") || document.body).innerText)) !== before && !(await page.getByText(/送っています|確認中/).count())) break; await sleep(200); }
+      await sleep(1200);
+      mark("reported");
+      console.log("  報告のあと:", (await page.evaluate(() => (document.querySelector("main") || document.body).innerText)).replace(/\n+/g, " | ").slice(0, 260));
+      await sleep(3500);
+    }, { settle: 1500 });
+
     // ---- 4b) 次の人へバトン（途中まででも渡せる）→ 近所の人の画面に届く ----
     await record("baton", [{ key: "a", url: "/connect?as=h1" }], async ({ page, tap, mark }) => {
       await sleep(1000);

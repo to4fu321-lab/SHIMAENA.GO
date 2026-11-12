@@ -65,6 +65,7 @@ const c61 = L("c61"), vGo = c61 + (LE("c61") - c61) * 0.42, vRoad = c61 + (LE("c
 add("go", vGo, 0.6); [c61 + 0.9, vRoad].forEach((at) => { [0.1, 0.3, 0.5, 0.7].forEach((d) => add("countTick", at + d, 0.4)); add("countPop", at + 0.95, 0.55); });
 // ヘルプ: 押す → 知らせが飛ぶ → ほかのチームの人に届く → 行く
 if (C.TL.scenes.some((s) => s.id === "help")) { const c21 = L("c21"), vB = c21 + (LE("c21") - c21) * 0.52; add("tap", c21 + 0.5, 0.7); add("helpAlert", c21 + 1.5, 0.7); add("message", vB, 0.8); add("go", vB + 1.3, 0.8); }
+if (C.TL.scenes.some((s) => s.id === "road")) { const c64 = L("c64"), vS = c64 + (LE("c64") - c64) * 0.5; add("tap", c64 + 0.5, 0.7); add("shutter", c64 + 1.5, 0.7); add("send", vS, 0.8); add("quizOk", vS + 0.8, 0.55); [0.9, 1.1, 1.3].forEach((d) => add("countTick", vS + d, 0.4)); }
 add("missionClear", T("finish") - 1.25, 0.55); // 全部の家に色がついた
 // 数字（94%・68%）: 上がっていく間はカチカチ、止まったらポン
 [[L("c09") + 0.9, 1.6], [L("c10") + 0.1, 1.4]].forEach(([at, d]) => { for (let i = 0; i < 9; i++) add("countTick", at + (d * (1 - Math.pow(1 - i / 9, 2))) * 0.8, 0.32); add("countPop", at + d * 0.85, 0.6); });

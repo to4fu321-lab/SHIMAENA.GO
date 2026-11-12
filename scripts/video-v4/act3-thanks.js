@@ -18,7 +18,7 @@ ACTS.push({ from: "thanks", to: "blank", make(root) {
       <div style="margin-top:44px;display:flex;flex-direction:column;gap:16px">${["AI は、書かない。", "文字にも、しない。", "要約も、しない。"].map((w) => `<div class="a3no" style="display:flex;align-items:center;gap:20px;font-size:50px;font-weight:700"><span style="display:inline-grid;place-items:center;width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.1);border:3px solid #ff9c8a;color:#ff9c8a;font-size:38px;font-weight:900">✕</span>${w}</div>`).join("")}</div>
     </div>`); stage.append(txt);
   const big = q("#a3big"), sub = q("#a3sub"), nos = [...root.querySelectorAll(".a3no")];
-  const t0 = T("thanks"), tb = T("blank"), te = E("blank"), c26 = L("c26"), c27 = L("c27"), c28 = L("c28"), d27 = LE("c27") - c27;
+  const t0 = T("thanks"), tb = T("blank"), te = E("blank"), c26 = L("c26"), c27 = L("c27"), c28 = LE("c27") - 0.6, d27 = LE("c27") - c27;
   return (t) => {
     sn.update(t, 0.6);
     ph.at(330 - (1 - pr(t, t0, 0.6, Ease.out5)) * 70, 134, { op: 1 });
