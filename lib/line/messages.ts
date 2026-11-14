@@ -5,6 +5,7 @@
 //       付けるのは3文に1つくらい（あいさつ・了解・完了など気持ちが動くところ）。質問・お願い・注意は普通の言い方。
 //       お願いする側・家族・見守り・体調にふれる文は、いつもの丁寧な言い方のまま。
 // v1.5: 質問への答えは吹き出しの中の大きなボタン（choiceCard）、「どこに・何時」は大きな画像の行き先カード（placeCard）。
+import { CARD_TONIGHT } from "../cards/tonight";
 import { NIGHT_TEXT } from "../night";
 import { visitNoticeLines } from "../badge";
 import { MENU } from "../brand";
@@ -317,20 +318,23 @@ export const MSG = {
       [pb("それでも完了にする", "done:manual"), B.camera, B.roll],
     ),
   /** 写真や報告で完了したときの返事（最大5つの吹き出し）。ボタンは最後に付く */
-  doneReport: (r: { baseNumber: number | string; comment: string; notes?: string[]; team?: { name: string; points: number }; allDoneLine?: string; grid?: string; inviteUrl?: string }) =>
+  doneReport: (r: { baseNumber: number | string; comment: string; notes?: string[]; team?: { name: string; points: number }; allDoneLine?: string; grid?: string; inviteUrl?: string; cardTonight?: boolean }) =>
     bubbles(
       [
         `拠点${r.baseNumber} 完了だしま〜！🎉\nあなたの10分で、1軒が助かりました。`,
         r.comment,
         r.notes && r.notes.length > 0 && r.notes.join("\n"),
-        [r.allDoneLine, r.team && `${r.team.name}に +${r.team.points} 点。ありがとうカードは後で届きます。`].filter(Boolean).join("\n"),
+        [r.allDoneLine, r.team && `${r.team.name}に +${r.team.points} 点。${r.cardTonight ? "" : "ありがとうカードは後で届きます。"}`].filter(Boolean).join("\n"),
+        r.cardTonight && CARD_TONIGHT,
         r.grid && `結果をそのまま LINE や SNS に貼れます。\n${r.grid}`,
       ],
       // 友だちを誘う（spec v1.6）: あなたが主役の招待文を入れた LINE の「送る」画面
       [B.card, ...(r.inviteUrl ? [{ type: "uri", label: "友だちを誘う", uri: r.inviteUrl } as Button] : []), B.map],
     ),
-  doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number) =>
-    bubbles([`拠点${baseNumber}は、${byName}さんの写真で完了になりました。`, `${teamName}に +${points} 点。おつかれさまでした！`], [B.card]),
+  doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number, cardTonight = false) =>
+    bubbles([`拠点${baseNumber}は、${byName}さんの写真で完了になりました。`, `${teamName}に +${points} 点。おつかれさまでした！`, cardTonight && CARD_TONIGHT], [B.card]),
+  /** 夜のカードの配達（spec v1.54）: カードの前に隊長が添えることば */
+  cardsArrived: (baseNumber: number | string) => bubbles(["こんばんは、シマエナ隊長だしま〜。🌙", `お待たせしました。拠点${baseNumber}の、この時だけのカードを届けに来ただしま〜。🎴`]),
   /** 完了をお願いした人へ。missionId があれば「ありがとう点呼」の3ボタン付き（spec v1.1） */
   requesterDoneNotice: (ns: string[], missionId?: string) => {
     const lines = ["今朝の雪かきが終わりました。☃️", ns.length > 0 && `${names(ns)}が来てくれました。`, "足元に気をつけて、お出かけください。"];
@@ -347,7 +351,7 @@ export const MSG = {
   },
   thanksToHelper: (fromName: string, label: string, baseNumber: number | string, sentence: string, inviteShareUrl?: string) =>
     bubbles(
-      [`${san(fromName)}（拠点${baseNumber}）から${sentence}が届きました。💌`, "カードの裏にも入りました。", inviteShareUrl && "このうれしさ、友だちにも分けませんか？"],
+      [`${san(fromName)}（拠点${baseNumber}）から${sentence}が届きました。💌`, "カードの裏にも入ります。", inviteShareUrl && "このうれしさ、友だちにも分けませんか？"],
       [B.card, ...(inviteShareUrl ? [{ type: "uri", label: "友だちを誘う", uri: inviteShareUrl } as Button] : [])],
     ),
   thanksSent: (label: string, count: number, missionId?: string) =>

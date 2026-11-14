@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { fiveMinutesAction, joinAction, type ActionResult } from "@/app/map/actions";
 import type { ShortHouse } from "@/lib/morning/watch";
 import { play } from "@/lib/sound/engine";
+import { Chip, DistanceChip, NumberBadge, PeopleDots, SheetHead } from "./SheetBits";
 
 const SHOW = 2;
 
@@ -43,16 +44,29 @@ export default function RescueList({
   return (
     <div className="space-y-2">
       {items.length > 0 && (
-        <div className="rounded-2xl bg-alert-soft px-3 py-3 ring-1 ring-alert/40" aria-label="人手が足りない家">
-          <p className="text-base font-bold text-alert">！ {items[0].missing === 1 ? "あと1人で救える家" : "人手が足りない家"}</p>
-          <ul className="mt-2 space-y-3">
+        <div className="space-y-2" aria-label="人手が足りない家">
+          <SheetHead icon="🆘">
+            <span className="text-alert">助けを待っている家</span>
+            <span className="ml-auto rounded-full bg-alert px-2 py-0.5 text-sm text-white">{items.length}軒</span>
+          </SheetHead>
+          <ul className="space-y-2">
             {shown.map((h) => (
-              <li key={h.missionId} className="space-y-2">
-                <div>
-                  <p className="text-lg font-bold leading-tight">
-                    拠点{h.baseNumber}　<span className="text-base font-normal">あと{h.missing}人（いま {h.going}人 / 必要 {h.required}人）</span>
-                  </p>
-                  <p className="text-sm text-ink-soft">10分でできる仕事: {h.tasks.join("／")}</p>
+              <li key={h.missionId} className="space-y-2 rounded-2xl bg-alert-soft px-3 py-2.5 ring-1 ring-alert/40">
+                <div className="flex items-center gap-2.5">
+                  <NumberBadge n={h.baseNumber} />
+                  <div className="min-w-0 flex-1 leading-tight">
+                    <p className="flex flex-wrap items-center gap-x-2">
+                      <b className="text-lg">拠点{h.baseNumber}</b>
+                      <PeopleDots going={h.going} required={h.required} />
+                      <b className="text-base text-alert">あと{h.missing}人</b>
+                    </p>
+                    <p className="mt-1 flex flex-wrap gap-1">
+                      <DistanceChip m={h.distanceM} />
+                      {h.tasks.slice(0, h.distanceM ? 1 : 2).map((t) => (
+                        <Chip key={t}>⏱ 10分: {t.length > 12 ? `${t.slice(0, 12)}…` : t}</Chip>
+                      ))}
+                    </p>
+                  </div>
                 </div>
                 {goingTo.includes(h.missionId) ? (
                   <p className="rounded-2xl bg-card px-3 py-2 text-center text-base font-bold ring-1 ring-ink/15">✓ 向かっています</p>
@@ -64,7 +78,7 @@ export default function RescueList({
               </li>
             ))}
           </ul>
-          {items.length > SHOW && <p className="mt-1 text-sm text-ink-soft">ほか {items.length - SHOW} 軒</p>}
+          {items.length > SHOW && <p className="text-center text-sm text-ink-soft">ほか {items.length - SHOW} 軒（地図の赤い番号）</p>}
         </div>
       )}
       {items.length === 0 && !hasAssignment && (

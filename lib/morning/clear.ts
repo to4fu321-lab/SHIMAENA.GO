@@ -71,6 +71,8 @@ export interface ClearSummary {
   depthLabel?: string;
   /** v1.8: 画面を見ている人に発行したカード（演出用） */
   card?: RevealCard;
+  /** カードは今夜、隊長が届ける（spec v1.54）。完了画面で隊長が伝える */
+  cardTonight?: boolean;
   hpBefore: number;
   hpAfter: number;
   hpMax: number;

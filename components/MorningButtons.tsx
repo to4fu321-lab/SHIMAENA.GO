@@ -106,7 +106,7 @@ export default function MorningButtons({ viewerId, canAct, going, done = false, 
       />
       {pending && finishing && (
         <p className="rounded-2xl bg-ice-soft px-3 py-2 text-base ring-1 ring-ice" role="status">
-          確かめて、カードを作っています。1分ほどかかることがあります。このままお待ちください。
+          確かめています。1分ほどかかることがあります。このままお待ちください。
         </p>
       )}
       {!(pending && finishing) && result && (

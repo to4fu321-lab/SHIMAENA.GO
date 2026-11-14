@@ -5,7 +5,7 @@ import type { LineMessage } from "../line/types";
 import { actionsOf, textOf } from "../line/flex";
 import { memoryRepo } from "../repo";
 import { DEMO_DATE, fillAnswers } from "./flow";
-import { announce, applyThanks, applyVoiceThanks, completeWithPhoto, plan, ring, sendThanks, voiceThanksTarget } from "./ops";
+import { announce, applyThanks, applyVoiceThanks, completeWithPhoto, deliverDueCards, plan, ring, sendThanks, voiceThanksTarget } from "./ops";
 import { canListen, findThanksVoice, readThanksVoice, resetThanksVoices } from "../thanks/voice";
 import { thanksSentence } from "../claude/thanks";
 import { loadRoster } from "./roster";
@@ -55,8 +55,8 @@ describe("ありがとう点呼（spec v1.1）", () => {
   it("3択を受け取ると、記録が残り、カードの裏面に一文が入る。点は増えない", async () => {
     const { missionId } = await morningWithOneDone();
     const before = (await loadMorning()).morning.scores.length;
-    const cardsBefore = await memoryRepo.listCardsByMission(missionId);
-    expect(cardsBefore.length).toBeGreaterThan(0);
+    // v1.54: カードは夜に届く。ありがとうが先に届いていれば、その一文で裏面を作る
+    expect(await memoryRepo.listCardsByMission(missionId)).toHaveLength(0);
 
     const r = await applyThanks(missionId, "2");
     expect(r.ok).toBe(true);
@@ -66,6 +66,9 @@ describe("ありがとう点呼（spec v1.1）", () => {
     const s = await loadMorning();
     expect(s.thanks?.[missionId]?.sentence).toBe(r.record!.sentence);
     expect(s.morning.scores.length).toBe(before);
+    await deliverDueCards();
+    const cardsBefore = await memoryRepo.listCardsByMission(missionId);
+    expect(cardsBefore.length).toBeGreaterThan(0);
     for (const c of cardsBefore) {
       const stored = await memoryRepo.getCard(c.id);
       expect(stored!.backSvg).toContain(r.record!.sentence.slice(0, 8));

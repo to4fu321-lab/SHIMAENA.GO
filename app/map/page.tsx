@@ -11,7 +11,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { viewBases } from "@/lib/morning/view";
 import { appToday } from "@/lib/morning/today";
-import { listShort } from "@/lib/morning/watch";
+import { listShort, viewerSpot } from "@/lib/morning/watch";
 import { repo } from "@/lib/repo";
 import { agoText, hazard, SHOW_MS } from "@/lib/road/hazards";
 import { listRoadReportsSince } from "@/lib/road/store";
@@ -60,7 +60,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         bases={roster.bases}
         viewer={viewer ? { teamId: viewer.teamId, role: viewer.role } : undefined}
         clear={withInvites(latestClear(state, roster, viewerId, record.firstFlights), viewerId ? record.invites?.[viewerId] : undefined)}
-        rescue={listShort(record, roster)}
+        rescue={listShort(record, roster, viewerSpot(record, roster, viewerId))}
         recap={record.recap?.text}
         thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
         teacher={record.teacherTip?.line}

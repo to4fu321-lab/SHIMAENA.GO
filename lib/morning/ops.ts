@@ -4,7 +4,9 @@ import { isNight } from "../night";
 import { passwordOf } from "../badge";
 import { onTeam } from "../member";
 import { consistentSnowType } from "../snow-estimate";
-import { issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
+import { cardTextInput, cardTextInTime, issueCardsForMission, rerenderBacks, revealOf } from "../cards/issue";
+import { cardSnow } from "../claude/card";
+import { dayTopic } from "../topic/day";
 import type { RevealCard } from "../cards/reveal";
 import { announceText, mockAnnounce } from "../claude/announce";
 import { isThanksChoice, THANKS_CHOICES, thanksSentence, type ThanksChoice } from "../claude/thanks";
@@ -593,14 +595,32 @@ async function finishMission(
   const pointsOf = (teamId: string) => events.filter((e) => e.teamId === teamId).reduce((a, e) => a + e.points, 0);
   s.log.push(`${clockTextJst(now)} 拠点${number} 完了（${names.join("・")}）写真: ${check.comment}`);
   // その時だけのカード（表・裏）を来た人の数だけ発行し、LINE で2枚送る（初出撃の人には歓迎も）
+  // カードは夜に届ける（spec v1.54）: 作るのに 1〜4 分かかるので、完了の返事では作らない。来た人の記録を写して残し、夜 21 時の定期処理が作って届ける。
+  // 撮影ステージ（fast）だけは、決まった文ですぐ発行する（Claude を待たないので速い）
   let myCard: RevealCard | undefined;
+  const cardTonight = !opts.fast;
   try {
-    const issued = await issueCardsForMission(s, roster, mission, sorties, { fast: opts.fast });
-    s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
-    const mine = issued.cards.find((c) => c.recipientId === participantId);
-    if (mine) myCard = revealOf(mine, s.morning.rollcall.date, issued.sceneCode);
+    if (opts.fast) {
+      const issued = await issueCardsForMission(s, roster, mission, sorties, { fast: true });
+      s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...issued.firstFlightIds])];
+      const mine = issued.cards.find((c) => c.recipientId === participantId);
+      if (mine) myCard = revealOf(mine, s.morning.rollcall.date, issued.sceneCode);
+    } else {
+      // 初出撃: まだ1枚もカードがなく、今日これから届くカードもない人
+      const waiting = new Set((s.cardsDue ?? []).flatMap((d) => d.sorties.map((x) => x.participantId)));
+      const first: string[] = [];
+      for (const x of sorties) {
+        if (!byId.has(x.participantId) || waiting.has(x.participantId)) continue;
+        if ((await repo().listCardsByRecipient(x.participantId)).length === 0) first.push(x.participantId);
+      }
+      s.firstFlights = [...new Set([...(s.firstFlights ?? []), ...first])];
+      // どけた雪（kg）はプログラムの計算なので、いま出す（町の合計・招待文に使う）
+      mission.snowKg = cardSnow(cardTextInput(s, roster, mission, sorties, [])).snowKg;
+      s.cardsDue = [...(s.cardsDue ?? []), { missionId: mission.id, at, sorties: sorties.map((x) => ({ ...x })) }];
+      s.log.push(`拠点${number}のカード ${sorties.length} 枚は、今夜とどける`);
+    }
   } catch (e) {
-    s.log.push(`カードの発行に失敗: ${e instanceof Error ? e.message : String(e)}`);
+    s.log.push(`カードの準備に失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
   await saveMorning(s);
   // 来た人の個人の記録（羽）にも残す。チーム得点は上の scoreMission のまま（別の台帳）
@@ -621,7 +641,7 @@ async function finishMission(
   for (const x of sorties) {
     if (x.participantId === participantId) continue;
     const k = inboxKeyOf(byId.get(x.participantId));
-    if (k) await push(k, MSG.doneByOther(number, me?.nickname ?? "仲間", getTeam(x.teamId).name, pointsOf(x.teamId)));
+    if (k) await push(k, MSG.doneByOther(number, me?.nickname ?? "仲間", getTeam(x.teamId).name, pointsOf(x.teamId), cardTonight));
   }
   const myTeam = me?.teamId ? getTeam(me.teamId) : undefined;
   const notes: string[] = [];
@@ -666,10 +686,12 @@ async function finishMission(
     allDoneLine: prog.allDone ? `今朝の家は ${prog.total}軒すべて終わりました。町じゅうに灯りがともりました！` : undefined,
     grid: emojiGrid(viewCells([...viewBases(s.morning).values()], roster), s.morning),
     inviteUrl: invites?.[0] ? lineShareUrl(invites[0], joinUrl) : undefined,
+    cardTonight,
   });
   const clear =
     withInvites(summarizeClear(s.morning, roster, mission.id, { hpBefore, viewerId: participantId, firstFlightIds: s.firstFlights }), invites) ?? undefined;
   if (clear && myCard) clear.card = myCard;
+  if (clear && cardTonight) clear.cardTonight = true;
   if (clear) {
     clear.inviteUrl = joinUrl;
     clear.inviteResult = inviteResult;
@@ -677,6 +699,50 @@ async function finishMission(
   if (prog.allDone && !opts.fast) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
   if (!opts.fast) await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
   return { done: true, messages: reply, clear };
+}
+
+// ---- 夜のカードの配達（spec v1.54） ----
+
+/** 夜の配達で、カードの文と絵に使ってよい時間（Vercel の関数は 300 秒まで） */
+const NIGHT_DRAW_BUDGET_MS = 230_000;
+
+/**
+ * 今日完了した家のカードを作って、来た人の隊長トークに届ける（夜 21 時の定期処理から。届けそこねた分は翌朝 6:30 にも）。
+ * 文は家ごとに同時に Claude へ頼み（40 秒まで。間に合わなければ決まった文）、発行は1軒ずつ（通し番号がずれないように）。絵は返事のあとで描いて差しかえる。
+ */
+export async function deliverDueCards(now = new Date()): Promise<{ houses: number; cards: number }> {
+  const started = Date.now();
+  const s = await loadMorning();
+  const due = s.cardsDue ?? [];
+  if (due.length === 0) return { houses: 0, cards: 0 };
+  const roster = await loadRoster();
+  const jobs = due.flatMap((d) => {
+    const mission = s.morning.missions.find((m) => m.id === d.missionId);
+    return mission && d.sorties.length > 0 ? [{ d, mission }] : [];
+  });
+  const topics = (await dayTopic(s.morning.rollcall.date, 5_000).catch(() => ({ items: [] }))).items;
+  const texts = await Promise.all(jobs.map(({ d, mission }) => cardTextInTime(cardTextInput(s, roster, mission, d.sorties, topics))));
+  let cards = 0;
+  const left: NonNullable<MorningRecord["cardsDue"]> = [];
+  for (const [i, { d, mission }] of jobs.entries()) {
+    try {
+      const issued = await issueCardsForMission(s, roster, mission, d.sorties, {
+        text: texts[i],
+        topics,
+        thanks: s.thanks?.[mission.id]?.sentence,
+        intro: MSG.cardsArrived(baseNumberOf(roster, mission.baseId)),
+        drawBudgetMs: Math.max(30_000, NIGHT_DRAW_BUDGET_MS - (Date.now() - started)),
+      });
+      cards += issued.cards.length;
+    } catch (e) {
+      left.push(d); // 次の回（翌朝）にもう一度
+      await recordProblem("cards/night", e);
+    }
+  }
+  s.cardsDue = left;
+  s.log.push(`${clockTextJst(now)} 夜のカードの配達: ${jobs.length - left.length} 軒・${cards} 枚`);
+  await saveMorning(s);
+  return { houses: jobs.length - left.length, cards };
 }
 
 // ---- ありがとう点呼（spec v1.1） ----

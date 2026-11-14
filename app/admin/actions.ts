@@ -21,6 +21,7 @@ import {
   applyCheer,
   applyThanks,
   checkForecastAndAnnounce,
+  deliverDueCards,
   completeManually,
   escalateHelpIfDue,
   joinMission,
@@ -92,6 +93,7 @@ export async function startEmptyMorning() {
 export async function announceByForecast() {
   return guarded("announceByForecast", async () => {
     try {
+      await deliverDueCards(); // 夜 21 時の定期処理と同じ順: 先に今日のカードを届ける（spec v1.42）
       await checkForecastAndAnnounce(); // 予告の有無はどちらも記録に残る
     } catch (e) {
       await update((s) => void s.log.push(`天気の取得に失敗: ${e instanceof Error ? e.message : String(e)}`));

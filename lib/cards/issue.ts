@@ -2,7 +2,7 @@
 import type { PhotoDepth } from "../snow-estimate";
 import type { RevealCard } from "./reveal";
 import { randomBytes } from "node:crypto";
-import { cardText, mockCardText } from "../claude/card";
+import { cardText, mockCardText, type CardText, type CardTextInput } from "../claude/card";
 import { jstMinutes } from "../jst";
 import { inboxKeyOf } from "../inbox/key";
 import { push } from "../line/client";
@@ -67,7 +67,7 @@ const hm = (iso: string) => {
 export const CARD_TEXT_WAIT_MS = 40_000;
 
 /** Claude のカードの文を上限まで待つ。間に合わない・失敗したときは決まった文で発行する（絵はあとで Claude が描く） */
-async function cardTextInTime(input: Parameters<typeof cardText>[0]): Promise<Awaited<ReturnType<typeof cardText>>> {
+export async function cardTextInTime(input: CardTextInput): Promise<CardText> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<"late">((resolve) => (timer = setTimeout(() => resolve("late"), CARD_TEXT_WAIT_MS)));
   try {
@@ -80,6 +80,34 @@ async function cardTextInTime(input: Parameters<typeof cardText>[0]): Promise<Aw
     clearTimeout(timer);
   }
   return mockCardText(input);
+}
+
+/** カードの文を頼む材料（その家のその時の事実） */
+export function cardTextInput(s: MorningRecord, roster: Roster, mission: Mission, sorties: Sortie[], topics: TopicItem[]): CardTextInput {
+  const byId = new Map(roster.participants.map((p) => [p.id, p]));
+  const teamIds = sorties.filter((x) => byId.has(x.participantId)).map((x) => x.teamId);
+  const completedAt = sorties[0]?.completedAt ?? new Date().toISOString();
+  const base = roster.bases.find((b) => b.id === mission.baseId);
+  const requester = base && byId.get(base.requesterId);
+  const rarity = decideRarity({ completedAt, forecastCm: s.morning.rollcall.forecastCm, teamIds, streakDays: 1 });
+  return {
+    date: s.morning.rollcall.date,
+    completedAtJst: hm(completedAt),
+    forecastCm: s.morning.rollcall.forecastCm,
+    level: requester?.level ?? 2,
+    clearArea: requester?.clearArea ?? "entrance",
+    memberCount: teamIds.length,
+    teamNames: [...new Set(teamIds.map((id) => getTeam(id).name))],
+    style: rarity.style,
+    rarityLabel: rarity.label,
+    snowType: sorties.find((x) => x.photoCheck?.snowType)?.photoCheck?.snowType,
+    photoDepth: sorties.find((x) => x.photoCheck?.depth)?.photoCheck?.depth,
+    modelDepthCm: s.morning.rollcall.depthCm,
+    thanks: Boolean(s.thanks?.[mission.id]),
+    mixed: new Set(teamIds).size >= 2,
+    seed: `${s.morning.rollcall.id}|${mission.id}|${completedAt}`,
+    topics,
+  };
 }
 
 export interface IssuedCards {
@@ -101,7 +129,17 @@ export async function issueCardsForMission(
   roster: Roster,
   mission: Mission,
   sorties: Sortie[],
-  opts: { thanks?: string; streakDays?: number; /** 撮影ステージ用: カードの文を Claude に頼まない（決まった文）。絵はあとで描く */ fast?: boolean } = {},
+  opts: {
+    thanks?: string;
+    streakDays?: number;
+    /** 撮影ステージ用: カードの文を Claude に頼まない（決まった文）。絵はあとで描く */
+    fast?: boolean;
+    /** 夜の配達用（v1.54）: 先にまとめて作っておいた文と話題・カードの前に添える隊長のことば・絵を描いてよい時間 */
+    text?: CardText;
+    topics?: TopicItem[];
+    intro?: LineMessage[];
+    drawBudgetMs?: number;
+  } = {},
 ): Promise<IssuedCards> {
   const r = repo();
   const byId = new Map(roster.participants.map((p) => [p.id, p]));
@@ -124,25 +162,9 @@ export async function issueCardsForMission(
     teamIds: members.map((m) => m.teamId),
     streakDays: opts.streakDays ?? 1,
   });
-  const topics = opts.fast ? [] : (await dayTopic(s.morning.rollcall.date)).items;
-  const text = await (opts.fast ? async (i: Parameters<typeof mockCardText>[0]) => mockCardText(i) : cardTextInTime)({
-    date: s.morning.rollcall.date,
-    completedAtJst: hm(completedAt),
-    forecastCm: s.morning.rollcall.forecastCm,
-    level: requester?.level ?? 2,
-    clearArea: requester?.clearArea ?? "entrance",
-    memberCount: members.length,
-    teamNames: [...new Set(members.map((m) => getTeam(m.teamId).name))],
-    style: rarity.style,
-    rarityLabel: rarity.label,
-    snowType: sorties.find((x) => x.photoCheck?.snowType)?.photoCheck?.snowType,
-    photoDepth: sorties.find((x) => x.photoCheck?.depth)?.photoCheck?.depth,
-    modelDepthCm: s.morning.rollcall.depthCm,
-    thanks: Boolean(s.thanks?.[mission.id]),
-    mixed: new Set(members.map((m) => m.teamId)).size >= 2,
-    seed: `${s.morning.rollcall.id}|${mission.id}|${completedAt}`,
-    topics,
-  });
+  const topics = opts.topics ?? (opts.fast ? [] : (await dayTopic(s.morning.rollcall.date)).items);
+  const textInput = { ...cardTextInput(s, roster, mission, sorties, topics), style: rarity.style, rarityLabel: rarity.label };
+  const text = opts.text ?? (opts.fast ? mockCardText(textInput) : await cardTextInTime(textInput));
   mission.snowKg = text.snowKg; // エリアの「どけた雪の合計」に使う
   const issuedCount = s.morning.sorties.length;
   const already = await r.countCardsForRollcall(s.morning.rollcall.id);
@@ -199,7 +221,7 @@ export async function issueCardsForMission(
     toDraw.push({ id: card.id, art });
     if (m.lineUserId) {
       // 初出撃の歓迎は、カードと同じ1回のプッシュにまとめる
-      await push(m.lineUserId, [...(firstFlight ? MSG.firstFlight(art.townName) : []), ...cardImageMessages(card.id)]);
+      await push(m.lineUserId, [...(opts.intro ?? []), ...(firstFlight ? MSG.firstFlight(art.townName) : []), ...cardImageMessages(card.id)]);
       sent++;
     }
   }
@@ -211,6 +233,7 @@ export async function issueCardsForMission(
   drawLater(
     toDraw,
     artInput({ date: s.morning.rollcall.date, at: completedAt, scene: text.scene, teamIds: members.map((m) => m.teamId), style: rarity.style, designName: text.designName, topics, seed: `${s.morning.rollcall.id}|${mission.id}` }),
+    { budgetMs: opts.drawBudgetMs },
   );
   s.log.push(
     `拠点${base?.number ?? "?"}のカード「${text.designName}」（${rarity.label} ${"★".repeat(rarity.stars)}）を ${cards.length} 枚発行` +

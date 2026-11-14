@@ -2,7 +2,7 @@
 import { inboxKeyOf } from "../inbox/key";
 import { distanceM, helpTargets, HELP_RADII } from "../game/help";
 import { SUPPORT_TASKS, requiredPeople } from "../game/mission";
-import type { HelperAnswer, Mission, Participant, RequesterAnswer } from "../types";
+import type { HelperAnswer, LatLng, Mission, Participant, RequesterAnswer } from "../types";
 import type { HelpState, MorningRecord } from "./flow";
 import type { Roster } from "./roster";
 
@@ -75,15 +75,40 @@ export interface ShortHouse {
   /** 10分でできる仕事（最大2つ） */
   tasks: string[];
   importance: number;
+  /** 見ている人のいまの場所からの距離（50m きざみ。場所が分かるときだけ。spec v1.56） */
+  distanceM?: number;
 }
 
-/** 人手が足りない家を、あと少しで救える順（足りない人数が少ない順 → 重要度の高い順）に */
-export function listShort(s: MorningRecord, roster: Roster): ShortHouse[] {
+/**
+ * 見ている人の「いまの場所」: さっき終えた家（そこに立っているはず）→ なければ自分の家。サーバーの中だけで使う（画面には距離だけ渡す）
+ */
+export function viewerSpot(s: MorningRecord, roster: Roster, viewerId: string): LatLng | undefined {
+  const mine = s.morning.sorties.filter((x) => x.participantId === viewerId);
+  if (!mine.some((x) => x.status === "going")) {
+    const last = mine.filter((x) => x.status === "done" && x.completedAt).sort((a, b) => a.completedAt!.localeCompare(b.completedAt!)).at(-1);
+    const mission = last && s.morning.missions.find((m) => m.id === last.missionId);
+    const base = mission && roster.bases.find((b) => b.id === mission.baseId);
+    const spot = base && roster.participants.find((p) => p.id === base.requesterId)?.location;
+    if (spot) return spot;
+  }
+  return roster.participants.find((p) => p.id === viewerId)?.location;
+}
+
+/** 次の1軒（spec v1.56）: まだ人手が足りない家（＝このままでは終わらなそうな家）のうち、いちばん近い家。同じ距離なら足りない人数が多い家 */
+export function nextHouseOf(items: ShortHouse[]): ShortHouse | undefined {
+  return [...items].sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity) || b.missing - a.missing || b.importance - a.importance)[0];
+}
+
+/** 人手が足りない家を、あと少しで救える順（足りない人数が少ない順 → 重要度の高い順）に。from を渡すと、そこからの距離も付ける */
+export function listShort(s: MorningRecord, roster: Roster, from?: LatLng): ShortHouse[] {
   return s.morning.missions
     .filter((m) => m.status === "short")
     .map((m) => {
       const five = m.subtasks.filter((t) => t.minutes === 10).map((t) => t.label);
+      const base = roster.bases.find((b) => b.id === m.baseId);
+      const spot = base && roster.participants.find((p) => p.id === base.requesterId)?.location;
       return {
+        ...(from && spot ? { distanceM: Math.max(50, Math.round(distanceM(from, spot) / 50) * 50) } : {}),
         missionId: m.id,
         baseNumber: roster.bases.find((b) => b.id === m.baseId)?.number ?? "?",
         missing: missingPeople(s, m),
