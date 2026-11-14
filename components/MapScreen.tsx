@@ -10,7 +10,7 @@ import type { Base, LatLng, Role, TeamId } from "@/lib/types";
 import type { Destination } from "@/lib/nav";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { requestLabel } from "@/lib/request-note";
-import type { ShortHouse } from "@/lib/morning/watch";
+import { nextHouseOf, type ShortHouse } from "@/lib/morning/watch";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { reportRoadAction } from "@/app/solo/actions";
@@ -21,6 +21,7 @@ import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
 import NextHouse from "./NextHouse";
+import { Chip, NumberBadge, PeopleDots, SheetHead } from "./SheetBits";
 import RescueList from "./RescueList";
 import RoadReportRun from "./RoadReportRun";
 import ShareButton from "./ShareButton";
@@ -126,7 +127,16 @@ export default function MapScreen({
   const [later, setLater] = useState(false);
   // 自分の分が終わって、まだ助けを待つ家があるとき: 次の家への誘導を出す（手伝う側だけ。お願いする側には出さない）
   const canHelp = viewer?.role === "helper" || Boolean(viewer?.teamId);
-  const nextHouse = canHelp && mySortie?.status === "done" && goingTo.length === 0 && !prog.allDone ? rescue[0] : undefined;
+  const nextHouse = canHelp && mySortie?.status === "done" && goingTo.length === 0 && !prog.allDone ? nextHouseOf(rescue) : undefined;
+  // 終わったあとの一覧は、次の1軒を除いて近い順に
+  const others = nextHouse ? rescue.filter((h) => h.missionId !== nextHouse.missionId).sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity)) : rescue;
+  // 今朝の家の並び（番号の小さい順）: 地図と同じ色で、どこが終わって・どこが待っているかを一目で
+  const strip = bases
+    .flatMap((b) => {
+      const v = views.find((x) => x.baseId === b.id);
+      return v && v.status !== "none" ? [{ number: b.number, v, mine: b.id === myBase?.id }] : [];
+    })
+    .sort((a, b) => Number(a.number) - Number(b.number));
   const briefing = Boolean(myBase && myView && mySortie?.status === "going" && !mySortie.confirmedAt && !later && !prog.allDone);
   // 道の報告の地図: 札を押すとその報告に寄って写真が開く
   const roadView = view === "road";
@@ -334,7 +344,7 @@ export default function MapScreen({
               </div>
             </div>
           ) : nextHouse ? (
-            <NextHouse viewerId={state.viewerId} next={nextHouse} waiting={rescue.length} />
+            <NextHouse viewerId={state.viewerId} next={nextHouse} />
           ) : (
           <MorningButtons
             viewerId={state.viewerId}
@@ -346,6 +356,47 @@ export default function MapScreen({
           )
         }
       >
+        {strip.length > 0 && (
+          <div className="space-y-1.5" aria-label="今朝の家のようす">
+            <SheetHead icon="🏠">
+              今朝の家
+              <span className="ml-auto text-sm font-normal text-ink-soft">
+                ✓ {prog.done}軒 ・ 待ち {prog.left}軒
+              </span>
+            </SheetHead>
+            <ul className="flex gap-1.5 overflow-x-auto px-0.5 pb-2.5 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {strip.map(({ number, v, mine }) => {
+                const team = TEAMS.find((t) => t.id === v.teams[0]);
+                const done = v.status === "done";
+                const short = v.status === "short";
+                const next = nextHouse && String(nextHouse.baseNumber) === String(number);
+                const label = done ? "完了" : STATUS_TEXT[v.status];
+                return (
+                  <li key={number} className="relative shrink-0">
+                    <span
+                      className={`grid size-10 place-items-center rounded-xl text-base font-bold tabular-nums ${short ? "animate-pulse" : ""} ${next ? "outline outline-2 outline-offset-2 outline-lamp" : ""}`}
+                      style={
+                        done
+                          ? { background: team?.color ?? "var(--ice)", color: "#fff" }
+                          : { background: "#fff", color: short ? "var(--alert)" : "var(--ink)", boxShadow: `inset 0 0 0 3px ${short ? "var(--alert)" : v.status === "no_answer" ? "#b8bfc6" : (team?.color ?? "var(--ink)")}` }
+                      }
+                      role="img"
+                      aria-label={`拠点${number} ${label}${mine ? "（あなたの担当）" : ""}${next ? "（次の1軒）" : ""}`}
+                    >
+                      {number}
+                      {done && <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-white text-[10px] leading-none text-ink ring-1 ring-ink/20" aria-hidden="true">✓</span>}
+                    </span>
+                    {(mine || next) && (
+                      <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-1 text-[10px] font-bold leading-tight text-white ${next ? "bg-lamp-deep" : "bg-ink"}`} aria-hidden="true">
+                        {next ? "つぎ" : "あなた"}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
                 {prog.allDone && recap && (
           <div className="rounded-2xl bg-warm px-3 py-2">
             <p className="eyebrow">今朝の実況（シマエナ隊長）</p>
@@ -353,34 +404,45 @@ export default function MapScreen({
           </div>
         )}
         {/* 自分の分が終わったあとは、助けを待つ家をいちばん上に（次の家への誘導） */}
-        {prog.total > 0 && nextHouse && (
+        {prog.total > 0 && nextHouse && others.length > 0 && (
           <RescueList
             viewerId={state.viewerId}
-            items={rescue}
+            items={others}
             goingTo={goingTo}
             isHelper={viewer?.role === "helper" || Boolean(viewer?.teamId)}
             hasAssignment={goingTo.length > 0}
           />
         )}
         {myBase && myView ? (
-          <div className="space-y-1">
-            <p className="eyebrow">あなたの担当</p>
-            <p className="text-2xl font-bold leading-tight">
-              拠点 {myBase.number}
-              <span className={`ml-2 text-base font-bold ${myView.status === "short" ? "text-alert" : "text-ink-soft"}`}>
-                {myView.status === "short" ? "！ " : myView.status === "done" ? "✓ " : ""}
-                {STATUS_TEXT[myView.status]}
-              </span>
-            </p>
-            <p className="text-base">
-              {viewerTeam && (
-                <>
-                  <span className="mr-1 inline-block size-3 rounded-full align-middle" style={{ background: viewerTeam.color }} aria-hidden="true" />
-                  <b>{viewerTeam.name}</b>チーム ・{" "}
-                </>
-              )}
-              いま {myView.goingPeople}人 / 必要 {myView.requiredPeople}人 ・ 6〜19時のあいだに
-            </p>
+          <div className="space-y-2">
+            <SheetHead icon="📍">あなたの担当</SheetHead>
+            <div className="flex items-center gap-2.5 rounded-2xl bg-paper px-3 py-2.5 ring-1 ring-ink/10">
+              <NumberBadge n={myBase.number} tone={myView.status === "done" ? "done" : myView.status === "short" ? "alert" : "ink"} color={myView.status === "done" || myView.status === "short" ? undefined : viewerTeam?.color} size={52} />
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="flex flex-wrap items-center gap-x-2">
+                  <b className="text-2xl">拠点 {myBase.number}</b>
+                  <span className={`rounded-full px-2 py-0.5 text-sm font-bold ${myView.status === "short" ? "bg-alert text-white" : myView.status === "done" ? "bg-ice-soft ring-1 ring-ice" : "bg-card ring-1 ring-ink/15"}`}>
+                    {myView.status === "short" ? "！ " : myView.status === "done" ? "✓ " : ""}
+                    {STATUS_TEXT[myView.status]}
+                  </span>
+                </p>
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <PeopleDots going={myView.goingPeople} required={myView.requiredPeople} color={viewerTeam?.color} />
+                  <span className="text-sm">
+                    いま {myView.goingPeople}人 / 必要 {myView.requiredPeople}人
+                  </span>
+                </p>
+                <p className="mt-1 flex flex-wrap gap-1">
+                  {viewerTeam && (
+                    <Chip>
+                      <span className="inline-block size-2.5 rounded-full" style={{ background: viewerTeam.color }} aria-hidden="true" />
+                      {viewerTeam.name}
+                    </Chip>
+                  )}
+                  {myView.status !== "done" && <Chip>6〜19時のあいだに</Chip>}
+                </p>
+              </div>
+            </div>
             {destinations.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {destinations.map((d) => (
