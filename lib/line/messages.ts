@@ -354,6 +354,8 @@ export const MSG = {
       [`${san(fromName)}（拠点${baseNumber}）から${sentence}が届きました。💌`, "カードの裏にも入ります。", inviteShareUrl && "このうれしさ、友だちにも分けませんか？"],
       [B.card, ...(inviteShareUrl ? [{ type: "uri", label: "友だちを誘う", uri: inviteShareUrl } as Button] : [])],
     ),
+  /** デモの時間圧縮（spec v1.59）: 架空の家の人の「ありがとう」を早く届けたときに添える一言 */
+  demoThanksNote: () => bubbles(["（デモのため、架空の家の人の返事を、数十秒で届けています。本番では、家の人が自分で押したとき・声を吹き込んだときに届きます）"]),
   thanksSent: (label: string, count: number, missionId?: string) =>
     bubbles(
       [count > 0 ? `「${label}」を、来てくれた${count}人に伝えました。` : `「${label}」を受け取りました。カードの裏に入ります。`, missionId && "声でも届けられます。"],
@@ -380,6 +382,9 @@ export const MSG = {
     photoAsk("終わったら、写真を1枚送ってください。"),
   ],
   helpDeclined: () => bubbles(["わかりました。気にしないでくださいね。", "また次の機会に、よろしくしま〜！"]),
+  /** もう別の家に向かっている（spec v1.59: 1人が向かえるのは1軒） */
+  helpBusy: (currentNumber: number | string, baseNumber: number | string) =>
+    bubbles([`いま拠点${currentNumber}に向かっています。1人が向かえるのは1軒です。`, `拠点${baseNumber}に切りかえるときは、地図の「切りかえる」を押してください。`], [B.map]),
   helpAlreadyEnough: (baseNumber: number | string) => bubbles([`拠点${baseNumber}は人がそろいました。`, "ありがとうございます！"], [B.go]),
   supporterRequest: (baseNumber: number | string, missing: number) =>
     bubbles(["【サポーターの方へ】", `拠点${baseNumber}に人が集まりません（あと${missing}人）。`, "1km まで声をかけましたが、足りません。お願いできますか。"], [B.map]),

@@ -64,5 +64,5 @@ export default function ClearWatcher({ clear }: { clear: ClearSummary | null }) 
     if (last !== clear.missionId && active?.clear.missionId !== clear.missionId) openClear(clear, { autoCloseMs: 4000 });
   }, [clear]);
 
-  return act ? <ClearToast key={act.clear.missionId} clear={act.clear} onClose={closeClear} ms={act.autoCloseMs ?? 4500} /> : null;
+  return act ? <ClearToast key={act.clear.missionId} clear={act.clear} onClose={closeClear} ms={act.autoCloseMs ?? 7000} /> : null;
 }

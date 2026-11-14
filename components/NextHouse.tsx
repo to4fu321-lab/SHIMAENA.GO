@@ -8,7 +8,19 @@ import type { ShortHouse } from "@/lib/morning/watch";
 import { play } from "@/lib/sound/engine";
 import { DistanceChip, NumberBadge, PeopleDots } from "./SheetBits";
 
-export default function NextHouse({ viewerId, next, onFinish }: { viewerId: string; next: ShortHouse; /** 「今日はここまで！」（まとめ画面を開く） */ onFinish?: () => void }) {
+export default function NextHouse({
+  viewerId,
+  next,
+  onFinish,
+  first = false,
+}: {
+  viewerId: string;
+  next: ShortHouse;
+  /** 「今日はここまで！」（まとめ画面を開く） */
+  onFinish?: () => void;
+  /** まだ1軒も行っていない人への最初の1軒（spec v1.59: 割り当てのない人に、押せないボタンを並べない） */
+  first?: boolean;
+}) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const go = () =>
@@ -27,7 +39,11 @@ export default function NextHouse({ viewerId, next, onFinish }: { viewerId: stri
       <div className="flex items-center gap-2.5">
         <NumberBadge n={next.baseNumber} />
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="text-sm font-bold text-ink-soft">✓ 完了！ つぎは{next.distanceM ? " いちばん近くの家" : "この家"}</p>
+          <p className="text-sm font-bold text-ink-soft">
+            {first ? "まずは" : "✓ 完了！ つぎは"}
+            {next.distanceM ? " いちばん近くの家" : " この家"}
+            {first && "へ"}
+          </p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             <b className="text-xl">拠点{next.baseNumber}</b>
             <PeopleDots going={next.going} required={next.required} />

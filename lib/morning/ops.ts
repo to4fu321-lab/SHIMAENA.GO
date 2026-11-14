@@ -1,5 +1,6 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
+import { demoEnabled } from "../env";
 import { runLater } from "../ops/later";
 import { withStateLock } from "../ops/lock";
 import { isNight } from "../night";
@@ -28,8 +29,8 @@ import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
 import { addDays, jstDate, jstHourMinute, jstMinutes, jstIso } from "../jst";
-import { inboxKeyOf } from "../inbox/key";
-import { multicast, push } from "../line/client";
+import { DEMO_PREFIX, inboxKeyOf } from "../inbox/key";
+import { multicast, push, reply } from "../line/client";
 import { MSG } from "../line/messages";
 import type { LineMessage } from "../line/types";
 import { mapsUrl } from "../nav";
@@ -499,7 +500,7 @@ function takePrechecked(participantId: string, fp: string): PhotoCheck | undefin
  * 写真1枚で1軒を完了にする（spec 2）。Claude が写真を確認 → その家の出撃を全部完了 → 得点 → 依頼者と仲間に通知。
  */
 /** opts.fast: 撮影ステージ用（11/8 本人「実際の AI 読み込みなどはしなくて良い。一連の流れをトータルで動かして」）。写真は Claude に送らず、決まった確認で完了にする */
-export async function completeWithPhoto(participantId: string, image: PhotoInput, now = new Date(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
+export async function completeWithPhoto(participantId: string, image: PhotoInput, now = new Date(), opts: FinishOpts = {}): Promise<CompleteResult> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
@@ -518,7 +519,7 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   if (opts.fast) {
     await rememberPhoto(day, fp);
     const demo: PhotoCheck = { cleared: true, passable: true, icy: false, comment: "玄関前から道路まで、通れるようになっています。お疲れさまでした。（撮影用の決まった文）" };
-    return finishMission(s, roster, sortie, mission, demo, participantId, now, { fast: true });
+    return finishMission(s, roster, sortie, mission, demo, participantId, now, { ...opts, fast: true });
   }
   const check = takePrechecked(participantId, fp) ?? (await checkPhoto(image));
   // 雪質が気温と食い違えば「ふつうの雪」に戻す（写真の見た目だけで決めつけない。spec v1.8）
@@ -540,11 +541,11 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
     check.comment = `写真では確かめきれませんでしたが、報告として受け付けました。${check.comment}`;
     s.log.push(`拠点${number}の写真: 判断できず → 報告として受け付け`);
   }
-  return finishMission(s, roster, sortie, mission, check, participantId, now);
+  return finishMission(s, roster, sortie, mission, check, participantId, now, opts);
 }
 
 /** 「それでも完了にする」（LINE のボタン／地図のボタン）: 写真なしで、本人の報告として完了にする */
-export async function completeManually(participantId: string, now = new Date(), opts: { fast?: boolean } = {}): Promise<CompleteResult> {
+export async function completeManually(participantId: string, now = new Date(), opts: FinishOpts = {}): Promise<CompleteResult> {
   const s = await loadMorning();
   const roster = await loadRoster();
   const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
@@ -561,6 +562,12 @@ export async function completeManually(participantId: string, now = new Date(), 
   return finishMission(s, roster, sortie, mission, check, participantId, now, opts);
 }
 
+/** 完了のしかた。fast: 撮影ステージ用（Claude を待たない）。echo: 地図から完了したとき、同じ返事を本人の隊長トークにも残す（spec v1.59） */
+export interface FinishOpts {
+  fast?: boolean;
+  echo?: boolean;
+}
+
 /** 1軒を完了にする本体: 出撃を完了 → 得点 → カード → 依頼者・家族・仲間へ通知 → MISSION CLEAR のまとめ */
 async function finishMission(
   s: MorningRecord,
@@ -570,7 +577,7 @@ async function finishMission(
   check: PhotoCheck,
   participantId: string,
   now: Date,
-  opts: { fast?: boolean } = {},
+  opts: FinishOpts = {},
 ): Promise<CompleteResult> {
   const number = baseNumberOf(roster, mission.baseId);
   const at = now.toISOString();
@@ -683,7 +690,7 @@ async function finishMission(
   const inviteResult = inviteResultLine(await readInviteStats(participantId));
   if (inviteResult) notes.push(`🎉 ${inviteResult}`);
   // 1つの吹き出しに1つの話題: 完了 → ひとこと → 雪質と労い → 点 → 絵文字グリッド（そのまま LINE グループや X に貼れる）
-  const reply = MSG.doneReport({
+  const messages = MSG.doneReport({
     baseNumber: number,
     comment: check.comment,
     notes,
@@ -701,10 +708,65 @@ async function finishMission(
     clear.inviteUrl = joinUrl;
     clear.inviteResult = inviteResult;
   }
+  // 地図の「終わりました」から完了したとき: 同じ返事を本人の隊長トークにも残す（spec v1.59。前は地図の1行だけで、トークには何も残らなかった）。
+  // 本人がいま押した返事なので、端末の通知は鳴らさない
+  const myKey = inboxKeyOf(me);
+  if (opts.echo && myKey) {
+    if (opts.fast) await reply(myKey, messages);
+    else runLater("morning/done-echo", async () => void (await reply(myKey, messages)));
+  }
+  // デモ（架空の人だけで終えた、架空の家）: 家の人の「ありがとう」を、数十秒あとに届ける（spec v1.59。本番の時間はそのまま）
+  if (!opts.fast) scheduleDemoThanks(roster, mission, sorties);
   // 討伐したら今朝の実況を書く（返事のあとで。spec v1.57）
   if (prog.allDone && !opts.fast) runLater("recap", () => withStateLock("recap", () => writeRecap().then(() => undefined)));
   if (!opts.fast) await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
-  return { done: true, messages: reply, clear };
+  return { done: true, messages, clear };
+}
+
+// ---- デモの時間圧縮（spec v1.59） ----
+
+/**
+ * デモで、完了から「ありがとう」が届くまでの秒数。0 で届けない。
+ * 本番では、家の人が自分でボタンを押したときに届く（何分後か・何時間後かは家の人しだい）。審査や見学の数分では見られないので、デモだけ縮める。
+ * テストでは届けない（時計を待たないため。テストは demoThanks を直接呼ぶ）。
+ */
+export function demoThanksSeconds(env: Readonly<Record<string, string | undefined>> = process.env): number {
+  if (!demoEnabled() || env.NODE_ENV === "test" || env.VITEST) return 0;
+  const n = Number(env.DEMO_THANKS_SECONDS ?? 20);
+  return Number.isFinite(n) && n > 0 ? Math.min(120, n) : 0;
+}
+
+/** その家が「デモの家」か: 家の人も、来た人も、みんな架空の人（本物の人が1人でもいれば、何もしない） */
+export function isDemoHouse(roster: Roster, mission: Mission, sorties: Sortie[]): boolean {
+  const byId = new Map(roster.participants.map((p) => [p.id, p]));
+  const requester = byId.get(roster.bases.find((b) => b.id === mission.baseId)?.requesterId ?? "");
+  const fake = (p: Participant | undefined) => Boolean(p && !p.lineUserId && inboxKeyOf(p)?.startsWith(DEMO_PREFIX));
+  return fake(requester) && sorties.length > 0 && sorties.every((x) => fake(byId.get(x.participantId)));
+}
+
+function scheduleDemoThanks(roster: Roster, mission: Mission, sorties: Sortie[]): void {
+  const seconds = demoThanksSeconds();
+  if (seconds <= 0 || !isDemoHouse(roster, mission, sorties)) return;
+  runLater("demo/thanks", async () => {
+    await new Promise((r) => setTimeout(r, seconds * 1000));
+    await withStateLock("demo/thanks", () => demoThanks(mission.id).then(() => undefined));
+  });
+}
+
+/**
+ * デモの「ありがとう」: 架空の家の人が3択を押したのと同じ処理（applyThanks）を、プログラムが代わりに押す。
+ * もう届いている家・本物の人がいる家には何もしない。隊長トークには「デモでは早く届けています」の一言を添える。
+ */
+export async function demoThanks(missionId: string, now = new Date()): Promise<boolean> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const m = s.morning.missions.find((x) => x.id === missionId);
+  if (!m || m.status !== "done" || s.thanks?.[missionId]) return false;
+  if (!isDemoHouse(roster, m, s.morning.sorties.filter((x) => x.missionId === missionId))) return false;
+  // 3択のどれかは、家ごとに決まる（同じ家はいつも同じことば）
+  const choice = (["1", "2", "3"] as const)[[...missionId].reduce((a, c) => a + c.charCodeAt(0), 0) % 3];
+  const r = await applyThanks(missionId, choice, { now, demoNote: true });
+  return r.ok;
 }
 
 // ---- 夜のカードの配達（spec v1.54） ----
@@ -760,7 +822,7 @@ export async function deliverDueCards(now = new Date()): Promise<{ houses: numbe
 export async function applyThanks(
   missionId: string,
   choice: ThanksChoice,
-  opts: { requesterId?: string; now?: Date } = {},
+  opts: { requesterId?: string; now?: Date; /** デモの時間圧縮（v1.59）: 「デモでは早く届けています」の一言を添える */ demoNote?: boolean } = {},
 ): Promise<{ ok: boolean; messages: LineMessage[]; record?: ThanksRecord }> {
   const now = opts.now ?? new Date();
   const s = await loadMorning();
@@ -789,11 +851,12 @@ export async function applyThanks(
     if (!p || !k) continue;
     // 「ありがとう」がいちばんうれしい瞬間に、誘う文とボタンを添える（同じ1回のプッシュの中。v1.8）
     const draft = s.invites?.[p.id]?.[0] ?? mockInvites({ minutes: 10, firstTime: false, snowCm: s.morning.rollcall.forecastCm, thanks: label })[0];
-    if (await push(k, MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence, lineShareUrl(draft, inviteUrl(p.id))))) sentTo++;
+    const thanks = MSG.thanksToHelper(requester?.nickname ?? "お願いした人", label, base.number, sentence, lineShareUrl(draft, inviteUrl(p.id)));
+    if (await push(k, opts.demoNote ? [...thanks, ...MSG.demoThanksNote()] : thanks)) sentTo++;
   }
   const record: ThanksRecord = { choice, label, sentence, at: now.toISOString(), sentTo };
   s.thanks = { ...(s.thanks ?? {}), [m.id]: record };
-  s.log.push(`拠点${base.number}: ありがとう点呼「${label}」→ ${sorties.length} 人（トーク ${sentTo} 人）。裏面: ${sentence}`);
+  s.log.push(`拠点${base.number}: ありがとう点呼「${label}」${opts.demoNote ? "（デモ: 架空の家の人の代わりにプログラムが押した）" : ""}→ ${sorties.length} 人（トーク ${sentTo} 人）。裏面: ${sentence}`);
   await saveMorning(s);
   try {
     await rerenderBacks(m.id, {
@@ -1021,7 +1084,7 @@ export async function joinMission(
   participantId: string,
   missionId: string,
   now = new Date(),
-  opts: { extra?: boolean } = {},
+  opts: { extra?: boolean; /** いま向かっている家をやめて、この家に切りかえる（spec v1.59） */ swap?: boolean; /** 撮影ステージ（/admin）だけ: 前の家に残したまま加わる */ multi?: boolean } = {},
 ): Promise<LineMessage[]> {
   if (isNight(now)) return MSG.nightOwnHouseOnly(); // 夜はよその家に行かない（spec v1.8 防犯）
   const s = await loadMorning();
@@ -1035,6 +1098,26 @@ export async function joinMission(
   }
   const enough = missingPeople(s, m) <= 0;
   if (enough && !opts.extra) return MSG.helpAlreadyEnough(number);
+  // 1人が向かえるのは1軒（spec v1.59）: もう別の家に向かっているなら、切りかえるかを本人に聞く。切りかえたら前の家からは外れる
+  const current = opts.multi ? [] : s.morning.sorties.filter((x) => x.participantId === p.id && x.status === "going");
+  let leftShort: Mission | undefined;
+  if (current.length > 0) {
+    const from = s.morning.missions.find((x) => x.id === current[0].missionId);
+    const fromNumber = from ? baseNumberOf(roster, from.baseId) : "?";
+    if (!opts.swap) return MSG.helpBusy(fromNumber, number);
+    const ids = new Set(current.map((x) => x.id));
+    s.morning.sorties = s.morning.sorties.filter((x) => !ids.has(x.id));
+    for (const c of current) {
+      const cm = s.morning.missions.find((x) => x.id === c.missionId);
+      if (!cm || cm.status === "done" || cm.status === "no_answer") continue;
+      const left = goingCount(s, cm.id);
+      if (left < cm.requiredPeople) {
+        cm.status = "short";
+        leftShort = cm;
+      }
+      s.log.push(`${p.nickname}さんが拠点${baseNumberOf(roster, cm.baseId)}から拠点${number}へ切りかえ → 拠点${baseNumberOf(roster, cm.baseId)}は ${left}/${cm.requiredPeople} 人`);
+    }
+  }
   const finishedOwn = s.morning.sorties.some((x) => x.participantId === p.id && x.status === "done");
   s.morning.sorties.push({
     id: `s${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
@@ -1052,7 +1135,18 @@ export async function joinMission(
     `${p.nickname}さんが${enough ? "偵察・補給で" : "ヘルプで"}拠点${number}へ（${goingCount(s, m.id)}/${m.requiredPeople} 人${finishedOwn ? "・駆けつけ" : ""}）`,
   );
   await saveMorning(s);
+  // 切りかえで前の家が人手不足になったら、近くの人に知らせる（架空の人のデモでは、本物の人のスマホを鳴らさない）
+  if (leftShort && p.lineUserId) await notifyHelp(leftShort.id, now);
   return MSG.helpJoined(number, routeTo(roster, m.baseId, p.id), m.request, s.teacherTip?.line);
+}
+
+/** いま向かっている家（1人1軒。spec v1.59）。地図の「切りかえますか？」に使う */
+export async function currentGoing(participantId: string): Promise<{ missionId: string; baseNumber: number | string } | undefined> {
+  const s = await loadMorning();
+  const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
+  const mission = sortie && s.morning.missions.find((m) => m.id === sortie.missionId);
+  if (!mission) return undefined;
+  return { missionId: mission.id, baseNumber: baseNumberOf(await loadRoster(), mission.baseId) };
 }
 
 export interface JoinNearbyResult {

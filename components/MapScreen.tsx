@@ -19,6 +19,7 @@ import HazardIcon from "./HazardIcon";
 import CheerCall from "./CheerCall";
 import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
+import ThanksToast from "./ThanksToast";
 import MorningButtons from "./MorningButtons";
 import NextHouse from "./NextHouse";
 import DayClear from "./DayClear";
@@ -86,7 +87,7 @@ export default function MapScreen({
   /** 今朝の実況（全軒完了のあと） */
   recap?: string;
   /** 自分が行った家の、お願いした人からのひとこと（ありがとう点呼） */
-  thanks?: { label: string; sentence: string };
+  thanks?: { label: string; sentence: string; missionId?: string; baseNumber?: number | string };
   /** 今朝の先生のコツ（spec v1.6） */
   teacher?: string;
   /** 絵文字グリッド（共有用の文字） */
@@ -137,7 +138,9 @@ export default function MapScreen({
   };
   // 自分の分が終わって、まだ助けを待つ家があるとき: 次の家への誘導を出す（手伝う側だけ。お願いする側には出さない）
   const canHelp = viewer?.role === "helper" || Boolean(viewer?.teamId);
-  const nextHouse = canHelp && mySortie?.status === "done" && goingTo.length === 0 && !prog.allDone ? nextHouseOf(rescue) : undefined;
+  // 割り当てのない人（デモで初めて来た人など）にも、最初の1軒を同じ形で出す（spec v1.59: 押せない3つのボタンを並べない）
+  const firstHouse = !mySortie;
+  const nextHouse = canHelp && (mySortie?.status === "done" || firstHouse) && goingTo.length === 0 && !prog.allDone ? nextHouseOf(rescue) : undefined;
   // 終わったあとの一覧は、次の1軒を除いて近い順に
   const others = nextHouse ? rescue.filter((h) => h.missionId !== nextHouse.missionId).sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity)) : rescue;
   // 今朝の家の並び（番号の小さい順）: 地図と同じ色で、どこが終わって・どこが待っているかを一目で
@@ -220,6 +223,7 @@ export default function MapScreen({
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col bg-paper text-ink">
       <Bgm track={bgm} />
       <ClearWatcher clear={clear} />
+      {thanks?.missionId && <ThanksToast key={thanks.missionId} missionId={thanks.missionId} baseNumber={thanks.baseNumber ?? "?"} label={thanks.label} chatHref={`/chat${q}`} />}
       {dayOpen && today && <DayClear day={today} onClose={() => setDayOpen(false)} homeHref={`/${q}`} />}
       {/* 上: 戻る・題名（濃い冬の青） */}
       <header className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center bg-ink px-2 pb-2 pt-2 text-white">
@@ -304,7 +308,7 @@ export default function MapScreen({
               <circle cx="12" cy="9" r="3" fill="#fff" />
             </svg>
             <span className="leading-tight">
-              <span className="block text-xs font-bold">雪かき待ち</span>
+              <span className="block text-xs font-bold">人手不足</span>
               <b className="text-xl tabular-nums">{rescue.length}</b>
               <span className="text-sm font-bold">軒</span>
             </span>
@@ -355,7 +359,7 @@ export default function MapScreen({
               </div>
             </div>
           ) : nextHouse ? (
-            <NextHouse viewerId={state.viewerId} next={nextHouse} onFinish={today ? finishDay : undefined} />
+            <NextHouse viewerId={state.viewerId} next={nextHouse} first={firstHouse} onFinish={today && !firstHouse ? finishDay : undefined} />
           ) : today && mySortie?.status === "done" && goingTo.length === 0 ? (
             // 待っている家がない・全部終わった: 今日のまとめへ
             <div className="space-y-2">
@@ -380,7 +384,7 @@ export default function MapScreen({
             <SheetHead icon="🏠">
               今朝の家
               <span className="ml-auto text-sm font-normal text-ink-soft">
-                ✓ {prog.done}軒 ・ 待ち {prog.left}軒
+                ✓ 完了 {prog.done}軒 ・ のこり {prog.left}軒
               </span>
             </SheetHead>
             <ul className="flex gap-1.5 overflow-x-auto px-0.5 pb-2.5 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -425,6 +429,7 @@ export default function MapScreen({
         {/* 自分の分が終わったあとは、助けを待つ家をいちばん上に（次の家への誘導） */}
         {prog.total > 0 && nextHouse && others.length > 0 && (
           <RescueList
+            others
             viewerId={state.viewerId}
             items={others}
             goingTo={goingTo}

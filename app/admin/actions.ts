@@ -242,7 +242,7 @@ export async function presentGo(who: "a" | "b"): Promise<string> {
     const { roster, mission } = await stageMission();
     if (!mission) return "拠点7のミッションがありません（先に 1 を）";
     const p = roster.participants.find((x) => x.id === STAGE_CAST[who]);
-    const messages = await joinMission(STAGE_CAST[who], mission.id, new Date(), { extra: true });
+    const messages = await joinMission(STAGE_CAST[who], mission.id, new Date(), { extra: true, multi: true });
     const k = inboxKeyOf(p);
     if (k) await push(k, messages);
     refresh();
@@ -266,7 +266,7 @@ export async function presentAllTeams(): Promise<string> {
         .filter((p) => p.role === "helper" && p.teamId === t.id && !p.lineUserId && !STAGE_IDS.has(p.id) && !busy.has(p.id))
         .sort((a, b) => (home ? distanceM(a.location, home) - distanceM(b.location, home) : 0))[0];
       if (!pick) continue;
-      await joinMission(pick.id, mission.id, new Date(), { extra: true });
+      await joinMission(pick.id, mission.id, new Date(), { extra: true, multi: true });
       names.push(`${pick.nickname}さん（${t.name}）`);
     }
     refresh();

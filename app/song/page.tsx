@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import SongWait from "@/components/SongWait";
 import SongPlay from "@/components/SongPlay";
 import { hasClaudeKey } from "@/lib/claude/client";
 import { loadMorning } from "@/lib/morning/store";
@@ -112,7 +113,11 @@ async function Content({ searchParams }: { searchParams: Promise<{ as?: string }
           </div>
         </>
       ) : (
-        <p className="text-lg">Claude が今朝の雪から作曲しています。1分ほどで、もう一度開いてください。</p>
+        // 作曲中: できたら自動で楽譜に切りかわる（spec v1.59。前は開き直すまで「作曲中」のままだった）
+        <div className="space-y-3">
+          <p className="text-lg leading-snug">Claude が今朝の雪から作曲しています。1分ほどかかります。</p>
+          <SongWait />
+        </div>
       )}
     </main>
   );
