@@ -9,7 +9,7 @@
 雪かきを頼みたい家は、冬の初めに一度登録するだけ。雪が積もった朝、AI の「隊長」（Claude）が近所の人に「この家、10分だけ手伝えますか？」と届けます。手伝う人は地図で家を選んで「行く」、終わったら写真を1枚。家の人からは、自分の声で「ありがとう」が届きます。
 
 - 🌐 **公開中のアプリ: https://shimaena-go.vercel.app/** （開くと入口の画面。「LINE でログイン」か「**デモを見る（登録なし）**」をえらべます。[町のページ](https://shimaena-go.vercel.app/public/town) もどうぞ）
-- 🎬 **デモ動画（3分・日本語）: https://youtu.be/lAT-q81yChE**
+- 🎬 **デモ動画（3分・日本語）: https://youtu.be/vmgeT3S4i68**
 - Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作品。11月2日〜11月8日の期間中に、このリポジトリ上でゼロから制作しました。
 
 <p align="center">
