@@ -246,18 +246,18 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
         input.dispatchEvent(new Event("change", { bubbles: true }));
       }
       say("写真を確かめて、完了");
-      const result = await until(() => buttons(/町の地図へ戻る|それでも完了にする/)[0], 30);
+      // spec v1.57: 1軒ずつは軽い知らせ。まとめは「今日はここまで！」
+      const result = await until(() => buttons(/今日は\s*ここまで|それでも完了にする/)[0], 30);
       if (result && /それでも完了にする/.test(result.textContent ?? "")) {
         await tap(result);
-        await until(() => buttons(/町の地図へ戻る/)[0], 30);
+        await until(() => buttons(/今日は\s*ここまで/)[0], 30);
       }
       say("1軒、灯りがともった");
-      await wait(4);
-      // カードを受け取る（完了画面の「カード」）
-      const card = await until(() => buttons(/カードを見る|^カード$/)[0], 4);
-      if (card) {
-        say("その朝だけのカードが届く");
-        await tap(card);
+      await wait(3);
+      const finish = await until(() => buttons(/今日は\s*ここまで/)[0], 4);
+      if (finish) {
+        say("今日はここまで！ 今日の成果をまとめて");
+        await tap(finish);
         await wait(5);
       }
       // 次の人へバトン（途中まででも渡せる。11/8 本人「バトンとかもできればほしい」）
@@ -278,7 +278,7 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
 
       // 8. 家族から応援
       await actions.cheer();
-      const back = buttons(/町の地図へ戻る/)[0];
+      const back = buttons(/町の地図へ戻る|地図にもどる/)[0];
       if (back) await tap(back);
       await wait(2);
 

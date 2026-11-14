@@ -14,6 +14,8 @@ const WAIT_MS = 60_000;
 const STEP_MS = 150;
 
 const held = new AsyncLocalStorage<string>();
+/** 鍵の外として動かす（返事のあとの仕事が、もう返した鍵を「持っている」と思いこまないように） */
+export const outsideLock = <T>(fn: () => T): T => held.exit(fn);
 /** いま順番の鍵の中にいるか（テストと見張り用） */
 export const isLockHeld = (): boolean => Boolean(held.getStore());
 const g = globalThis as { __shimaenaLockChain?: Promise<unknown>; __shimaenaLockTable?: boolean };

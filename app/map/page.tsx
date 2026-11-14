@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import MapScreen from "@/components/MapScreen";
 import { soloCells, viewCells } from "@/lib/cells";
-import { latestClear, withInvites } from "@/lib/morning/clear";
+import { latestClear, withInvites, daySummary } from "@/lib/morning/clear";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
 import { viewBases } from "@/lib/morning/view";
@@ -60,6 +60,15 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         bases={roster.bases}
         viewer={viewer ? { teamId: viewer.teamId, role: viewer.role } : undefined}
         clear={withInvites(latestClear(state, roster, viewerId, record.firstFlights), viewerId ? record.invites?.[viewerId] : undefined)}
+        day={
+          viewerId
+            ? daySummary(state, roster, viewerId, {
+                firstFlightIds: record.firstFlights,
+                invites: record.invites?.[viewerId],
+                cardsTonight: (record.cardsDue ?? []).filter((d) => d.sorties.some((x) => x.participantId === viewerId)).length,
+              })
+            : null
+        }
         rescue={listShort(record, roster, viewerSpot(record, roster, viewerId))}
         recap={record.recap?.text}
         thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
