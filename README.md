@@ -8,7 +8,7 @@
 シマエナGO は、**ご近所どうしで雪かきを助け合うための、スマホのゲーム**です。
 雪かきを頼みたい家は、冬の初めに一度登録するだけ。雪が積もった朝、AI の「隊長」（Claude）が近所の人に「この家、10分だけ手伝えますか？」と届けます。手伝う人は地図で家を選んで「行く」、終わったら写真を1枚。家の人からは、自分の声で「ありがとう」が届きます。
 
-- 🌐 **公開中のアプリ: https://shimaena-go.vercel.app/** （登録なしで遊べる [デモ](https://shimaena-go.vercel.app/demo)・[町のページ](https://shimaena-go.vercel.app/public/town)）
+- 🌐 **公開中のアプリ: https://shimaena-go.vercel.app/** （開くと入口の画面。「LINE でログイン」か「**デモを見る（登録なし）**」をえらべます。[町のページ](https://shimaena-go.vercel.app/public/town) もどうぞ）
 - 🎬 **デモ動画（3分・日本語）: https://youtu.be/lAT-q81yChE**
 - Built with Claude: Japan 2026（Anthropic × Cerebral Valley 主催）提出作品。11月2日〜11月8日の期間中に、このリポジトリ上でゼロから制作しました。
 
@@ -32,7 +32,8 @@
 
 ## 🎮 まず触ってみる（登録なし・1分）
 
-1. [**デモの人をえらぶ**](https://shimaena-go.vercel.app/demo) を開き、架空の町の10人から1人を選びます。
+1. [**https://shimaena-go.vercel.app/**](https://shimaena-go.vercel.app/) を開き、入口の画面で「**デモを見る（登録なし）**」を押します（[デモの人をえらぶ画面](https://shimaena-go.vercel.app/demo) に直接入っても同じです）。
+   架空の町の10人から1人を選びます。
 2. 選ぶと、**雪が12cm積もった朝・頼む家が待っている状態**から始まります（夜に開いても、デモはいつでも雪の朝です）。
 3. ホームの「**雪かきGO！**」→ 地図で待っている家の「**10分だけ助けに行く**」→「**終わりました**」で写真を1枚（何の写真でも試せます）。
 4. 完了の画面とカード、[隊長トーク](https://shimaena-go.vercel.app/chat)での相談（自由な文で話しかけられます）も見てください。
@@ -285,3 +286,11 @@ npm run dev
 - 仕様 [`docs/spec.md`](docs/spec.md)／タスク [`docs/tasks.md`](docs/tasks.md)／日々の記録 [`docs/devlog.md`](docs/devlog.md)／本人のストーリー [`docs/story.md`](docs/story.md)／デモの台本 [`docs/demo.md`](docs/demo.md)
 - 地図: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）。天気: [Open-Meteo](https://open-meteo.com/)。隊長の声: [Aivis Cloud API](https://aivis-project.com/cloud-api/)（**Tαkoe:AivisSpeech:雪降白華**、[Tαkoe プロジェクト利用規約](http://wedst.pj.ymhk.jp/tos.html)）。鍵がないときは [VOICEVOX](https://voicevox.hiroshiba.jp/)（VOICEVOX:春歌ナナ）。フォント: [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic)（SIL OFL 1.1）
 - デモのエリア「しらかばエリア」と登場人物は架空です。実在の氏名・住所・電話番号は入れず、地図に氏名を出しません。期間中（11/2〜11/8）の新規制作のみで、既存コードの流用はありません。API キーはコードに書いていません。
+
+## 著作権と利用について
+© 2026 エゾシルベ（to4fu321-lab）. All rights reserved.
+このリポジトリは審査と学習のために公開しています。コード・文章・画像・音の**無断での複製・改変・再配布・商用利用は禁止**です（詳しくは [`LICENSE`](LICENSE)）。
+使いたい・一緒にやりたいという方は、エゾシルベまでご連絡ください。
+- ホームページ: [ezo-shirube.com](https://ezo-shirube.com)
+- メール: [info@ezo-shirube.com](mailto:info@ezo-shirube.com)
+- [GitHub の Issues](https://github.com/to4fu321-lab/shimaena.go/issues)
