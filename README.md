@@ -289,4 +289,7 @@ npm run dev
 ## 著作権と利用について
 © 2026 エゾシルベ（to4fu321-lab）. All rights reserved.
 このリポジトリは審査と学習のために公開しています。コード・文章・画像・音の**無断での複製・改変・再配布・商用利用は禁止**です（詳しくは [`LICENSE`](LICENSE)）。
-使いたい・一緒にやりたいという方は、エゾシルベまで [GitHub の Issues](https://github.com/to4fu321-lab/shimaena.go/issues) からご連絡ください。
+使いたい・一緒にやりたいという方は、エゾシルベまでご連絡ください。
+- ホームページ: [ezo-shirube.com](https://ezo-shirube.com)
+- メール: [info@ezo-shirube.com](mailto:info@ezo-shirube.com)
+- [GitHub の Issues](https://github.com/to4fu321-lab/shimaena.go/issues)
