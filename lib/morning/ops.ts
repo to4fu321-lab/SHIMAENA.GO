@@ -451,6 +451,9 @@ export async function reportShort(participantId: string): Promise<LineMessage[]>
   return MSG.shortReported(number);
 }
 
+/** 完了のときに招待文を Claude に待つ上限 */
+const INVITE_WAIT_MS = 8_000;
+
 export interface CompleteResult {
   done: boolean;
   /** 写真を送った人への返事 */
@@ -631,7 +634,7 @@ async function finishMission(
   let invites: string[] | undefined;
   if (!opts.fast) try {
     const minutes = Number(s.answers.find((a) => a.participantId === participantId)?.answer) || 5;
-    invites = await inviteDrafts({
+    const draft = inviteDrafts({
       minutes: Math.min(60, Math.max(5, minutes)),
       firstTime: (s.firstFlights ?? []).includes(participantId),
       snowCm: s.morning.rollcall.forecastCm,
@@ -640,6 +643,11 @@ async function finishMission(
       snowKg: mission.snowKg,
       cardName: myCard?.designName,
     });
+    // 待つのは 8 秒まで（完了の返事を止めない）。間に合わなければ招待文なしで完了画面を出す
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<undefined>((resolve) => (timer = setTimeout(() => resolve(undefined), INVITE_WAIT_MS)));
+    invites = await Promise.race([draft, late]).finally(() => clearTimeout(timer));
+    if (!invites) throw new Error("時間内に書けませんでした");
     s.invites = { ...(s.invites ?? {}), [participantId]: invites };
     await saveMorning(s);
   } catch (e) {
