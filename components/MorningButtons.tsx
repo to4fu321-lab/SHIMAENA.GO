@@ -12,9 +12,11 @@ export default function MorningButtons({ viewerId, canAct, going, done = false, 
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const [confirmShort, setConfirmShort] = useState(false);
+  const [finishing, setFinishing] = useState(false); // 完了の確認中（時間がかかるので、待っていることを文で見せる）
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const run = (fn: () => Promise<ActionResult>, okSound?: "go") =>
+  const run = (fn: () => Promise<ActionResult>, okSound?: "go", finish = false) => {
+    setFinishing(finish);
     start(async () => {
       try {
         const r = await fn();
@@ -27,6 +29,7 @@ export default function MorningButtons({ viewerId, canAct, going, done = false, 
         play("error");
       }
     });
+  };
 
   const onPhoto = async (file: File | undefined) => {
     if (!file) return;
@@ -37,7 +40,7 @@ export default function MorningButtons({ viewerId, canAct, going, done = false, 
       fd.set("viewerId", viewerId);
       fd.set("photo", new File([blob], "done.jpg", { type: "image/jpeg" }));
       return finishAction(fd);
-    });
+    }, undefined, true);
   };
 
   const disabled = pending || !canAct;
@@ -101,14 +104,19 @@ export default function MorningButtons({ viewerId, canAct, going, done = false, 
           e.target.value = "";
         }}
       />
-      {result && (
+      {pending && finishing && (
+        <p className="rounded-2xl bg-ice-soft px-3 py-2 text-base ring-1 ring-ice" role="status">
+          確かめて、カードを作っています。1分ほどかかることがあります。このままお待ちください。
+        </p>
+      )}
+      {!(pending && finishing) && result && (
         <p className={`rounded-2xl px-3 py-2 text-base ring-1 ${result.ok ? "bg-ice-soft ring-ice" : "bg-warm ring-lamp/50"}`} role="status">
           {result.ok ? "✓ " : "！ "}
           {result.text}
         </p>
       )}
-      {result && !result.ok && result.canManual && (
-        <button disabled={pending} onClick={() => run(() => manualFinishAction(viewerId))} className="btn btn-white w-full text-base">
+      {!(pending && finishing) && result && !result.ok && result.canManual && (
+        <button disabled={pending} onClick={() => run(() => manualFinishAction(viewerId), undefined, true)} className="btn btn-white w-full text-base">
           それでも完了にする（写真なし・本人の報告）
         </button>
       )}
