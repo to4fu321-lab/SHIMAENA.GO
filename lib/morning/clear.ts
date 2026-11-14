@@ -186,3 +186,68 @@ export function latestClear(state: MorningState, roster: Roster, viewerId?: stri
   }
   return best ? summarizeClear(state, roster, best.missionId, { viewerId, firstFlightIds }) : null;
 }
+
+/** 「今日はここまで！」のまとめ（spec v1.57）: その日の自分の活動を1画面に。1軒ずつの完了は軽い知らせだけにして、点はここでまとめて見せる */
+export interface DaySummary {
+  viewerId: string;
+  /** 今日、自分の手で終えた家（終えた順） */
+  houses: { baseNumber: number | string; points: number }[];
+  /** 自分の点の合計（自分に付いた点。チームの合流ボーナスなど人に付かない点は入れない） */
+  myPoints: number;
+  teamId?: TeamId;
+  teamTotals: Record<TeamId, number>;
+  /** どけた雪（自分が行った家の合計） */
+  snowKg: number;
+  /** はじめての出動だったか */
+  firstFlight: boolean;
+  /** 今夜届くカードの枚数 */
+  cardsTonight: number;
+  /** 町のようす */
+  townDone: number;
+  townTotal: number;
+  allDone: boolean;
+  snowName?: string;
+  /** 招待文（あれば） */
+  invites?: string[];
+  /** 最後に終えた家（バトン・次は？に使う） */
+  lastMissionId: string;
+  lastPhotoChecked: boolean;
+}
+
+export function daySummary(
+  state: MorningState,
+  roster: Roster,
+  viewerId: string,
+  opts: { firstFlightIds?: string[]; invites?: string[]; cardsTonight?: number } = {},
+): DaySummary | null {
+  const mine = state.sorties
+    .filter((x) => x.participantId === viewerId && x.status === "done" && x.completedAt)
+    .sort((a, b) => a.completedAt!.localeCompare(b.completedAt!));
+  if (mine.length === 0) return null;
+  const houses = mine.flatMap((x) => {
+    const m = state.missions.find((mm) => mm.id === x.missionId);
+    if (!m) return [];
+    const points = eventsForMission(state, m.id)
+      .filter((e) => e.participantId === viewerId)
+      .reduce((a, e) => a + e.points, 0);
+    return [{ baseNumber: roster.bases.find((b) => b.id === m.baseId)?.number ?? "?", points, kg: m.snowKg ?? 0 }];
+  });
+  const prog = progress(state);
+  return {
+    viewerId,
+    houses: houses.map(({ baseNumber, points }) => ({ baseNumber, points })),
+    myPoints: houses.reduce((a, h) => a + h.points, 0),
+    teamId: roster.participants.find((p) => p.id === viewerId)?.teamId ?? mine[0].teamId,
+    teamTotals: teamTotals(state),
+    snowKg: houses.reduce((a, h) => a + h.kg, 0),
+    firstFlight: (opts.firstFlightIds ?? []).includes(viewerId),
+    cardsTonight: opts.cardsTonight ?? 0,
+    townDone: prog.done,
+    townTotal: prog.total,
+    allDone: prog.allDone,
+    snowName: state.rollcall.snowName,
+    ...(opts.invites && opts.invites.length > 0 ? { invites: opts.invites } : {}),
+    lastMissionId: mine.at(-1)!.missionId,
+    lastPhotoChecked: Boolean(state.sorties.find((x) => x.missionId === mine.at(-1)!.missionId && x.photoCheck?.evidence)),
+  };
+}

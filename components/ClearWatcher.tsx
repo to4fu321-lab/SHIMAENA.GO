@@ -1,12 +1,12 @@
 "use client";
 
-// MISSION CLEAR を出す係（画面に1つだけ）。
+// 完了の知らせを出す係（画面に1つだけ）。spec v1.57 から、1軒ずつは軽い知らせ（ClearToast）。まとめは「今日はここまで！」（DayClear）。
 // - 自分の「終わりました」: MorningButtons が openClear() を呼ぶ（閉じるまで残る）
 // - 他の人の完了: 地図は4秒ごとに更新されるので、「いちばん最近の完了」が前に見たものと違えば出す（9秒で自動で閉じる）
 // 「前に見たもの」は sessionStorage に持つ（画面を閉じると消える）。最初に開いたときは覚えるだけで出さない。
 import { useEffect, useSyncExternalStore } from "react";
 import type { ClearSummary } from "@/lib/morning/clear";
-import MissionClear from "./MissionClear";
+import ClearToast from "./ClearToast";
 
 const KEY = "shimaena:lastClear";
 
@@ -61,8 +61,8 @@ export default function ClearWatcher({ clear }: { clear: ClearSummary | null }) 
       rememberClear(clear.missionId); // 初めて開いたとき: いまの最新を覚えるだけ
       return;
     }
-    if (last !== clear.missionId && active?.clear.missionId !== clear.missionId) openClear(clear, { autoCloseMs: 9000 });
+    if (last !== clear.missionId && active?.clear.missionId !== clear.missionId) openClear(clear, { autoCloseMs: 4000 });
   }, [clear]);
 
-  return act ? <MissionClear clear={act.clear} onClose={closeClear} autoCloseMs={act.autoCloseMs} /> : null;
+  return act ? <ClearToast key={act.clear.missionId} clear={act.clear} onClose={closeClear} ms={act.autoCloseMs ?? 4500} /> : null;
 }

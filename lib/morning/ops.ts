@@ -1,5 +1,7 @@
 // 朝の流れの「本番の操作」。状態を読み、flow.ts で書き換え、保存し、LINE に送る。
 // cron（/api/cron/*）と /admin のボタンの両方からここを呼ぶ。
+import { runLater } from "../ops/later";
+import { withStateLock } from "../ops/lock";
 import { isNight } from "../night";
 import { passwordOf } from "../badge";
 import { onTeam } from "../member";
@@ -453,9 +455,6 @@ export async function reportShort(participantId: string): Promise<LineMessage[]>
   return MSG.shortReported(number);
 }
 
-/** 完了のときに招待文を Claude に待つ上限 */
-const INVITE_WAIT_MS = 8_000;
-
 export interface CompleteResult {
   done: boolean;
   /** 写真を送った人への返事 */
@@ -629,20 +628,23 @@ async function finishMission(
     { missionId: mission.id, baseLocation: requester?.location, today: appToday(s, now), now },
   );
 
-  // 依頼者へ（ありがとう点呼の3ボタン付き）、そして家族へ（spec 8）
-  const rk = inboxKeyOf(requester);
-  if (rk) await push(rk, MSG.requesterDoneNotice(names, mission.id));
-  if (requester) {
-    for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
-      if (link.familyLineUserId !== requester.lineUserId) await push(link.familyLineUserId, MSG.familyDone(names, mission.id));
+  // 依頼者・家族・一緒に行った仲間への知らせは、返事を返したあとで（spec v1.57: 押した人を待たせない。届くのは数秒あと）
+  const notifyAll = async () => {
+    const rk = inboxKeyOf(requester);
+    if (rk) await push(rk, MSG.requesterDoneNotice(names, mission.id));
+    if (requester) {
+      for (const link of await repo().listFamilyLinksByRequester(requester.id)) {
+        if (link.familyLineUserId !== requester.lineUserId) await push(link.familyLineUserId, MSG.familyDone(names, mission.id));
+      }
     }
-  }
-  // 一緒に行った仲間へ
-  for (const x of sorties) {
-    if (x.participantId === participantId) continue;
-    const k = inboxKeyOf(byId.get(x.participantId));
-    if (k) await push(k, MSG.doneByOther(number, me?.nickname ?? "仲間", getTeam(x.teamId).name, pointsOf(x.teamId), cardTonight));
-  }
+    for (const x of sorties) {
+      if (x.participantId === participantId) continue;
+      const k = inboxKeyOf(byId.get(x.participantId));
+      if (k) await push(k, MSG.doneByOther(number, me?.nickname ?? "仲間", getTeam(x.teamId).name, pointsOf(x.teamId), cardTonight));
+    }
+  };
+  if (opts.fast) await notifyAll();
+  else runLater("morning/done-notify", notifyAll);
   const myTeam = me?.teamId ? getTeam(me.teamId) : undefined;
   const notes: string[] = [];
   if (check.snowType && check.snowType !== "unknown") notes.push(`雪質: ${SNOW_TYPE_LABEL[check.snowType]}${check.snowTypeReason ? `（${check.snowTypeReason}）` : ""}。`);
@@ -650,11 +652,12 @@ async function finishMission(
   if (check.evidence) notes.push(`Claude の確認: ${check.evidence}${check.width && check.width !== "unknown" ? `（${WIDTH_LABEL[check.width]}）` : ""}`);
   notes.push(...hazardLines(check).map((x) => `⚠️ ${x}`));
   const prog = progress(s.morning);
-  // あなたが主役の招待文（spec v1.6）: 写真を送った本人の今朝の活動から3案。失敗しても完了は止めない
+  // あなたが主役の招待文（spec v1.6）: 写真を送った本人の今朝の活動から3案。返事のあとで書いて残す（spec v1.57: 待たせない）。
+  // 「今日はここまで！」のまとめ画面で使う。いまは決まった文の3案をすぐ残し（待たない）、Claude の文が書けたら差しかえる
   let invites: string[] | undefined;
-  if (!opts.fast) try {
+  if (!opts.fast) {
     const minutes = Number(s.answers.find((a) => a.participantId === participantId)?.answer) || 5;
-    const draft = inviteDrafts({
+    const input = {
       minutes: Math.min(60, Math.max(5, minutes)),
       firstTime: (s.firstFlights ?? []).includes(participantId),
       snowCm: s.morning.rollcall.forecastCm,
@@ -662,16 +665,18 @@ async function finishMission(
       teamName: myTeam?.name,
       snowKg: mission.snowKg,
       cardName: myCard?.designName,
-    });
-    // 待つのは 8 秒まで（完了の返事を止めない）。間に合わなければ招待文なしで完了画面を出す
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const late = new Promise<undefined>((resolve) => (timer = setTimeout(() => resolve(undefined), INVITE_WAIT_MS)));
-    invites = await Promise.race([draft, late]).finally(() => clearTimeout(timer));
-    if (!invites) throw new Error("時間内に書けませんでした");
+    };
+    invites = mockInvites(input);
     s.invites = { ...(s.invites ?? {}), [participantId]: invites };
     await saveMorning(s);
-  } catch (e) {
-    console.error("[invite] 招待文を書けませんでした:", e instanceof Error ? e.message : e);
+    runLater("invite/drafts", async () => {
+      const drafts = await inviteDrafts(input);
+      await withStateLock("invite/drafts", async () => {
+        const cur = await loadMorning();
+        cur.invites = { ...(cur.invites ?? {}), [participantId]: drafts };
+        await saveMorning(cur);
+      });
+    });
   }
   // 招待リンクには「あなたからの招待」の印（v1.8）。誘った結果（見てくれた人・応援してくれた人）を返事に添える（返信なので通数は使わない）
   const joinUrl = inviteUrl(participantId);
@@ -696,7 +701,8 @@ async function finishMission(
     clear.inviteUrl = joinUrl;
     clear.inviteResult = inviteResult;
   }
-  if (prog.allDone && !opts.fast) await writeRecap().catch((e) => console.error("[recap]", e)); // 討伐したら今朝の実況を書く
+  // 討伐したら今朝の実況を書く（返事のあとで。spec v1.57）
+  if (prog.allDone && !opts.fast) runLater("recap", () => withStateLock("recap", () => writeRecap().then(() => undefined)));
   if (!opts.fast) await refreshShareTextsLater(); // 数字が変わったので SNS の投稿文を作り直す（返事のあとで）
   return { done: true, messages: reply, clear };
 }

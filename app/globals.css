@@ -622,3 +622,11 @@ body {
   /* 撮影ステージ（/admin/stage）は自分で背景とスマホ枠を持つので、案内を出さない */
   body:has(.auto-stage) .pc-caption { display: none; }
 }
+
+/* 完了の軽い知らせ（spec v1.57）: 上からすっと降りてくる */
+@keyframes toast-in {
+  from { transform: translateY(-120%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.toast-in { animation: toast-in 0.35s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .toast-in { animation: none; } }

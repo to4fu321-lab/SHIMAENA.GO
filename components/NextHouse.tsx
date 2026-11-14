@@ -8,7 +8,7 @@ import type { ShortHouse } from "@/lib/morning/watch";
 import { play } from "@/lib/sound/engine";
 import { DistanceChip, NumberBadge, PeopleDots } from "./SheetBits";
 
-export default function NextHouse({ viewerId, next }: { viewerId: string; next: ShortHouse }) {
+export default function NextHouse({ viewerId, next, onFinish }: { viewerId: string; next: ShortHouse; /** 「今日はここまで！」（まとめ画面を開く） */ onFinish?: () => void }) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const go = () =>
@@ -35,9 +35,18 @@ export default function NextHouse({ viewerId, next }: { viewerId: string; next: 
           </p>
         </div>
       </div>
-      <button disabled={pending} onClick={go} className="btn btn-lamp btn-big w-full text-lg">
-        {pending ? "確認中…" : `👉 次は 拠点${next.baseNumber} へ行く（あと${next.missing}人）`}
-      </button>
+      <div className={onFinish ? "grid grid-cols-[1fr_1.7fr] gap-2" : ""}>
+        {onFinish && (
+          <button type="button" disabled={pending} onClick={onFinish} className="btn btn-white btn-big w-full px-1 text-base leading-tight">
+            🎉 今日は
+            <br />
+            ここまで！
+          </button>
+        )}
+        <button disabled={pending} onClick={go} className="btn btn-lamp btn-big w-full px-2 text-lg leading-tight">
+          {pending ? "確認中…" : `👉 拠点${next.baseNumber} へ行く`}
+        </button>
+      </div>
       {result && (
         <p className={`rounded-2xl px-3 py-2 text-base ring-1 ${result.ok ? "bg-ice-soft ring-ice" : "bg-warm ring-lamp/50"}`} role="status">
           {result.ok ? "✓ " : "！ "}

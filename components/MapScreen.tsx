@@ -8,7 +8,7 @@ import { mySortieOf, progress, snowHp, snowTotal, teamTotals, viewBases } from "
 import { TEAMS } from "@/lib/teams";
 import type { Base, LatLng, Role, TeamId } from "@/lib/types";
 import type { Destination } from "@/lib/nav";
-import type { ClearSummary } from "@/lib/morning/clear";
+import type { ClearSummary, DaySummary } from "@/lib/morning/clear";
 import { requestLabel } from "@/lib/request-note";
 import { nextHouseOf, type ShortHouse } from "@/lib/morning/watch";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
 import NextHouse from "./NextHouse";
+import DayClear from "./DayClear";
 import { Chip, NumberBadge, PeopleDots, SheetHead } from "./SheetBits";
 import RescueList from "./RescueList";
 import RoadReportRun from "./RoadReportRun";
@@ -50,6 +51,7 @@ export default function MapScreen({
   bases,
   viewer,
   clear = null,
+  day: today = null,
   rescue = [],
   recap,
   thanks,
@@ -77,6 +79,8 @@ export default function MapScreen({
   viewer?: { teamId?: TeamId; role?: Role };
   /** いちばん最近の完了（他の人の完了に気づくため） */
   clear?: ClearSummary | null;
+  /** 今日の自分のまとめ（「今日はここまで！」で開く。spec v1.57） */
+  day?: DaySummary | null;
   /** 人手が足りない家（あと少しで救える順） */
   rescue?: ShortHouse[];
   /** 今朝の実況（全軒完了のあと） */
@@ -125,6 +129,12 @@ export default function MapScreen({
   const q = /^[hr]\d+$/.test(state.viewerId) ? `?as=${state.viewerId}` : "";
   // 雪かきGO（出発前）: 割り当てがあって、まだ「行く」を押していないとき。「あとで」で閉じられる
   const [later, setLater] = useState(false);
+  // 「今日はここまで！」のまとめ画面（spec v1.57）
+  const [dayOpen, setDayOpen] = useState(false);
+  const finishDay = () => {
+    play("tap");
+    setDayOpen(true);
+  };
   // 自分の分が終わって、まだ助けを待つ家があるとき: 次の家への誘導を出す（手伝う側だけ。お願いする側には出さない）
   const canHelp = viewer?.role === "helper" || Boolean(viewer?.teamId);
   const nextHouse = canHelp && mySortie?.status === "done" && goingTo.length === 0 && !prog.allDone ? nextHouseOf(rescue) : undefined;
@@ -210,6 +220,7 @@ export default function MapScreen({
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col bg-paper text-ink">
       <Bgm track={bgm} />
       <ClearWatcher clear={clear} />
+      {dayOpen && today && <DayClear day={today} onClose={() => setDayOpen(false)} homeHref={`/${q}`} />}
       {/* 上: 戻る・題名（濃い冬の青） */}
       <header className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center bg-ink px-2 pb-2 pt-2 text-white">
         <Link href={`/${q}`} className="btn min-h-12 px-2 text-base text-white">
@@ -344,7 +355,15 @@ export default function MapScreen({
               </div>
             </div>
           ) : nextHouse ? (
-            <NextHouse viewerId={state.viewerId} next={nextHouse} />
+            <NextHouse viewerId={state.viewerId} next={nextHouse} onFinish={today ? finishDay : undefined} />
+          ) : today && mySortie?.status === "done" && goingTo.length === 0 ? (
+            // 待っている家がない・全部終わった: 今日のまとめへ
+            <div className="space-y-2">
+              <p className="text-center text-base font-bold">✓ {prog.allDone ? "今朝の家はすべて完了！" : "あなたの雪かきは完了！"} おつかれさまでした。</p>
+              <button type="button" onClick={finishDay} className="btn btn-lamp btn-big w-full text-xl">
+                🎉 今日はここまで！
+              </button>
+            </div>
           ) : (
           <MorningButtons
             viewerId={state.viewerId}
