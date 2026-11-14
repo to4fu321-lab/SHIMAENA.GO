@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { renderCardBackSvg, renderCardSvg, type CardArt } from "../cards/svg";
 import { DEMO_DATE } from "../morning/flow";
 import { announce } from "../morning/ops";
-import { memoryRepo } from "../repo";
 import { snowKgOf, soloSnow } from "../snow-estimate";
 import { completeSolo } from "./ops";
 
@@ -28,17 +27,14 @@ describe("ソロの完了とカード", () => {
   });
   const now = new Date("2026-11-03T03:00:00Z"); // 昼
 
-  it("自宅の雪かき: 雪の朝なら kg が出て、はじめてのカードの消印も kg になる", async () => {
+  it("自宅の雪かき: 雪の朝なら kg が出る（ソロではカードは出さない。v1.58）", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const r = await completeSolo("h3", "own_house", { now });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.summary.snowKg).toBe(snowKgOf(12, "entrance"));
     expect(r.summary.snowKgComparison).toBeTruthy();
-    expect(r.summary.reveal?.stampText).toBe(`${r.summary.snowKg}kg`);
-    const stored = await memoryRepo.getCard(r.summary.card!.id);
-    expect(stored!.svg).toContain(`${r.summary.snowKg}kg`);
-    expect(stored!.backSvg).toContain("どけた雪 およそ");
+    expect(r.summary.card).toBeUndefined();
   });
   it("見回りなど自宅の雪かき以外は kg を出さない", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });

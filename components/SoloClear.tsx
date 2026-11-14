@@ -6,9 +6,8 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import type { SoloClearSummary } from "@/lib/solo/ops";
 import Mascot, { SnowTown } from "./Mascot";
-import CardReveal from "./CardReveal";
 import InviteDrafts from "./InviteDrafts";
-import ClearFrame, { ConnectPanel, FIT_CARD, FIT_IMG, Panel } from "./ClearFrame";
+import ClearFrame, { ConnectPanel, Panel } from "./ClearFrame";
 import type { PagerTab } from "./Pager";
 import { play } from "@/lib/sound/engine";
 
@@ -92,7 +91,6 @@ export default function SoloClear({
   const hasShare = shareItems.length > 0 || Boolean(s.invites && s.invites.length > 0);
   const tabs: PagerTab[] = [
     { key: "result", label: "けっか" },
-    { key: "card", label: "カード" },
     { key: "captain", label: "隊長" },
     ...(hasShare || baton ? [{ key: "connect", label: "つなぐ" }] : []),
   ];
@@ -192,27 +190,9 @@ export default function SoloClear({
         </div>
         {s.teamCapped && <p className="text-center text-sm text-ink-soft">今日のソロのチーム得点は上限（15点）に届きました。羽はこのあともたまります。</p>}
         {!s.onsite && s.teamPoints === 0 && <p className="text-center text-sm text-ink-soft">アプリでの参加のチーム得点は、1日3点までです。</p>}
-        <button onClick={() => open("card")} className="btn btn-lamp w-full text-lg">
-          {s.card ? "🎴 カードを見る ›" : "🎴 次のカードを見る ›"}
+        <button onClick={() => open("captain")} className="btn btn-lamp w-full text-lg">
+          🐦 隊長のひとことを見る ›
         </button>
-      </Panel>
-
-      {/* カード: 発行の演出（タブを開いたときに動かす） */}
-      <Panel center>
-        {s.reveal ? (
-          <div className={FIT_CARD}>{tab === 1 && <CardReveal card={s.reveal} label={s.firstEver ? "はじめてのカードを獲得！" : "カードを獲得！"} />}</div>
-        ) : s.card ? (
-          <div className={`overflow-hidden rounded-2xl bg-card ring-1 ring-ink/10 ${FIT_IMG}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/api/cards/${s.card.id}/front.svg`} alt={`${s.card.designName} のカード`} className="aspect-[600/840]" />
-            <p className="p-2 text-center text-sm font-bold">カード「{s.card.designName}」を獲得！</p>
-          </div>
-        ) : (
-          <p className="rounded-2xl bg-card px-3 py-4 text-center text-lg ring-1 ring-ink/10">
-            次のカード: <b>{s.nextCard.label}</b>
-            <span className="block text-base text-ink-soft">{s.nextCard.hint}</span>
-          </p>
-        )}
       </Panel>
 
       {/* 隊長から: ひとこと・初出撃・写真の確認・ごほうび・次のおすすめ */}

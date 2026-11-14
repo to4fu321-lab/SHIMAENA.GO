@@ -1,3 +1,4 @@
+import LoadingBar from "@/components/LoadingBar";
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import PcCaption from "@/components/PcCaption";
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <PwaRegister />
         <SoundProvider />
         <PcCaption />
+        <LoadingBar />
         {children}
       </body>
     </html>
