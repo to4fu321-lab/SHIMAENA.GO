@@ -4,6 +4,7 @@
 // 押したボタン・送った文はすぐ自分の吹き出しとして出し、返事が入ったら流れを読み直す。数秒ごとに新しい文面（点呼など）も取りに行く。
 // ことば（spec v1.36）: 🌐 で選ぶ。決まった文字は辞書（lib/i18n/ui.ts）、隊長の吹き出しはサーバーで訳したものが届く。
 // 読み上げは隊長のかわいい声（日本語は VOICEVOX、ほかはブラウザのそのことばの声）。
+import { quietly } from "@/lib/ui/loading";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -175,7 +176,7 @@ export default function ChatScreen({
     const t = setInterval(async () => {
       if (pending || sending.current > 0) return;
       const seq = sendSeq.current;
-      const r = await chatPollAction(viewerId).catch(() => undefined);
+      const r = await quietly(() => chatPollAction(viewerId).catch(() => undefined)); // 裏の受信は「読み込み中」に数えない
       // 取りに行っている間に文を送っていたら、この結果は古い（自分の吹き出しが消えてしまう。11/7 本人の指摘「しばらく表示されない」）
       if (seq !== sendSeq.current || sending.current > 0) return;
       if (r?.ok && r.bubbles)

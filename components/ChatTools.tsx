@@ -3,6 +3,7 @@
 // 隊長トークの道具（spec v1.18・v1.36）: 文字の大きさ（標準／大／特大）と 🔊 読み上げ。どちらも端末に覚える。
 // 読み上げ（v1.36）: 日本語のときは隊長のかわいい声（/api/voice → VOICEVOX の mp3 を、画面に1つの <audio> で鳴らす）。
 // 声を作れないとき・日本語以外のときは、ブラウザの読み上げ（Web Speech、そのことばの声）。鍵も費用も要らない。
+import { quietly } from "@/lib/ui/loading";
 import { LANG_INFO, type Lang } from "@/lib/i18n/langs";
 import { t } from "@/lib/i18n/ui";
 import { splitForVoice } from "@/lib/speech/split";
@@ -114,7 +115,7 @@ let woke = false;
 export function wakeCaptainVoice(): void {
   if (woke || typeof window === "undefined") return;
   woke = true;
-  void fetch("/api/voice?wake=1").catch(() => {});
+  void quietly(() => fetch("/api/voice?wake=1").catch(() => {}));
 }
 
 /** いま鳴っている隊長の声を止める */

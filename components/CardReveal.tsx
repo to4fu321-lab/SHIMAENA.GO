@@ -1,6 +1,7 @@
 "use client";
 // カード発行の演出（spec v1.8）: 下から上がる → 裏から表へめくれる → 光が走る → 消印のスタンプが「ドン」と押される → 番号が出る。
 // 動きを減らす設定の人には動かさず、消印つきの表をそのまま出す。押した後は「もう一度」で何度でも見られる。
+import { quietly } from "@/lib/ui/loading";
 import { useEffect, useState } from "react";
 import { STAMP_COLOR, type RevealCard } from "@/lib/cards/reveal";
 import { play, vibrate } from "@/lib/sound/engine";
@@ -67,7 +68,7 @@ export default function CardReveal({ card, label = "カードを発行しまし�
     let stop = false;
     const tick = async () => {
       try {
-        const r = await fetch(`/api/cards/${card.id}/state`, { cache: "no-store" });
+        const r = await quietly(() => fetch(`/api/cards/${card.id}/state`, { cache: "no-store" }))!;
         const j = (await r.json()) as { pending?: boolean };
         if (!stop && j.pending === false) {
           setDrawing(false);

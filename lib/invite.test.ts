@@ -121,7 +121,7 @@ describe("誘っただけで羽、仲間になったら二人にカード（水�
     expect(await feathersOf("h3", "bonus_invite_cheer")).toBe(3);
   });
 
-  it("招待リンクから来て登録した人の初出動: 二人に「ふたりの群れ」、誘った人に +20羽。2回目からはふつう", async () => {
+  it("招待リンクから来て登録した人の初出動: 誘った人に +20羽・仲間1人。ソロではカードは出さない（v1.58）", async () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     inviteUrl("h3");
     await new Promise((r) => setTimeout(r, 0));
@@ -130,17 +130,13 @@ describe("誘っただけで羽、仲間になったら二人にカード（水�
     expect(await linkInvitee("h3", inviteCode("h3"))).toBe(false); // 自分で自分は誘えない
     const now = new Date("2026-11-03T03:00:00Z");
     const r = await completeSolo("h5", "own_house", { now });
-    expect(r.ok && r.summary.card?.designName).toBe("ふたりの群れ");
-    const mine = await memoryRepo.listCardsByRecipient("h3");
-    expect(mine.map((c) => c.designName)).toContain("ふたりの群れ");
+    expect(r.ok && r.summary.card).toBeUndefined();
+    expect(await memoryRepo.listCardsByRecipient("h3")).toHaveLength(0);
     expect(await feathersOf("h3", "bonus_invite_join")).toBe(20);
     expect((await readInviteStats("h3")).joined).toBe(1);
-    const r2 = await completeSolo("h5", "report_snow", { now });
-    expect(r2.ok && r2.summary.card?.designName).not.toBe("ふたりの群れ");
-    expect((await memoryRepo.listCardsByRecipient("h3")).length).toBe(mine.length);
   });
 
-  it("ふだんの1枚は LINE に送らない（月の通数を使わない）。はじめての1枚は送る", async () => {
+  it("ソロ出動ではカードの画像を送らない（v1.58）", async () => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const roster = await loadRoster();
@@ -150,10 +146,8 @@ describe("誘っただけで羽、仲間になったら二人にカード（水�
     const sentImages = async () => (await listThread("U-h6")).filter((x) => x.dir === "out" && (x.body as { type: string }).type === "image").length;
     const before = await sentImages();
     await completeSolo("h6", "own_house", { now });
-    const afterFirst = await sentImages();
-    expect(afterFirst).toBeGreaterThan(before); // はじめて
     await completeSolo("h6", "report_snow", { now });
-    expect(await sentImages()).toBe(afterFirst); // ふだんの1枚は送らない
+    expect(await sentImages()).toBe(before);
   });
 });
 

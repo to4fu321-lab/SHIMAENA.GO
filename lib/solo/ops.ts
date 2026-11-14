@@ -1,17 +1,22 @@
 // ソロ出動の「本番の操作」（spec v1.3）。台帳を読み、ミッションを完了にして、羽・ボーナス・ひとこと・カードを付ける。
 // v1.7: チームの得点にも入る（自分の家 +5・見回りなど +3・写真の確認 +2・オンライン +1〔1日3点まで〕、1人1日 15点まで。lib/solo/team-points.ts）。
 //家の完了（help_house）は朝の一本道（lib/morning/ops.ts）が記録する。
-import { inviteDrafts } from "../claude/invite";
+import { mockInvites } from "../claude/invite";
 import { claimPairing, inviteResultLine, inviteUrl, readInviteStats } from "../invite";
 import { allowedAtNight, isNight, nightRefusal } from "../night";
 import { onTeam } from "../member";
 import { randomBytes } from "node:crypto";
-import { issueSoloCard, revealOf } from "../cards/issue";
+import { revealOf } from "../cards/issue";
 import type { RevealCard } from "../cards/reveal";
 import { cellKey } from "../cells";
 import { checkPhoto, decidePhoto, hazardLines, type PhotoInput } from "../claude/photo";
 import { photoFingerprint, photoSeen, rememberPhoto } from "../ops/photo-seen";
-import { soloHitokoto } from "../claude/solo";
+import { mockSoloHitokoto, soloHitokoto } from "../claude/solo";
+import { runLater } from "../ops/later";
+import { withStateLock } from "../ops/lock";
+import { inboxKeyOf } from "../inbox/key";
+import { push } from "../line/client";
+import { POINTS } from "../game/score";
 import { scoreSolo, SOLO_TEAM_DAILY_CAP } from "../game/score";
 import { getTeam } from "../teams";
 import { addDays } from "../jst";
@@ -20,7 +25,7 @@ import { endHome, startHome } from "./home-now";
 import { appToday } from "../morning/today";
 import { repo } from "../repo";
 import { refreshShareTextsLater } from "../sns/refresh";
-import type { Card, Participant, PhotoCheck, SoloLog } from "../types";
+import type { Card, Participant, SoloLog } from "../types";
 import { soloSnow } from "../snow-estimate";
 import { activeDates, bonusLog, bonusesDue, feathersOn, nextCard, streakDays, totalFeathers, type NextCard } from "./feathers";
 import { addSoloScores, soloPointsToday } from "./team-points";
@@ -105,10 +110,11 @@ export async function completeSolo(
     return { ok: false, reason: "already", text: `「${mission.label}」は今日はもう完了しています。別のミッションをどうぞ。` };
   }
 
-  // 写真（任意）: Claude が確認。判断できなくても報告として受け付ける（AI を最終判定者にしない）
+  // 写真（任意）: Claude の確認（30〜60秒）は返事のあとで（spec v1.58: 待たせない）。確認できたら写真の +2 点を足し、結果は隊長トークへ。
+  // 判断できなくても報告として受け付ける（AI を最終判定者にしない）
   let photoChecked: boolean | undefined;
   let photoNote: string | undefined;
-  let check: PhotoCheck | undefined;
+  let checkLater: PhotoInput | undefined;
   if (opts.photo && mission.photo === "optional") {
     // 同じ日に同じ写真なら、Claude を呼ばずに「確認済み」にしない（使い回しを防ぐ。活動の記録はそのまま受け付ける）
     const fp = photoFingerprint(opts.photo.bytes);
@@ -116,19 +122,8 @@ export async function completeSolo(
       photoChecked = false;
       photoNote = "前に送られた写真と同じだったので、写真の確認はしませんでした。活動の記録は受け付けました。";
     } else {
-      check = await checkPhoto(opts.photo);
-      const outcome = decidePhoto(check);
-      photoChecked = outcome === "done";
-      const seen = check.evidence ? `（Claude の確認: ${check.evidence}）` : "";
-      photoNote =
-        outcome === "done"
-          ? `写真を確認しました${seen}。${check.comment}`
-          : check.unrelated
-            ? `雪の写真ではないようなので、確認済みにはしませんでした。活動の記録は受け付けました。`
-            : `写真では確かめきれませんでしたが、報告として受け付けました。${check.comment}`;
-      const hz = hazardLines(check);
-      if (hz.length > 0) photoNote += ` ⚠️ ${hz.join(" ")}`;
-      if (outcome === "done") await rememberPhoto(today, fp);
+      checkLater = opts.photo;
+      photoNote = "写真は隊長があとで確かめて、隊長トークでお知らせします。";
     }
   }
 
@@ -138,9 +133,7 @@ export async function completeSolo(
       ? soloSnow({
           today,
           rollcall: record.morning.rollcall,
-          photo: check && !check.unrelated ? check.depth : undefined,
-          snowType: check?.snowType,
-          area: p.clearArea,
+          area: p.clearArea, // 写真の確認は返事のあとなので、深さ・雪質は予報と積雪深から（spec v1.58）
         })
       : undefined;
 
@@ -166,16 +159,22 @@ export async function completeSolo(
   const due = bonusesDue(after, today);
   const bonuses = due.map((k) => bonusLog(k, p.id, today, at, newId()));
   const all = [...after, ...bonuses];
+  // 隊長のひとこと（Claude）は 3 秒まで。間に合わなければ決まった文（spec v1.58: 待たせない）
+  const hitokotoInput = {
+    label: mission.label,
+    onsite: mission.onsite,
+    feathers: mission.feathers,
+    todayFeathers: feathersOn(all, today),
+    totalFeathers: totalFeathers(all),
+    streak,
+    firstEver,
+  };
+  let hitokotoTimer: ReturnType<typeof setTimeout> | undefined;
   const hitokoto = (
-    await soloHitokoto({
-      label: mission.label,
-      onsite: mission.onsite,
-      feathers: mission.feathers,
-      todayFeathers: feathersOn(all, today),
-      totalFeathers: totalFeathers(all),
-      streak,
-      firstEver,
-    })
+    await Promise.race([
+      soloHitokoto(hitokotoInput).catch(() => mockSoloHitokoto(hitokotoInput)),
+      new Promise<{ text: string }>((resolve) => (hitokotoTimer = setTimeout(() => resolve(mockSoloHitokoto(hitokotoInput)), 3000))),
+    ]).finally(() => clearTimeout(hitokotoTimer))
   ).text;
   log.hitokoto = hitokoto;
 
@@ -199,47 +198,21 @@ export async function completeSolo(
     }
   }
 
-  // カード（v1.8: 毎回1枚）: 最初の1枚は「はじめてのソロ出動」、5日連続はドット絵、それ以外はその時だけの1枚（名前と場面は Claude）
-  let card: Card | undefined;
-  try {
-    const rc = record.morning.rollcall;
-    const same = rc.date === today;
-    const weather = {
-      forecastCm: same ? rc.forecastCm : 0,
-      depthCm: same ? rc.depthCm : undefined,
-      snowType: check?.snowType,
-      photoDepth: check && !check.unrelated ? check.depth : undefined,
-    };
-    // 誘われて仲間になった人の初出動: 本人は「ふたりの群れ」、誘った人にも同じカード（v1.8）
-    const inviter = firstEver ? await claimPairing(p.id) : undefined;
-    const variant = inviter ? "pair" : firstEver ? "first" : due.includes("bonus_streak5") ? "streak5" : "daily";
-    card = await issueSoloCard(p, { variant, date: today, logId: log.id, hitokoto, missionLabel: mission.label, firstFlight: firstEver, at, snow, weather });
-    if (inviter) {
-      const friend = await r.findParticipant(inviter);
-      if (friend) {
-        await issueSoloCard(friend, { variant: "pair", date: today, logId: `${log.id}-pair`, hitokoto: "あなたの誘いで、仲間がひとり増えました。", missionLabel: "仲間を誘う", firstFlight: false, at });
-      }
-    }
-  } catch (e) {
-    console.error("[solo] カードを発行できませんでした:", e instanceof Error ? e.message : e);
-  }
+  // カード: ソロ出動では出さない（spec v1.58。カードは家の雪かきだけ・夜に届く）。誘われて仲間になった記録だけ残す
+  const card: Card | undefined = undefined;
+  if (firstEver) await claimPairing(p.id).catch(() => undefined);
 
   await refreshShareTextsLater(); // 今日の出動人数が変わったので、投稿文を作り直す（返事のあとで）
   // 仲間を誘う（v1.8）: いまの本当の出来事（kg・カード）から3案。リンクには「あなたからの招待」の印。失敗しても完了は止めない
-  let invites: string[] | undefined;
-  try {
-    invites = await inviteDrafts({
-      minutes: mission.minutes,
-      firstTime: firstEver,
-      snowCm: record.morning.rollcall.date === today ? record.morning.rollcall.forecastCm : 0,
-      teamName: p.teamId ? getTeam(p.teamId).name : undefined,
-      snowKg: snow?.snowKg,
-      cardName: card?.designName,
-      solo: true,
-    });
-  } catch (e) {
-    console.error("[solo] 招待文を書けませんでした:", e instanceof Error ? e.message : e);
-  }
+  // spec v1.58: Claude を待たず、決まった文の3案（その時の事実から作る）
+  const invites: string[] = mockInvites({
+    minutes: mission.minutes,
+    firstTime: firstEver,
+    snowCm: record.morning.rollcall.date === today ? record.morning.rollcall.forecastCm : 0,
+    teamName: p.teamId ? getTeam(p.teamId).name : undefined,
+    snowKg: snow?.snowKg,
+    solo: true,
+  });
   const summary: SoloClearSummary = {
     kind: mission.kind,
     label: mission.label,
@@ -271,6 +244,11 @@ export async function completeSolo(
   };
   // 自宅の雪かきを終えた人は「いま雪かき中」から抜ける
   if (mission.kind === "own_house") await finishHomeNow(p.id);
+  if (checkLater) {
+    const photo = checkLater;
+    const teamId = onTeam(p) ? p.teamId : undefined;
+    runLater("solo/photo-check", () => checkSoloPhotoLater({ participantId: p.id, inboxKey: inboxKeyOf(p), teamId, label: mission.label, onsite: mission.onsite, logId: log.id, today, at, photo }));
+  }
   return { ok: true, summary };
 }
 
@@ -370,4 +348,50 @@ export async function stopHomeNow(participantId: string): Promise<void> {
 async function finishHomeNow(participantId: string): Promise<void> {
   const s = await loadMorning();
   if (endHome(s, participantId)) await saveMorning(s);
+}
+
+
+/**
+ * ソロの写真を、返事のあとで Claude が確かめる（spec v1.58）。確認できたら写真の点（+2・1日の上限まで）を足し、結果を隊長トークへ。
+ * 活動の記録・羽はもう受け付けてあるので、ここで失敗しても何も取り消さない。
+ */
+async function checkSoloPhotoLater(o: {
+  participantId: string;
+  inboxKey?: string;
+  teamId?: Participant["teamId"];
+  label: string;
+  onsite: boolean;
+  logId: string;
+  today: string;
+  at: string;
+  photo: PhotoInput;
+}): Promise<void> {
+  const check = await checkPhoto(o.photo);
+  const outcome = decidePhoto(check);
+  const ok = outcome === "done";
+  let added = 0;
+  if (ok) {
+    await rememberPhoto(o.today, photoFingerprint(o.photo.bytes));
+    if (o.teamId && o.onsite) {
+      await withStateLock("solo/photo-check", async () => {
+        const record = await loadMorning();
+        const already = await soloPointsToday(record, o.participantId, o.today);
+        const room = Math.max(0, SOLO_TEAM_DAILY_CAP - already.all);
+        const p = Math.min(POINTS.solo_photo, room);
+        if (p <= 0) return;
+        await addSoloScores(record, o.today, [
+          { id: `sc${Date.now().toString(36)}p`, teamId: o.teamId!, participantId: o.participantId, points: p, reason: "solo_photo", at: o.at },
+        ]);
+        added = p;
+      });
+    }
+  }
+  const seen = check.evidence ? `（${check.evidence}）` : "";
+  const line = ok
+    ? `「${o.label}」の写真を確かめました${seen}。${check.comment}${added > 0 ? ` 写真の点 +${added}。` : ""}`
+    : check.unrelated
+      ? `「${o.label}」の写真は、雪の写真ではないようでした。活動の記録はそのまま受け付けています。`
+      : `「${o.label}」の写真では確かめきれませんでしたが、報告として受け付けています。${check.comment}`;
+  const hz = hazardLines(check);
+  if (o.inboxKey) await push(o.inboxKey, [{ type: "text", text: `📷 ${line}${hz.length > 0 ? `\n⚠️ ${hz.join(" ")}` : ""}` }]);
 }

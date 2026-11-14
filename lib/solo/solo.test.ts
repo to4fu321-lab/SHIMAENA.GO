@@ -100,8 +100,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     expect(r1.summary.todayFeathers).toBe(8);
     expect(r1.summary.streak).toBe(1);
     expect(r1.summary.firstEver).toBe(true);
-    expect(r1.summary.card?.style).toBe("kawaii");
-    expect(r1.summary.card?.rollcallId).toBe(`solo-${DEMO_DATE}`);
+    expect(r1.summary.card).toBeUndefined(); // v1.58: ソロ出動ではカードを出さない
     expect(r1.summary.hitokoto.length).toBeLessThanOrEqual(30);
     expect(r1.summary.teamPoints).toBe(3);
     const after = await loadMorning();
@@ -118,10 +117,6 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     expect(r3.ok).toBe(true);
     if (r3.ok) {
       expect(r3.summary.bonuses).toEqual([]);
-      // v1.8: 毎回1枚。2回目からは「その時だけの1枚」（名前と場面はその時の事実から）
-      expect(r3.summary.card?.rarityLabel).toBe("ひとりの群れ");
-      expect(r3.summary.card?.designName).not.toBe("はじめてのソロ出動");
-      expect(r3.summary.reveal?.code).toBeUndefined(); // ソロの演出は設計図の番号なし（カードの裏に出る）
       expect(r3.summary.teamPoints).toBe(5);
     }
     expect((await loadMorning()).morning.scores.length).toBe(scoresBefore + 2);
@@ -137,7 +132,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     expect(st.today).toBe(DEMO_DATE);
     expect(st.todayFeathers).toBe(24);
     expect(st.doneToday.sort()).toEqual(["own_house", "own_house", "report_snow"]);
-    expect(st.cards).toBe(3);
+    expect(st.cards).toBe(0);
     expect((await memoryRepo.listSoloLogsByParticipant("h3")).filter((l) => l.kind === "own_house").map((l) => l.missionId)).toEqual([undefined, "again-2"]);
     expect((await memoryRepo.listSoloLogsByParticipant("h3")).every((l) => !("lat" in l))).toBe(true);
   });
@@ -146,7 +141,7 @@ describe("completeSolo（台帳・カード・チーム得点）", () => {
     await announce({ date: DEMO_DATE, forecastCm: 12 });
     const r = await completeSolo("r2", "own_house", { now });
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.summary.card?.teamIds).toEqual([]);
+    if (r.ok) expect(r.summary.card).toBeUndefined();
     expect(await completeSolo("h1", "help_house", { now })).toMatchObject({ ok: false, reason: "help_house" });
     expect(await completeSolo("nobody", "patrol", { now })).toMatchObject({ ok: false, reason: "not_registered" });
 
@@ -237,5 +232,21 @@ describe("ソロのチーム得点（v1.7）", () => {
     expect(await soloPointsToday(s, "h3", noSnowDay)).toEqual({ all: 5, online: 0 });
     const w = weeklySummary([], TOWN_ROSTER, "2026-12-14", now.toISOString(), side);
     expect(w.teamTotals.lupinus).toBe(5);
+  });
+});
+
+describe("ソロの写真は返事のあとで確かめる（v1.58）", () => {
+  it("返事はすぐ（写真の点はまだ）。あとで確かめられたら写真の +2 が入り、隊長トークに結果が届く", async () => {
+    for (const k of ["__shimaenaRepo", "__shimaenaMorning", "__shimaenaArchive", "__shimaenaSoloScores", "__shimaenaPhotoSeen"]) delete (globalThis as Record<string, unknown>)[k];
+    await announce({ date: DEMO_DATE, forecastCm: 12 });
+    const now = new Date("2026-11-03T03:00:00Z");
+    const r = await completeSolo("h3", "report_snow", { now, photo: { bytes: new Uint8Array([0xff, 0xd8, 0xff, 7]), mediaType: "image/jpeg" } });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.summary.teamPoints).toBe(3);
+    expect(r.summary.photoNote).toContain("あとで");
+    const photoPoints = async () => (await loadMorning()).morning.scores.filter((e) => e.participantId === "h3" && e.reason === "solo_photo").length;
+    for (let i = 0; i < 40 && (await photoPoints()) === 0; i++) await new Promise((res) => setTimeout(res, 25));
+    expect(await photoPoints()).toBe(1);
   });
 });
