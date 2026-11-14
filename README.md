@@ -285,3 +285,8 @@ npm run dev
 - 仕様 [`docs/spec.md`](docs/spec.md)／タスク [`docs/tasks.md`](docs/tasks.md)／日々の記録 [`docs/devlog.md`](docs/devlog.md)／本人のストーリー [`docs/story.md`](docs/story.md)／デモの台本 [`docs/demo.md`](docs/demo.md)
 - 地図: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors（ODbL）。天気: [Open-Meteo](https://open-meteo.com/)。隊長の声: [Aivis Cloud API](https://aivis-project.com/cloud-api/)（**Tαkoe:AivisSpeech:雪降白華**、[Tαkoe プロジェクト利用規約](http://wedst.pj.ymhk.jp/tos.html)）。鍵がないときは [VOICEVOX](https://voicevox.hiroshiba.jp/)（VOICEVOX:春歌ナナ）。フォント: [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic)（SIL OFL 1.1）
 - デモのエリア「しらかばエリア」と登場人物は架空です。実在の氏名・住所・電話番号は入れず、地図に氏名を出しません。期間中（11/2〜11/8）の新規制作のみで、既存コードの流用はありません。API キーはコードに書いていません。
+
+## 著作権と利用について
+© 2026 エゾシルベ（to4fu321-lab）. All rights reserved.
+このリポジトリは審査と学習のために公開しています。コード・文章・画像・音の**無断での複製・改変・再配布・商用利用は禁止**です（詳しくは [`LICENSE`](LICENSE)）。
+使いたい・一緒にやりたいという方は、エゾシルベまで [GitHub の Issues](https://github.com/to4fu321-lab/shimaena.go/issues) からご連絡ください。
