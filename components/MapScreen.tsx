@@ -20,6 +20,7 @@ import CheerCall from "./CheerCall";
 import MapSheet from "./MapSheet";
 import ClearWatcher from "./ClearWatcher";
 import MorningButtons from "./MorningButtons";
+import NextHouse from "./NextHouse";
 import RescueList from "./RescueList";
 import RoadReportRun from "./RoadReportRun";
 import ShareButton from "./ShareButton";
@@ -123,6 +124,9 @@ export default function MapScreen({
   const q = /^[hr]\d+$/.test(state.viewerId) ? `?as=${state.viewerId}` : "";
   // 雪かきGO（出発前）: 割り当てがあって、まだ「行く」を押していないとき。「あとで」で閉じられる
   const [later, setLater] = useState(false);
+  // 自分の分が終わって、まだ助けを待つ家があるとき: 次の家への誘導を出す（手伝う側だけ。お願いする側には出さない）
+  const canHelp = viewer?.role === "helper" || Boolean(viewer?.teamId);
+  const nextHouse = canHelp && mySortie?.status === "done" && goingTo.length === 0 && !prog.allDone ? rescue[0] : undefined;
   const briefing = Boolean(myBase && myView && mySortie?.status === "going" && !mySortie.confirmedAt && !later && !prog.allDone);
   // 道の報告の地図: 札を押すとその報告に寄って写真が開く
   const roadView = view === "road";
@@ -329,6 +333,8 @@ export default function MapScreen({
                 </button>
               </div>
             </div>
+          ) : nextHouse ? (
+            <NextHouse viewerId={state.viewerId} next={nextHouse} waiting={rescue.length} />
           ) : (
           <MorningButtons
             viewerId={state.viewerId}
@@ -345,6 +351,16 @@ export default function MapScreen({
             <p className="eyebrow">今朝の実況（シマエナ隊長）</p>
             <p className="text-base">{recap}</p>
           </div>
+        )}
+        {/* 自分の分が終わったあとは、助けを待つ家をいちばん上に（次の家への誘導） */}
+        {prog.total > 0 && nextHouse && (
+          <RescueList
+            viewerId={state.viewerId}
+            items={rescue}
+            goingTo={goingTo}
+            isHelper={viewer?.role === "helper" || Boolean(viewer?.teamId)}
+            hasAssignment={goingTo.length > 0}
+          />
         )}
         {myBase && myView ? (
           <div className="space-y-1">
@@ -410,7 +426,7 @@ export default function MapScreen({
           </p>
         ) : null}
         {/* お願いが 0 軒のときは「10分だけ参加」は出さない（下の「自宅の雪かき」「道の危険」へ） */}
-        {prog.total > 0 && (
+        {prog.total > 0 && !nextHouse && (
           <RescueList
             viewerId={state.viewerId}
             items={rescue}
