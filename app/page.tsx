@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import StormBanner from "@/components/StormBanner";
 import Link from "next/link";
 import { onTeam } from "@/lib/member";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import AutoRefresh from "@/components/AutoRefresh";
 import Icon from "@/components/Icon";
@@ -52,6 +53,7 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
   const { as, sky: skyParam } = await searchParams;
+  const headerStore = await headers();
   const [record, roster, cookieStore, wx] = await Promise.all([
     loadMorning(),
     loadRoster(),
@@ -70,6 +72,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
+  // 外から来たはじめての人（YouTube・README のリンク、URL の直打ち。ログインもデモの人えらびもしていない）は、入口の画面へ
+  // （11/14 本人「YouTube のリンクから入口の画面に行ってほしい」）。アプリの中から戻ってきたときは、今までどおりホーム（11/8 の「登録画面で止めない」）
+  if (!me && !demoAs && !fromOwnSite(headerStore.get("referer"), headerStore.get("host"))) redirect("/start");
   const q = demoAs ? `?as=${demoAs}` : "";
 
   const prog = progress(m);
@@ -403,4 +408,14 @@ export default function Home({ searchParams }: { searchParams: Promise<{ as?: st
       </Suspense>
     </>
   );
+}
+
+/** リンク元が同じサイト（アプリの中を移動してきた）か */
+function fromOwnSite(referer: string | null, host: string | null): boolean {
+  if (!referer || !host) return false;
+  try {
+    return new URL(referer).host === host;
+  } catch {
+    return false;
+  }
 }
