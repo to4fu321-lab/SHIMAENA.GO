@@ -63,6 +63,25 @@ const hm = (iso: string) => {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 };
 
+/** カードの文を Claude に待つ上限。完了ボタンを押した人の画面が「確認中…」で止まって見えないように（11/14） */
+export const CARD_TEXT_WAIT_MS = 40_000;
+
+/** Claude のカードの文を上限まで待つ。間に合わない・失敗したときは決まった文で発行する（絵はあとで Claude が描く） */
+async function cardTextInTime(input: Parameters<typeof cardText>[0]): Promise<Awaited<ReturnType<typeof cardText>>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<"late">((resolve) => (timer = setTimeout(() => resolve("late"), CARD_TEXT_WAIT_MS)));
+  try {
+    const got = await Promise.race([cardText(input), late]);
+    if (got !== "late") return got;
+    console.error("[card] カードの文が間に合わなかったので、決まった文で発行します");
+  } catch (e) {
+    console.error("[card] カードの文を作れなかったので、決まった文で発行します:", e instanceof Error ? e.message : e);
+  } finally {
+    clearTimeout(timer);
+  }
+  return mockCardText(input);
+}
+
 export interface IssuedCards {
   cards: Card[];
   /** LINE に送った人数 */
@@ -106,7 +125,7 @@ export async function issueCardsForMission(
     streakDays: opts.streakDays ?? 1,
   });
   const topics = opts.fast ? [] : (await dayTopic(s.morning.rollcall.date)).items;
-  const text = await (opts.fast ? async (i: Parameters<typeof mockCardText>[0]) => mockCardText(i) : cardText)({
+  const text = await (opts.fast ? async (i: Parameters<typeof mockCardText>[0]) => mockCardText(i) : cardTextInTime)({
     date: s.morning.rollcall.date,
     completedAtJst: hm(completedAt),
     forecastCm: s.morning.rollcall.forecastCm,
