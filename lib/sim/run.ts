@@ -6,7 +6,7 @@ import { listThread } from "../inbox/store";
 import type { LineMessage } from "../line/types";
 import { textOf } from "../line/flex";
 import { DEMO_DATE } from "../morning/flow";
-import { announce, answerRollcall, completeManually, completeWithPhoto, joinMission, plan, ring, setGoing } from "../morning/ops";
+import { announce, answerRollcall, completeManually, completeWithPhoto, deliverDueCards, joinMission, plan, ring, setGoing } from "../morning/ops";
 import { loadMorning } from "../morning/store";
 import { getTeam } from "../teams";
 import type { Card, TeamId } from "../types";
@@ -118,7 +118,7 @@ export async function runSimulation(): Promise<SimReport> {
     step("7:00", pick.nickname, `足りない家（拠点${bases.find((b) => b.id === short.baseId)?.number}）へ駆けつけ`, say(reply));
   }
 
-  // 7. 各家で1人が写真を送って完了（写真が苦手な人は「それでも完了にする」）→ カード発行
+  // 7. 各家で1人が写真を送って完了（写真が苦手な人は「それでも完了にする」）。カードは夜に届く
   s = await loadMorning();
   const order = [...s.morning.missions].sort((x, y) => y.importance - x.importance);
   let minute = 5;
@@ -134,8 +134,12 @@ export async function runSimulation(): Promise<SimReport> {
     const shy = persona.get(reporter) === "photoShy";
     const res = shy ? await completeManually(reporter, atJst(hm)) : await completeWithPhoto(reporter, fakePhoto(minute), atJst(hm));
     const num = bases.find((b) => b.id === m.baseId)?.number;
-    step(hm.replace(/^0/, ""), name.get(reporter) ?? reporter, shy ? `拠点${num}を報告で完了（写真なし）` : `拠点${num}の完了写真を送る`, res.done ? `完了 → カード「${res.clear?.card?.designName ?? "?"}」` : `まだ: ${say(res.messages)}`);
+    step(hm.replace(/^0/, ""), name.get(reporter) ?? reporter, shy ? `拠点${num}を報告で完了（写真なし）` : `拠点${num}の完了写真を送る`, res.done ? "完了 → カードは今夜とどく" : `まだ: ${say(res.messages)}`);
   }
+
+  // 7'. 夜 21 時: 隊長がカードを届ける（spec v1.54）
+  const night = await deliverDueCards(atJst("21:00"));
+  step("21:00", "シマエナ隊長", "今日のカードを届ける", `${night.houses} 軒・${night.cards} 枚`);
 
   // 8. 結果を集める
   s = await loadMorning();

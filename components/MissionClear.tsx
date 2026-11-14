@@ -17,6 +17,7 @@ import NakamaAfter from "./NakamaAfter";
 import { clearMessage } from "@/lib/share-links";
 import Bgm from "./Bgm";
 import { play } from "@/lib/sound/engine";
+import { CARD_TONIGHT } from "@/lib/cards/tonight";
 
 const FEATHERS = [
   { left: 6, delay: 0, color: "#8fb8c9" },
@@ -184,7 +185,9 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
         </p>
         {clear.firstFlight && (
           <p className="rounded-2xl bg-camellia-soft px-3 py-1.5 text-base font-bold ring-1 ring-camellia">
-            初出撃おめでとう！ 今日からあなたも、エリアの群れの一員です。最初のカードが届きます。
+            {clear.cardTonight && !clear.card
+              ? "初出撃おめでとう！ 今日からあなたも、エリアの群れの一員です。"
+              : "初出撃おめでとう！ 今日からあなたも、エリアの群れの一員です。最初のカードが届きます。"}
           </p>
         )}
         {/* 入った点はここで見える（11/7 UI 点検: 「詳しく」を開かないと点が分からなかった） */}
@@ -198,7 +201,7 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
           ))}
         </div>
         {clear.items.length > 1 && (
-          <p className="-mt-1 text-center text-sm text-ink-soft">{clear.items.map((i) => `${i.label} +${i.points}`).join(" ・ ")}</p>
+          <p className="-mt-1 text-center text-sm text-ink-soft short:hidden">{clear.items.map((i) => `${i.label} +${i.points}`).join(" ・ ")}</p>
         )}
         {clear.hazards && clear.hazards.length > 0 && (
           <ul className="space-y-1 rounded-2xl bg-alert-soft px-3 py-2 text-base font-bold" aria-label="気をつけること">
@@ -230,6 +233,12 @@ export default function MissionClear({ clear, onClose, autoCloseMs }: { clear: C
             )}
           </p>
         </div>
+        {clear.cardTonight && !clear.card && (
+          <p className="shrink-0 rounded-2xl bg-warm px-3 py-1.5 text-base ring-1 ring-lamp/50" role="note">
+            <b className="mr-1 text-sm">🐦 シマエナ隊長</b>
+            {CARD_TONIGHT}
+          </p>
+        )}
         {cardIndex >= 0 && (
           <button onClick={() => setGo(cardIndex)} className="btn btn-lamp w-full text-lg">
             🎴 カードを見る ›

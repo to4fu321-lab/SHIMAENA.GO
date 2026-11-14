@@ -1,10 +1,10 @@
 // Vercel Cron の入口（vercel.json）。CRON_SECRET を Vercel の環境変数に入れると、Vercel が Authorization に付けて呼んでくる。
-//   announce: 前夜 21:00 JST — Open-Meteo を見て予告
+//   announce: 前夜 21:00 JST — 今日のカードを届ける（spec v1.54）→ Open-Meteo を見て予告
 //   rollcall: 6:30 JST — 10cm 以上積もっていたら、登録した家を雪かき待ちにして近所へお知らせ（spec v1.20。その前に、夜に届いた道の報告を近くの人へ）
 //   plan:     6:40 JST — 作戦配信（Hobby プランの cron は2本までなので、GitHub Actions の .github/workflows/plan.yml から呼ぶ。答えが届いた時の planIfDue は予備）
 //   noon / pm: 11:30・16:30 JST — お昼・夕方の出番（降り続いていれば終わった家を開き直し、その時間に動ける人へ）。.github/workflows/later.yml から
 //   weekly:   日曜の「今週の群れ」（announce が日曜なら先に行う。単独で呼ぶ用）
-import { checkForecastAndAnnounce, laterShift, morningAuto, plan, weeklyRecap } from "@/lib/morning/ops";
+import { checkForecastAndAnnounce, deliverDueCards, laterShift, morningAuto, plan, weeklyRecap } from "@/lib/morning/ops";
 import { withStateLock } from "@/lib/ops/lock";
 import { recordProblem } from "@/lib/ops/problems";
 import { nudgeInactive } from "@/lib/nudge/ops";
@@ -34,6 +34,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ job: string }> 
 
 async function run(job: string): Promise<Response> {
   try {
+    // 夜のカードの配達（spec v1.54）: 今日完了した家のカードを作って届ける。予告で明日の朝の記録に替わる前に。翌朝は届けそこねた分だけ。警報の日も届ける
+    const cards =
+      job === "announce" || job === "rollcall"
+        ? await deliverDueCards().catch(async (e) => (await recordProblem("cron/cards", e), { houses: 0, cards: 0 }))
+        : undefined;
     // 警報の日はお休み（spec v1.11）: 予告・点呼・作戦・お昼／夕方の出番を送らず、全員にお休みを1日1回だけ知らせる
     if (STORM_JOBS.has(job)) {
       const storm = await stormStatus();
@@ -49,7 +54,7 @@ async function run(job: string): Promise<Response> {
     switch (job) {
       case "announce": {
         const r = await checkForecastAndAnnounce();
-        return Response.json({ ok: true, job, ...r });
+        return Response.json({ ok: true, job, ...r, cards: cards?.cards ?? 0 });
       }
       case "rollcall": {
         // 夜のあいだに届いた道の報告を、近くの人へまとめて知らせる（失敗しても点呼は進める）

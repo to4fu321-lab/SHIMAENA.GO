@@ -3,7 +3,7 @@ import { estimateSnowKg, mockCardText, snowComparison } from "../claude/card";
 import { memoryRepo } from "../repo";
 import { TEAMS } from "../teams";
 import { DEMO_DATE, fillAnswers } from "../morning/flow";
-import { announce, completeWithPhoto, plan, ring } from "../morning/ops";
+import { announce, completeWithPhoto, deliverDueCards, plan, ring } from "../morning/ops";
 import { loadRoster } from "../morning/roster";
 import { loadMorning, saveMorning } from "../morning/store";
 import { composeForExport } from "./export";
@@ -133,6 +133,12 @@ describe("完了するとカードが発行される", () => {
     const mates = planned.morning.sorties.filter((x) => x.missionId === mine.missionId);
     const r = await completeWithPhoto("p-card", { bytes: new Uint8Array([0xff, 0xd8, 0xff]), mediaType: "image/jpeg" }, new Date("2026-12-14T07:10:00+09:00"));
     expect(r.done).toBe(true);
+    // v1.54: 完了ではカードを作らない（隊長が「今夜届ける」と伝える）。夜の配達で届く
+    expect(r.clear?.cardTonight).toBe(true);
+    expect(r.clear?.card).toBeUndefined();
+    expect(await memoryRepo.listCardsByRecipient("p-card")).toHaveLength(0);
+    expect(await deliverDueCards(new Date("2026-12-14T21:00:00+09:00"))).toEqual({ houses: 1, cards: mates.length });
+    expect((await deliverDueCards()).cards).toBe(0); // 2回目は何も届けない
     const cards = await memoryRepo.listCardsByRecipient("p-card");
     expect(cards).toHaveLength(1);
     expect(cards[0].memberNames).toHaveLength(mates.length);
@@ -142,6 +148,6 @@ describe("完了するとカードが発行される", () => {
     const stored = await memoryRepo.getCard(cards[0].id);
     expect(stored?.svg).toContain(cards[0].designName);
     expect(stored?.backSvg).toContain("Thank you!");
-    expect((await loadMorning()).log.at(-1)).toContain("枚発行");
+    expect((await loadMorning()).log.some((l) => l.includes("枚発行"))).toBe(true);
   });
 });
