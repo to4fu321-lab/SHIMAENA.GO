@@ -22,7 +22,11 @@ import { jstHourMinute } from "../jst";
 import { loadMorning } from "../morning/store";
 import { loadRoster } from "../morning/roster";
 import { appToday } from "../morning/today";
-import { missingPeople } from "../morning/watch";
+import type { MorningRecord } from "../morning/flow";
+import type { Roster } from "../morning/roster";
+import { progress } from "../morning/view";
+import { listShort, missingPeople, nextHouseOf, viewerSpot } from "../morning/watch";
+import { checkAnswerText, houseLine, nearestHouse, safeText, type HouseFact, type TownFact, type VerifyContext } from "./verify";
 import { isNight } from "../night";
 import { hazard } from "../road/hazards";
 import { listRoadReportsSince } from "../road/store";
@@ -50,7 +54,7 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
   { name: "look_town", description: "今日の町の雪かきの全体（点呼の状態・家の数・終わった家・人手不足の家・今日の話題・夜か・警報で止まっているか）", input_schema: { type: "object", properties: {}, additionalProperties: false } },
   {
     name: "find_houses",
-    description: "この人の家から近い順に、手伝いが要る家（拠点の番号・距離 m・あと何人・どこまで雪かき・状態）。名前と住所は出ない",
+    description: "この人のいまの場所から近い順に、手伝いが要る家（拠点の番号・距離 m・あと何人・どこまで雪かき・状態・nearest=いちばん近い家）と、おすすめの1軒（recommend）。名前と住所は出ない",
     input_schema: { type: "object", properties: { maxDistanceM: { type: "number", description: "この距離までの家（既定 1000）" } }, additionalProperties: false },
   },
   { name: "check_weather", description: "町のいまの天気・気温・この先24時間の雪・積雪と、安全のひとこと", input_schema: { type: "object", properties: {}, additionalProperties: false } },
@@ -94,6 +98,42 @@ export interface AgentResult {
   used: string[];
 }
 
+/** 町の今朝の数（地図・町のページと同じ数え方）。今日の呼びかけがなければ全部 0 */
+export function townFact(record: MorningRecord, today: string): TownFact {
+  const m = record.morning;
+  if (m.rollcall.date !== today) return { houses: 0, done: 0, left: 0, short: 0, peopleOut: 0, snowCm: 0 };
+  const prog = progress(m);
+  return {
+    houses: prog.total,
+    done: prog.done,
+    left: prog.left,
+    short: m.missions.filter((x) => x.status === "short").length,
+    peopleOut: new Set(m.sorties.filter((x) => x.status === "going").map((x) => x.participantId)).size,
+    snowCm: m.rollcall.forecastCm,
+  };
+}
+
+/** まだ終わっていない家（自分の家は除く）。距離は地図と同じ: いまいる場所（さっき終えた家 → なければ自分の家）から、50m きざみ */
+export function houseFacts(record: MorningRecord, roster: Roster, p: Participant): HouseFact[] {
+  const from = viewerSpot(record, roster, p.id) ?? p.location;
+  return record.morning.missions
+    .filter((x) => x.status !== "done")
+    .flatMap((x) => {
+      const base = roster.bases.find((b) => b.id === x.baseId);
+      const home = base && roster.participants.find((q) => q.id === base.requesterId);
+      if (!base || !home || home.id === p.id) return [];
+      return [{ missionId: x.id, number: base.number, distanceM: Math.max(50, Math.round(distanceM(from, home.location) / 50) * 50), needMore: Math.max(0, missingPeople(record, x)), status: x.status }];
+    });
+}
+
+/** おすすめの1軒（地図の「次の1軒」と同じ）: 人手が足りない家のうち、いちばん近い家。自分の家・もう向かっている家は除く */
+export function recommendHouse(record: MorningRecord, roster: Roster, p: Participant): HouseFact | undefined {
+  const facts = houseFacts(record, roster, p);
+  const mine = new Set(record.morning.sorties.filter((x) => x.participantId === p.id && x.status === "going").map((x) => x.missionId));
+  const next = nextHouseOf(listShort(record, roster, viewerSpot(record, roster, p.id) ?? p.location).filter((h) => !mine.has(h.missionId) && facts.some((f) => f.missionId === h.missionId)));
+  return next ? facts.find((f) => f.missionId === next.missionId) : undefined;
+}
+
 /** 道具を実行する（すべて読むだけ）。答えは JSON の文字列 */
 export async function runTool(name: string, input: Record<string, unknown>, p: Participant, now: Date): Promise<string> {
   const record = await loadMorning();
@@ -104,18 +144,21 @@ export async function runTool(name: string, input: Record<string, unknown>, p: P
     case "look_town": {
       const storm = await stormStatus().catch(() => ({ stopped: false, names: [] as string[] }));
       const topic = await dayTopic(today, 3000).catch(() => undefined);
+      const t = townFact(record, today);
       return JSON.stringify({
         today,
         hour: Number(jstHourMinute(now).slice(11, 13)),
         night: isNight(now),
         stormStopped: storm.stopped,
         rollcall: isToday ? m.rollcall.status : "今日はまだ雪かきの呼びかけなし",
-        snowCm: isToday ? m.rollcall.forecastCm : 0,
+        snowCm: t.snowCm,
         snowName: isToday ? m.rollcall.snowName : undefined,
-        houses: isToday ? m.missions.length : 0,
-        done: isToday ? m.missions.filter((x) => x.status === "done").length : 0,
-        short: isToday ? m.missions.filter((x) => x.status === "short").length : 0,
-        peopleOut: isToday ? new Set(m.sorties.map((x) => x.participantId)).size : 0,
+        // 数え方は地図・町のページと同じ（lib/agent/verify.ts の TownFact）
+        houses: t.houses,
+        done: t.done,
+        left: t.left,
+        short: t.short,
+        peopleOut: t.peopleOut,
         topics: topic?.items.map((t) => t.label) ?? [],
       });
     }
@@ -124,19 +167,24 @@ export async function runTool(name: string, input: Record<string, unknown>, p: P
       const roster = await loadRoster();
       const max = Math.min(3000, Math.max(100, Number(input.maxDistanceM) || 1000));
       const mine = m.sorties.find((x) => x.participantId === p.id && x.status === "going");
-      const houses = m.missions
-        .filter((x) => x.status !== "done")
-        .flatMap((x) => {
-          const base = roster.bases.find((b) => b.id === x.baseId);
-          const home = base && roster.participants.find((q) => q.id === base.requesterId);
-          if (!base || !home || home.id === p.id) return [];
-          const d = Math.round(distanceM(p.location, home.location) / 10) * 10;
-          if (d > max) return [];
-          return [{ missionId: x.id, number: base.number, distanceM: d, needMore: Math.max(0, missingPeople(record, x)), status: x.status, area: home.clearArea ?? "entrance", together: x.request?.note ?? "" }];
+      const all = houseFacts(record, roster, p);
+      const nearest = nearestHouse(all);
+      const rec = recommendHouse(record, roster, p);
+      const houses = all
+        .filter((h) => h.distanceM <= max)
+        .map((h) => {
+          const x = m.missions.find((y) => y.id === h.missionId);
+          const home = roster.participants.find((q) => q.id === roster.bases.find((b) => b.id === x?.baseId)?.requesterId);
+          return { ...h, nearest: h.missionId === nearest?.missionId, area: home?.clearArea ?? "entrance", together: x?.request?.note ?? "" };
         })
-        .sort((a, b) => b.needMore - a.needMore || a.distanceM - b.distanceM)
+        .sort((a, b) => a.distanceM - b.distanceM || b.needMore - a.needMore)
         .slice(0, 6);
-      return JSON.stringify({ houses, myCurrent: mine ? m.missions.find((x) => x.id === mine.missionId)?.id : undefined });
+      return JSON.stringify({
+        houses,
+        // おすすめの1軒: 地図の「次の1軒」と同じ決め方（人手が足りない家のうち、いちばん近い家）
+        recommend: rec ? { missionId: rec.missionId, number: rec.number, distanceM: rec.distanceM, needMore: rec.needMore } : undefined,
+        myCurrent: mine ? m.missions.find((x) => x.id === mine.missionId)?.id : undefined,
+      });
     }
     case "check_weather": {
       const w = await conciergeWeather(now).catch(() => undefined);
@@ -217,7 +265,10 @@ const TASK =
   "あなたは隊長トークでの「シマエナ隊長」です。下の「調べた事実」（アプリの道具の結果）をもとに、本人の文に answer で答えてください。" +
   "雪かき・見回り・町の様子・天気・道の危険・自分の記録・何をしたらいいか、の相談なら、事実をもとに、いまのその人にいちばん合う1つを提案します。" +
   "夜（night）や警報（stormStopped）のときは、よその家をすすめません。体調・医療の判断はしません（体のことは「無理しないで」と家族や医療に）。" +
-  "人の名前・住所は出しません（拠点の番号と距離だけ）。answer の text は120字まで、事実の数字を入れ、採点表 voice の口調で。used には使った事実の名前を入れます。";
+  "人の名前・住所は出しません（拠点の番号と距離だけ）。answer の text は120字まで、事実の数字を入れ、採点表 voice の口調で。used には使った事実の名前を入れます。" +
+  "数字は事実のとおりに書きます（計算したり、丸めたり、作ったりしない）: 人手が足りない家の数は look_town.short、終わった家は done、のこりは left。" +
+  "家をすすめるときは find_houses.recommend の家を1つだけ（missionId もその家）。text に書く拠点の番号・距離・あと何人は、その家の number・distanceM・needMore と同じにします。「いちばん近い」と書けるのは nearest の家だけです。" +
+  "返事はプログラムが事実と照らして点検します。合わない数字があると、その返事は使われません。";
 
 /** 隊長トークに使うモデル。既定は速い Haiku、CAPTAIN_CHAT_MODEL=main で Opus */
 export function captainChatModel(env: Readonly<Record<string, string | undefined>> = process.env): string {
@@ -266,24 +317,51 @@ export async function captainAgent(p: Participant, text: string, now = new Date(
   return { messages: await renderAnswer(p, a.data, used, now), used };
 }
 
-/** 答えを吹き出しに。提案は確かめてから（家が今も手伝いを待っているか・夜でないか・候補の中にあるか）ボタンにする */
+/** 点検に使う事実（地図・ボタンと同じデータ）。proposal はあとで入れる */
+async function verifyContext(p: Participant, record: MorningRecord, now: Date): Promise<VerifyContext> {
+  const roster = await loadRoster();
+  const today = appToday(record, now);
+  const isToday = record.morning.rollcall.date === today;
+  const w = await conciergeWeather(now).catch(() => undefined);
+  const rc = record.morning.rollcall;
+  return {
+    town: townFact(record, today),
+    houses: isToday ? houseFacts(record, roster, p) : [],
+    knownNumbers: isToday ? record.morning.missions.flatMap((x) => roster.bases.find((b) => b.id === x.baseId)?.number ?? []) : [],
+    weatherNumbers: [w?.tempC, w?.snowNext24hCm, w?.depthCm, isToday ? rc.tempMinC : undefined, isToday ? rc.windMaxMs : undefined].filter((x): x is number => typeof x === "number"),
+  };
+}
+
+/**
+ * 答えを吹き出しに。提案は確かめてから（家が今も手伝いを待っているか・夜でないか・候補の中にあるか）ボタンにする。
+ * 本文の数字は点検する（spec v1.59）: 拠点の番号・あと何人・距離・軒数がボタンや地図のデータと合わなければ、プログラムが組んだ文に差しかえる。
+ */
 export async function renderAnswer(p: Participant, a: Answer, used: string[], now: Date): Promise<LineMessage[]> {
-  const text = a.text.replace(/\s+/g, " ").trim().slice(0, 160);
+  let text = a.text.replace(/\s+/g, " ").trim().slice(0, 160);
   const trace = used.length > 0 ? `隊長が調べたこと: ${used.map((u) => TOOL_LABEL[u] ?? u).join(" ・ ")}` : "";
   let button: ReturnType<typeof bigButton> | undefined;
   const label = (a.button ?? "").trim().slice(0, 16);
+  const record = await loadMorning();
+  const ctx = await verifyContext(p, record, now);
   if (a.kind === "join_house" && a.missionId && !isNight(now)) {
-    const record = await loadMorning();
     const mission = record.morning.missions.find((x) => x.id === a.missionId);
     const already = record.morning.sorties.some((x) => x.participantId === p.id && x.status === "going");
-    if (mission && mission.status !== "done" && !already && p.teamId) {
-      button = bigButton(label || "この家へ行く", { type: "postback", label: (label || "この家へ行く").slice(0, 20), data: `help:go=${mission.id}`, displayText: label || "この家へ行く" }, "main");
+    const fact = ctx.houses.find((h) => h.missionId === a.missionId);
+    if (mission && mission.status !== "done" && !already && p.teamId && fact) {
+      ctx.proposal = fact;
+      // ボタンの文字の番号も、プログラムが入れる（「拠点6に行く」が別の家を指さないように）
+      const fixed = /拠点/.test(label) ? `拠点${fact.number}へ行く` : label || "この家へ行く";
+      button = bigButton(fixed, { type: "postback", label: fixed.slice(0, 20), data: `help:go=${mission.id}`, displayText: fixed }, "main");
     }
   } else if (a.kind === "activity" && a.activityId) {
-    const record = await loadMorning();
-    const ctx = await conciergeContext(p, record, now);
-    const o = buildOptions(ctx).find((x) => x.id === a.activityId);
+    const cctx = await conciergeContext(p, record, now);
+    const o = buildOptions(cctx).find((x) => x.id === a.activityId);
     if (o) button = bigButton(label || o.button, optionAction({ ...o, button: label || o.button }), "main");
+  }
+  const problems = checkAnswerText(text, ctx);
+  if (problems.length > 0) {
+    console.warn(`[agent] 返事の数字が事実と合わないので、プログラムの文に差しかえます: ${problems.join(" / ")}`);
+    text = safeText(ctx);
   }
   const why = (a.why ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
   const card: FlexMessage = {
@@ -300,7 +378,10 @@ export async function renderAnswer(p: Participant, a: Answer, used: string[], no
         contents: [
           ...(trace ? [{ type: "text" as const, text: trace, size: "sm" as const, color: COLORS.winter, wrap: true }] : []),
           { type: "text" as const, text, size: "lg" as const, weight: "bold" as const, color: COLORS.ink, wrap: true },
-          ...(why && button ? [{ type: "text" as const, text: `💡 ${why}`, size: "md" as const, color: COLORS.winter, wrap: true }] : []),
+          ...(why && button && problems.length === 0 ? [{ type: "text" as const, text: `💡 ${why}`, size: "md" as const, color: COLORS.winter, wrap: true }] : []),
+          // ボタンの家の事実は、プログラムが書く（本文と同じデータ）
+          ...(ctx.proposal ? [{ type: "text" as const, text: houseLine(ctx.proposal), size: "md" as const, weight: "bold" as const, color: COLORS.ink, wrap: true }] : []),
+          ...(problems.length > 0 ? [{ type: "text" as const, text: "🔎 数字を点検して、地図と同じ数に直しました", size: "sm" as const, color: COLORS.winter, wrap: true }] : []),
           ...(button ? [button] : []),
         ],
       },

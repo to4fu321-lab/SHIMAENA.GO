@@ -2,7 +2,7 @@ import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
 import type { LineMessage } from "../line/types";
 import { textOf } from "../line/flex";
 import { completeNext, DEMO_DATE, fillAnswers } from "./flow";
-import { announce, joinMission, joinNearby, plan, ring } from "./ops";
+import { announce, currentGoing, joinMission, joinNearby, plan, ring } from "./ops";
 import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 import { busyIds, listShort } from "./watch";
@@ -89,5 +89,32 @@ describe("あと1人で救える家と「10分だけ参加」（spec v1.1）", (
     if (!full || free.length === 0) return; // この乱数ではそろった家が残らない
     expect(t((await joinMission(free[0].id, full.id)))).toContain("そろいました");
     expect(t((await joinMission(free[0].id, full.id, new Date(), { extra: true })))).toContain("ありがとうしま〜");
+  });
+
+  it("1人が向かえるのは1軒（v1.59）: 向かっている人が別の家を押すと聞き返し、切りかえると前の家から外れる", async () => {
+    const s = await setup(5);
+    const roster = await loadRoster();
+    const mine = s.morning.sorties.find((x) => x.status === "going")!;
+    const from = s.morning.missions.find((m) => m.id === mine.missionId)!;
+    // 別の家を「人手が足りない」にしておく
+    const other = s.morning.missions.find((m) => m.id !== from.id && m.status !== "done" && m.status !== "no_answer")!;
+    other.status = "short";
+    await saveMorning(s);
+    const no = (n: string) => roster.bases.find((b) => b.id === n)!.number;
+
+    const asked = t(await joinMission(mine.participantId, other.id));
+    expect(asked).toContain(`いま拠点${no(from.baseId)}に向かっています`);
+    let now = await loadMorning();
+    expect(now.morning.sorties.filter((x) => x.participantId === mine.participantId && x.status === "going").map((x) => x.missionId)).toEqual([from.id]);
+    expect(await currentGoing(mine.participantId)).toEqual({ missionId: from.id, baseNumber: no(from.baseId) });
+
+    const before = now.morning.sorties.filter((x) => x.missionId === from.id).length;
+    expect(t(await joinMission(mine.participantId, other.id, new Date(), { swap: true }))).toContain(`拠点${no(other.baseId)}`);
+    now = await loadMorning();
+    const going = now.morning.sorties.filter((x) => x.participantId === mine.participantId && x.status === "going");
+    expect(going.map((x) => x.missionId)).toEqual([other.id]); // 向かっているのは1軒だけ
+    expect(now.morning.sorties.filter((x) => x.missionId === from.id).length).toBe(before - 1);
+    const left = now.morning.missions.find((m) => m.id === from.id)!;
+    if (before - 1 < left.requiredPeople) expect(left.status).toBe("short"); // 抜けて足りなくなった家は、人手不足に戻る
   });
 });

@@ -30,7 +30,7 @@ export default function ClearToast({ clear, onClose, ms = 4500 }: { clear: Clear
       <span className="min-w-0 flex-1 leading-tight">
         <b className="block text-lg">拠点{clear.baseNumber} に灯りがともりました</b>
         <span className="text-sm text-ink-soft">
-          {clear.mine ? "おつかれさまでした！ 点は「今日はここまで！」でまとめて" : `${who}${team ? `（${team.name}）` : ""}`}
+          {clear.mine ? "おつかれさまでした！ 家の人の返事が届いたら、隊長トークでお知らせします" : `${who}${team ? `（${team.name}）` : ""}`}
         </span>
       </span>
     </button>

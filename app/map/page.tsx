@@ -36,7 +36,14 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
   const cells = viewCells([...viewBases(state).values()], roster);
   const viewer = roster.participants.find((p) => p.id === viewerId);
   const myMissionId = state.sorties.find((s) => s.participantId === viewerId)?.missionId;
-  const thanks = myMissionId ? record.thanks?.[myMissionId] : undefined;
+  // 自分が行った家に届いた「ありがとう」のうち、いちばん新しいもの（2軒目・3軒目の分も出す。spec v1.59）
+  const thanksOf = state.sorties
+    .filter((s) => s.participantId === viewerId && record.thanks?.[s.missionId])
+    .map((s) => ({ missionId: s.missionId, rec: record.thanks![s.missionId] }))
+    .sort((a, b) => a.rec.at.localeCompare(b.rec.at))
+    .at(-1);
+  const thanks = thanksOf?.rec;
+  const thanksBase = thanksOf && roster.bases.find((b) => b.id === state.missions.find((m) => m.id === thanksOf.missionId)?.baseId)?.number;
   // ソロ出動の足あと（今日）。表がまだなければ出さない（画面は止めない）
   const today = appToday(record);
   // 道の危険（24時間以内）。表がまだなければ出さない。足あとと同時に読む（11/7: 画面を待たせない）
@@ -71,7 +78,7 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         }
         rescue={listShort(record, roster, viewerSpot(record, roster, viewerId))}
         recap={record.recap?.text}
-        thanks={thanks ? { label: thanks.label, sentence: thanks.sentence } : undefined}
+        thanks={thanks && thanksOf ? { label: thanks.label, sentence: thanks.sentence, missionId: thanksOf.missionId, baseNumber: thanksBase ?? "?" } : undefined}
         teacher={record.teacherTip?.line}
         shareText={emojiGrid(cells, state)}
         cheers={myMissionId ? (record.cheers?.[myMissionId] ?? []).map((c) => c.label) : []}

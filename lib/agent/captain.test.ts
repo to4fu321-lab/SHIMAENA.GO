@@ -47,6 +47,36 @@ describe("隊長エージェント（v1.25）", () => {
     expect(captainChatModel({ CAPTAIN_CHAT_MODEL: "main" })).toBe(CLAUDE_MODEL);
   });
 
+  it("本文の数字がボタンの家と合わなければ、プログラムの文に差しかえる（v1.59。別の家の番号・作った人数）", async () => {
+    const { captainAgent, runTool } = await import("./captain");
+    const { repo } = await import("../repo");
+    const me = (await repo().findParticipant("h10"))!;
+    const f = JSON.parse(await runTool("find_houses", {}, me, NOW)) as { houses: { missionId: string; number: number; needMore: number; distanceM: number; nearest: boolean }[]; recommend?: { missionId: string; number: number } };
+    const town = JSON.parse(await runTool("look_town", {}, me, NOW)) as { short: number; houses: number; done: number; left: number };
+    expect(town.left).toBe(town.houses - town.done);
+    expect(f.houses.filter((h) => h.nearest)).toHaveLength(1);
+    expect(f.houses[0].nearest).toBe(true); // 近い順
+    const target = f.houses.find((h) => h.missionId === f.recommend?.missionId) ?? f.houses[0];
+    const other = f.houses.find((h) => h.number !== target.number)!;
+    script.push([
+      {
+        type: "tool_use",
+        id: "t2",
+        name: "answer",
+        input: { text: `人手が足りない家は${town.short + 2}軒。いちばん近いのは拠点${other.number}番、あと${other.needMore + 4}人だしま〜`, kind: "join_house", missionId: target.missionId, button: `拠点${other.number}番に行く`, used: ["find_houses"] },
+      },
+    ]);
+    const r = await captainAgent(me, "近くでまだ手伝いが要る家はある？", NOW);
+    const out = JSON.stringify(r.messages);
+    expect(textOf(r.messages[0])).toContain(`人手が足りない家は ${town.short}軒`);
+    expect(textOf(r.messages[0])).toContain(`おすすめは拠点${target.number}`);
+    expect(out).not.toContain(`拠点${other.number}番`); // 本文もボタンの文字も、別の家を指さない
+    expect(out).toContain(`拠点${target.number}へ行く`);
+    expect(out).toContain(`📍 拠点${target.number} ・ 約${target.distanceM}m`);
+    expect(out).toContain(`help:go=${target.missionId}`);
+    expect(out).toContain("数字を点検して");
+  });
+
   it("候補にない提案・夜の家の提案はボタンにしない", async () => {
     const { renderAnswer } = await import("./captain");
     const { repo } = await import("../repo");

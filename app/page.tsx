@@ -242,6 +242,15 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         <SkyBackdrop sky={sky} />
         {/* しゃべって動くシマエナ隊長（ことばは順番に。タップで飛ぶ） */}
         <CaptainStage lines={captainLines} team={myTeam?.team.id} arrival={news ? arrivalLines(news) : []} viewerId={me?.id} chatHref={`/chat${q}`} chatAs={demoAs} />
+        {/* 今朝の雪を文字でも（spec v1.59: 空の色だけでは、天気と積雪が読み取れなかった）。隊長の吹き出しの右、空のすみに */}
+        {rc.status !== "closed" && rc.forecastCm > 0 && (
+          <p className="pointer-events-none absolute right-2 top-1.5 z-20 rounded-2xl bg-card/90 px-2.5 py-1 text-center font-bold leading-tight text-ink shadow-sm" aria-label={`今朝の雪 ${rc.forecastCm}センチ`}>
+            <span className="block text-xs">❄ 今朝の雪</span>
+            <span className="whitespace-nowrap text-sm tabular-nums">
+              <b className="text-lg">{rc.forecastCm}</b>cm{rc.tempMinC !== undefined && ` ・${Math.round(rc.tempMinC)}℃`}
+            </span>
+          </p>
+        )}
       </div>
 
       <main className="relative -mt-3 shrink-0 space-y-2 px-4 pb-2.5 short:space-y-1.5 short:pb-1.5">

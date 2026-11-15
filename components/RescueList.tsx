@@ -15,7 +15,10 @@ export default function RescueList({
   goingTo,
   isHelper,
   hasAssignment,
+  others = false,
 }: {
+  /** 次の1軒を下の大きなボタンに出しているとき: ここは「ほかの家」の一覧（軒数が地図の「人手不足」と食い違って見えないように。spec v1.59） */
+  others?: boolean;
   viewerId: string;
   items: ShortHouse[];
   /** 自分がいま向かっているミッション */
@@ -26,6 +29,26 @@ export default function RescueList({
 }) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
+  // 1人が向かえるのは1軒（spec v1.59）: もう別の家に向かっているときは、切りかえるかを聞く
+  const [swap, setSwap] = useState<{ missionId: string; to: number | string; from: number | string } | null>(null);
+  const join = (h: ShortHouse, doSwap = false) =>
+    start(async () => {
+      try {
+        const r = await joinAction(viewerId, h.missionId, doSwap);
+        if (r.swap) {
+          setResult(null);
+          setSwap({ missionId: h.missionId, to: h.baseNumber, from: r.swap.from });
+          play("tap");
+          return;
+        }
+        setSwap(null);
+        setResult(r);
+        play(r.ok ? "go" : "error");
+      } catch (e) {
+        setResult({ ok: false, text: e instanceof Error ? e.message : "うまくいきませんでした" });
+        play("error");
+      }
+    });
   const run = (fn: () => Promise<ActionResult>) =>
     start(async () => {
       try {
@@ -46,7 +69,7 @@ export default function RescueList({
       {items.length > 0 && (
         <div className="space-y-2" aria-label="人手が足りない家">
           <SheetHead icon="🆘">
-            <span className="text-alert">助けを待っている家</span>
+            <span className="text-alert">{others ? "ほかに助けを待っている家" : "助けを待っている家"}</span>
             <span className="ml-auto rounded-full bg-alert px-2 py-0.5 text-sm text-white">{items.length}軒</span>
           </SheetHead>
           <ul className="space-y-2">
@@ -70,8 +93,22 @@ export default function RescueList({
                 </div>
                 {goingTo.includes(h.missionId) ? (
                   <p className="rounded-2xl bg-card px-3 py-2 text-center text-base font-bold ring-1 ring-ink/15">✓ 向かっています</p>
+                ) : swap?.missionId === h.missionId ? (
+                  <div className="space-y-2 rounded-2xl bg-card px-3 py-2.5 ring-2 ring-lamp" role="alertdialog" aria-label="向かう家を切りかえますか">
+                    <p className="text-base font-bold leading-snug">
+                      いま拠点{swap.from}に向かっています。向かえるのは1軒です。拠点{swap.to}に切りかえますか？
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" disabled={pending} onClick={() => setSwap(null)} className="btn btn-white text-base">
+                        拠点{swap.from}のまま
+                      </button>
+                      <button type="button" disabled={pending} onClick={() => join(h, true)} className="btn btn-lamp text-base">
+                        {pending ? "確認中…" : "切りかえる"}
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <button disabled={pending} onClick={() => run(() => joinAction(viewerId, h.missionId))} className="btn btn-lamp w-full text-lg">
+                  <button disabled={pending} onClick={() => join(h)} className="btn btn-lamp w-full text-lg">
                     拠点{h.baseNumber}に 10分だけ助けに行く
                   </button>
                 )}
