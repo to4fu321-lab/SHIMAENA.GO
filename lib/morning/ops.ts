@@ -551,6 +551,64 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
   return finishMission(s, roster, sortie, mission, check, participantId, now, opts);
 }
 
+/** 判定を待たずに完了にしたときの、仮の判定（spec v1.68）。星は付けず「報告として受け付け」と同じ見え方 */
+export const PENDING_PHOTO_COMMENT = "写真を受け付けました。隊長がいま写真を見ています。判定は、できしだい隊長トークと通知でお知らせします。";
+
+/**
+ * 写真の判定を待たずに完了にする（spec v1.68: 画面は長くても5秒しか待たせない）。
+ * 写真の確認（precheckPhoto）が5秒で終わらなかったとき、地図の「終わりました」から呼ぶ。判定はあとで deliverLatePhotoVerdict が届ける。
+ * 同じ写真の使い回しだけは、ここで先に断る（Claude を待たずにできるので）。
+ */
+export async function completeWithPendingPhoto(participantId: string, image: PhotoInput, now = new Date(), opts: FinishOpts = {}): Promise<CompleteResult> {
+  const s = await loadMorning();
+  const roster = await loadRoster();
+  const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.status === "going");
+  const mission = sortie && s.morning.missions.find((m) => m.id === sortie.missionId);
+  if (!sortie || !mission) return { done: false, messages: MSG.noSortie() };
+  const day = appToday(s, now);
+  const fp = photoFingerprint(image.bytes);
+  if (await photoSeen(day, fp)) {
+    return { done: false, retry: true, messages: MSG.photoNotCleared("前に送られた写真と同じでした。いまの玄関前から道路側を、新しく撮ってください。") };
+  }
+  await rememberPhoto(day, fp);
+  s.log.push(`拠点${baseNumberOf(roster, mission.baseId)}の写真: 判定を待たずに完了（判定はあとで届ける）`);
+  const check: PhotoCheck = { cleared: true, passable: true, icy: false, uncertain: true, pending: true, comment: PENDING_PHOTO_COMMENT };
+  return finishMission(s, roster, sortie, mission, check, participantId, now, opts);
+}
+
+/**
+ * あとから届いた写真の判定を、完了した家の記録に入れて、本人の隊長トークと端末に知らせる（spec v1.68）。
+ * 先に完了にした処理（鍵の中）より判定が早く終わることもあるので、仮の判定が見つかるまで少し待つ。
+ */
+export async function deliverLatePhotoVerdict(participantId: string, image: PhotoInput): Promise<void> {
+  const fp = photoFingerprint(image.bytes);
+  const check = takePrechecked(participantId, fp);
+  if (!check) return; // 確認に失敗した: 仮の判定（報告として受け付け）のまま
+  for (let i = 0; i < 20; i++) {
+    const sent = await withStateLock("photo/late-verdict", async () => {
+      const s = await loadMorning();
+      const sortie = s.morning.sorties.find((x) => x.participantId === participantId && x.photoCheck?.pending);
+      if (!sortie) return false;
+      const type = consistentSnowType(check.snowType, s.morning.rollcall.tempMinC);
+      if (type !== check.snowType) {
+        check.snowType = type;
+        check.snowTypeReason = undefined;
+      }
+      sortie.photoCheck = check;
+      const roster = await loadRoster();
+      const mission = s.morning.missions.find((m) => m.id === sortie.missionId);
+      const number = mission ? baseNumberOf(roster, mission.baseId) : "?";
+      s.log.push(`拠点${number}の写真の判定が届いた（${check.cleared && check.passable ? "通れる" : "気になるところあり"}）`);
+      await saveMorning(s);
+      const k = inboxKeyOf(roster.participants.find((p) => p.id === participantId));
+      if (k) await push(k, MSG.lateVerdict(number, check, hazardLines(check)));
+      return true;
+    });
+    if (sent) return;
+    await new Promise((ok) => setTimeout(ok, 1000));
+  }
+}
+
 /** 「それでも完了にする」（LINE のボタン／地図のボタン）: 写真なしで、本人の報告として完了にする */
 export async function completeManually(participantId: string, now = new Date(), opts: FinishOpts = {}): Promise<CompleteResult> {
   const s = await loadMorning();

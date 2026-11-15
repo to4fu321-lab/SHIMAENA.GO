@@ -13,6 +13,8 @@ import { sniffImageType } from "@/lib/image";
 import { inboxKeyOf } from "@/lib/inbox/key";
 import { listThread, markRead } from "@/lib/inbox/store";
 import { toBubbles, type ChatBubble } from "@/lib/inbox/view";
+import { WAIT_MS, within } from "@/lib/ops/deadline";
+import { sendPush } from "@/lib/push/send";
 import { repo } from "@/lib/repo";
 import { isDemoViewer, trustedViewer } from "@/lib/viewer";
 
@@ -20,6 +22,19 @@ export interface ChatResult {
   ok: boolean;
   text?: string;
   bubbles?: ChatBubble[];
+  /** 返事に時間がかかっている（5秒で待つのをやめた）。返事はできしだいトークに入り、端末にも知らせる（spec v1.68） */
+  late?: boolean;
+}
+
+/**
+ * 処理を長くても WAIT_MS だけ待つ（spec v1.68）。間に合わなければ先に画面へ返し、処理は裏で続ける。
+ * 終わったら「返事が届きました」を端末に知らせる（隊長トークの返事そのものは、処理の中でトークに入る）。
+ */
+async function settle(key: string, job: Promise<unknown>): Promise<boolean> {
+  const r = await within("chat/late", job, WAIT_MS, async () => {
+    await sendPush(key, { title: "💬 シマエナ隊長から", body: "お待たせしました。返事が届きました。", url: "/chat", tag: "chat-late" }, { urgency: "normal", ttl: 3600 }).catch(() => 0);
+  });
+  return !r.done;
 }
 
 async function me(viewerId: string) {
@@ -57,18 +72,18 @@ export async function chatTextAction(viewerId: string, text: string, opts: { sho
       if (ja !== text) input = { kind: "text", text: ja, shown: text };
     }
   }
-  await sendWithQuota(p, "text", input);
+  const late = await settle(inboxKeyOf(p)!, sendWithQuota(p, "text", input));
   revalidatePath("/chat");
-  return { ok: true, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
+  return { ok: true, late, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
 }
 
 export async function chatPostbackAction(viewerId: string, data: string, label?: string): Promise<ChatResult> {
   const p = await me(viewerId);
   if (!p) return { ok: false, text: "この画面の持ち主を確かめられませんでした。ログインし直してください。" };
   if (!/^[\w:=\-.,]{1,120}$/.test(data)) return { ok: false, text: "このボタンは使えません。" };
-  await sendToCaptain(p, { kind: "postback", data, label: label?.slice(0, 40) });
+  const late = await settle(inboxKeyOf(p)!, sendToCaptain(p, { kind: "postback", data, label: label?.slice(0, 40) }));
   revalidatePath("/chat");
-  return { ok: true, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
+  return { ok: true, late, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
 }
 
 /** 写真（画面で縮めた JPEG）: 完了写真として受け取る */
@@ -81,9 +96,9 @@ export async function chatPhotoAction(formData: FormData): Promise<ChatResult> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const mediaType = sniffImageType(bytes);
   if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
-  await sendWithQuota(p, "photo", { kind: "photo", bytes, mediaType });
+  const late = await settle(inboxKeyOf(p)!, sendWithQuota(p, "photo", { kind: "photo", bytes, mediaType }));
   revalidatePath("/chat");
-  return { ok: true, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
+  return { ok: true, late, bubbles: await refreshed(viewerId, inboxKeyOf(p)!) };
 }
 
 /** 新しい文面が届いていないか見る（数秒ごと） */

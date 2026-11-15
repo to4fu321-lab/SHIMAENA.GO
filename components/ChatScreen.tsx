@@ -168,6 +168,8 @@ export default function ChatScreen({
   }, [lastId]);
 
   /** 送った回数と、返事を待っている数（数秒ごとの取りに行きが、送ったばかりの吹き出しを古い流れで上書きしないように） */
+  /** 返事に時間がかかっているとき（spec v1.68）: そのときの吹き出しの数。これより増えたら返事が届いた */
+  const waitingAt = useRef<number | null>(null);
   const sendSeq = useRef(0);
   const sending = useRef(0);
   // 数秒ごとに、届いた文面（点呼・作戦・なかまの誘い…）を取りに行く
@@ -182,6 +184,11 @@ export default function ChatScreen({
       if (r?.ok && r.bubbles)
         setBubbles((cur) => {
           if (cur.some((x) => x.id.startsWith("tmp-"))) return cur; // まだ届いていない自分の吹き出しがあるあいだは上書きしない
+          // 返事を待っている（spec v1.68）: 新しい吹き出しが届くまで「用意しています」を残す
+          if (waitingAt.current !== null) {
+            if (r.bubbles!.length <= waitingAt.current) return cur;
+            waitingAt.current = null;
+          }
           const changed = r.bubbles!.length !== cur.length || r.bubbles!.at(-1)?.id !== cur.at(-1)?.id;
           if (changed && r.bubbles!.at(-1)?.from === "captain" && cur.length > 0) play("message"); // 隊長から新しい文「ポロン」
           return changed ? r.bubbles! : cur;
@@ -217,6 +224,12 @@ export default function ChatScreen({
       play("error");
       setBubbles((cur) => cur.filter((x) => !x.id.startsWith("tmp-"))); // 届かなかった仮の吹き出しは消す（残ると数秒ごとの更新が止まる）
     } else if (r.bubbles) {
+      if (r.late) {
+        // 5秒で待つのをやめた: 返事はできしだいここに届く（端末にも知らせる）。それまでは隊長の「用意しています」を出しておく
+        waitingAt.current = r.bubbles.length;
+        setBubbles([...r.bubbles, { id: `wait-${Date.now()}`, from: "captain", at: new Date().toISOString(), text: t(lang, "late"), buttons: [], quick: [] }]);
+        return;
+      }
       setBubbles(r.bubbles);
       if (r.bubbles.at(-1)?.from === "captain") play("message", { delay: 0.15 });
     }

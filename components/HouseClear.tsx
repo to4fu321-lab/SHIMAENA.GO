@@ -58,7 +58,7 @@ export default function HouseClear({ clear, onClose }: { clear: ClearSummary; on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown]);
 
-  const verdict = photo ? verdictWord(photoStars(photo)) : undefined;
+  const verdict = photo?.pending ? "判定はあとで届きます" : photo ? verdictWord(photoStars(photo)) : undefined;
   const notes = [
     clear.evidence && `見たところ: ${clear.evidence}`,
     clear.snowTypeLabel && `雪質: ${clear.snowTypeLabel}${clear.snowTypeReason ? `（${clear.snowTypeReason}）` : ""}`,

@@ -28,6 +28,8 @@ import { captainReply } from "../agent/captain";
 import { faqKind, faqReply } from "../concierge/faq";
 import { clearSession as clearConcierge } from "../concierge/session";
 import { setAlertPref } from "../road/store";
+import { runLater } from "../ops/later";
+import { withStateLock } from "../ops/lock";
 import { repo } from "../repo";
 import { jstDate } from "../jst";
 import { teamTerm } from "../team-theme";
@@ -148,6 +150,19 @@ async function nothingNow(lineUserId: string): Promise<LineMessage[]> {
   return cc ? [...MSG.nowNoneLead(), ...cc] : MSG.nowNothing();
 }
 
+/**
+ * 返事のあとの見回り（6:40 の作戦・人手不足のヘルプ通知の時刻が来ていれば送る）。返事を待たせないよう、返事を返したあとで（spec v1.68）。
+ * 鍵は取り直す（返事の処理の鍵は、返事を返したところで外れる）
+ */
+function afterReply(): void {
+  runLater("line/after-reply", () =>
+    withStateLock("line/after-reply", async () => {
+      await planIfDue();
+      await escalateHelpIfDue();
+    }),
+  );
+}
+
 /** 「雪かきGO！」と送られたか（前の名前「出動する」「いまからやる」も。GO は全角・小文字でも） */
 const GO_WORDS = /^(雪かき[GＧgｇ][OＯoｏ][!！]?|出動する|出動|いまからやる)$/;
 
@@ -192,8 +207,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("rc:")) {
     const messages = await answerRollcall(lineUserId, ev.postback.data);
     if (ev.replyToken) await reply(lineUserId, messages);
-    await planIfDue();
-    await escalateHelpIfDue();
+    afterReply();
     return;
   }
 
@@ -208,7 +222,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
   // 雪かきを頼む（spec v1.10）: 6〜19時いつでも
   if (ev.type === "message" && "message" in ev && ev.message.type === "text" && /^(雪かきを頼む|雪かきをたのむ|雪かき頼む)$/.test(ev.message.text.trim())) {
     if (ev.replyToken) await reply(lineUserId, await askForHelp(lineUserId));
-    await planIfDue();
+    afterReply();
     return;
   }
   // 隊長に相談とよくある質問（spec v1.10）
@@ -245,7 +259,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     else if (data.startsWith("knock:")) messages = MSG.knockThanks();
     else messages = MSG.helpDeclined();
     if (ev.replyToken) await reply(lineUserId, messages);
-    await escalateHelpIfDue();
+    afterReply();
     return;
   }
 
@@ -370,8 +384,7 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
     const messages = await answerByWords(lineUserId, ev.message.text);
     if (messages) {
       if (ev.replyToken) await reply(lineUserId, messages);
-      await planIfDue();
-      await escalateHelpIfDue();
+      afterReply();
       return;
     }
     // 点呼の時間でなければ、登録した人の自由な文はコンシェルジュへ（「下のボタンから」で止めない）。v1.25: キーがあれば隊長エージェント

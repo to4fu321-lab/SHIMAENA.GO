@@ -6,9 +6,10 @@ import { adminGate } from "@/lib/admin-auth";
 import { sniffImageType } from "@/lib/image";
 import type { TextMessage } from "@/lib/line/types";
 import type { ClearSummary } from "@/lib/morning/clear";
-import { completeManually, completeWithPhoto, currentGoing, joinMission, precheckPhoto, joinNearby, reportShort, setGoing } from "@/lib/morning/ops";
+import { completeManually, completeWithPendingPhoto, completeWithPhoto, deliverLatePhotoVerdict, currentGoing, joinMission, precheckPhoto, joinNearby, reportShort, setGoing } from "@/lib/morning/ops";
 import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
+import { WAIT_MS, within } from "@/lib/ops/deadline";
 import { stormStopText } from "@/lib/storm";
 
 export interface ActionResult {
@@ -91,8 +92,19 @@ export async function finishAction(formData: FormData): Promise<ActionResult> {
   if (!mediaType) return { ok: false, text: "JPEG・PNG・WebP の写真を送ってください。" };
   // 撮影ステージ（/admin/stage）から: 合言葉でログインした人の画面で、撮影の印があるときだけ、写真を Claude に送らず決まった確認で進める
   const stage = (await cookies()).get("shimaena_stage")?.value === "1" && ["ok", "open"].includes(await adminGate());
-  // 写真の確認（Claude・30〜60秒）は鍵の外で先に。待つあいだも、ほかの人の「行く」などが止まらない
-  if (!stage) await precheckPhoto(id, { bytes, mediaType });
+  // 写真の確認（Claude・30〜60秒）は鍵の外で先に。待つあいだも、ほかの人の「行く」などが止まらない。
+  // 待つのは長くても5秒（spec v1.68）: 間に合わなければ先に完了にして、判定はできしだい隊長トークと通知で届ける
+  if (!stage) {
+    const image = { bytes, mediaType };
+    const checked = await within("photo/late", precheckPhoto(id, image), WAIT_MS, () => deliverLatePhotoVerdict(id, image));
+    if (!checked.done) {
+      return withStateLock("map:finishAction", async () => {
+        const r = await completeWithPendingPhoto(id, image, new Date(), { echo: true });
+        revalidatePath("/map");
+        return { ok: r.done, text: firstText(r.messages), clear: r.clear, canManual: r.retry };
+      });
+    }
+  }
   return withStateLock("map:finishAction", async () => {
     const r = await completeWithPhoto(id, { bytes, mediaType }, new Date(), { fast: stage, echo: true });
     revalidatePath("/map");

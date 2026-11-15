@@ -51,7 +51,7 @@ async function jmaNames(fetchFn: typeof fetch = fetch): Promise<string[]> {
   const c = g.__shimaenaStorm;
   if (c && Date.now() - c.at < CACHE_MS) return c.names;
   try {
-    const res = await fetchFn(`https://www.jma.go.jp/bosai/warning/data/warning/${JMA_OFFICE}.json`, { cache: "no-store" });
+    const res = await fetchFn(`https://www.jma.go.jp/bosai/warning/data/warning/${JMA_OFFICE}.json`, { cache: "no-store", signal: AbortSignal.timeout(3000) }); // 3秒で返らなければ前の結果で（ボタンを待たせない。spec v1.68）
     if (!res.ok) throw new Error(`気象庁が ${res.status} を返しました`);
     const names = stopWarnings((await res.json()) as JmaWarningJson);
     g.__shimaenaStorm = { at: Date.now(), names };

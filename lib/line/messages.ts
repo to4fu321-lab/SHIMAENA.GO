@@ -338,6 +338,19 @@ export const MSG = {
       [`🎉 全軒 完了だしま〜！\n今朝の雪${st.snowName ? `『${st.snowName}』` : ""}を、みんなでやっつけました。`, `${allClearLine(st)}\nほんとうにおつかれさまでした！`],
       [open("🎉 お祝いを見る", ALL_CLEAR_PATH)],
     ),
+  /** 写真の判定があとから届いた（spec v1.68）。星はプログラムが数える（雪がどけてある・通れる・凍っていない） */
+  lateVerdict: (baseNumber: number | string, check: { cleared: boolean; passable: boolean; icy: boolean; uncertain?: boolean; comment: string }, hazards: string[] = []) => {
+    const stars = check.uncertain ? undefined : [check.cleared, check.passable, !check.icy].filter(Boolean).length;
+    return bubbles(
+      [
+        `📷 拠点${baseNumber}の写真の判定が届きました。`,
+        stars === undefined ? "写真では確かめきれませんでしたが、報告として受け付けています。" : `${"★".repeat(stars)}${"☆".repeat(3 - stars)}　${stars === 3 ? "ばっちり！" : stars === 2 ? "よくできました" : "受け付けました"}`,
+        check.comment,
+        hazards.length > 0 && hazards.map((h) => `⚠️ ${h}`).join("\n"),
+      ],
+      [B.map],
+    );
+  },
   doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number, cardTonight = false) =>
     bubbles([`拠点${baseNumber}は、${byName}さんの写真で完了になりました。`, `${teamName}に +${points} 点。おつかれさまでした！`, cardTonight && CARD_TONIGHT], [B.card]),
   /** 夜のカードの配達（spec v1.54）: カードの前に隊長が添えることば */
