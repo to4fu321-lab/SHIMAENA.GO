@@ -3,7 +3,7 @@
 // なければ 12cm の雪の朝を作り直す（予告 → 6:30 → 作戦。Claude を待たない）。隊長トークに知らせるのは架空の人だけ。
 import { demoEnabled } from "../env";
 import { DEMO_PREFIX, inboxKeyOf } from "../inbox/key";
-import { clearThread } from "../inbox/store";
+import { clearThreads } from "../inbox/store";
 import { jstDate } from "../jst";
 import { withStateLock } from "../ops/lock";
 import type { MorningRecord } from "./flow";
@@ -29,10 +29,11 @@ export async function ensureDemoMorning(now = new Date()): Promise<boolean> {
     const roster = await loadRoster();
     const fake = new Set(roster.participants.filter((p) => !p.lineUserId).map((p) => p.id));
     // 架空の人の隊長トークは空にしてから（前の朝の話が混ざらないように）。本物の人のトークには触れない
-    for (const p of roster.participants) {
+    const keys = roster.participants.flatMap((p) => {
       const k = inboxKeyOf(p);
-      if (k?.startsWith(DEMO_PREFIX)) await clearThread(k).catch(() => undefined);
-    }
+      return k?.startsWith(DEMO_PREFIX) ? [k] : [];
+    });
+    await clearThreads(keys).catch(() => undefined);
     await announce({ date: today, forecastCm: DEMO_SNOW_CM, fast: true, only: fake });
     await ring({ fast: true });
     // 人手不足の家のヘルプ通知（本物の人のスマホも鳴る）は送らない。地図の「あと○人で救える家」から行ける
