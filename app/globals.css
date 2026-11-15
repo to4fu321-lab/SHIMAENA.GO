@@ -641,3 +641,24 @@ body {
   .loading-bar > span { animation-duration: 3s; }
   .loading-spin { animation-duration: 2.4s; }
 }
+
+/* ログイン画面の動くマニュアル（components/ManualReel.tsx、spec v1.62）: 4拍ごとにコマがすべるように切りかわり、絵は1拍ごとにぽんと出る */
+.reel-scene { transition: opacity 0.45s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.reel-past { opacity: 0; transform: translateX(-28px); pointer-events: none; }
+.reel-next { opacity: 0; transform: translateX(28px); pointer-events: none; }
+.reel-on .reel-pop { animation: reel-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes reel-pop { from { opacity: 0; transform: translateY(10px) scale(0.7); } }
+.reel-fill { animation: reel-fill calc(var(--beat) * 4) linear both; }
+@keyframes reel-fill { from { transform: scaleX(0); } }
+.reel-on .reel-pin { animation: reel-pin var(--beat) ease-in-out infinite; }
+@keyframes reel-pin { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-7px) scale(1.08); } }
+.reel-on .reel-dash { animation: tour-dash var(--beat) linear infinite; }
+.reel-on .reel-melt { animation: reel-melt calc(var(--beat) * 2) cubic-bezier(0.4, 0, 0.3, 1) both; }
+@keyframes reel-melt { from { transform: scale(1); } to { transform: scale(0.2); } }
+.reel-melt { transform: scale(0.2); }
+.reel-flash { opacity: 0; }
+.reel-on .reel-flash { animation: tour-flash 0.5s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .reel-scene { transition: none; }
+  .reel-on .reel-pop, .reel-fill, .reel-on .reel-pin, .reel-on .reel-dash, .reel-on .reel-melt, .reel-on .reel-flash { animation: none; }
+}
