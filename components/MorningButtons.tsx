@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { finishAction, goAction, manualFinishAction, shortAction, type ActionResult } from "@/app/map/actions";
+import { primeCaptainVoice } from "./ChatTools";
 import { openClear } from "./ClearWatcher";
 import Mascot from "./Mascot";
 import { shrink } from "./shrink";
@@ -50,6 +51,8 @@ export default function MorningButtons({ viewerId, canAct, going, done = false, 
   }, [checking]);
 
   const run = (fn: () => Promise<ActionResult>, okSound?: "go", finish = false) => {
+    // 完了のあとに隊長が声で言う（spec v1.61）: iPhone は「押した」中で一度鳴らしておかないと、あとから声を出せない
+    if (finish) primeCaptainVoice();
     setFinishing(finish);
     start(async () => {
       try {
@@ -111,6 +114,7 @@ export default function MorningButtons({ viewerId, canAct, going, done = false, 
           disabled={disabled}
           onClick={() => {
             play("tap");
+            primeCaptainVoice(); // 完了の声のために（上の run と同じ）
             setResult(null);
             setPhotoOpen(true);
           }}

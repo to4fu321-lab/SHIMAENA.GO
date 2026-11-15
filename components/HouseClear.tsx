@@ -1,7 +1,7 @@
 "use client";
 
 // 1軒完了！（spec v1.60）: 自分の「終わりました」で写真の確認が終わった瞬間の画面。
-// ファンファーレ・紙ふぶき・はんこ「1軒 完了！」と、写真の判定（隊長 Claude が見たこと）を出す。
+// ファンファーレ・紙ふぶき・はんこ「1軒 完了！」と、写真の判定（隊長 Claude が見たこと）を出す。シマエナ隊長が声でも言う（spec v1.61）。
 // 星はプログラムが数える（雪がどけてある・通れる・凍っていない、の3つ）。AI に点数は付けさせない。
 // 点（チームの得点）はここでは出さない。まとめて見せるのは「今日はここまで！」（DayClear。spec v1.57）。
 // ほかの人の完了は、今までどおり軽い知らせ（ClearToast）。
@@ -9,6 +9,9 @@ import { useEffect, useState } from "react";
 import type { ClearSummary } from "@/lib/morning/clear";
 import { TEAMS } from "@/lib/teams";
 import { play } from "@/lib/sound/engine";
+import { clearVoiceText, photoStars, verdictWord } from "@/lib/morning/clear-voice";
+import { soundPrefs } from "@/lib/sound/engine";
+import { speakCaptain, stopCaptainVoice } from "./ChatTools";
 import Mascot from "./Mascot";
 
 const CONFETTI = ["#ffd27a", "#8fb8d9", "#c8a7b8", "#ffffff", "#f0a070"];
@@ -24,7 +27,7 @@ export default function HouseClear({ clear, onClose }: { clear: ClearSummary; on
         { ok: !photo.icy, label: photo.icy ? "凍っているところがあります" : "凍結は見えません" },
       ]
     : [];
-  const stars = rows.filter((r) => r.ok).length;
+  const stars = photoStars(photo) ?? 0;
   const [shown, setShown] = useState(0);
   useEffect(() => {
     play("missionClear");
@@ -36,9 +39,16 @@ export default function HouseClear({ clear, onClose }: { clear: ClearSummary; on
       }, 1100 + i * 380),
     );
     const done = setTimeout(() => setShown(99), 1100 + rows.length * 380 + 150);
+    // シマエナ隊長の声（spec v1.61）: ファンファーレのあとに「やったー！1軒完了だしま〜！」→ 写真の判定 → ひとこと。
+    // 効果音を切っている人には読まない。声が作れないときは端末の声（ChatTools の speakCaptain）
+    const voice = setTimeout(() => {
+      if (soundPrefs().sfx) speakCaptain(clearVoiceText(clear));
+    }, 900);
     return () => {
       timers.forEach(clearTimeout);
       clearTimeout(done);
+      clearTimeout(voice);
+      stopCaptainVoice(); // 「つぎへ」で閉じたら、声も止める
     };
     // 開いたときに1回だけ
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -48,15 +58,7 @@ export default function HouseClear({ clear, onClose }: { clear: ClearSummary; on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown]);
 
-  const verdict = !photo
-    ? undefined
-    : photo.uncertain
-      ? "報告として受け付けました"
-      : stars === 3
-        ? "ばっちり！"
-        : stars === 2
-          ? "よくできました"
-          : "受け付けました";
+  const verdict = photo ? verdictWord(photoStars(photo)) : undefined;
   const notes = [
     clear.evidence && `見たところ: ${clear.evidence}`,
     clear.snowTypeLabel && `雪質: ${clear.snowTypeLabel}${clear.snowTypeReason ? `（${clear.snowTypeReason}）` : ""}`,
