@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import StormBanner from "@/components/StormBanner";
 import Link from "next/link";
 import { onTeam } from "@/lib/member";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -22,7 +22,7 @@ import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
-import { demoEnabled, demoMorning } from "@/lib/env";
+import { demoMorning } from "@/lib/env";
 import { isClockNight } from "@/lib/night";
 import { captainLine, captainRotation, captainState } from "@/lib/captain";
 import { safetyLine } from "@/lib/safety";
@@ -53,7 +53,6 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
   const { as, sky: skyParam } = await searchParams;
-  const headerStore = await headers();
   const [record, roster, cookieStore, wx] = await Promise.all([
     loadMorning(),
     loadRoster(),
@@ -72,9 +71,9 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = viewerId ? roster.participants.find((p) => p.id === viewerId) : undefined;
-  // 外から来たはじめての人（YouTube・README のリンク、URL の直打ち。ログインもデモの人えらびもしていない）は、入口の画面へ
-  // （11/14 本人「YouTube のリンクから入口の画面に行ってほしい」）。アプリの中から戻ってきたときは、今までどおりホーム（11/8 の「登録画面で止めない」）
-  if (!me && !demoAs && !fromOwnSite(headerStore.get("referer"), headerStore.get("host"))) redirect("/start");
+  // ログインも、デモの人えらびもしていない人は、入口の画面へ（spec v1.65。11/15 本人「ログイン無しでホームに行けるメリットが無ければ行けなくしたい」）。
+  // デモで見たい人は、入口の「デモを見る（登録なし）」で架空の10人から1人をえらぶ（/demo）。前の「登録していなくてものぞける」（11/8）はやめた
+  if (!me) redirect("/start");
   const q = demoAs ? `?as=${demoAs}` : "";
 
   const prog = progress(m);
@@ -90,13 +89,10 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   // 「雪かきを頼む」で開いた、まだ終わっていない家（spec v1.10）
   const asks = m.missions.filter((x) => x.ask && x.status !== "done").length;
   // 雪かきGO！: 作戦中で手伝う側（チームあり）なら町の地図（家の雪かき）、そうでなければソロ出動
-  // 登録していない人（審査員など）: デモが許されていれば、押した先は架空の手伝う側 h3 として動く（登録画面で止めない。11/8 本人の指示）
-  // 押した先で、架空の10人から1人をえらぶ（/demo。11/8 本人「人を10人から選べるように」。1人を全員で使うと記録が混ざるため）
-  const demoGuest = !me && !demoAs && demoEnabled();
   const actAs = demoAs;
-  const actor = me ?? (demoGuest ? roster.participants.find((p) => p.id === "h3") : undefined); // 10人とも手伝う側でチームあり
+  const actor = me;
   const aq = actAs ? `?as=${actAs}` : "";
-  const pick = (path: string) => (demoGuest ? `/demo?next=${encodeURIComponent(path)}` : path);
+  const pick = (path: string) => path;
   const canHelpHouse = planned && onTeam(actor);
   const goHref = pick(canHelpHouse ? `/map${aq}` : `/solo${aq}`);
   // go=1: 押したらすぐ「雪かきGO！」「お知らせGO！」で始まる（11/7 本人の指示）
@@ -417,14 +413,4 @@ export default function Home({ searchParams }: { searchParams: Promise<{ as?: st
       </Suspense>
     </>
   );
-}
-
-/** リンク元が同じサイト（アプリの中を移動してきた）か */
-function fromOwnSite(referer: string | null, host: string | null): boolean {
-  if (!referer || !host) return false;
-  try {
-    return new URL(referer).host === host;
-  } catch {
-    return false;
-  }
 }
