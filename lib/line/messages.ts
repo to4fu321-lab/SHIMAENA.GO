@@ -13,6 +13,7 @@ import { teamAnnounceText, teamImageMessage } from "../team-announce";
 import type { TeamTerm } from "../team-theme";
 import type { TeamId } from "../types";
 import { liffUrl } from "../url";
+import { ALL_CLEAR_PATH, allClearLine, type AllClearStats } from "../morning/all-clear";
 import { CHILD_NOTE } from "../nakama/rules";
 import { captainCard, choiceCard, placeCard, type CardAction, type Choice, type Tone } from "./flex";
 import { AREA_LABEL } from "../request-note";
@@ -330,6 +331,12 @@ export const MSG = {
       ],
       // 友だちを誘う（spec v1.6）: あなたが主役の招待文を入れた LINE の「送る」画面
       [B.card, ...(r.inviteUrl ? [{ type: "uri", label: "友だちを誘う", uri: r.inviteUrl } as Button] : []), B.map],
+    ),
+  /** 全軒 完了！（spec v1.66）: 今朝、雪かきに行った人みんなへ。ボタンでお祝いの画面（地図の上）を開く */
+  allClear: (st: AllClearStats) =>
+    bubbles(
+      [`🎉 全軒 完了だしま〜！\n今朝の雪${st.snowName ? `『${st.snowName}』` : ""}を、みんなでやっつけました。`, `${allClearLine(st)}\nほんとうにおつかれさまでした！`],
+      [open("🎉 お祝いを見る", ALL_CLEAR_PATH)],
     ),
   doneByOther: (baseNumber: number | string, byName: string, teamName: string, points: number, cardTonight = false) =>
     bubbles([`拠点${baseNumber}は、${byName}さんの写真で完了になりました。`, `${teamName}に +${points} 点。おつかれさまでした！`, cardTonight && CARD_TONIGHT], [B.card]),

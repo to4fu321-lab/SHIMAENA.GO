@@ -23,6 +23,8 @@ import ThanksToast from "./ThanksToast";
 import MorningButtons from "./MorningButtons";
 import NextHouse from "./NextHouse";
 import DayClear from "./DayClear";
+import AllClearWatcher from "./AllClear";
+import { allClearStats } from "@/lib/morning/all-clear";
 import { Chip, NumberBadge, PeopleDots, SheetHead } from "./SheetBits";
 import RescueList from "./RescueList";
 import RoadReportRun from "./RoadReportRun";
@@ -65,7 +67,10 @@ export default function MapScreen({
   road = [],
   focusRoad,
   view,
+  fin,
 }: {
+  /** 通知・隊長トークの「お祝いを見る」から開いた（/map?fin=1。spec v1.66） */
+  fin?: boolean;
   /** road: 道の報告（滑る所・細い道・除雪まだ）を見る地図（隊長トークの「道の報告の地図を見る」から。11/6 本人の指摘） */
   view?: "road";
   state: MorningState;
@@ -104,19 +109,13 @@ export default function MapScreen({
   const max = Math.max(1, ...Object.values(totals));
   const hp = snowHp(state);
   const prog = progress(state);
-  // 音（spec v1.19）: 人手不足（赤点滅）の家が増えたら「ピッピッ」を1回、全軒完了に変わったら勝利のファンファーレ
+  // 音（spec v1.19）: 人手不足（赤点滅）の家が増えたら「ピッピッ」を1回、全軒完了に変わったら勝利のファンファーレ（「全軒 完了！」の画面 AllClear が鳴らす。spec v1.66）
   const shortCount = views.filter((v) => v.status === "short").length;
   const prevShort = useRef<number | null>(null);
-  const prevDone = useRef<boolean | null>(null);
   useEffect(() => {
     if (prevShort.current !== null && shortCount > prevShort.current) play("helpAlert");
     prevShort.current = shortCount;
   }, [shortCount]);
-  useEffect(() => {
-    const done = prog.allDone && prog.total > 0;
-    if (prevDone.current === false && done) play("bossDown");
-    prevDone.current = done;
-  }, [prog.allDone, prog.total]);
   const snow = snowTotal(state);
   const hpPct = hp.max > 0 ? (hp.current / hp.max) * 100 : 100;
   const viewerTeam = TEAMS.find((t) => t.id === viewer?.teamId);
@@ -224,6 +223,18 @@ export default function MapScreen({
       <Bgm track={bgm} />
       <ClearWatcher clear={clear} />
       {thanks?.missionId && <ThanksToast key={thanks.missionId} missionId={thanks.missionId} baseNumber={thanks.baseNumber ?? "?"} label={thanks.label} chatHref={`/chat${q}`} />}
+      <AllClearWatcher
+        stats={allClearStats(state)}
+        date={state.rollcall.date}
+        houses={views.flatMap((v) => {
+          const b = bases.find((x) => x.id === v.baseId);
+          return v.status === "done" && b ? [{ number: b.number, color: TEAMS.find((t) => t.id === v.teams[0])?.color }] : [];
+        }).sort((a, b) => Number(a.number) - Number(b.number))}
+        joined={Boolean(today)}
+        fin={Boolean(fin)}
+        recap={recap}
+        onSummary={today ? () => setDayOpen(true) : undefined}
+      />
       {dayOpen && today && <DayClear day={today} onClose={() => setDayOpen(false)} homeHref={`/${q}`} />}
       {/* 上: 戻る・題名（濃い冬の青） */}
       <header className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center bg-ink px-2 pb-2 pt-2 text-white">
