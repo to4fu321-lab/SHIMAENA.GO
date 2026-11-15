@@ -341,6 +341,8 @@ export async function plan(opts: { fast?: boolean; only?: ReadonlySet<string>; h
   const houses = s.morning.missions.filter((m) => m.status !== "no_answer").length;
   let sent = 0;
   let failed = 0;
+  // 1人ずつ待たずに、少しずつ並べて送る（順番に送ると、人数ぶん DB を往復して遅い）
+  const outbox: { key: string; messages: LineMessage[] }[] = [];
   for (const p of roster.participants) {
     const k = inboxKeyOf(p);
     if (!k || (opts.only && !opts.only.has(p.id))) continue;
@@ -350,8 +352,12 @@ export async function plan(opts: { fast?: boolean; only?: ReadonlySet<string>; h
     const assigned = s.messages.some((m) => m.participantId === p.id);
     const others = houses - (p.role === "requester" && roster.bases.some((b) => b.requesterId === p.id) ? 1 : 0);
     const body = p.role === "helper" || onTeam(p) ? [...MSG.housesToday(others, !assigned), ...mine] : mine;
-    if (await push(k, [...head, ...body])) sent++;
-    else failed++;
+    outbox.push({ key: k, messages: [...head, ...body] });
+  }
+  for (let i = 0; i < outbox.length; i += 8) {
+    const r = await Promise.all(outbox.slice(i, i + 8).map((o) => push(o.key, o.messages)));
+    sent += r.filter(Boolean).length;
+    failed += r.filter((x) => !x).length;
   }
   s.log.push(`作戦を隊長トークで ${sent} 人に${failed > 0 ? `（⚠ ${failed} 人に入れられず。/admin の「問題」を見てください）` : ""}`);
   await saveMorning(s);

@@ -78,9 +78,12 @@ async function insert(items: InboxItem[]): Promise<void> {
     return;
   }
   await ensure();
-  for (const it of items) {
-    await query("insert into inbox_messages (id, inbox_key, direction, body, at) values ($1, $2, $3, $4::jsonb, $5)", [it.id, it.key, it.dir, JSON.stringify(it.body), it.at]);
-  }
+  // 何行でも1回の問い合わせで入れる（1行ずつだと、吹き出しの数だけ DB を往復して遅い。デモの朝の用意が数十秒かかった）
+  await query(
+    `insert into inbox_messages (id, inbox_key, direction, body, at)
+     select x->>'id', x->>'key', x->>'dir', x->'body', (x->>'at')::timestamptz from jsonb_array_elements($1::jsonb) as x`,
+    [JSON.stringify(items.map((it) => ({ id: it.id, key: it.key, dir: it.dir, body: it.body, at: it.at })))],
+  );
   if (Math.random() < 0.05) await query(`delete from inbox_messages where at < now() - interval '${KEEP_DAYS} days'`);
 }
 
@@ -141,4 +144,15 @@ export async function clearThread(key: string): Promise<void> {
   }
   await ensure();
   await query("delete from inbox_messages where inbox_key = $1", [key]);
+}
+
+/** 何人かの流れをまとめて空にする（デモの朝の用意。1回の問い合わせで） */
+export async function clearThreads(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  if (!hasDb()) {
+    for (const k of keys) mem().set(k, []);
+    return;
+  }
+  await ensure();
+  await query("delete from inbox_messages where inbox_key = any($1::text[])", [keys]);
 }
