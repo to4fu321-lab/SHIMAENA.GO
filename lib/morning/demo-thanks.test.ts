@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { listThread } from "../inbox/store";
 import { DEMO_DATE, fillAnswers } from "./flow";
-import { announce, completeManually, demoThanks, demoThanksSeconds, isDemoHouse, plan, ring } from "./ops";
+import { announce, completeManually, completeWithPhoto, demoThanks, demoThanksSeconds, isDemoHouse, plan, ring } from "./ops";
 import { loadRoster } from "./roster";
 import { loadMorning, saveMorning } from "./store";
 
@@ -25,6 +25,24 @@ describe("デモの時間圧縮と、完了の返事を隊長トークにも（s
   it("地図から完了すると、同じ返事が本人の隊長トークにも残る", async () => {
     const going = await oneDoneFromMap();
     expect(await texts(`demo:${going.participantId}`)).toContain("完了だしま〜");
+  });
+
+  it("完了のまとめに写真の判定が入る（v1.60「1軒完了！」の画面用）。写真なしの完了は「報告として受け付け」", async () => {
+    await announce({ date: DEMO_DATE, forecastCm: 12 });
+    await ring();
+    const s = await loadMorning();
+    fillAnswers(s, await loadRoster(), 7);
+    await saveMorning(s);
+    await plan();
+    const [a, b] = (await loadMorning()).morning.sorties.filter((x) => x.status === "going").filter((x, i, all) => all.findIndex((y) => y.missionId === x.missionId) === i);
+    delete (globalThis as Record<string, unknown>).__shimaenaPhotoSeen;
+    const withPhoto = await completeWithPhoto(a.participantId, { bytes: new Uint8Array([9, 8, 7]), mediaType: "image/jpeg" });
+    expect(withPhoto.clear?.mine).toBe(true);
+    expect(withPhoto.clear?.photo).toMatchObject({ cleared: true, passable: true, icy: false, uncertain: false });
+    expect(withPhoto.clear?.photo?.comment.length).toBeGreaterThan(0);
+    const manual = await completeManually(b.participantId);
+    expect(manual.clear?.photo?.uncertain).toBe(true);
+    expect(manual.clear?.photo?.comment).toContain("本人の報告");
   });
 
   it("架空の家を架空の人が終えたら、家の人の「ありがとう」をプログラムが代わりに届ける。1軒に1回だけ", async () => {

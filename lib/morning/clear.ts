@@ -58,6 +58,8 @@ export interface ClearSummary {
   /** v1.8: 招待リンク（あなたからの招待の印つき）と、誘った結果のひとこと */
   inviteUrl?: string;
   inviteResult?: string;
+  /** 写真の判定（spec v1.60。「1軒完了！」の画面に出す）: 3つの見立てと、隊長のひとこと。uncertain は「報告として受け付け」（写真なしの完了も） */
+  photo?: { cleared: boolean; passable: boolean; icy: boolean; uncertain: boolean; comment: string };
   /** 写真から見えた雪質（v1.2）と労いの一言 */
   snowTypeLabel?: string;
   care?: string;
@@ -147,6 +149,7 @@ export function summarizeClear(
     firstFlight,
     mine,
     ...(mine && opts.viewerId ? { viewerId: opts.viewerId } : {}),
+    ...(check ? { photo: { cleared: check.cleared, passable: check.passable, icy: check.icy, uncertain: Boolean(check.uncertain), comment: check.comment } } : {}),
     snowTypeLabel,
     care: check?.care || undefined,
     evidence: check?.evidence || undefined,

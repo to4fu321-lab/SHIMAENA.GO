@@ -40,7 +40,7 @@ export default function ThanksToast({ missionId, baseNumber, label, chatHref, ms
   }, [missionId, ms]);
   if (!show) return null;
   return (
-    <div className="toast-in fixed inset-x-3 top-[max(12px,env(safe-area-inset-top))] z-[1250] mx-auto max-w-sm rounded-2xl bg-camellia-soft px-3 py-3 text-ink shadow-xl ring-2 ring-camellia" role="status" aria-label="ありがとうが届きました">
+    <div className="toast-in fixed inset-x-3 top-[max(12px,env(safe-area-inset-top))] z-[1450] mx-auto max-w-sm rounded-2xl bg-camellia-soft px-3 py-3 text-ink shadow-xl ring-2 ring-camellia" role="status" aria-label="ありがとうが届きました">
       <div className="flex items-center gap-2.5">
         <span className="grid size-12 shrink-0 place-items-center rounded-full bg-white text-2xl" aria-hidden="true">
           💌

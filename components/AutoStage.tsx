@@ -247,9 +247,20 @@ export default function AutoStage({ actions }: { actions: StageActions }) {
       }
       say("写真を確かめて、完了");
       // spec v1.57: 1軒ずつは軽い知らせ。まとめは「今日はここまで！」
+      // spec v1.60: 自分の完了は「1軒完了！」と写真の判定 →「つぎへ」で閉じる
+      const closeHouseClear = async () => {
+        const next = await until(() => buttons(/^つぎへ$/)[0], 30);
+        if (next) {
+          await wait(4);
+          await tap(next);
+        }
+      };
+      const first = await until(() => buttons(/^つぎへ$|それでも完了にする/)[0], 30);
+      if (first && /つぎへ/.test(first.textContent ?? "")) await closeHouseClear();
       const result = await until(() => buttons(/今日は\s*ここまで|それでも完了にする/)[0], 30);
       if (result && /それでも完了にする/.test(result.textContent ?? "")) {
         await tap(result);
+        await closeHouseClear();
         await until(() => buttons(/今日は\s*ここまで/)[0], 30);
       }
       say("1軒、灯りがともった");
