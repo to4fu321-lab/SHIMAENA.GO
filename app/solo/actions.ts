@@ -11,6 +11,7 @@ import { getAlertPref, insertRoadReport, setAlertPref } from "@/lib/road/store";
 import { sniffImageType } from "@/lib/image";
 import type { PhotoInput } from "@/lib/claude/photo";
 import { completeSolo, startHomeNow, stopHomeNow, type SoloClearSummary } from "@/lib/solo/ops";
+import { within } from "@/lib/ops/deadline";
 import { trustedViewer } from "@/lib/viewer";
 import { withStateLock } from "@/lib/ops/lock";
 import { stormStopText } from "@/lib/storm";
@@ -144,5 +145,7 @@ export async function privacyAction(formData: FormData): Promise<PrivacyResult> 
   const id = await trustedViewer(String(formData.get("viewerId") ?? ""));
   const photo = await readPhoto(formData.get("photo"));
   if (!id || !photo || photo === "bad") return WHOLE;
-  return findPrivateAreas(photo);
+  // 待つのは長くても5秒（spec v1.68）。間に合わなければ全体をぼかす（安全なほう）
+  const r = await within("road/privacy", findPrivateAreas(photo));
+  return r.done ? r.value : WHOLE;
 }

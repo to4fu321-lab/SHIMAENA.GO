@@ -10,6 +10,7 @@ import { jstDate, jstMinutes } from "@/lib/jst";
 import { onTeam } from "@/lib/member";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning, saveMorning } from "@/lib/morning/store";
+import { runLater } from "@/lib/ops/later";
 import { withStateLock } from "@/lib/ops/lock";
 import { getTeam } from "@/lib/teams";
 import { trustedViewer } from "@/lib/viewer";
@@ -49,11 +50,15 @@ export async function chooseTimeAction(viewerId: string, when: string): Promise<
   // 2) そろう時間が変わったら、隊長の一文を書き直す（Claude はロックの外で。失敗しても決まった文が出る）
   if (saved.fresh && saved.best) {
     const best = saved.best;
-    const text = await slotLine({ teamName: getTeam(teamId).name, when: best, count: saved.count });
-    await withStateLock("team:slotLine", async () => {
-      const s = await loadMorning();
-      s.slotLines = { ...(s.slotLines ?? {}), [teamId]: { when: best, count: saved.count, text } };
-      await saveMorning(s);
+    // 返事を待たせない（spec v1.68）: 一文は返事のあとで書く。画面は数秒ごとに新しくなるので、書けたら出てくる
+    runLater("team:slotLine", async () => {
+      const text = await slotLine({ teamName: getTeam(teamId).name, when: best, count: saved.count });
+      await withStateLock("team:slotLine", async () => {
+        const s = await loadMorning();
+        s.slotLines = { ...(s.slotLines ?? {}), [teamId]: { when: best, count: saved.count, text } };
+        await saveMorning(s);
+      });
+      revalidatePath("/team");
     });
   }
   revalidatePath("/team");

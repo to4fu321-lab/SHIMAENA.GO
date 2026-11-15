@@ -32,11 +32,11 @@ export default function DemoPicker({ people, next }: { people: DemoPerson[]; nex
     const fd = new FormData();
     fd.set("as", p.id);
     fd.set("next", next);
-    // サーバーの返事が来なくても、15 秒でその人として開く（11/15 本人「遅くとも15秒で開始できないと」）
+    // サーバーの返事が来なくても、8 秒でその人として開く（11/15 本人「遅くとも15秒で開始できないと」）
     const path = next.startsWith("/") && !next.startsWith("//") ? next : "/";
     // 画面の切りかえ待ち（transition）が止まっているので、router ではなくページごと開き直す
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    const fallback = setTimeout(() => window.location.assign(`${path}${path.includes("?") ? "&" : "?"}as=${p.id}`), 15000);
+    const fallback = setTimeout(() => window.location.assign(`${path}${path.includes("?") ? "&" : "?"}as=${p.id}`), 8000);
     start(async () => {
       try {
         await pickDemoAction(fd); // 用意ができたら、その人のホームへ移る

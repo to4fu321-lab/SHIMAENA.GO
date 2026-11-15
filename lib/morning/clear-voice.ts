@@ -23,6 +23,7 @@ export function clearVoiceText(clear: Pick<ClearSummary, "baseNumber" | "photo" 
   const stars = photoStars(photo);
   const parts = [CLEAR_VOICE_HEAD, `拠点${clear.baseNumber}に灯りがともりました。`];
   if (photo) {
+    if (photo.pending) return [...parts, "写真の判定は、できしだい隊長トークに届けます。"].join("").slice(0, 180);
     parts.push(stars === undefined ? "写真は、報告として受け付けました。" : `写真の判定は、星${stars}つ。${verdictWord(stars).replace(/([^！。])$/, "$1。")}`);
     // 画面のコメント。かっこの中（注意書き）は読まない
     const comment = photo.comment.replace(/（[^）]*）/g, "").trim().slice(0, 70);

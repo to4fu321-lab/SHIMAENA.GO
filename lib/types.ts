@@ -187,6 +187,8 @@ export interface PhotoCheck {
   snowTypeReason?: string;
   /** v1.8: 写真から読んだ雪の断面の深さ（範囲・自信・目印）。使うかはプログラムが決める（lib/snow-estimate.ts） */
   depth?: { min: number; max: number; confidence: "low" | "mid" | "high"; ref?: string };
+  /** spec v1.68: 判定を待たずに先に完了にした（判定はあとで届く）。届いたら消える */
+  pending?: boolean;
 }
 
 export type PathWidth = "narrow" | "one" | "two" | "unknown";

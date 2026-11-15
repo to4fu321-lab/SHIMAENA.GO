@@ -10,7 +10,7 @@ import { runLater } from "@/lib/ops/later";
 import { recordProblem } from "@/lib/ops/problems";
 
 /** 人をえらんでから、長くてもこの時間で始める */
-const START_MAX_MS = 9000;
+const START_MAX_MS = 4000;
 
 export async function pickDemoAction(formData: FormData): Promise<void> {
   const as = String(formData.get("as") ?? "");
