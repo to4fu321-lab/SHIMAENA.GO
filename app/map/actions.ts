@@ -94,6 +94,7 @@ export async function finishAction(formData: FormData): Promise<ActionResult> {
   const stage = (await cookies()).get("shimaena_stage")?.value === "1" && ["ok", "open"].includes(await adminGate());
   // 写真の確認（Claude・30〜60秒）は鍵の外で先に。待つあいだも、ほかの人の「行く」などが止まらない。
   // 待つのは長くても5秒（spec v1.68）: 間に合わなければ先に完了にして、判定はできしだい隊長トークと通知で届ける
+  const t0 = Date.now();
   if (!stage) {
     const image = { bytes, mediaType };
     const checked = await within("photo/late", precheckPhoto(id, image), WAIT_MS, () => deliverLatePhotoVerdict(id, image));
@@ -105,8 +106,12 @@ export async function finishAction(formData: FormData): Promise<ActionResult> {
       });
     }
   }
+  const t1 = Date.now();
   return withStateLock("map:finishAction", async () => {
-    const r = await completeWithPhoto(id, { bytes, mediaType }, new Date(), { fast: stage, echo: true });
+    const t2 = Date.now();
+    const r = await completeWithPhoto(id, { bytes, mediaType }, new Date(), { fast: stage, echo: true, noWait: true });
+    // かかった時間（次に遅くなったとき、どこで待ったかを Vercel のログで見るため。spec v1.69）
+    console.log(`[time] map:finish 写真の確認 ${t1 - t0}ms・順番待ち ${t2 - t1}ms・完了の処理 ${Date.now() - t2}ms`);
     revalidatePath("/map");
     return { ok: r.done, text: firstText(r.messages), clear: r.clear, canManual: r.retry };
   });

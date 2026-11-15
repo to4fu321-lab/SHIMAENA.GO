@@ -2,7 +2,8 @@
 
 // 家の人の「ありがとう」が届いた知らせ（spec v1.59）。地図を見ているあいだに届いたら、上にやさしく出す（1軒に1回）。
 // この作品でいちばん大事な瞬間なので、完了の知らせ（ClearToast）より長く残し、押すと隊長トークへ行ける。
-// 「もう見た」は sessionStorage に持つ。地図を開いた時点でもう届いていた分も、まだ見ていなければ1回出す。
+// 「もう見た」は localStorage に持つ（11/15 本人「チャットを見て戻ってもまた出てくる」: タブを閉じても・戻っても、1軒に1回だけ）。
+// 地図を開いた時点でもう届いていた分も、まだ見ていなければ1回出す。隊長トークへ行くときは閉じてから行く（戻ったときに残っていないように）。
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { play } from "@/lib/sound/engine";
@@ -11,7 +12,7 @@ const KEY = "shimaena:thanksSeen";
 
 function seen(): string[] {
   try {
-    return JSON.parse(sessionStorage.getItem(KEY) ?? "[]") as string[];
+    return JSON.parse(localStorage.getItem(KEY) ?? "[]") as string[];
   } catch {
     return [];
   }
@@ -23,7 +24,7 @@ export default function ThanksToast({ missionId, baseNumber, label, chatHref, ms
     const list = seen();
     if (list.includes(missionId)) return;
     try {
-      sessionStorage.setItem(KEY, JSON.stringify([...list, missionId].slice(-20)));
+      localStorage.setItem(KEY, JSON.stringify([...list, missionId].slice(-50)));
     } catch {
       /* 覚えられなくても、出すことはできる */
     }
@@ -33,9 +34,13 @@ export default function ThanksToast({ missionId, baseNumber, label, chatHref, ms
       play("lamp");
     }, 600);
     const t1 = setTimeout(() => setShow(false), ms);
+    // 戻るボタンで、前の画面がそのまま戻ってきたとき（bfcache）にも残さない
+    const hide = () => setShow(false);
+    window.addEventListener("pagehide", hide);
     return () => {
       clearTimeout(t0);
       clearTimeout(t1);
+      window.removeEventListener("pagehide", hide);
     };
   }, [missionId, ms]);
   if (!show) return null;
@@ -53,7 +58,7 @@ export default function ThanksToast({ missionId, baseNumber, label, chatHref, ms
           ×
         </button>
       </div>
-      <Link href={chatHref} className="btn btn-white mt-2 min-h-12 w-full text-base">
+      <Link href={chatHref} onClick={() => setShow(false)} className="btn btn-white mt-2 min-h-12 w-full text-base">
         隊長トークで見る
       </Link>
     </div>
