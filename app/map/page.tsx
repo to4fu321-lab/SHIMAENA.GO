@@ -24,9 +24,9 @@ export const maxDuration = 300;
 
 export const metadata: Metadata = { title: "地図 ・ シマエナGO" };
 
-async function MapContent({ searchParams }: { searchParams: Promise<{ as?: string; road?: string; view?: string }> }) {
+async function MapContent({ searchParams }: { searchParams: Promise<{ as?: string; road?: string; view?: string; fin?: string }> }) {
   await connection(); // 毎回いまの状態を読む
-  const { as, road: focusRoad, view } = await searchParams;
+  const { as, road: focusRoad, view, fin } = await searchParams;
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   // 誰の画面か: ?as=h3（デモで3台のスマホに別の人を出す）→ ログインした本人（cookie）→ 既定の人
   const demoAs = as && isDemoViewer(as) ? as : undefined;
@@ -88,12 +88,13 @@ async function MapContent({ searchParams }: { searchParams: Promise<{ as?: strin
         road={road}
         focusRoad={focusRoad}
         view={view === "road" ? "road" : undefined}
+        fin={fin === "1"}
       />
     </>
   );
 }
 
-export default function MapPage({ searchParams }: { searchParams: Promise<{ as?: string; road?: string; view?: string }> }) {
+export default function MapPage({ searchParams }: { searchParams: Promise<{ as?: string; road?: string; view?: string; fin?: string }> }) {
   return (
     <Suspense fallback={<div className="mx-auto grid h-dvh max-w-md place-items-center bg-paper text-ink">読み込み中…</div>}>
       <MapContent searchParams={searchParams} />

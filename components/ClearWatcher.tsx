@@ -52,6 +52,11 @@ export function closeClear(): void {
   emit();
 }
 
+/** 自分の「1軒 完了！」の画面がいま出ているか（「全軒 完了！」はそのあとに出す。spec v1.66） */
+export function useHouseClearOpen(): boolean {
+  return useSyncExternalStore(subscribe, () => Boolean(active?.clear.mine && active.autoCloseMs === undefined), () => false);
+}
+
 export default function ClearWatcher({ clear }: { clear: ClearSummary | null }) {
   const act = useSyncExternalStore(subscribe, () => active, () => null);
 

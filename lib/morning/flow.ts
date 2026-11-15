@@ -38,6 +38,8 @@ export interface MorningRecord {
   };
   /** 今朝の実況（Claude、v1.1）。全軒完了で自動、/admin のボタンでも */
   recap?: { text: string; at: string; allDone: boolean };
+  /** 「全軒 完了！」を知らせた朝の日付（spec v1.66）。同じ朝に2回は知らせない */
+  allClearFor?: string;
   /** ありがとう点呼（v1.1）: ミッション ID ごとに、お願いした人の3択と、Claude が整えた一文 */
   thanks?: Record<string, ThanksRecord>;
   /** 声のありがとう（v1.29）: ミッション ID ごと。音そのものは lib/thanks/voice.ts */

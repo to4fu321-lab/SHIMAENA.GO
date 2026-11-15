@@ -14,6 +14,11 @@ describe("通知の種類（ボタンの中身から見分ける）", () => {
     expect(noticeKind(MSG.nakamaInvite({ id: "n1", fromName: "ゆき", message: "一緒に", windowLabel: "今から10分" })).kind).toBe("nakama");
     const road = noticeKind(MSG.roadAlert({ emoji: "🧊", label: "凍って転びやすい", sentence: "凍って", distance: 120, ago: "3分前", photoUrl: "https://p", reportId: "r1" }));
     expect(road).toEqual({ kind: "road", url: "/map?road=r1" });
+    // 全軒 完了！（spec v1.66）: 押すと地図の上のお祝いが開く
+    const all = buildNotice(MSG.allClear({ houses: 10, people: 6, teams: 3, snowKg: 0, snowName: "のんびりオコジョ" }));
+    expect(all.kind).toBe("allclear");
+    expect(all.payload.url).toBe("/map?fin=1");
+    expect(all.payload.body).toContain("10軒すべて");
     expect(noticeKind(MSG.requesterDoneNotice(["ゆき"], "m1")).kind).toBe("done");
     expect(noticeKind(MSG.familyDone(["ゆき"], "m1")).kind).toBe("done");
     expect(noticeKind(MSG.visitNotice("サルビア（青）", "ゆきだるま", false)).kind).toBe("visit");

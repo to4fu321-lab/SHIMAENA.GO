@@ -52,6 +52,7 @@ import { recapText } from "../claude/recap";
 import { CHEER_CHOICES, parseCheer, type CheerChoice, type CheerRecord } from "./cheer";
 import { summarizeClear, withInvites, type ClearSummary } from "./clear";
 import { buildRecapInput } from "./recap";
+import { allClearMembers, allClearStats } from "./all-clear";
 import { progress, snowHp, viewBases } from "./view";
 import { viewCells } from "../cells";
 import { emojiGrid } from "../share";
@@ -562,6 +563,22 @@ export async function completeManually(participantId: string, now = new Date(), 
   return finishMission(s, roster, sortie, mission, check, participantId, now, opts);
 }
 
+/**
+ * 全軒 完了！の知らせ（spec v1.66）: 今朝の家がすべて終わっていて、まだ知らせていなければ、雪かきを終えた人みんなへの文面を返す。
+ * 「知らせた」印（allClearFor）を付けるので、呼んだ側が記録を保存する。同じ朝に2回は返さない。
+ */
+export function allClearNotices(s: MorningRecord, roster: Roster): { participantId: string; key: string; messages: LineMessage[] }[] {
+  if (s.allClearFor === s.morning.rollcall.date) return [];
+  const stats = allClearStats(s.morning);
+  if (!stats) return [];
+  s.allClearFor = s.morning.rollcall.date;
+  const byId = new Map(roster.participants.map((p) => [p.id, p]));
+  return allClearMembers(s.morning).flatMap((id) => {
+    const key = inboxKeyOf(byId.get(id));
+    return key ? [{ participantId: id, key, messages: MSG.allClear(stats) }] : [];
+  });
+}
+
 /** 完了のしかた。fast: 撮影ステージ用（Claude を待たない）。echo: 地図から完了したとき、同じ返事を本人の隊長トークにも残す（spec v1.59） */
 export interface FinishOpts {
   fast?: boolean;
@@ -628,6 +645,8 @@ async function finishMission(
   } catch (e) {
     s.log.push(`カードの準備に失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
+  // 全軒 完了！（spec v1.66）: この家で今朝の家がすべて終わったら、雪かきに行った人みんなに知らせる（同じ朝に1回だけ）
+  const allClear = allClearNotices(s, roster);
   await saveMorning(s);
   // 来た人の個人の記録（羽）にも残す。チーム得点は上の scoreMission のまま（別の台帳）
   await recordHouseFeathers(
@@ -648,6 +667,11 @@ async function finishMission(
       if (x.participantId === participantId) continue;
       const k = inboxKeyOf(byId.get(x.participantId));
       if (k) await push(k, MSG.doneByOther(number, me?.nickname ?? "仲間", getTeam(x.teamId).name, pointsOf(x.teamId), cardTonight));
+    }
+    // 全軒 完了！: 今朝、雪かきを終えた人みんなへ（いま押した本人は、画面でそのままお祝いが出るので通知は鳴らさない）
+    for (const n of allClear) {
+      if (n.participantId === participantId) await reply(n.key, n.messages);
+      else await push(n.key, n.messages);
     }
   };
   if (opts.fast) await notifyAll();

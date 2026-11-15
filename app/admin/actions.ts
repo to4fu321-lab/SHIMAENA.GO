@@ -17,6 +17,7 @@ import { isThanksChoice } from "@/lib/claude/thanks";
 import { isCheerChoice } from "@/lib/morning/cheer";
 import { latestClear } from "@/lib/morning/clear";
 import {
+  allClearNotices,
   announce,
   applyCheer,
   applyThanks,
@@ -174,6 +175,8 @@ export async function completeOne(fast?: unknown) {
       }
       const rk = inboxKeyOf(requester);
       if (rk) notices.push({ key: rk, messages: MSG.requesterDoneNotice(people.map((p) => p.nickname), mission.id) });
+      // 全軒 完了！（spec v1.66）: この家で今朝の家がすべて終わったら、雪かきを終えた人みんなへ
+      notices.push(...allClearNotices(s, roster));
     });
     for (const n of notices) await push(n.key, n.messages);
     revalidatePath("/chat");

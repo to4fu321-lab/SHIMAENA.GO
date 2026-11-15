@@ -4,6 +4,7 @@
 import { actionsOf, textOf } from "../line/flex";
 import type { LineMessage } from "../line/types";
 import { jstHourMinute } from "../jst";
+import { ALL_CLEAR_PATH } from "../morning/all-clear";
 
 export type NoticeKind =
   | "rollcall" // 点呼（6:30）
@@ -15,6 +16,7 @@ export type NoticeKind =
   | "nakama" // 合流のお誘い
   | "road" // 近くの道の報告
   | "storm" // 警報のお休み
+  | "allclear" // 全軒 完了！（参加した人みんなへ。spec v1.66）
   | "card" // カード・ありがとう・応援・完了の知らせ
   | "other";
 
@@ -60,6 +62,7 @@ const KIND: Record<NoticeKind, { title: string; urgency: Notice["urgency"]; ttl:
   nakama: { title: "👥 合流のお誘い", urgency: "high", ttl: 0.5 * H, url: "/nakama", tag: "nakama" },
   road: { title: "⚠️ 近くの道の報告", urgency: "normal", ttl: 2 * H, url: "/map", tag: "road" },
   storm: { title: "⛔ きょうはお休みです", urgency: "high", ttl: 12 * H, url: "/chat", tag: "storm" },
+  allclear: { title: "🎉 全軒 完了！ みんなでやっつけました", urgency: "normal", ttl: 12 * H, url: ALL_CLEAR_PATH, tag: "allclear" },
   card: { title: "🎴 シマエナ隊長から", urgency: "low", ttl: 24 * H, url: "/chat" },
   other: { title: "シマエナ隊長", urgency: "normal", ttl: 12 * H, url: "/chat" },
 };
@@ -79,6 +82,7 @@ export function noticeKind(messages: LineMessage[]): { kind: NoticeKind; url?: s
   if (has("nk:yes=")) return { kind: "nakama" };
   const road = uris.find((u) => u.startsWith("/map?road="));
   if (road) return { kind: "road", url: road };
+  if (uris.includes(ALL_CLEAR_PATH)) return { kind: "allclear" };
   if (has("thanks:") || has("cheer:")) return { kind: "done" };
   if (/向かっています/.test(texts)) return { kind: "visit" };
   if (messages.some((m) => m.type === "image") || uris.includes("/cards") || /ありがとう」が届きました|応援「/.test(texts)) return { kind: "card", url: uris.includes("/cards") ? "/cards" : undefined };
