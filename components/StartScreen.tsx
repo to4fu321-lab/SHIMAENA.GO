@@ -10,6 +10,7 @@ import { linkCodeAction, registerAction } from "@/app/start/actions";
 import type { LatLng } from "@/lib/types";
 import AppTour from "./AppTour";
 import LoginButton from "./LoginButton";
+import ManualReel from "./ManualReel";
 import Mascot from "./Mascot";
 import { play } from "@/lib/sound/engine";
 import RegisterChat, { type ChatForm } from "./RegisterChat";
@@ -80,7 +81,7 @@ export default function StartScreen({ status, name, center, next, opening = fals
   );
 
   if (status === "guest") {
-    // ログイン前: 雪の夜の町を背景に、このゲームの約束を3つ。下に「LINE でログイン」
+    // ログイン前: 雪の夜の町を背景に、動くマニュアル（使い方の4コマ）と使い方へのリンク。下に「LINE でログイン」
     return (
       <div className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-[6dvh] text-center text-white">
         {overlays}
@@ -93,18 +94,13 @@ export default function StartScreen({ status, name, center, next, opening = fals
           <p className="opening-rise mt-1 text-lg font-bold text-white/90 [text-shadow:0_1px_6px_rgba(12,28,46,0.9)]" style={{ animationDelay: "0.4s" }}>
             寒い冬は、くっついて乗り切る。
           </p>
-          <ul className="mt-[4dvh] w-full space-y-2 text-left text-ink short:mt-3">
-            {[
-              ["❄️", "雪の朝、点呼が届く"],
-              ["👥", "エリアでランダム3チーム"],
-              ["🏠", "ひとり暮らしの家を救う"],
-            ].map(([icon, text], i) => (
-              <li key={text} className="opening-pillar flex items-center gap-3 rounded-2xl bg-white/90 px-4 py-2 text-lg font-bold shadow-md short:py-1.5" style={{ animationDelay: `${0.6 + i * 0.25}s` }}>
-                <span className="text-2xl" aria-hidden="true">{icon}</span>
-                {text}
-              </li>
-            ))}
-          </ul>
+          {/* 動くマニュアル（4コマが拍に合わせて切りかわる）と、ふつうの使い方へのリンク（spec v1.62） */}
+          <div className="opening-rise mt-[3dvh] w-full short:mt-2" style={{ animationDelay: "0.6s" }}>
+            <ManualReel className="text-ink" />
+            <Link href="/rules" className="mt-2 flex min-h-11 items-center justify-center whitespace-nowrap rounded-full bg-white/90 px-4 text-base font-bold text-ink shadow-md short:mt-1.5 short:min-h-9">
+              📖 くわしいマニュアルを見る ›
+            </Link>
+          </div>
           <div className="mt-auto w-full space-y-2 rounded-3xl bg-white/95 p-3 text-ink shadow-xl">
             <p className="text-base font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
             <LoginButton next="/start" />

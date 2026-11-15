@@ -85,7 +85,7 @@ function Photo() {
 }
 
 const SCENES: { key: string; title: string; text: string; art: ReactNode }[] = [
-  { key: "notice", title: "雪の朝、お知らせが届く", text: "10cm 以上積もった朝に。", art: <Notice /> },
+  { key: "notice", title: "雪の朝、お知らせが届く", text: "10cm 積もった朝に。", art: <Notice /> },
   { key: "teams", title: "町内でランダム3チーム", text: "毎週ちがう顔ぶれで。", art: <Teams /> },
   { key: "map", title: "地図の家へ、10分だけ", text: "2人以上で、無理せず。", art: <MapArt /> },
   { key: "photo", title: "終わったら写真で完了", text: "カードと羽が届きます。", art: <Photo /> },
@@ -104,7 +104,7 @@ export default function ManualReel({ className = "" }: { className?: string }) {
       type="button"
       onClick={next}
       aria-label={`使い方 ${i + 1}/${SCENES.length}: ${SCENES[i].title}。${SCENES[i].text} タップで次へ`}
-      className={`block w-full rounded-3xl bg-card/95 px-4 pb-3 pt-2.5 text-left shadow-xl ${className}`}
+      className={`block w-full rounded-3xl bg-card/95 px-3 pb-3 pt-2.5 text-left shadow-xl ${className}`}
       style={{ "--beat": `${BEAT_MS}ms` } as CSSProperties}
     >
       {/* いま何コマ目か（線が4拍かけて伸びる） */}
@@ -120,7 +120,7 @@ export default function ManualReel({ className = "" }: { className?: string }) {
         {SCENES.map((s, k) => (
           <span
             key={s.key}
-            className={`reel-scene absolute inset-0 flex items-center gap-3 ${k === i ? "reel-on" : k < i ? "reel-past" : "reel-next"}`}
+            className={`reel-scene absolute inset-0 flex items-center gap-2 ${k === i ? "reel-on" : k < i ? "reel-past" : "reel-next"}`}
           >
             <span className="block aspect-square h-full shrink-0">{s.art}</span>
             <span className="min-w-0">
