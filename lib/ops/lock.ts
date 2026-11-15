@@ -70,8 +70,15 @@ export async function withStateLock<T>(label: string, fn: () => Promise<T>): Pro
   let acquired = false;
   try {
     await ensureTable();
-    const until = Date.now() + WAIT_MS;
-    while (!(acquired = await tryAcquire(holder)) && Date.now() < until) await sleep(STEP_MS);
+    const t0 = Date.now();
+    const until = t0 + WAIT_MS;
+    let other: string | undefined;
+    while (!(acquired = await tryAcquire(holder)) && Date.now() < until) {
+      other ??= (await query<{ holder: string }>("select holder from state_locks where key = $1", [KEY]).catch(() => []))[0]?.holder;
+      await sleep(STEP_MS);
+    }
+    // 2秒以上待ったら、誰を待ったかをログに（画面が遅いときの手がかり。spec v1.69）
+    if (Date.now() - t0 > 2000) console.warn(`[lock] ${label} が ${Date.now() - t0}ms 待った（持っていたのは ${other ?? "不明"}）`);
     if (!acquired) await recordProblem(`lock/${label}`, "順番待ちが長すぎたので、鍵なしで続けました");
   } catch (e) {
     await recordProblem(`lock/${label}`, e);

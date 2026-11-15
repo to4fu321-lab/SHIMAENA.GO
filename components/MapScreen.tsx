@@ -23,6 +23,7 @@ import ThanksToast from "./ThanksToast";
 import MorningButtons from "./MorningButtons";
 import NextHouse from "./NextHouse";
 import DayClear from "./DayClear";
+import HousePeek from "./HousePeek";
 import AllClearWatcher from "./AllClear";
 import { allClearStats } from "@/lib/morning/all-clear";
 import { Chip, NumberBadge, PeopleDots, SheetHead } from "./SheetBits";
@@ -150,6 +151,17 @@ export default function MapScreen({
     })
     .sort((a, b) => Number(a.number) - Number(b.number));
   const briefing = Boolean(myBase && myView && mySortie?.status === "going" && !mySortie.confirmedAt && !later && !prog.allDone);
+  // 家の番号を押したとき（spec v1.69）: 地図のピン → その家の札。下の「今朝の家」の番号 → 地図がその家に寄って札
+  const [picked, setPicked] = useState<{ number: number | string; at: number; fly?: string; sheet: 0 | 1 } | null>(null);
+  const pickHouse = (n: number | string, fly: boolean) => {
+    play("tap");
+    const key = cells.find((c) => c.baseNumbers.some((b) => String(b) === String(n)))?.key;
+    // 小さい画面では、札と家が両方見えるように下のシートを畳む
+    setPicked({ number: n, at: Date.now(), fly: fly ? key : undefined, sheet: window.innerHeight < 760 ? 0 : 1 });
+  };
+  const pickedBase = picked && bases.find((b) => String(b.number) === String(picked.number));
+  const pickedView = pickedBase && views.find((v) => v.baseId === pickedBase.id);
+  const pickedShort = picked ? rescue.find((h) => String(h.baseNumber) === String(picked.number)) : undefined;
   // 道の報告の地図: 札を押すとその報告に寄って写真が開く
   const roadView = view === "road";
   const [focus, setFocus] = useState<string | undefined>(focusRoad);
@@ -251,8 +263,31 @@ export default function MapScreen({
       {/* 真ん中: 地図（全軒完了で背景が明るくなる）。上に今朝の雪と雪かき待ちの札を浮かべる */}
       <main className={`relative min-h-0 flex-1 ${prog.allDone ? "defeated" : ""}`}>
         <div className="absolute inset-0 isolate">
-          <TownMap cells={cells} home={home} destinations={destinations} solo={solo} road={road} focusRoad={focus} fitRoad={roadView} />
+          <TownMap
+            cells={cells}
+            home={home}
+            destinations={destinations}
+            solo={solo}
+            road={road}
+            focusRoad={focus}
+            fitRoad={roadView}
+            onPick={roadView ? undefined : (n) => pickHouse(n, false)}
+            focusCell={picked?.fly ? { key: picked.fly, at: picked.at, dy: picked.sheet === 0 ? 0.12 : -0.18 } : undefined}
+          />
         </div>
+        {picked && pickedBase && pickedView && !roadView && (
+          <HousePeek
+            key={String(picked.number)}
+            number={picked.number}
+            view={pickedView}
+            short={pickedShort}
+            mine={pickedBase.id === myBase?.id}
+            going={Boolean(pickedShort && goingTo.includes(pickedShort.missionId))}
+            viewerId={state.viewerId}
+            canHelp={canHelp}
+            onClose={() => setPicked(null)}
+          />
+        )}
         {roadView && (
           <div className="absolute inset-x-2 top-2 z-[500] space-y-1.5" aria-label="道の報告の一覧">
             {road.length === 0 ? (
@@ -354,6 +389,7 @@ export default function MapScreen({
       {/* 下のシート: つまみをスライドで畳める（畳むと地図が大きくなる） */}
       {!briefing && !reporting && <MapSheet
         startClosed={Boolean(focusRoad) || roadView}
+        lower={picked ? { at: picked.at, to: picked.sheet } : undefined}
         peek={peekNode}
         footer={
           prog.total === 0 && !mySortie ? (
@@ -407,19 +443,21 @@ export default function MapScreen({
                 const label = done ? "完了" : STATUS_TEXT[v.status];
                 return (
                   <li key={number} className="relative shrink-0">
-                    <span
-                      className={`grid size-10 place-items-center rounded-xl text-base font-bold tabular-nums ${short ? "animate-pulse" : ""} ${next ? "outline outline-2 outline-offset-2 outline-lamp" : ""}`}
+                    <button
+                      type="button"
+                      onClick={() => pickHouse(number, true)}
+                      aria-pressed={picked ? String(picked.number) === String(number) : false}
+                      className={`grid size-10 place-items-center rounded-xl text-base font-bold tabular-nums ${short ? "animate-pulse" : ""} ${next ? "outline outline-2 outline-offset-2 outline-lamp" : ""} ${picked && String(picked.number) === String(number) ? "ring-4 ring-ink/40" : ""}`}
                       style={
                         done
                           ? { background: team?.color ?? "var(--ice)", color: "#fff" }
                           : { background: "#fff", color: short ? "var(--alert)" : "var(--ink)", boxShadow: `inset 0 0 0 3px ${short ? "var(--alert)" : v.status === "no_answer" ? "#b8bfc6" : (team?.color ?? "var(--ink)")}` }
                       }
-                      role="img"
-                      aria-label={`拠点${number} ${label}${mine ? "（あなたの担当）" : ""}${next ? "（次の1軒）" : ""}`}
+                      aria-label={`拠点${number} ${label}${mine ? "（あなたの担当）" : ""}${next ? "（次の1軒）" : ""}。押すと地図で見る`}
                     >
                       {number}
                       {done && <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-white text-[10px] leading-none text-ink ring-1 ring-ink/20" aria-hidden="true">✓</span>}
-                    </span>
+                    </button>
                     {(mine || next) && (
                       <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-1 text-[10px] font-bold leading-tight text-white ${next ? "bg-lamp-deep" : "bg-ink"}`} aria-hidden="true">
                         {next ? "つぎ" : "あなた"}

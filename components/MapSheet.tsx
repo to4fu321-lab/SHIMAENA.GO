@@ -5,9 +5,27 @@
 // peek = 畳んでも見える1行、children = 開いたときの中身（中でスクロール）、footer = 開いたときの下のボタン。
 import { useRef, useState, type ReactNode } from "react";
 
-export default function MapSheet({ peek, children, footer, startClosed = false }: { peek: ReactNode; children: ReactNode; footer?: ReactNode; startClosed?: boolean }) {
+export default function MapSheet({
+  peek,
+  children,
+  footer,
+  startClosed = false,
+  lower,
+}: {
+  peek: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  startClosed?: boolean;
+  /** 変わったら、シートを下げる（家の番号を押して地図に寄るとき。spec v1.69）。to: 0 なら畳む（小さい画面）、1 なら半分まで */
+  lower?: { at: number; to: 0 | 1 };
+}) {
   // 0 = 畳む、1 = 半分、2 = 全部
   const [level, setLevel] = useState<0 | 1 | 2>(startClosed ? 0 : 1);
+  const [seenLower, setSeenLower] = useState(lower?.at);
+  if (lower && lower.at !== seenLower) {
+    setSeenLower(lower.at);
+    if (level > lower.to) setLevel(lower.to);
+  }
   const open = level > 0;
   const step = (d: 1 | -1) => setLevel((l) => Math.max(0, Math.min(2, l + d)) as 0 | 1 | 2);
   const start = useRef<{ y: number; moved: boolean } | null>(null);

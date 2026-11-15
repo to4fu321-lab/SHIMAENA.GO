@@ -89,7 +89,13 @@ export default function TownMap({
   road = [],
   focusRoad,
   fitRoad = false,
+  onPick,
+  focusCell,
 }: {
+  /** 家の番号（ピン・マス）を押したとき（spec v1.69） */
+  onPick?: (baseNumber: number) => void;
+  /** このマスに寄る（下の「今朝の家」の番号を押したとき）。at が変わるたびに寄る */
+  focusCell?: { key: string; at: number; /** 地図の高さに対して、家を真ん中からどれだけ下に出すか（-0.5〜0.5）。上に札が出るので */ dy: number };
   road?: RoadPin[];
   focusRoad?: string;
   /** 道の報告の地図: 最初に報告のピンが全部入るように寄せる（1回だけ） */
@@ -103,6 +109,11 @@ export default function TownMap({
   destinations?: Destination[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // 押したときの係は最新のものを使う（描き直さずに済むように ref に入れる）
+  const pickRef = useRef(onPick);
+  useEffect(() => {
+    pickRef.current = onPick;
+  }, [onPick]);
   const mapRef = useRef<import("leaflet").Map | null>(null);
 
   // 地図そのもの（タイル・建物）は最初の1回だけ作る。数秒ごとの取り直しで作り直すと、画面がちらつく
@@ -172,16 +183,21 @@ export default function TownMap({
       // 50m マスを塗る（どの家かは出さない）
       for (const cell of cells) {
         const style = cellStyle(cell);
-        L.polygon(cellPolygon(cell.key), { ...style, interactive: false }).addTo(layer!);
+        // 押すと、その家のようす（spec v1.69）
+        const pick = () => pickRef.current?.(cell.baseNumbers[0]);
+        L.polygon(cellPolygon(cell.key), { ...style, interactive: true, bubblingMouseEvents: false }).on("click", pick).addTo(layer!);
         L.marker(cellCenter(cell.key), {
-          interactive: false,
+          keyboard: false,
+          title: `拠点${cell.baseNumbers.join("・")}`,
           icon: L.divIcon({
             className: "",
             html: `<div class="base-pin" style="background:${style.label}">${cell.baseNumbers.join("・")}</div>`,
             iconSize: [28, 28],
             iconAnchor: [14, 40], // マスの上に出して、塗った色を隠さない
           }),
-        }).addTo(layer!);
+        })
+          .on("click", pick)
+          .addTo(layer!);
       }
 
       // ソロ出動の足あと: 氷の青の薄い塗り（拠点のマスでなければ）と羽のピン。赤・緑は使わない
@@ -234,6 +250,13 @@ export default function TownMap({
         fitted.current = "road";
         map.fitBounds(L.latLngBounds(road.map((rp) => rp.location)).pad(0.3), { maxZoom: 17, paddingTopLeft: [16, 140], paddingBottomRight: [16, 80] });
       }
+      // 行き先がない: 今朝の家が全部入るように（最初と、行き先がなくなったとき＝終わったときに1回。11/15 本人「地図に枠が消えた」）
+      if (destinations.length === 0 && cells.length > 0 && !fitRoad && !focusRoad && fitted.current !== "all") {
+        fitted.current = "all";
+        const pts = cells.map((c) => cellCenter(c.key));
+        const h = map.getSize().y;
+        map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 17, paddingTopLeft: [16, 90], paddingBottomRight: [16, Math.round(h * 0.5)] });
+      }
       // 行き先に合わせるのは、行き先が変わったときだけ（自分で動かした地図を戻さない）
       const destKey = JSON.stringify(destinations.map((d) => d.location));
       if (destinations.length > 0 && fitted.current !== destKey) {
@@ -249,6 +272,15 @@ export default function TownMap({
       layer?.remove();
     };
   }, [ready, dataKey, focusRoad, fitRoad]);
+
+  // 下の「今朝の家」の番号を押したとき: そのマスに寄る。上の札と下のシートのあいだに出す（spec v1.69）
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !focusCell) return;
+    const h = map.getSize().y;
+    map.setView(cellCenter(focusCell.key), Math.max(map.getZoom(), 17), { animate: false });
+    map.panBy([0, -Math.round(h * focusCell.dy)], { animate: true });
+  }, [ready, focusCell]);
 
   // 現在地（GPS）: 許可があれば青い点を動かす。許可がなければ何も出さない
   useEffect(() => {

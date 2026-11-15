@@ -528,7 +528,20 @@ export async function completeWithPhoto(participantId: string, image: PhotoInput
     const demo: PhotoCheck = { cleared: true, passable: true, icy: false, comment: "玄関前から道路まで、通れるようになっています。お疲れさまでした。（撮影用の決まった文）" };
     return finishMission(s, roster, sortie, mission, demo, participantId, now, { ...opts, fast: true });
   }
-  const check = takePrechecked(participantId, fp) ?? (await checkPhoto(image));
+  const pre = takePrechecked(participantId, fp);
+  if (!pre && opts.noWait) {
+    // 先の確認が失敗した・別の場所で動いた: ここで Claude を待つと鍵を持ったまま30〜60秒止まる。先に完了にして、判定は裏で
+    await rememberPhoto(day, fp);
+    s.log.push(`拠点${number}の写真: 判定を待たずに完了（判定はあとで届ける）`);
+    const pending: PhotoCheck = { cleared: true, passable: true, icy: false, uncertain: true, pending: true, comment: PENDING_PHOTO_COMMENT };
+    runLater("photo/late-check", async () => {
+      const late = await checkPhoto(image);
+      prechecked.set(`${participantId}:${fp}`, { check: late, at: Date.now() });
+      await deliverLatePhotoVerdict(participantId, image);
+    });
+    return finishMission(s, roster, sortie, mission, pending, participantId, now, opts);
+  }
+  const check = pre ?? (await checkPhoto(image));
   // 雪質が気温と食い違えば「ふつうの雪」に戻す（写真の見た目だけで決めつけない。spec v1.8）
   const type = consistentSnowType(check.snowType, s.morning.rollcall.tempMinC);
   if (type !== check.snowType) {
@@ -647,6 +660,8 @@ export function allClearNotices(s: MorningRecord, roster: Roster): { participant
 export interface FinishOpts {
   fast?: boolean;
   echo?: boolean;
+  /** 先に確かめた判定がなければ、Claude を待たずに先に完了にして、判定はあとで届ける（spec v1.69: 地図の「終わりました」） */
+  noWait?: boolean;
 }
 
 /** 1軒を完了にする本体: 出撃を完了 → 得点 → カード → 依頼者・家族・仲間へ通知 → MISSION CLEAR のまとめ */
