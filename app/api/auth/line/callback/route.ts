@@ -16,7 +16,7 @@ const opts = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NOD
 export async function GET(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const jar = await cookies();
-  const fail = (why: string) => NextResponse.redirect(`${baseUrl()}/login?error=${why}`);
+  const fail = (why: string) => NextResponse.redirect(`${baseUrl()}/start?error=${why}`);
   let saved: { state: string; nonce: string; next: string } | undefined;
   try {
     saved = JSON.parse(jar.get(STATE_COOKIE)?.value ?? "");

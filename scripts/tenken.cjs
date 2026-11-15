@@ -20,7 +20,7 @@ const OUT = path.join(root, ".tenken");
 const DEFAULT_PAGES = [
   "/?as=h3", "/map?as=h3", "/solo?as=h3", "/chat?as=h3", "/connect?as=h3", "/nakama?as=h3",
   "/cards?as=h3", "/cards/book?as=h3", "/team?as=h3", "/badge?as=h3", "/settings?as=h3",
-  "/ask?as=r2", "/start", "/login", "/rules", "/public/town", "/public/diagnosis", "/admin",
+  "/ask?as=r2", "/start", "/rules", "/public/town", "/public/diagnosis", "/admin",
 ];
 const pages = (process.argv[2] ? process.argv[2].split(",") : DEFAULT_PAGES).map((p) => p.trim()).filter(Boolean);
 const VIEWPORTS = [{ width: 390, height: 844 }, { width: 375, height: 667 }];

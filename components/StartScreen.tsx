@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { linkCodeAction, registerAction } from "@/app/start/actions";
+import { logoutAction } from "@/app/login/actions";
 import type { LatLng } from "@/lib/types";
 import AppTour from "./AppTour";
 import LoginButton from "./LoginButton";
@@ -21,7 +22,26 @@ import WelcomeOpening from "./WelcomeOpening";
 export type StartStatus = "guest" | "pending" | "member" | "redo";
 type Phase = "chat" | "done";
 
-export default function StartScreen({ status, name, center, next, opening = false }: { status: StartStatus; name: string; center: LatLng; next: string; opening?: boolean }) {
+export default function StartScreen({
+  status,
+  name,
+  center,
+  next,
+  opening = false,
+  notice,
+  warn = false,
+  hasKeys = true,
+}: {
+  status: StartStatus;
+  name: string;
+  center: LatLng;
+  next: string;
+  opening?: boolean;
+  /** ログインの途中で止まった・退会した、のお知らせ（spec v1.63） */
+  notice?: string;
+  warn?: boolean;
+  hasKeys?: boolean;
+}) {
   const router = useRouter();
   // はじめてログインした人（pending）には、登録の前にオープニングと「できること」を1回見せる。opening = デモ撮影用に誰でも見られる（?opening=1）
   const [showOpening, setShowOpening] = useState(status === "pending" || opening);
@@ -102,12 +122,19 @@ export default function StartScreen({ status, name, center, next, opening = fals
             </Link>
           </div>
           <div className="mt-auto w-full space-y-2 rounded-3xl bg-white/95 p-3 text-ink shadow-xl">
-            <p className="text-base font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
-            <LoginButton next="/start" />
+            {notice ? (
+              <p role="status" className={`rounded-2xl px-3 py-2 text-base font-bold leading-snug ${warn ? "bg-warm" : "bg-ice-soft"}`}>
+                {notice}
+              </p>
+            ) : (
+              <p className="text-base font-bold leading-snug">LINE でログインすると、30秒で始められます。</p>
+            )}
+            {/* 登録済みの人は戻り先（ふだんはホーム）へ、未登録の人はここの登録へ（callback が分ける） */}
+            <LoginButton next={next} />
             <Link href="/demo" className="btn btn-white min-h-12 w-full text-lg">
               デモを見る（登録なし）
             </Link>
-            <p className="text-sm text-ink-soft">LINE は本人の確認にだけ使います</p>
+            <p className="text-sm text-ink-soft">{hasKeys ? "LINE は本人の確認にだけ使います" : "（鍵がない間は、デモの架空の人で見られます）"}</p>
           </div>
         </div>
       </div>
@@ -146,13 +173,16 @@ export default function StartScreen({ status, name, center, next, opening = fals
       <main className="mt-3 flex min-h-0 flex-1 flex-col gap-3">
         {status === "member" && (
           <>
-            <p className="text-xl font-bold leading-snug">もう登録が終わっています。</p>
-            <Link href="/" className="btn btn-lamp btn-big mt-auto w-full">
-              きょうの町へ
+            <p className="text-xl font-bold leading-snug">{name ? `${name}さんとして` : ""}ログインしています。登録も終わっています。</p>
+            <Link href={next} className="btn btn-lamp btn-big mt-auto w-full">
+              {next === "/" ? "きょうの町へ" : "つづける"}
             </Link>
             <Link href="/start?redo=1" className="btn btn-white text-lg">
               登録をやり直す
             </Link>
+            <form action={logoutAction}>
+              <button className="btn btn-white w-full text-lg">ログアウト</button>
+            </form>
           </>
         )}
 

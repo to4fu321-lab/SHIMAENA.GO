@@ -8,7 +8,7 @@ export const STATE_COOKIE = "shimaena_ll";
 
 export async function GET(req: Request): Promise<Response> {
   const next = safeNext(new URL(req.url).searchParams.get("next"));
-  if (!hasLoginKeys()) return NextResponse.redirect(`${baseUrl()}/login?error=nokeys&next=${encodeURIComponent(next)}`);
+  if (!hasLoginKeys()) return NextResponse.redirect(`${baseUrl()}/start?error=nokeys&next=${encodeURIComponent(next)}`);
   const state = randomToken();
   const nonce = randomToken();
   (await cookies()).set(STATE_COOKIE, JSON.stringify({ state, nonce, next }), { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 600 });

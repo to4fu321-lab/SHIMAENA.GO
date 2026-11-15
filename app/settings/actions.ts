@@ -29,5 +29,5 @@ export async function withdrawAction(): Promise<void> {
   jar.delete(PENDING_COOKIE);
   revalidatePath("/");
   revalidatePath("/map");
-  redirect("/login?bye=1");
+  redirect("/start?bye=1");
 }

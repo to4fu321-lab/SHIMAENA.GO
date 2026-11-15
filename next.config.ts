@@ -10,7 +10,11 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // 前の「広める」（/share）は「つなぐ」（/connect）に統合（11/6、spec v1.22）。古いリンクのために転送（?as= はそのまま付く）
   async redirects() {
-    return [{ source: "/share", destination: "/connect", permanent: false }];
+    return [
+      { source: "/share", destination: "/connect", permanent: false },
+      // 入口は /start ひとつ（spec v1.63）。前の /login のリンクも ?error= などを付けたまま /start へ
+      { source: "/login", destination: "/start", permanent: false },
+    ];
   },
   // 写真つきの報告（ソロの After・道の危険の写真＋ぼかし済みの小さい写真）は 1MB を超えることがあり、
   // 本番で「Body exceeded 1 MB limit」（413）になっていた（11/6）。縮めた写真2枚ぶんに余裕をもたせる
