@@ -117,7 +117,7 @@ export default function StartScreen({
           {/* 動くマニュアル（4コマが拍に合わせて切りかわる）と、ふつうの使い方へのリンク（spec v1.62） */}
           <div className="opening-rise mt-[3dvh] w-full short:mt-2" style={{ animationDelay: "0.6s" }}>
             <ManualReel className="text-ink" />
-            <Link href="/rules" className="mt-2 flex min-h-11 items-center justify-center whitespace-nowrap rounded-full bg-white/90 px-4 text-base font-bold text-ink shadow-md short:mt-1.5 short:min-h-9">
+            <Link href="/rules?from=start" className="mt-2 flex min-h-11 items-center justify-center whitespace-nowrap rounded-full bg-white/90 px-4 text-base font-bold text-ink shadow-md short:mt-1.5 short:min-h-9">
               📖 くわしいマニュアルを見る ›
             </Link>
           </div>

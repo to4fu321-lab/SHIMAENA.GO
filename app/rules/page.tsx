@@ -6,6 +6,7 @@ import { lineJoinUrl } from "@/lib/line/join";
 import TabBar from "@/components/TabBar";
 import { TEAMS } from "@/lib/teams";
 import Bgm from "@/components/Bgm";
+import { Suspense } from "react";
 
 export const metadata: Metadata = { title: "使い方 ・ シマエナGO" };
 
@@ -56,7 +57,9 @@ const CAREFUL = [
   ["体調がすぐれない日は休む", "お知らせに答える必要はありません。行ける日だけで大丈夫"],
 ] as const;
 
-export default function RulesPage() {
+/** ?from=start: ログイン前の入口（/start）から来た人。アプリの中（下のタブ・ホーム）へは進ませず、入口へ戻す（spec v1.64） */
+async function Rules({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
+  const fromStart = (await searchParams).from === "start";
   // くわしいルール（チュートリアルの「大切なルール」から開く）
   const rules = (
     <>
@@ -151,21 +154,42 @@ export default function RulesPage() {
       </p>
     </Card>
 
-      <div className="grid grid-cols-2 gap-3 pt-1">
-        <Link href="/map" className="btn btn-ink text-lg">
-          地図を見る
-        </Link>
-        <Link href="/" className="btn btn-white text-lg">
-          ホームへ
-        </Link>
-      </div>
+      {!fromStart && (
+        <div className="grid grid-cols-2 gap-3 pt-1">
+          <Link href="/map" className="btn btn-ink text-lg">
+            地図を見る
+          </Link>
+          <Link href="/" className="btn btn-white text-lg">
+            ホームへ
+          </Link>
+        </div>
+      )}
     </>
   );
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-paper text-ink">
-      <Bgm track="morning" />
       <Tutorial joinUrl={lineJoinUrl()} rules={rules} />
-      <TabBar />
+      {fromStart ? (
+        // 入口から来た人: 下のタブの代わりに、入口へ戻るボタンだけ
+        <nav className="shrink-0 border-t border-ink/10 bg-card/95 px-4 pb-[max(10px,env(safe-area-inset-bottom))] pt-2" aria-label="もどる">
+          <Link href="/start" data-sound="back" className="btn btn-white min-h-14 w-full text-lg">
+            ‹ はじめる画面にもどる
+          </Link>
+        </nav>
+      ) : (
+        <TabBar />
+      )}
     </div>
+  );
+}
+
+export default function RulesPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
+  return (
+    <>
+      <Bgm track="morning" />
+      <Suspense fallback={<div className="h-dvh bg-paper" />}>
+        <Rules searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }
