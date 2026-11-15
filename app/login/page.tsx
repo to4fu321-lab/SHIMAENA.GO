@@ -11,6 +11,7 @@ import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { logoutAction } from "./actions";
 import Bgm from "@/components/Bgm";
 import SnowScene from "@/components/SnowScene";
+import ManualReel from "@/components/ManualReel";
 
 export const metadata: Metadata = { title: "ログイン ・ シマエナGO" };
 
@@ -29,11 +30,11 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
   const me = viewerId ? await repo().findParticipant(viewerId) : undefined;
   const to = safeNext(next);
   return (
-    <main className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden px-4 pb-6 pt-[6dvh] text-ink">
+    <main className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden px-4 pb-5 pt-[5dvh] text-ink short:pb-3 short:pt-[2dvh]">
       {/* 雪の夜の町（はじめての人をわくわくさせる背景。/start と同じ） */}
       <SnowScene />
       <header className="relative flex flex-col items-center text-center text-white">
-        <Mascot size={92} className="captain-idle drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] short:size-20" />
+        <Mascot size={92} className="captain-idle drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] short:size-14" />
         <p className="opening-logo mt-1 whitespace-nowrap text-5xl font-black max-[380px]:text-4xl">
           シマエナ<span className="text-[#ffb98a]">GO</span>
         </p>
@@ -41,7 +42,7 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
           ログイン
         </h1>
       </header>
-      <section className="opening-rise relative mt-5 space-y-3 rounded-3xl bg-card/95 p-5 shadow-xl" style={{ animationDelay: "0.6s" }}>
+      <section className="opening-rise relative mt-4 space-y-3 rounded-3xl bg-card/95 p-5 shadow-xl short:mt-2 short:space-y-2 short:p-4" style={{ animationDelay: "0.6s" }}>
         {me ? (
           <>
             <p className="text-lg font-bold">{me.nickname}さんとしてログインしています。</p>
@@ -55,7 +56,7 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
         ) : (
           <>
             <p className="text-lg font-bold leading-snug">LINE のアカウントで、あなたを確かめます。</p>
-            <p className="text-base leading-snug">LINE は本人の確認にだけ使います。雪の朝のお知らせは、このアプリの「隊長トーク」と通知で届きます。</p>
+            <p className="text-base leading-snug short:hidden">LINE は本人の確認にだけ使います。雪の朝のお知らせは、このアプリの「隊長トーク」と通知で届きます。</p>
             {bye && <p className="rounded-2xl bg-ice-soft px-3 py-2 text-base font-bold">退会しました。登録と記録を消しました。これまでありがとうございました。</p>}
             {error && ERRORS[error] && <p className="rounded-2xl bg-warm px-3 py-2 text-base">{ERRORS[error]}</p>}
             <LoginButton next={to} />
@@ -63,6 +64,13 @@ async function Login({ searchParams }: { searchParams: Promise<{ error?: string;
           </>
         )}
       </section>
+      {/* 動くマニュアル（4コマがリズムよく切りかわる）と、ふつうの使い方へのリンク（spec v1.62） */}
+      <div className="opening-rise relative mt-3 short:mt-2" style={{ animationDelay: "0.8s" }}>
+        <ManualReel />
+        <Link href="/rules" className="mt-2 flex min-h-11 items-center justify-center whitespace-nowrap rounded-full bg-white/90 px-4 text-base font-bold text-ink shadow-md short:mt-1.5 short:min-h-9">
+          📖 くわしいマニュアルを見る ›
+        </Link>
+      </div>
       <p className="relative mt-auto rounded-full bg-white/85 px-3 py-1 text-center text-sm text-ink">
         デモ: <Link href="/demo" className="underline">架空の10人からえらんで見る</Link>
       </p>
