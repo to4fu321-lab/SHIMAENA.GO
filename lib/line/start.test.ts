@@ -10,7 +10,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { registerAction, linkCodeAction } from "@/app/start/actions";
+import { registerAction } from "@/app/start/actions";
 import { PENDING_COOKIE, readPending, signPending } from "../auth/pending";
 import { memoryRepo } from "../repo";
 import { readViewer, VIEWER_COOKIE } from "../viewer";
@@ -49,19 +49,11 @@ describe("はじめる（/start の登録）", () => {
     expect(p.teamId).toBeTruthy();
   });
 
-  it("家族の代わり: 本人の家が登録され、連携コードが出る。本人がコードを入れると本人の LINE が紐づく", async () => {
+  it("家族の代わりの登録はお休み（spec v1.73）: 受け付けず、だれも登録されない", async () => {
     const r = await registerAction({ role: "family", location: [43.04, 141.37], q1: "together", q2: "entrance" });
-    expect(r.ok).toBe(true);
-    expect(r.linkCode).toMatch(/^\d{6}$/);
-    expect(await memoryRepo.findParticipantByLineUserId("U-new")).toBeUndefined(); // 家族本人は参加者ではない
-    // 本人が別の LINE でログインして、コードを入れる
-    jar.set(PENDING_COOKIE, signPending({ lineUserId: "U-parent", displayName: "ひまわり" }));
-    const l = await linkCodeAction(r.linkCode!, "self");
-    expect(l.ok).toBe(true);
-    const parent = await memoryRepo.findParticipantByLineUserId("U-parent");
-    expect(parent?.role).toBe("requester");
-    expect(readViewer(jar.get(VIEWER_COOKIE))).toBe(parent?.id);
-    expect((await linkCodeAction("000000", "family")).ok).toBe(false);
+    expect(r.ok).toBe(false);
+    expect(r.text).toContain("お休み");
+    expect(await memoryRepo.findParticipantByLineUserId("U-new")).toBeUndefined();
   });
 
   it("ログインの印がない・答えが足りないときは登録しない", async () => {

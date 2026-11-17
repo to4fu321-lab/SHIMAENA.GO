@@ -36,7 +36,7 @@ async function Ask({ searchParams }: { searchParams: Promise<{ as?: string }> })
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
       <header className="flex shrink-0 items-center justify-between gap-2 bg-ice-soft px-4 py-2">
-        <h1 className="whitespace-nowrap text-xl font-bold">🏠 雪かきをお願いする</h1>
+        <h1 className="whitespace-nowrap text-xl font-bold">🤝 一緒に雪かきを頼む</h1>
         <Link href={`/${q}`} className="btn btn-white min-h-10 whitespace-nowrap px-3 text-sm">
           ホーム
         </Link>

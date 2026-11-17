@@ -142,9 +142,8 @@ export const MSG = {
     [
       ...bubbles(["シマエナGO へようこそ！☃️", "雪の朝に、ご近所で少しずつ雪かきを助け合うアプリです。"]),
       ask("あなたはどちらですか？", [
-        { label: "雪かきをお願いしたい", data: "reg:role=requester" },
+        { label: "一緒に雪かきしたい（仲間を呼ぶ）", data: "reg:role=requester" },
         { label: "雪かきを手伝う", data: "reg:role=helper" },
-        { label: "家族の代わりに登録", data: "reg:role=family", tone: "soft" },
       ]),
     ],
   locationSelf: () => [
@@ -481,6 +480,8 @@ export const MSG = {
       [
         `拠点${baseNumber}を、今日の「雪かき待ち」として地図に出しました。`,
         sent > 0 ? `近くの ${sent}人に知らせました。` : "近くの人が地図で見つけたら、来てくれます。",
+        // spec v1.73: 来られる人がいないこともある、と先に伝える（来なくても大丈夫な人向け）
+        "来られる人がいない日もあります。そのときは、無理のない範囲で。",
         "玄関は開けなくて大丈夫です。来る人が決まったら、合言葉をお知らせします。",
       ],
       [B.map, say("隊長に相談")],

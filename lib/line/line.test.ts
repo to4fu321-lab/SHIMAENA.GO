@@ -24,7 +24,7 @@ describe("登録の会話（純粋な関数）", () => {
   it("手伝う側: 友だち追加 → 役割 → 位置 → 2問 → 完了", () => {
     let out = step(undefined, { kind: "follow" });
     expect(out.session?.step).toBe("role");
-    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["雪かきをお願いしたい", "雪かきを手伝う", "家族の代わりに登録"]);
+    expect(labels(out.messages.at(-1) as TextMessage)).toEqual(["一緒に雪かきしたい（仲間を呼ぶ）", "雪かきを手伝う"]);
 
     out = step(out.session!, { kind: "postback", data: "reg:role=helper" });
     expect(out.session).toMatchObject({ step: "location", role: "helper", proxy: false });
@@ -56,17 +56,13 @@ describe("登録の会話（純粋な関数）", () => {
       location: [43.041, 141.371],
       soloMinutes: "unknown",
       clearArea: "road",
+      helpStyle: "together", // spec v1.73: いまは「一緒に雪かき」だけ
     });
   });
 
-  it("家族の代理登録: 依頼者の質問になり、proxy が付く", () => {
-    let out = step({ step: "role" }, { kind: "postback", data: "reg:role=family" });
-    expect(out.session).toMatchObject({ step: "location", role: "requester", proxy: true });
-    expect((out.messages.at(-1) as TextMessage).text).toContain("お願いする方の家");
-    out = step(out.session!, { kind: "location", location: [43.04, 141.37] });
-    out = step(out.session!, { kind: "postback", data: "reg:q1=60" });
-    out = step(out.session!, { kind: "postback", data: "reg:q2=garage" });
-    expect(out.done).toMatchObject({ role: "requester", proxy: true, soloMinutes: 60, clearArea: "garage" });
+  it("家族の代理登録はお休み（spec v1.73）: 前のボタンが押されても、役割の質問のまま", () => {
+    const out = step({ step: "role" }, { kind: "postback", data: "reg:role=family" });
+    expect(out.session).toEqual({ step: "role" });
   });
 
   it("段階に合わない入力は、いまの質問をもう一度出す", () => {

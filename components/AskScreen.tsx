@@ -14,19 +14,11 @@ import Pager from "./Pager";
 import type { ClearPart, LatLng } from "@/lib/types";
 import { shrink } from "./shrink";
 
-const STYLE_OPTIONS: [HelpStyle, string, string][] = [
-  ["omakase", "おまかせ", "家の人は雪かきできない"],
-  ["together", "一緒にやる", "家の人も一緒に雪かき"],
-];
 const AREA_OPTIONS: [ClearArea, string][] = [
   ["entrance", "玄関前"],
   ["garage", "車庫前"],
   ["road", "道路まで"],
 ];
-
-function Num({ n }: { n: number }) {
-  return <span className="mr-1.5 inline-grid size-7 place-items-center rounded-full bg-ink text-base text-white">{n}</span>;
-}
 
 export default function AskScreen({
   viewerId,
@@ -52,7 +44,6 @@ export default function AskScreen({
 }) {
   const [tab, setTab] = useState(0);
   const router = useRouter();
-  const [style, setStyle] = useState<HelpStyle | undefined>(initialStyle);
   const [area, setArea] = useState<ClearArea | undefined>(initialArea);
   const [msg, setMsg] = useState<string>();
   const [photoNote, setPhotoNote] = useState<string>();
@@ -97,18 +88,17 @@ export default function AskScreen({
     }
   };
 
-  const styleButtons = (
-    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="家の人も一緒に雪かきしますか">
-      {STYLE_OPTIONS.map(([v, label, sub]) => {
-        const on = style === v;
-        return (
-          <button key={v} type="button" role="radio" aria-checked={on} onClick={() => setStyle(v)} className={`rounded-2xl px-2 pb-1.5 pt-1 text-left ring-2 ${on ? "bg-lamp text-white ring-lamp" : "bg-card ring-ink/15"}`}>
-            <StyleArt style={v} active={on} />
-            <span className="block text-lg font-bold leading-tight">{label}</span>
-            <span className={`block text-xs font-bold ${on ? "text-white/90" : "text-ink-soft"}`}>{sub}</span>
-          </button>
-        );
-      })}
+  // spec v1.73（11/17 本人「最初は特に一緒に雪かきを手伝って欲しい人に。シマエナGOの人が来なくても大丈夫な人たちを集めたい」）:
+  // 頼み方は「一緒に雪かき」だけ。えらばせずに、どういう頼み方かを絵と一文で伝える
+  const togetherCard = (
+    <div className="flex items-center gap-2 rounded-2xl bg-card px-2 py-1.5 ring-2 ring-lamp">
+      <span className="w-24 shrink-0 short:w-20">
+        <StyleArt style="together" active={false} />
+      </span>
+      <p className="min-w-0 text-sm leading-snug">
+        <b className="block text-lg leading-tight">🤝 一緒に雪かき</b>
+        近所の人が来られたら、一緒に。<span className="short:hidden">来られる人がいない日は、いつもどおり無理のない範囲で。</span>
+      </p>
     </div>
   );
   const areaButtons = (
@@ -126,11 +116,7 @@ export default function AskScreen({
       </div>
       <button type="button" onClick={() => camera.current?.click()} disabled={reading || pending} className="btn btn-white min-h-11 w-full gap-2 text-base short:min-h-10">
         <span aria-hidden="true">📷</span>
-        {reading ? "写真を読んでいます…" : (
-          <>
-            写真で<span className="short:hidden">撮って</span>自動で決める（保存しない）
-          </>
-        )}
+        <span>{reading ? "写真を読んでいます…" : <>写真で<span className="short:hidden">撮って</span>自動で決める（保存しない）</>}</span>
       </button>
       <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void onPhoto(e.target.files?.[0])} />
       {photoNote && <p className="rounded-2xl bg-warm px-3 py-1.5 text-sm font-bold leading-snug">{photoNote}</p>}
@@ -143,36 +129,28 @@ export default function AskScreen({
     return (
       <>
         <p className="text-base leading-snug">
-          <b>自分の家も、雪かき応援を頼める家にできます。</b>
+          <b>うちの雪かきに、近所の仲間を呼べます。</b>
           <span className="block text-sm text-ink-soft">手伝う側のままで大丈夫。10cm 積もった朝 6:30 に近所へ自動でお知らせ。</span>
         </p>
+        {togetherCard}
         <section className="space-y-1.5">
-          <h2 className="flex items-center text-base font-bold">
-            <Num n={1} />
-            家の人も一緒に雪かきしますか？
-          </h2>
-          {styleButtons}
-        </section>
-        <section className="space-y-1.5">
-          <h2 className="flex items-center text-base font-bold">
-            <Num n={2} />
-            どこまで雪かきが要りますか？
-          </h2>
+          <h2 className="flex items-center text-base font-bold">どこまで雪かきが要りますか？</h2>
           {areaButtons}
         </section>
         {message}
         <button
-          disabled={!style || !area || pending}
-          onClick={() => run(() => registerHouseAction(viewerId, style!, area!), "welcome")}
+          disabled={!area || pending}
+          onClick={() => run(() => registerHouseAction(viewerId, "together", area!), "welcome")}
           className="btn btn-lamp btn-big mt-auto w-full disabled:opacity-40"
         >
-          {pending ? "登録しています…" : !style || !area ? "1と2を選ぶと登録できます" : "頼める家として登録する"}
+          {pending ? "登録しています…" : !area ? "どこまでを選ぶと登録できます" : "一緒に雪かきする家として登録"}
         </button>
       </>
     );
   }
 
-  const changed = style !== initialStyle || area !== initialArea;
+  // 前に「おまかせ」で登録した人は、「一緒に雪かき」に変えられる（いまは一緒にだけ）
+  const changed = initialStyle !== "together" || area !== initialArea;
   const noAddress = Boolean(house && !house.demo && !house.address);
   const askPanel = (
     <>
@@ -185,23 +163,14 @@ export default function AskScreen({
           🏠 拠点{baseNumber}として登録ずみ<span className="short:hidden">。10cm 以上積もった朝 6:30 に、近所へ自動でお知らせします</span>。
         </p>
       )}
+      {togetherCard}
       <section className="space-y-1.5">
-        <h2 className="flex items-center text-base font-bold">
-          <Num n={1} />
-          頼み方
-        </h2>
-        {styleButtons}
-      </section>
-      <section className="space-y-1.5">
-        <h2 className="flex items-center text-base font-bold">
-          <Num n={2} />
-          どこまで
-        </h2>
+        <h2 className="flex items-center text-base font-bold">どこまで</h2>
         {areaButtons}
       </section>
       {changed && (
-        <button disabled={pending} onClick={() => run(() => updateHouseAction(viewerId, style!, area!), "confirm")} className="btn btn-white min-h-11 w-full text-base">
-          この頼み方で登録しなおす
+        <button disabled={pending} onClick={() => run(() => updateHouseAction(viewerId, "together", area!), "confirm")} className="btn btn-white min-h-11 w-full text-base">
+          {area !== initialArea ? "この範囲で登録しなおす" : "「一緒に雪かき」にする"}
         </button>
       )}
       {message}
@@ -210,8 +179,8 @@ export default function AskScreen({
       ) : night ? (
         <p className="btn btn-big mt-auto w-full bg-ink/10 text-ink/60">🌙 今日の分は 明日6時から頼めます</p>
       ) : (
-        <button disabled={pending} onClick={() => run(() => askTodayAction(viewerId, style ?? "omakase"), "confirm")} className="btn btn-lamp btn-big mt-auto w-full">
-          {pending ? "頼んでいます…" : `今日、${style === "together" ? "一緒に" : "おまかせで"}頼む`}
+        <button disabled={pending} onClick={() => run(() => askTodayAction(viewerId, "together"), "confirm")} className="btn btn-lamp btn-big mt-auto w-full">
+          {pending ? "頼んでいます…" : "今日、一緒に雪かきを頼む"}
         </button>
       )}
     </>
