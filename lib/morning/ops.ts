@@ -28,6 +28,8 @@ import { lineShareUrl } from "../share-links";
 import { addTip, lastTipAt, loadTips } from "./tips";
 import { scoreMission } from "../game/score";
 import { shuffleTeams, weekStart, weeklySummary, type WeeklySummary } from "../game/week";
+import { SMALL_TOWN_MAX, teamsByDistance } from "../game/near-team";
+import { isRealWorld } from "../world";
 import { addDays, jstDate, jstHourMinute, jstMinutes, jstIso } from "../jst";
 import { DEMO_PREFIX, inboxKeyOf } from "../inbox/key";
 import { multicast, push, reply } from "../line/client";
@@ -165,8 +167,10 @@ export async function morningAuto(now = new Date()): Promise<{ snowCm: number; s
   if (snowCm < threshold) {
     if (announced) s.morning.rollcall.status = "closed";
     s.log.push(`6:30 積もった雪 ${snowCm}cm（きのう6時から）→ 基準 ${threshold}cm 未満なので、お知らせなし`);
+    // 前の雪かきが終わっていない家があれば、頼んだ人に「まだ必要ですか？」（spec v1.71）
+    const asked = await askLeftovers(s, await loadRoster(), today);
     await saveMorning(s);
-    return { snowCm, started: false, sent: 0 };
+    return { snowCm, started: false, sent: asked };
   }
   if (!announced) {
     if (s.morning.rollcall.date === today && s.morning.rollcall.status !== "closed") return { snowCm, started: false, sent: 0 }; // もう始まっている
@@ -182,6 +186,53 @@ export async function morningAuto(now = new Date()): Promise<{ snowCm: number; s
   await ring();
   const r = await plan(); // 質問を待たずに、すぐ地図に出して近所へ知らせる
   return { snowCm, started: true, sent: r.sent };
+}
+
+/**
+ * 雪のない朝（spec v1.71。11/17 本人「雪のない日で前日雪かき完了出来てない場合は、依頼した人に通知して雪かき必要か確認する」）:
+ * 前の朝の記録に、終わっていない家があれば、その家の人（家族の代理の家は家族）に「まだ必要ですか？」を1日1回。
+ * 「まだ必要です」→ 今日の「雪かきを頼む」と同じ（地図に出て、近くの人へ）。「もう大丈夫」→ そのまま。送った人数を返す。
+ */
+export async function askLeftovers(s: MorningRecord, roster: Roster, today: string): Promise<number> {
+  const rc = s.morning.rollcall;
+  if (rc.date >= today || rc.status !== "planned" || s.leftoverAskedOn === today) return 0;
+  const left = s.morning.missions.filter((m) => m.status !== "done");
+  if (left.length === 0) return 0;
+  s.leftoverAskedOn = today;
+  const [, mo, d] = rc.date.split("-").map(Number);
+  const dateText = `${mo}月${d}日`;
+  let sent = 0;
+  const seen = new Set<string>();
+  for (const m of left) {
+    const base = roster.bases.find((b) => b.id === m.baseId);
+    const requester = base && roster.participants.find((p) => p.id === base.requesterId);
+    if (!base || !requester || seen.has(base.id)) continue;
+    seen.add(base.id);
+    const own = inboxKeyOf(requester);
+    const to = own ? [{ key: own, family: false }] : (await repo().listFamilyLinksByRequester(requester.id)).map((l) => ({ key: l.familyLineUserId, family: true }));
+    for (const t of to) if (await push(t.key, MSG.leftoverAsk(base.number, dateText, base.id, t.family))) sent++;
+  }
+  s.log.push(`6:30 前の雪かき（${dateText}）が終わっていない家 ${seen.size} 軒に「まだ必要ですか？」（トーク ${sent} 人）`);
+  return sent;
+}
+
+/** 「まだ必要ですか？」の答え（left:yes=<拠点> / left:no=<拠点>）。答えられるのは、その家の人と家族だけ */
+export async function answerLeftover(lineUserId: string, data: string, now = new Date()): Promise<LineMessage[]> {
+  const m = /^left:(yes|no)=([\w-]{1,80})$/.exec(data);
+  if (!m) return MSG.notRegistered();
+  const roster = await loadRoster();
+  const base = roster.bases.find((b) => b.id === m[2]);
+  const requester = base && roster.participants.find((p) => p.id === base.requesterId);
+  if (!base || !requester) return MSG.notRegistered();
+  const mine = requester.lineUserId === lineUserId || (await repo().listFamilyLinksByRequester(requester.id)).some((l) => l.familyLineUserId === lineUserId);
+  if (!mine) return MSG.notRegistered();
+  if (m[1] === "no") {
+    const s = await loadMorning();
+    s.log.push(`拠点${base.number}: 前の雪かきは「もう大丈夫」`);
+    await saveMorning(s);
+    return MSG.leftoverFine();
+  }
+  return askForHelpOf(requester, roster, now);
 }
 
 const REQUESTER_ANSWERS: Record<string, RequesterAnswer> = { yes: "yes", no: "no", together: "together" };
@@ -1307,7 +1358,8 @@ export async function weeklyRecap(now = new Date()): Promise<WeeklyRecapResult> 
   // 翌週のチーム: 出撃回数と体力でバランス（Claude の案ではなく計算。週ごとの種で毎週変わる）
   const helpers = roster.participants.filter((p) => p.role === "helper" || onTeam(p));
   const seed = Number(from.replace(/-/g, "")) % 100000;
-  const nextTeams = shuffleTeams(helpers, summary.sortieDays, seed);
+  // 人数が少ない間は、近い人（500m 以内）どうしでチーム（spec v1.71）。多くなったら、強さのバランスで組み直す
+  const nextTeams = helpers.length <= SMALL_TOWN_MAX ? teamsByDistance(helpers) : shuffleTeams(helpers, summary.sortieDays, seed);
   for (const h of helpers) {
     if (nextTeams[h.id] && nextTeams[h.id] !== h.teamId) await repo().upsertParticipant({ ...h, teamId: nextTeams[h.id] });
   }
@@ -1373,7 +1425,8 @@ async function askForHelpOf(p: Participant | undefined, roster: Roster, now: Dat
 
   let s = await loadMorning();
   // 見本の朝（デモ）ならその中に、そうでなければ本当の今日の記録に（前の雪の日の記録には足さない）
-  const today = s.morning.rollcall.date === DEMO_DATE ? DEMO_DATE : jstDate(now);
+  // 本番の町は、いつでも本当の今日（spec v1.70）
+  const today = !isRealWorld() && s.morning.rollcall.date === DEMO_DATE ? DEMO_DATE : jstDate(now);
   if (s.morning.rollcall.date !== today || s.morning.rollcall.status === "closed") {
     await archiveIfReal(s, today);
     s = requestDay({ date: today, viewerId: s.morning.viewerId });
@@ -1403,7 +1456,7 @@ async function askForHelpOf(p: Participant | undefined, roster: Roster, now: Dat
     baseId: base.id,
     importance: importance(level, answer),
     requiredPeople: requiredPeople(level, answer),
-    subtasks: decompose(p.clearArea ?? "entrance", level),
+    subtasks: decompose(p.clearArea ?? "entrance", level, p.clearParts),
     status: "short",
     startAt: at,
     reason: "お願いがありました",

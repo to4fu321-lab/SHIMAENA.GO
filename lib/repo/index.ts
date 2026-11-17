@@ -5,6 +5,7 @@ import { memoClear, memoRead } from "../db/memo";
 import { demoParticipantId } from "../inbox/key";
 import type { RegSession } from "../line/registration";
 import { TOWN } from "../town";
+import { cleanParts } from "../house";
 import { currentWorld, isDemoId } from "../world";
 import type { Base, Card, FamilyLink, Participant, SoloLog, TeamId } from "../types";
 
@@ -293,6 +294,9 @@ interface ParticipantRow {
   morning_minutes: number | null;
   has_tools: boolean | null;
   registered_by_family_id: string | null;
+  address: string | null;
+  clear_parts: string | null;
+  house_note: string | null;
 }
 
 function rowToParticipant(r: ParticipantRow): Participant {
@@ -305,11 +309,14 @@ function rowToParticipant(r: ParticipantRow): Participant {
   if (r.morning_minutes) p.morningMinutes = r.morning_minutes as 15 | 30 | 60;
   if (r.has_tools != null) p.hasTools = r.has_tools;
   if (r.registered_by_family_id) p.registeredByFamilyId = r.registered_by_family_id;
+  if (r.address) p.address = r.address;
+  if (r.clear_parts) p.clearParts = cleanParts(r.clear_parts);
+  if (r.house_note) p.houseNote = r.house_note;
   return p;
 }
 
 const PARTICIPANT_COLS =
-  "id, nickname, role, lat, lng, line_user_id, team_id, solo_minutes, clear_area, level, morning_minutes, has_tools, registered_by_family_id";
+  "id, nickname, role, lat, lng, line_user_id, team_id, solo_minutes, clear_area, level, morning_minutes, has_tools, registered_by_family_id, address, clear_parts, house_note";
 
 interface CardRow {
   id: string;
@@ -449,13 +456,14 @@ export const dbRepo: Repo = {
     memoClear("repo:participant"); // 名簿が変わるので、同じリクエストの読みは取り直す
     await query(
       `insert into participants
-         (id, nickname, role, lat, lng, line_user_id, team_id, solo_minutes, clear_area, level, morning_minutes, has_tools, registered_by_family_id)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         (id, nickname, role, lat, lng, line_user_id, team_id, solo_minutes, clear_area, level, morning_minutes, has_tools, registered_by_family_id, address, clear_parts, house_note)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        on conflict (id) do update set
          nickname = excluded.nickname, role = excluded.role, lat = excluded.lat, lng = excluded.lng,
          line_user_id = excluded.line_user_id, team_id = excluded.team_id, solo_minutes = excluded.solo_minutes,
          clear_area = excluded.clear_area, level = excluded.level, morning_minutes = excluded.morning_minutes,
-         has_tools = excluded.has_tools, registered_by_family_id = excluded.registered_by_family_id`,
+         has_tools = excluded.has_tools, registered_by_family_id = excluded.registered_by_family_id,
+         address = excluded.address, clear_parts = excluded.clear_parts, house_note = excluded.house_note`,
       [
         p.id,
         p.nickname,
@@ -470,6 +478,9 @@ export const dbRepo: Repo = {
         p.morningMinutes ?? null,
         p.hasTools ?? null,
         p.registeredByFamilyId ?? null,
+        p.address ?? null,
+        p.clearParts?.length ? p.clearParts.join(",") : null,
+        p.houseNote ?? null,
       ],
     );
   },

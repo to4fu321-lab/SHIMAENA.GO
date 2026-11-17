@@ -398,7 +398,7 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
         {/* 雪かきを頼む（spec v1.20 お互いさま）。「仲間を増やす」は下のタブ「つなぐ」と同じなので外した（11/7 本人の指示「スッキリ」） */}
         <Link href={`/ask${q}`} className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-card px-3 shadow-sm ring-1 ring-ink/15 short:min-h-11">
           <Icon name="ask" size={24} accent="var(--camellia)" />
-          <span className="whitespace-nowrap text-base font-bold">うちの雪かきをお願いする</span>
+          <span className="whitespace-nowrap text-base font-bold">うちの雪かきに仲間を呼ぶ</span>
         </Link>
       </main>
 

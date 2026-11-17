@@ -55,7 +55,8 @@ export default function PinAdjust({
   return createPortal(
     <div className="fixed inset-0 z-[1250] mx-auto flex max-w-md flex-col bg-paper" role="dialog" aria-label="ピンの場所を合わせる">
       <div className="bg-ink px-4 py-3 text-white">
-        <p className="text-lg font-bold leading-snug">📍 ピンを危険な場所に合わせよう</p>
+        {/* 家の場所（登録・家の場所のタブ）と、道の危険で見出しを変える */}
+        <p className="text-lg font-bold leading-snug">📍 {emoji === "🏠" ? "ピンを家の上に合わせよう" : "ピンを危険な場所に合わせよう"}</p>
         <p className="text-sm text-white/85">指で地図を動かすと、真ん中のピンの場所が変わります。</p>
       </div>
       <div className="relative min-h-0 flex-1">

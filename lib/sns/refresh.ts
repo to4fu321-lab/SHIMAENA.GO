@@ -2,6 +2,7 @@
 import { hasClaudeKey } from "../claude/client";
 import { shareKey, shareText, TOWN_SHARE_KINDS, type TownShareKind } from "../claude/share";
 import { loadPublicStats } from "../public/load";
+import { inWorld } from "../world";
 import type { PublicStats } from "../public/stats";
 import { loadShareTexts, saveShareText } from "./store";
 import { mockShareText } from "./text";
@@ -9,7 +10,8 @@ import { mockShareText } from "./text";
 /** 数字が変わった種類だけ Claude に書いてもらい、保存する。キーがなければ何もしない（画面は定型を出す） */
 export async function refreshShareTexts(now = new Date(), opts: { force?: boolean } = {}): Promise<number> {
   if (!hasClaudeKey()) return 0;
-  const [st, stored] = await Promise.all([loadPublicStats(now), loadShareTexts()]);
+  // SNS の投稿文は公開ページのためのものなので、いつも本番の町の数字で（spec v1.71）
+  const [st, stored] = await Promise.all([inWorld("real", () => loadPublicStats(now)), loadShareTexts()]);
   let n = 0;
   for (const kind of TOWN_SHARE_KINDS) {
     const key = shareKey(kind, st);

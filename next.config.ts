@@ -18,7 +18,8 @@ const nextConfig: NextConfig = {
   },
   // 写真つきの報告（ソロの After・道の危険の写真＋ぼかし済みの小さい写真）は 1MB を超えることがあり、
   // 本番で「Body exceeded 1 MB limit」（413）になっていた（11/6）。縮めた写真2枚ぶんに余裕をもたせる
-  experimental: { serverActions: { bodySizeLimit: "8mb" } },
+  // agentUpgrade: Next.js のセキュリティ更新（16.4.3 → 16.4.6、11/17）を、更新の道具で入れた印
+  experimental: { serverActions: { bodySizeLimit: "8mb" }, agentUpgrade: "security" },
   turbopack: {
     rules: {
       "*.css": {

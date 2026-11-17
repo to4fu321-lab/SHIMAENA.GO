@@ -110,9 +110,8 @@ export function step(session: RegSession | undefined, input: RegInput): RegOutco
 
     if (d.ns === "reg" && d.key === "role" && s.step === "role") {
       const next: RegSession =
-        d.value === "family"
-          ? { step: "location", role: "requester", proxy: true }
-          : d.value === "requester" || d.value === "helper"
+        // 家族の代わりの登録はお休み（spec v1.73）。前のボタンが押されても受け付けない
+        d.value === "requester" || d.value === "helper"
             ? { step: "location", role: d.value, proxy: false }
             : s;
       return { session: next, messages: question(next) };
@@ -144,6 +143,7 @@ export function step(session: RegSession | undefined, input: RegInput): RegOutco
           location: s.location,
           soloMinutes: SOLO[s.q1],
           clearArea: AREA[d.value],
+          helpStyle: "together", // spec v1.73: いまは「一緒に雪かき」だけ
         },
       };
     }

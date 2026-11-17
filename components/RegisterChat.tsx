@@ -21,7 +21,7 @@ type Ask = "h1" | "h2" | "style" | "area";
 type Step = "role" | "place" | Ask | "confirm" | "saving" | "code";
 type Msg = { id: number; from: "bot" | "me"; text: string };
 
-const ROLE_LABEL: Record<ChatRole, string> = { helper: "🧤 手伝う", requester: "🏠 手伝ってほしい", both: "🤝 手伝うし、うちも頼みたい", family: "👪 家族の代わりに登録" };
+const ROLE_LABEL: Record<ChatRole, string> = { helper: "🧤 手伝う", requester: "🏠 一緒にやろう", both: "🤝 手伝うし、うちも頼みたい", family: "👪 家族の代わりに登録" };
 const H1: [string, string, string][] = [["15", "⏱", "15分"], ["30", "⏱", "30分"], ["60", "⏱", "60分"]];
 const H2: [string, string, string][] = [["yes", "🧹", "ある"], ["no", "🙌", "ない"]];
 // spec v1.20: 頼み方を登録で分ける（おまかせ／一緒にやる）。毎朝の質問はしない
@@ -35,7 +35,8 @@ const AREA: [ClearArea, string][] = [
   ["road", "道路まで"],
 ];
 /** 役割ごとの質問の順番 */
-const ASKS: Record<ChatRole, Ask[]> = { helper: ["h1", "h2"], requester: ["style", "area"], family: ["style", "area"], both: ["h1", "h2", "style", "area"] };
+// spec v1.73: いまは「一緒に雪かき」だけ（頼み方は聞かない）。家族の代わりの登録はお休み
+const ASKS: Record<ChatRole, Ask[]> = { helper: ["h1", "h2"], requester: ["area"], family: ["area"], both: ["h1", "h2", "area"] };
 
 export default function RegisterChat({
   name,
@@ -153,7 +154,7 @@ export default function RegisterChat({
     if (next) {
       setStep(next);
       const lastOne = order.indexOf(next) === order.length - 1;
-      bot(`${role === "both" && next === "style" ? "つぎは、うちを頼むときのこと。" : lastOne ? "最後の1つ。" : ""}${title(next)}`);
+      bot(`${role === "both" && next === "area" ? "つぎは、うちの雪かきのこと。一緒に雪かきする仲間を呼べます（来られる人がいないこともあります）。" : lastOne ? "最後の1つ。" : ""}${title(next)}`);
       return;
     }
     setStep("confirm");
@@ -163,10 +164,10 @@ export default function RegisterChat({
     if (!role || !place) return;
     const f: ChatForm =
       role === "both"
-        ? { role, location: place, q1: ans.h1 ?? "", q2: ans.h2 ?? "", q3: ans.style, q4: ans.area }
+        ? { role, location: place, q1: ans.h1 ?? "", q2: ans.h2 ?? "", q3: "together", q4: ans.area }
         : role === "helper"
           ? { role, location: place, q1: ans.h1 ?? "", q2: ans.h2 ?? "" }
-          : { role, location: place, q1: ans.style ?? "", q2: ans.area ?? "" };
+          : { role, location: place, q1: "together", q2: ans.area ?? "" };
     setStep("saving");
     me(fam ? "登録する" : "はじめる！");
     const err = await onRegister(f);
@@ -184,11 +185,6 @@ export default function RegisterChat({
     setStep("role");
     me("最初からやり直す");
     bot("わかりました。あなたはどちらですか？ 両方えらべます。");
-  };
-  const toCode = () => {
-    setStep("code");
-    me("連携コードを持っています");
-    bot("ご家族が登録したときに出た6桁の番号を入れて、あなたはどちらか教えてください。");
   };
   const link = async (whoAmI: "self" | "family") => {
     me(whoAmI === "self" ? "お願いする本人です" : "家族です");
@@ -245,7 +241,7 @@ export default function RegisterChat({
               {(
                 [
                   ["helper", "手伝う", "近所の雪かきを10分から", wantHelp, setWantHelp],
-                  ["requester", "手伝ってほしい", "10cm 積もった朝、応援が届く", wantAsk, setWantAsk],
+                  ["requester", "一緒にやろう", "うちの雪かきに仲間を呼ぶ", wantAsk, setWantAsk],
                 ] as const
               ).map(([k, label, sub, on, set], i) => (
                 <button
@@ -270,13 +266,6 @@ export default function RegisterChat({
             </div>
             <button disabled={busy || (!wantHelp && !wantAsk)} onClick={pickRole} className="btn btn-lamp min-h-14 w-full text-lg disabled:opacity-40">
               {wantHelp && wantAsk ? "🤝 お互いさまで つぎへ" : wantHelp || wantAsk ? "つぎへ（もう一方も選べます）" : "どちらかを押してください"}
-            </button>
-            <button type="button" disabled={busy} onClick={() => chooseRole("family")} className={`${choice} flex min-h-12 w-full items-center gap-2 bg-card px-3 text-left ring-ink/15`}>
-              <span className="text-2xl" aria-hidden="true">👪</span>
-              <span className="min-w-0 text-base font-bold leading-tight">
-                家族の代わりに登録
-                <span className="block text-xs font-normal text-ink-soft">離れて住む親の家を。終わると知らせが届きます</span>
-              </span>
             </button>
           </>
         )}
@@ -383,11 +372,8 @@ export default function RegisterChat({
         )}
 
         <div className="flex items-center justify-between gap-2 whitespace-nowrap text-xs">
-          {step === "role" && !redo ? (
-            <button onClick={toCode} className="min-h-10 underline">
-              連携コード（6桁）をお持ちの方
-            </button>
-          ) : step !== "role" && step !== "saving" ? (
+          {/* 連携コード（家族の代わりの登録とつなぐ）は、家族の代理をお休みしている間は出さない（spec v1.73） */}
+          {step !== "role" && step !== "saving" ? (
             <button onClick={restart} className="min-h-10 underline">
               ‹ 最初からやり直す
             </button>

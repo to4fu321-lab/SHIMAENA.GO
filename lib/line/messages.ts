@@ -142,9 +142,8 @@ export const MSG = {
     [
       ...bubbles(["シマエナGO へようこそ！☃️", "雪の朝に、ご近所で少しずつ雪かきを助け合うアプリです。"]),
       ask("あなたはどちらですか？", [
-        { label: "雪かきをお願いしたい", data: "reg:role=requester" },
+        { label: "一緒に雪かきしたい（仲間を呼ぶ）", data: "reg:role=requester" },
         { label: "雪かきを手伝う", data: "reg:role=helper" },
-        { label: "家族の代わりに登録", data: "reg:role=family", tone: "soft" },
       ]),
     ],
   locationSelf: () => [
@@ -462,6 +461,15 @@ export const MSG = {
   nowNothing: () =>
     bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる10分（自分の家の雪かき・道の危険の報告）もあります。"], [B.solo, B.map]),
   // ---- 雪かきを頼む（spec v1.10）: お願いする側が 6〜19時いつでも。返事は返信なので通数0（知らせは別） ----
+  /** 雪のない朝、前の雪かきが終わっていない家へ（spec v1.71）。家族の代理の家は、家族に */
+  leftoverAsk: (baseNumber: number | string, dateText: string, baseId: string, forFamily = false): LineMessage[] => [
+    text(`おはようございます。${dateText}の雪かきで、${forFamily ? "ご家族の家（" : ""}拠点${baseNumber}${forFamily ? "）" : ""}がまだ終わっていません。`),
+    ask("今朝は雪が積もっていません。いまも雪かきは必要ですか？", [
+      { label: "まだ必要です", data: `left:yes=${baseId}` },
+      { label: "もう大丈夫", data: `left:no=${baseId}`, tone: "soft" },
+    ]),
+  ],
+  leftoverFine: () => bubbles(["わかりました。お知らせしてよかったです。", "また雪が積もったら、朝 6:30 に近所へお知らせします。"]),
   askNight: () => bubbles(["夜（19時〜朝6時）は、よその人に雪かきを頼めません。", "明日の朝6時から頼めます。"], [say("隊長に相談")]),
   askHelperOnly: () =>
     bubbles(["頼めるのは、お願いする側として登録した家です。", "ご自分の家も「雪かきを頼む」から、頼める家にできます（手伝う側のままで）。"], [open("頼める家にする", "/ask"), say("隊長に相談")]),
@@ -472,6 +480,8 @@ export const MSG = {
       [
         `拠点${baseNumber}を、今日の「雪かき待ち」として地図に出しました。`,
         sent > 0 ? `近くの ${sent}人に知らせました。` : "近くの人が地図で見つけたら、来てくれます。",
+        // spec v1.73: 来られる人がいないこともある、と先に伝える（来なくても大丈夫な人向け）
+        "来られる人がいない日もあります。そのときは、無理のない範囲で。",
         "玄関は開けなくて大丈夫です。来る人が決まったら、合言葉をお知らせします。",
       ],
       [B.map, say("隊長に相談")],

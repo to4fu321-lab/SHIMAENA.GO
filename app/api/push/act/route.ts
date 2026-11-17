@@ -9,7 +9,7 @@ import { repo } from "@/lib/repo";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
 import { enterWorld } from "@/lib/world";
 
-const ALLOWED = /^(rc:ans=[a-z0-9]+|help:go=[\w-]{1,60}|help:no)$/;
+const ALLOWED = /^(rc:ans=[a-z0-9]+|help:go=[\w-]{1,60}|help:no|left:(?:yes|no)=[\w-]{1,80})$/;
 
 export async function POST(req: Request): Promise<Response> {
   const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });

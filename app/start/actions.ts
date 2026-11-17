@@ -76,18 +76,13 @@ export async function registerAction(f: StartForm): Promise<StartResult> {
           : f.role === "both"
             ? [helperReg(f.q1, f.q2), requesterReg(f.q3, f.q4, false)]
             : [];
+    if (f.role === "family") return { ok: false, text: "家族の代わりの登録は、いまはお休みしています。ご本人のスマホから登録してください。" }; // spec v1.73
     if (regs.length === 0) return { ok: false, text: "手伝う側か、お願いする側かを選んでください。" };
     if (regs.some((x) => !x)) return { ok: false, text: "質問に答えてください。" };
 
-    let messages: Awaited<ReturnType<typeof finishRegistration>> = [];
-    for (const reg of regs as Registration[]) messages = await finishRegistration(me.lineUserId, reg, me.displayName);
+    for (const reg of regs as Registration[]) await finishRegistration(me.lineUserId, reg, me.displayName);
     await repo().setSession(me.lineUserId, null); // トークで登録の途中だったら、それは終わりにする
     const jar = await cookies();
-    if (f.role === "family") {
-      // 家族の代わり: 家族本人は参加者ではない（本人の家が登録される）。連携コードを画面に出す。印はそのまま（あとで自分も登録できる）
-      const code = messages.map(textOf).join("\n").match(/連携コード[:：]\s*(\d{6})/)?.[1];
-      return { ok: true, linkCode: code };
-    }
     const p = await repo().findParticipantByLineUserId(me.lineUserId);
     if (!p) return { ok: false, text: "登録はできました。もう一度開いてください。" };
     jar.delete(PENDING_COOKIE);

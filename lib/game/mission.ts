@@ -1,5 +1,6 @@
 // 重要度・必要人数・小タスク分解（Claude が使えない時の予備にもなる）
-import type { ClearArea, RequesterAnswer, SoloMinutes, SubTask } from "../types";
+import type { ClearArea, ClearPart, RequesterAnswer, SoloMinutes, SubTask } from "../types";
+import { CLEAR_PARTS } from "../house";
 
 /** 登録の2問から家のレベルを決める（採点表 data/rubric.json の level と同じ規則） */
 export function levelFromAnswers(solo: SoloMinutes, area: ClearArea): 1 | 2 | 3 {
@@ -31,8 +32,13 @@ const TASK = {
 } as const satisfies Record<string, Omit<SubTask, "id">>;
 
 /** どこまで雪かきが必要かとレベルから、10分単位の小タスクに分ける */
-export function decompose(clearArea: ClearArea, level: 1 | 2 | 3): SubTask[] {
+export function decompose(clearArea: ClearArea, level: 1 | 2 | 3, parts: readonly ClearPart[] = []): SubTask[] {
   const list: Omit<SubTask, "id">[] = [TASK.path, TASK.sand];
+  // 家の人が登録した「ほかに要る所」（spec v1.72）は、1か所10分
+  for (const p of parts) {
+    const part = CLEAR_PARTS.find((x) => x.id === p);
+    if (part) list.push({ kind: "part", label: part.task, minutes: 10 });
+  }
   if (clearArea === "garage" || clearArea === "road") list.push(TASK.garage);
   if (clearArea === "road") list.push(TASK.road);
   // 雪捨て場への往復はレベルの数だけ

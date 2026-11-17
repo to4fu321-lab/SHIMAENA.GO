@@ -36,7 +36,7 @@ async function Ask({ searchParams }: { searchParams: Promise<{ as?: string }> })
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-paper text-ink">
       <header className="flex shrink-0 items-center justify-between gap-2 bg-ice-soft px-4 py-2">
-        <h1 className="whitespace-nowrap text-xl font-bold">🏠 雪かきをお願いする</h1>
+        <h1 className="whitespace-nowrap text-xl font-bold">🤝 一緒に雪かきを頼む</h1>
         <Link href={`/${q}`} className="btn btn-white min-h-10 whitespace-nowrap px-3 text-sm">
           ホーム
         </Link>
@@ -56,15 +56,12 @@ async function Ask({ searchParams }: { searchParams: Promise<{ as?: string }> })
             area={me.clearArea}
             waiting={waiting}
             night={isNight()}
+            // 雪の聞き書き（spec v1.26）は「思い出」のタブへ（spec v1.72: 家の場所のタブを足して、1画面に収めるため）
+            kikigakiHref={`/kikigaki${q}`}
+            house={house ? { demo: !me.lineUserId, address: me.address, location: me.location, parts: me.clearParts, note: me.houseNote } : undefined}
           />
         )}
       </main>
-      {house && (
-        // 雪の聞き書き（spec v1.26）: 頼む家の人が、隊長に雪の思い出を話す
-        <Link href={`/kikigaki${q}`} className="mx-4 mb-2 flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-warm text-base font-bold ring-1 ring-ink/15">
-          📖 雪の思い出を隊長に話す（聞き書き）
-        </Link>
-      )}
       <TabBar active="home" q={q} />
     </div>
   );

@@ -2,6 +2,7 @@
 import type { MorningRecord } from "./morning/flow";
 import type { Roster } from "./morning/roster";
 import type { LatLng } from "./types";
+import { partLabel } from "./house";
 
 /** Google マップの徒歩の道順（iPhone でも Android でも開ける） */
 export function mapsUrl(to: LatLng, from?: LatLng): string {
@@ -18,6 +19,10 @@ export interface Destination {
   baseNumber: number | string;
   location: LatLng;
   mapsUrl: string;
+  /** 家の人が登録した住所・目印・ほかに要る所（spec v1.72）。向かっている本人にだけ */
+  address?: string;
+  note?: string;
+  parts?: string[];
 }
 
 /** その人がいま向かっている家（正確な場所つき）。向かっている本人以外には返さない */
@@ -30,7 +35,15 @@ export function destinationsFor(s: MorningRecord, roster: Roster, participantId:
     const base = m && roster.bases.find((b) => b.id === m.baseId);
     const requester = base && roster.participants.find((p) => p.id === base.requesterId);
     if (!base || !requester) continue;
-    out.push({ missionId: x.missionId, baseNumber: base.number, location: requester.location, mapsUrl: mapsUrl(requester.location, me?.location) });
+    out.push({
+      missionId: x.missionId,
+      baseNumber: base.number,
+      location: requester.location,
+      mapsUrl: mapsUrl(requester.location, me?.location),
+      ...(requester.address ? { address: requester.address } : {}),
+      ...(requester.houseNote ? { note: requester.houseNote } : {}),
+      ...(requester.clearParts?.length ? { parts: requester.clearParts.map(partLabel) } : {}),
+    });
   }
   return out;
 }
