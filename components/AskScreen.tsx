@@ -2,12 +2,16 @@
 
 // 雪かきをお願いする（spec v1.20）の中身。頼み方（おまかせ／一緒にやる）と どこまで（玄関前／車庫前／道路まで）を、絵つきの大きなボタンで。
 // 11/6 本人の指示: 分かりやすい UI（絵・アイコン）、雪かきが必要なエリアを写真で撮るとハンドフリーで指定できる（Claude が写真から「どこまで」を読む。写真は保存しない）。
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { askTodayAction, readAreaPhotoAction, registerHouseAction, updateHouseAction } from "@/app/ask/actions";
 import type { ClearArea, HelpStyle } from "@/lib/types";
 import { play } from "@/lib/sound/engine";
 import { AreaArt, StyleArt } from "./AskArt";
+import HousePanel from "./HousePanel";
+import Pager from "./Pager";
+import type { ClearPart, LatLng } from "@/lib/types";
 import { shrink } from "./shrink";
 
 const STYLE_OPTIONS: [HelpStyle, string, string][] = [
@@ -32,6 +36,8 @@ export default function AskScreen({
   area: initialArea,
   waiting,
   night,
+  house,
+  kikigakiHref,
 }: {
   viewerId: string;
   registered: boolean;
@@ -40,7 +46,11 @@ export default function AskScreen({
   area?: ClearArea;
   waiting: boolean;
   night: boolean;
+  /** 家の場所のタブ（spec v1.72）。頼む家の人だけ */
+  house?: { demo: boolean; address?: string; location: LatLng; parts?: ClearPart[]; note?: string };
+  kikigakiHref?: string;
 }) {
+  const [tab, setTab] = useState(0);
   const router = useRouter();
   const [style, setStyle] = useState<HelpStyle | undefined>(initialStyle);
   const [area, setArea] = useState<ClearArea | undefined>(initialArea);
@@ -116,7 +126,11 @@ export default function AskScreen({
       </div>
       <button type="button" onClick={() => camera.current?.click()} disabled={reading || pending} className="btn btn-white min-h-11 w-full gap-2 text-base short:min-h-10">
         <span aria-hidden="true">📷</span>
-        {reading ? "写真を読んでいます…" : "写真を撮って自動で決める（保存しない）"}
+        {reading ? "写真を読んでいます…" : (
+          <>
+            写真で<span className="short:hidden">撮って</span>自動で決める（保存しない）
+          </>
+        )}
       </button>
       <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void onPhoto(e.target.files?.[0])} />
       {photoNote && <p className="rounded-2xl bg-warm px-3 py-1.5 text-sm font-bold leading-snug">{photoNote}</p>}
@@ -159,11 +173,18 @@ export default function AskScreen({
   }
 
   const changed = style !== initialStyle || area !== initialArea;
-  return (
+  const noAddress = Boolean(house && !house.demo && !house.address);
+  const askPanel = (
     <>
-      <p className="rounded-2xl bg-ice-soft px-3 py-1.5 text-sm font-bold leading-snug">
-        🏠 拠点{baseNumber}として登録ずみ。10cm 以上積もった朝 6:30 に、近所へ自動でお知らせします。
-      </p>
+      {noAddress ? (
+        <button type="button" onClick={() => setTab(1)} className="rounded-2xl bg-warm px-3 py-1.5 text-left text-sm font-bold leading-snug ring-2 ring-lamp">
+          📮 住所がまだです<span className="short:hidden">。来てくれる人が迷わないように</span>「家の場所」で入れてください ›
+        </button>
+      ) : (
+        <p className="rounded-2xl bg-ice-soft px-3 py-1.5 text-sm font-bold leading-snug">
+          🏠 拠点{baseNumber}として登録ずみ<span className="short:hidden">。10cm 以上積もった朝 6:30 に、近所へ自動でお知らせします</span>。
+        </p>
+      )}
       <section className="space-y-1.5">
         <h2 className="flex items-center text-base font-bold">
           <Num n={1} />
@@ -194,5 +215,33 @@ export default function AskScreen({
         </button>
       )}
     </>
+  );
+  if (!house) return askPanel;
+  return (
+    <Pager
+      className="-mx-4"
+      index={tab}
+      onChange={setTab}
+      tabs={[
+        { key: "ask", label: "頼む" },
+        { key: "house", label: "家の場所", badge: noAddress ? 1 : undefined },
+        ...(kikigakiHref ? [{ key: "story", label: "思い出" }] : []),
+      ]}
+    >
+      {askPanel}
+      <HousePanel viewerId={viewerId} demo={house.demo} address={house.address} location={house.location} parts={house.parts} note={house.note} />
+      {kikigakiHref && (
+        // 雪の聞き書き（spec v1.26）: 頼む家の人が、隊長に雪の思い出を話す
+        <>
+          <p className="text-lg leading-snug">
+            <b className="block">📖 雪の思い出を、隊長に話しませんか？</b>
+            昔の雪の朝のこと、雪かきのコツ。声で答えられます。できたお話と絵は、あなたが「届ける」を選んだときだけ、雪かきに来てくれた人に届きます。
+          </p>
+          <Link href={kikigakiHref} className="btn btn-lamp btn-big mt-auto w-full">
+            隊長に話す（聞き書き）
+          </Link>
+        </>
+      )}
+    </Pager>
   );
 }

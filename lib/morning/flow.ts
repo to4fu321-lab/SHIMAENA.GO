@@ -262,7 +262,7 @@ export function applyPlan(s: MorningRecord, roster: Roster, plan: Plan): void {
       requiredPeople: m.requiredPeople,
       subtasks: [
         ...(isProxyHome(r) ? [{ id: "check", kind: "scout" as const, label: "声かけ（ごあいさつ・見守り）", minutes: 10 as const }] : []),
-        ...decompose(r.clearArea ?? "entrance", r.level ?? 2),
+        ...decompose(r.clearArea ?? "entrance", r.level ?? 2, r.clearParts),
       ],
       status: m.status,
       startAt: iso(s, 7 * 60),

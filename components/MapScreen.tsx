@@ -519,9 +519,20 @@ export default function MapScreen({
             {destinations.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {destinations.map((d) => (
-                  <a key={d.missionId} href={d.mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-white text-base">
-                    拠点{d.baseNumber}への道順を開く
-                  </a>
+                  <div key={d.missionId} className="w-full space-y-1">
+                    {(d.address || d.note || d.parts) && (
+                      // 住所・目印は、向かっている人だけに（spec v1.72）
+                      <p className="rounded-2xl bg-ice-soft px-3 py-1.5 text-base leading-snug">
+                        <span className="eyebrow block">🔒 向かう人だけに見えています</span>
+                        {d.address && <b className="block">📮 {d.address}</b>}
+                        {d.note && <span className="block">🪧 {d.note}</span>}
+                        {d.parts && <span className="block text-sm">❄ ほかに: {d.parts.join("・")}</span>}
+                      </p>
+                    )}
+                    <a href={d.mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-white text-base">
+                      拠点{d.baseNumber}への道順を開く
+                    </a>
+                  </div>
                 ))}
               </div>
             )}

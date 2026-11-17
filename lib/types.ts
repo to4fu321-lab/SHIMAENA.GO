@@ -48,7 +48,18 @@ export interface Participant {
   helpStyle?: HelpStyle;
   /** 家族が代わりに登録した場合、その家族の参加者 ID */
   registeredByFamilyId?: string;
+  /**
+   * 頼む家の正確な住所（spec v1.72。部屋番号まで）。見せるのは、その家に「行く」を押して向かっている人だけ。地図・公開ページには出さない
+   */
+  address?: string;
+  /** 玄関前などのほかに、雪かきが要る所（spec v1.72） */
+  clearParts?: ClearPart[];
+  /** 目印・気をつけること（60字まで。spec v1.72）。見せるのは向かっている人だけ */
+  houseNote?: string;
 }
+
+/** 玄関前・車庫前・道路までのほかに、雪かきが要る所（spec v1.72） */
+export type ClearPart = "roof" | "window" | "tank" | "trash" | "back";
 
 /** 依頼者の家族（通知を受け取る人） */
 export interface FamilyLink {
@@ -118,7 +129,7 @@ export interface RequestNote {
 }
 
 // ---- ミッションと小タスク ----
-export type SubTaskKind = "path" | "sand" | "dump" | "garage" | "road" | "scout" | "supply";
+export type SubTaskKind = "path" | "sand" | "dump" | "garage" | "road" | "scout" | "supply" | "part";
 
 export interface SubTask {
   id: string;

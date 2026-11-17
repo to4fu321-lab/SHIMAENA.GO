@@ -12,6 +12,7 @@ import { textOf } from "@/lib/line/flex";
 import { askForHelpById } from "@/lib/morning/ops";
 import { stormStatus } from "@/lib/storm";
 import { repo } from "@/lib/repo";
+import { cleanAddress, cleanNote, cleanParts, geocodeAddress } from "@/lib/house";
 import type { ClearArea, HelpStyle } from "@/lib/types";
 import { trustedViewer } from "@/lib/viewer";
 
@@ -92,4 +93,60 @@ export async function readAreaPhotoAction(formData: FormData): Promise<AreaPhoto
   const r = await readAreaFromPhoto({ bytes, mediaType });
   if (!r.area) return { ok: false, text: `${r.reason}。ボタンで選んでください。` };
   return { ok: true, area: r.area, text: r.reason };
+}
+
+export interface HouseDetail {
+  address?: string;
+  /** 地図で合わせた家の場所（なければ今のまま） */
+  location?: [number, number];
+  parts?: string[];
+  note?: string;
+}
+
+/** 札幌のまわり（北海道）の点か。画面からの値はそのまま信じない */
+const okLocation = (v: unknown): v is [number, number] =>
+  Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === "number" && Number.isFinite(x)) && v[0] > 41 && v[0] < 46 && v[1] > 139 && v[1] < 146;
+
+/**
+ * 頼む家の住所・家の場所・ほかに要る所・目印を登録する（spec v1.72）。頼む家の人だけ。
+ * 住所と目印は、本物の人だけ（デモの架空の人はみんなで使うので、本当の住所を入れさせない）。
+ */
+export async function saveHouseDetailAction(viewerId: string, d: HouseDetail): Promise<AskResult> {
+  const p = await me(viewerId);
+  if (!p || p.role !== "requester") return { ok: false, text: "頼む家として登録すると、住所を入れられます。" };
+  const real = Boolean(p.lineUserId);
+  const next = { ...p, clearParts: cleanParts(d.parts) };
+  if (real) {
+    next.address = cleanAddress(d.address);
+    next.houseNote = cleanNote(d.note);
+  }
+  if (d.location !== undefined) {
+    if (!okLocation(d.location)) return { ok: false, text: "家の場所が町から遠すぎます。地図で合わせ直してください。" };
+    next.location = [Math.round(d.location[0] * 1e6) / 1e6, Math.round(d.location[1] * 1e6) / 1e6];
+  }
+  await repo().upsertParticipant(next);
+  revalidatePath("/ask");
+  revalidatePath("/map");
+  return {
+    ok: true,
+    text: real
+      ? "登録しました。住所と目印は、雪かきに向かう人だけに見えます。"
+      : "ほかに要る所を登録しました。（デモの人には住所・目印は入れられません）",
+  };
+}
+
+export interface GeocodeResult {
+  ok: boolean;
+  location?: [number, number];
+  text: string;
+}
+
+/** 住所から地図の位置を探す（国土地理院の住所検索）。見つからなければ、地図で合わせてもらう */
+export async function geocodeAction(viewerId: string, address: string): Promise<GeocodeResult> {
+  const p = await me(viewerId);
+  if (!p) return { ok: false, text: "この画面の持ち主を確かめられませんでした。" };
+  if (!cleanAddress(address)) return { ok: false, text: "住所を入れてください。" };
+  const g = await geocodeAddress(address);
+  if (!g) return { ok: false, text: "住所から場所が見つかりませんでした。地図で家の上にピンを合わせてください。" };
+  return { ok: true, location: g.location, text: `「${g.title}」のあたりです。地図で家の上にピンを合わせてください。` };
 }

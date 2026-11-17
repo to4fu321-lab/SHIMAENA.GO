@@ -85,6 +85,10 @@ export async function finishRegistration(lineUserId: string, reg: Registration, 
       teamId,
       morningMinutes: reg.morningMinutes,
       hasTools: reg.hasTools,
+      // 「両方」で登録し直すときも、家の住所などは残す（spec v1.72）
+      ...(existing?.address ? { address: existing.address } : {}),
+      ...(existing?.clearParts?.length ? { clearParts: existing.clearParts } : {}),
+      ...(existing?.houseNote ? { houseNote: existing.houseNote } : {}),
     };
     await r.upsertParticipant(p);
     return [...MSG.helperDone(teamId, teamTerm(jstDate())), ...MSG.soloInvite(liffUrl("/solo"), "helper")];
@@ -105,6 +109,10 @@ export async function finishRegistration(lineUserId: string, reg: Registration, 
     // 手伝う側から「うちも頼める家」にしたとき（spec v1.20 お互いさま）: 手伝う側の答えはそのまま残す
     ...(existing?.morningMinutes ? { morningMinutes: existing.morningMinutes } : {}),
     ...(existing?.hasTools !== undefined ? { hasTools: existing.hasTools } : {}),
+    // 登録し直しても、住所・ほかに要る所・目印は残す（spec v1.72）
+    ...(existing?.address ? { address: existing.address } : {}),
+    ...(existing?.clearParts?.length ? { clearParts: existing.clearParts } : {}),
+    ...(existing?.houseNote ? { houseNote: existing.houseNote } : {}),
   };
   if (!reg.proxy) p.lineUserId = lineUserId;
   else p.registeredByFamilyId = lineUserId;

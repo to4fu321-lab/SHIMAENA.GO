@@ -166,6 +166,8 @@ export default function GoBriefing({
             </a>
           )}
         </div>
+        {destination?.address && <p className="mt-1 text-sm font-bold">📮 {destination.address}</p>}
+        {destination?.note && <p className="text-sm">🪧 {destination.note}</p>}
         {request && <p className="mt-1 text-sm">お願い: {request}</p>}
       </div>
 

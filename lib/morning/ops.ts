@@ -1456,7 +1456,7 @@ async function askForHelpOf(p: Participant | undefined, roster: Roster, now: Dat
     baseId: base.id,
     importance: importance(level, answer),
     requiredPeople: requiredPeople(level, answer),
-    subtasks: decompose(p.clearArea ?? "entrance", level),
+    subtasks: decompose(p.clearArea ?? "entrance", level, p.clearParts),
     status: "short",
     startAt: at,
     reason: "お願いがありました",

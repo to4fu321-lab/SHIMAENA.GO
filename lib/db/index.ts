@@ -25,6 +25,10 @@ function sql(): NeonQueryFunction<false, false> {
 export const ADDED_COLUMNS: readonly { table: string; column: string; type: string }[] = [
   { table: "cards", column: "back_svg", type: "text" },
   { table: "solo_logs", column: "strokes", type: "integer" },
+  // v1.72 頼む家の住所・ほかに要る所・目印（見せるのは向かっている人だけ）
+  { table: "participants", column: "address", type: "text" },
+  { table: "participants", column: "clear_parts", type: "text" },
+  { table: "participants", column: "house_note", type: "text" },
 ];
 
 let columnsReady: Promise<void> | undefined;
