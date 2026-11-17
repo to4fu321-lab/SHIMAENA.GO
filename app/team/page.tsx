@@ -25,6 +25,7 @@ import { teamTerm, teamTheme } from "@/lib/team-theme";
 import { TEAMS } from "@/lib/teams";
 import type { TeamId } from "@/lib/types";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import Bgm from "@/components/Bgm";
 import TeamTime from "@/components/TeamTime";
 import { googleCalendarUrl, slotEvent } from "@/lib/calendar/ics";
@@ -44,6 +45,7 @@ const MAX_FACES = 8;
 async function TeamView({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   await connection();
   const { as, tab } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, record, cookieStore] = await Promise.all([loadRoster(), loadMorning(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);

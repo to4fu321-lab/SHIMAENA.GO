@@ -10,6 +10,7 @@ import type { MorningRecord } from "./flow";
 import { announce, plan, ring } from "./ops";
 import { loadRoster } from "./roster";
 import { loadMorning } from "./store";
+import { inWorld } from "../world";
 
 export const DEMO_SNOW_CM = 12;
 
@@ -22,6 +23,11 @@ export function hasDemoWork(s: MorningRecord, today: string): boolean {
 /** 作り直したら true */
 export async function ensureDemoMorning(now = new Date()): Promise<boolean> {
   if (!demoEnabled()) return false;
+  // サンプルの町だけを作り直す（本番の町の記録には触れない。spec v1.70）
+  return inWorld("demo", () => ensureDemoMorningHere(now));
+}
+
+async function ensureDemoMorningHere(now: Date): Promise<boolean> {
   const today = jstDate(now);
   if (hasDemoWork(await loadMorning(), today)) return false;
   return withStateLock("demo:start", async () => {

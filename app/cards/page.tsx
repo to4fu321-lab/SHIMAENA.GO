@@ -13,6 +13,7 @@ import { loadRoster } from "@/lib/morning/roster";
 import { repo } from "@/lib/repo";
 import { soloStatus } from "@/lib/solo/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import LoginButton from "@/components/LoginButton";
 import Bgm from "@/components/Bgm";
 import RecentRecords from "@/components/RecentRecords";
@@ -52,6 +53,7 @@ const when = (iso: string) =>
 async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   // 誰の画面か: デモの架空の人 → ログインした本人。どちらでもなければ「登録すると、ここにたまります」（他人のカードは見せない）

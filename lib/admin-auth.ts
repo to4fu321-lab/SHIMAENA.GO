@@ -4,7 +4,8 @@
 // 公開している環境で ADMIN_PASSWORD がなければ、誰も操作できない（開けっぱなしにしない）。
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { isDeployed } from "./env";
+import { demoEnabled, isDeployed } from "./env";
+import type { World } from "./world";
 
 export const ADMIN_COOKIE = "shimaena_admin";
 export const ADMIN_MAX_AGE = 60 * 60 * 12; // 12時間
@@ -52,4 +53,12 @@ export class AdminRequiredError extends Error {
 export async function requireAdmin(): Promise<void> {
   const gate = await adminGate();
   if (gate !== "open" && gate !== "ok") throw new AdminRequiredError();
+}
+
+/** 管理画面が見ている町（spec v1.70）。既定はサンプルの町（今までのデモ操作のまま）。上の切りかえで本番の町へ */
+export const ADMIN_TOWN_COOKIE = "shimaena_admin_town";
+
+export async function adminWorld(): Promise<World> {
+  if (!demoEnabled()) return "real"; // デモを止めている間は、本番の町だけ
+  return (await cookies()).get(ADMIN_TOWN_COOKIE)?.value === "real" ? "real" : "demo";
 }

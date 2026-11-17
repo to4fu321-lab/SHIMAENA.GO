@@ -8,6 +8,7 @@ import { clockText } from "@/lib/morning/flow";
 import { dbStatus, type DbStatus } from "@/lib/db";
 import { loadRoster } from "@/lib/morning/roster";
 import { loadMorning } from "@/lib/morning/store";
+import { enterWorld } from "@/lib/world";
 import { progress, snowHp, teamTotals } from "@/lib/morning/view";
 import { TEAMS } from "@/lib/teams";
 import { helpState, radiusLabel } from "@/lib/morning/watch";
@@ -42,12 +43,13 @@ import {
   writeImprovementsNow,
   writeRecapNow,
   writeShareTextsNow,
+  setAdminTown,
 } from "./actions";
 import { remakeSnowSong } from "./song-actions";
 import AutoComplete from "@/components/AutoComplete";
 import PresentationMode from "@/components/PresentationMode";
 import { THANKS_CHOICES } from "@/lib/claude/thanks";
-import { adminGate } from "@/lib/admin-auth";
+import { adminGate, adminWorld } from "@/lib/admin-auth";
 import { makeNameMasker } from "@/lib/admin-names";
 import { demoEnabled } from "@/lib/env";
 import { countOutSince } from "@/lib/inbox/store";
@@ -139,6 +141,9 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
     const { login } = await searchParams;
     return <Login failed={login === "failed"} unconfigured={gate === "unconfigured"} />;
   }
+  // 見ている町（本番／サンプル）。上の切りかえで変える（spec v1.70）
+  const town = await adminWorld();
+  enterWorld(town);
   const [s, db, roster, problems, notices] = await Promise.all([loadMorning(), dbStatus(), loadRoster(), listProblems(), countOutSince(monthStartIso()).catch(() => 0)]);
   // 声と改善（spec v1.17）: 今週の声の数と、いちばん新しい提案
   const today = appToday(s);
@@ -272,10 +277,21 @@ async function AdminContent({ searchParams }: { searchParams: Promise<{ login?: 
               {m.rollcall.date} ・ <b className="tabular-nums">{clockText(s.clockMin)}</b> ・ <b>{ROLLCALL_TEXT[status]}</b>
               {m.rollcall.snowName && <> ・ 「{m.rollcall.snowName}」</>}
             </p>
+            {town === "real" && <p className="truncate text-sm text-ink-soft">本当の天気で動く町です。架空の人を動かすボタンは、サンプルの町だけに効きます</p>}
           </div>
-          <Link href="/admin/settings" className="shrink-0 rounded-full bg-ink px-3 py-2 text-base font-bold text-white">
-            管理
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            {demoEnabled() && (
+              <form action={setAdminTown}>
+                <input type="hidden" name="town" value={town === "real" ? "sample" : "real"} />
+                <button className={`rounded-full px-3 py-2 text-base font-bold ring-1 ring-ink/20 ${town === "real" ? "bg-lamp text-white" : "bg-paper text-ink"}`} title="押すと、もう一方の町に切りかわります">
+                  {town === "real" ? "本番の町" : "サンプルの町"} ⇄
+                </button>
+              </form>
+            )}
+            <Link href="/admin/settings" className="rounded-full bg-ink px-3 py-2 text-base font-bold text-white">
+              管理
+            </Link>
+          </div>
         </header>
       }
     >

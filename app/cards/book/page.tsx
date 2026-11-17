@@ -15,6 +15,7 @@ import TabBar from "@/components/TabBar";
 import { soloStatus } from "@/lib/solo/ops";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "カード図鑑 ・ シマエナGO" };
@@ -22,6 +23,7 @@ export const metadata: Metadata = { title: "カード図鑑 ・ シマエナGO" 
 async function CardsContent({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, cookieStore, record] = await Promise.all([loadRoster(), cookies(), loadMorning()]);
   const viewerId = (as && isDemoViewer(as) ? as : undefined) ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
   const me = roster.participants.find((p) => p.id === viewerId);

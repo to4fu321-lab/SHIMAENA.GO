@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/admin-auth";
+import { ADMIN_MAX_AGE, ADMIN_TOWN_COOKIE, adminWorld, requireAdmin } from "@/lib/admin-auth";
+import { inWorld } from "@/lib/world";
+import { cookies } from "next/headers";
 import { demoEnabled } from "@/lib/env";
 import { deleteRoadReportsBy, insertRoadReport, listRoadReportsSince, markNotified } from "@/lib/road/store";
 import { agoText, hazard } from "@/lib/road/hazards";
@@ -54,10 +56,26 @@ import { getTeam, TEAMS } from "@/lib/teams";
 import { distanceM } from "@/lib/game/help";
 import type { LineMessage } from "@/lib/line/types";
 
+/** 架空の人を動かすボタン（練習・撮影用）。本番の町を見ているときに押しても、動くのはサンプルの町だけ（spec v1.70） */
+const SAMPLE_ONLY = new Set([
+  "startEmptyMorning", "answerRandomly", "reopenDemo", "completeOne", "completeOneAuto", "rescue", "thanksDemo", "cheerDemo", "backToSample", "setViewer",
+  "presentReset", "presentRingFast", "presentGo", "presentAllTeams", "presentGather", "presentFinish", "presentCheer", "seedRoadReportsDemo", "seedKikigakiDemo",
+]);
+
 /** 管理の操作の入口: 合言葉のログインを確かめ、今朝の状態の鍵を取ってから動かす */
 async function guarded<T>(label: string, fn: () => Promise<T>): Promise<T> {
   await requireAdmin();
-  return withStateLock(`admin:${label}`, fn);
+  // 管理画面でえらんでいる町（本番／サンプル）を動かす（spec v1.70）
+  const world = SAMPLE_ONLY.has(label) ? "demo" : await adminWorld();
+  return inWorld(world, () => withStateLock(`admin:${label}`, fn));
+}
+
+/** 管理画面で見る町を切りかえる（本番の町 ⇄ サンプルの町） */
+export async function setAdminTown(formData: FormData) {
+  await requireAdmin();
+  const town = formData.get("town") === "real" ? "real" : "sample";
+  (await cookies()).set(ADMIN_TOWN_COOKIE, town, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: ADMIN_MAX_AGE });
+  refresh();
 }
 
 function refresh() {

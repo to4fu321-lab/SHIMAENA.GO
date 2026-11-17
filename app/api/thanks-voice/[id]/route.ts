@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import { readThanksVoice } from "@/lib/thanks/voice";
 import { isDemoViewer, readViewer, trustedViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   const { id } = await ctx.params;
@@ -9,6 +10,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const as = new URL(req.url).searchParams.get("as") ?? "";
   const viewerId = as && isDemoViewer(as) ? await trustedViewer(as) : readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
   if (!viewerId) return new Response("ありません", { status: 404 });
+  enterWorld(worldOf(viewerId));
   const v = await readThanksVoice(id, viewerId).catch(() => undefined);
   if (!v) return new Response("ありません", { status: 404 });
   return new Response(Buffer.from(v.audio), {

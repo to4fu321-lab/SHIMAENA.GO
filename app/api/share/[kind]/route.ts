@@ -9,6 +9,7 @@ import { loadMeStats } from "@/lib/sns/me";
 import type { ShareKind } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 
 const KINDS: ShareKind[] = ["today", "town", "recruit", "me"];
 
@@ -36,6 +37,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ kind: string }>
     const as = url.searchParams.get("as");
     const id = as && isDemoViewer(as) ? as : readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
     if (!id) return new Response("LINE から開いてください", { status: 401 });
+    enterWorld(worldOf(id)); // その人の町の数字で描く（spec v1.70）
     me = await loadMeStats(id);
   }
   const stats = await loadPublicStats();

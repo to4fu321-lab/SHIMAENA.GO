@@ -21,6 +21,7 @@ import { shareTextsFor } from "@/lib/sns/refresh";
 import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import { demoEnabled } from "@/lib/env";
 
 // v1.24: 完了でカードが出たあと、返事のあとで Claude が絵を描く（after()）。その時間まで関数を止めない
@@ -31,6 +32,7 @@ export const metadata: Metadata = { title: "雪かきGO！ ・ シマエナGO" }
 async function SoloContent({ searchParams }: { searchParams: Promise<{ as?: string; pick?: string; focus?: string; go?: string }> }) {
   await connection();
   const { as, pick, focus, go } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);

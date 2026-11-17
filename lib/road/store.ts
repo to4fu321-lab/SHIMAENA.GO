@@ -1,6 +1,13 @@
 // 道の報告・通知の希望・送った回数の保存先。DATABASE_URL があれば Neon、なければメモリ（開発用）。
 import { hasDb, query } from "../db";
 import type { HazardId, RoadReport } from "./hazards";
+import { currentWorld, isDemoId } from "../world";
+
+/** その町の人の報告だけ（spec v1.70: サンプルの町の架空の報告を、本番の地図に出さない。逆も）。町を決めていなければ全部 */
+function ofWorld(rs: RoadReport[]): RoadReport[] {
+  const w = currentWorld();
+  return w ? rs.filter((r) => isDemoId(r.participantId) === (w === "demo")) : rs;
+}
 
 // 表がまだなければ、最初に使うときに作る（/admin のボタンを押し忘れても止まらないように。何度でも安全）
 const TABLES = [
@@ -75,18 +82,18 @@ export async function insertRoadReport(r: RoadReport, photoBase64?: string): Pro
 /** since（ISO）より後の報告。新しい順 */
 export async function listRoadReportsSince(since: string): Promise<RoadReport[]> {
   if (!hasDb()) {
-    return [...mem().reports.values()]
+    return ofWorld([...mem().reports.values()]
       .filter((r) => r.at > since)
       .map((r) => {
         const out: RoadReport & { photo?: string } = { ...r };
         delete out.photo;
         return out;
       })
-      .sort((a, b) => b.at.localeCompare(a.at));
+      .sort((a, b) => b.at.localeCompare(a.at)));
   }
   await ensure();
   const rows = await query<Row>(`select ${COLS} from road_reports where at > $1 order by at desc`, [since]);
-  return rows.map(toReport);
+  return ofWorld(rows.map(toReport));
 }
 
 /** 撮影ステージ用: その人の道の報告を消す（前の撮影のピンが残らないように） */

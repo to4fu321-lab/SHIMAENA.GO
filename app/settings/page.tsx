@@ -20,6 +20,7 @@ import { loadNudge } from "@/lib/nudge/store";
 import { loadRoster } from "@/lib/morning/roster";
 import { TEAMS } from "@/lib/teams";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "設定 ・ シマエナGO" };
@@ -39,6 +40,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 async function Settings({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);

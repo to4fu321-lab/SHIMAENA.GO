@@ -5,13 +5,31 @@ import { memoClear, memoPut, memoRead } from "../db/memo";
 import { isDeployed } from "../env";
 import { recordProblem } from "../ops/problems";
 import type { MorningRecord } from "./flow";
+import { emptyMorning } from "./flow";
 import { DEMO_MORNING } from "./sample";
+import { jstDate } from "../jst";
+import { isRealWorld } from "../world";
 
-const g = globalThis as { __shimaenaMorning?: MorningRecord };
-const KEY = "current";
+const g = globalThis as { __shimaenaMorning?: MorningRecord; __shimaenaMorningReal?: MorningRecord };
+/** サンプルの町（と、町を決めていない昔からの入口）の行。本番の町は REAL_KEY（spec v1.70） */
+const SAMPLE_KEY = "current";
+const REAL_KEY = "real";
+const key = () => (isRealWorld() ? REAL_KEY : SAMPLE_KEY);
+/** 残した朝の記録の鍵: サンプルは日付そのまま（今まで通り）、本番は real:日付 */
+const archiveKey = (date: string) => (isRealWorld() ? `${REAL_KEY}:${date}` : date);
 
-/** 最初は「朝 7:10 ごろの途中の状態」（地図を開いたとき見栄えがするように） */
+/** 本番の町の最初: 雪の知らせのない、ふつうの日（予告も作戦もない）。雪が積もった朝に、定期実行が始める */
+export function quietDay(date = jstDate()): MorningRecord {
+  const s = emptyMorning({ date, forecastCm: 0, announcement: "いまは、雪かきのお知らせはありません。" });
+  s.morning.rollcall.status = "closed";
+  s.morning.viewerId = "";
+  s.log = ["本番の町を始めました（本当の天気で動きます）"];
+  return s;
+}
+
+/** 最初は「朝 7:10 ごろの途中の状態」（地図を開いたとき見栄えがするように）。本番の町は、ふつうの日から */
 function initial(): MorningRecord {
+  if (isRealWorld()) return quietDay();
   return {
     morning: structuredClone(DEMO_MORNING),
     answers: [],
@@ -37,46 +55,47 @@ function fallback(e: unknown): void {
 }
 
 /** 同じリクエストの中では1回だけ DB から読む（lib/db/memo.ts）。保存すれば置き換え、claimPlanning のあとは読み直す */
-const MEMO = "morning:current";
+const memo = () => `morning:${key()}`;
+/** DB がない間の置き場（町ごと） */
+const memGet = (): MorningRecord | undefined => (isRealWorld() ? g.__shimaenaMorningReal : g.__shimaenaMorning);
+const memSet = (v: MorningRecord): MorningRecord => (isRealWorld() ? (g.__shimaenaMorningReal = v) : (g.__shimaenaMorning = v));
 
 /** いまの状態を読む。DB に行がなければ見本の状態を入れて返す */
 export async function loadMorning(): Promise<MorningRecord> {
   if (!hasDb()) {
-    g.__shimaenaMorning ??= initial();
-    return g.__shimaenaMorning;
+    return memGet() ?? memSet(initial());
   }
-  return memoRead(MEMO, loadMorningFromDb);
+  return memoRead(memo(), loadMorningFromDb);
 }
 
 async function loadMorningFromDb(): Promise<MorningRecord> {
   try {
-    const rows = await query<{ state: MorningRecord }>("select state from morning_state where key = $1", [KEY]);
+    const rows = await query<{ state: MorningRecord }>("select state from morning_state where key = $1", [key()]);
     if (rows[0]) return rows[0].state;
     const s = initial();
     await saveMorning(s);
     return s;
   } catch (e) {
     fallback(e);
-    g.__shimaenaMorning ??= initial();
-    return g.__shimaenaMorning;
+    return memGet() ?? memSet(initial());
   }
 }
 
 export async function saveMorning(next: MorningRecord): Promise<void> {
   if (!hasDb()) {
-    g.__shimaenaMorning = next;
+    memSet(next);
     return;
   }
   try {
     await query(
       `insert into morning_state (key, state, updated_at) values ($1, $2::jsonb, now())
        on conflict (key) do update set state = excluded.state, updated_at = now()`,
-      [KEY, JSON.stringify(next)],
+      [key(), JSON.stringify(next)],
     );
-    memoPut(MEMO, next);
+    memoPut(memo(), next);
   } catch (e) {
     fallback(e);
-    g.__shimaenaMorning = next;
+    memSet(next);
   }
 }
 
@@ -95,9 +114,9 @@ export async function claimPlanning(): Promise<boolean> {
     const rows = await query<{ key: string }>(
       `update morning_state set state = jsonb_set(state, '{morning,rollcall,status}', '"planned"'), updated_at = now()
        where key = $1 and state #>> '{morning,rollcall,status}' = 'open' returning key`,
-      [KEY],
+      [key()],
     );
-    memoClear(MEMO); // DB を直接変えたので、同じリクエストの次の loadMorning は読み直す
+    memoClear(memo()); // DB を直接変えたので、同じリクエストの次の loadMorning は読み直す
     return rows.length > 0;
   } catch (e) {
     fallback(e);
@@ -117,7 +136,7 @@ function mem(): Map<string, MorningRecord> {
 
 /** 今朝の記録を日付のキーで残す（次の朝を始める前に呼ぶ） */
 export async function archiveMorning(record: MorningRecord): Promise<void> {
-  const key = record.morning.rollcall.date;
+  const key = archiveKey(record.morning.rollcall.date);
   if (!hasDb()) {
     mem().set(key, structuredClone(record));
     return;
@@ -137,18 +156,22 @@ export async function archiveMorning(record: MorningRecord): Promise<void> {
 /** from 〜 to（両端を含む、YYYY-MM-DD）の朝の記録。今朝（current）も日付が合えば入る */
 export async function listMornings(from: string, to: string): Promise<MorningRecord[]> {
   const byDate = new Map<string, MorningRecord>();
-  if (!hasDb()) {
-    for (const [k, v] of mem()) if (k >= from && k <= to) byDate.set(k, structuredClone(v));
-  } else {
+  // 鍵は、サンプルなら日付そのまま・本番なら real:日付（町ごとに別の記録）。日付は rollcall.date から取る
+  const [lo, hi] = [archiveKey(from), archiveKey(to)];
+  const fromMem = () => {
+    for (const [k, v] of mem()) if (k >= lo && k <= hi) byDate.set(v.morning.rollcall.date, structuredClone(v));
+  };
+  if (!hasDb()) fromMem();
+  else {
     try {
       const rows = await query<{ key: string; state: MorningRecord }>(
-        "select key, state from morning_state where key >= $1 and key <= $2 and key <> $3 order by key",
-        [from, to, KEY],
+        "select key, state from morning_state where key >= $1 and key <= $2 and key <> $3 and key <> $4 order by key",
+        [lo, hi, SAMPLE_KEY, REAL_KEY],
       );
-      for (const r of rows) byDate.set(r.key, r.state);
+      for (const r of rows) byDate.set(r.state.morning.rollcall.date, r.state);
     } catch (e) {
       fallback(e);
-      for (const [k, v] of mem()) if (k >= from && k <= to) byDate.set(k, structuredClone(v));
+      fromMem();
     }
   }
   const current = await loadMorning();

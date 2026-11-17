@@ -25,6 +25,7 @@ import { onTeam } from "@/lib/member";
 import { loadRoster } from "@/lib/morning/roster";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "隊長トーク ・ シマエナGO" };
@@ -37,6 +38,7 @@ export const metadata: Metadata = { title: "隊長トーク ・ シマエナGO" 
 async function Chat({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
   const lang = parseLang(cookieStore.get(LANG_COOKIE)?.value);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
