@@ -13,6 +13,7 @@ import type { PhotoInput } from "@/lib/claude/photo";
 import { completeSolo, startHomeNow, stopHomeNow, type SoloClearSummary } from "@/lib/solo/ops";
 import { within } from "@/lib/ops/deadline";
 import { trustedViewer } from "@/lib/viewer";
+import { keepWorld } from "@/lib/world";
 import { withStateLock } from "@/lib/ops/lock";
 import { stormStopText } from "@/lib/storm";
 import { findPrivateAreas, WHOLE, type PrivacyResult } from "@/lib/claude/privacy";
@@ -121,7 +122,7 @@ export async function reportRoadAction(formData: FormData): Promise<SoloActionRe
     console.error("[road] 報告を保存できませんでした:", e instanceof Error ? e.message : e);
     return { ok: false, text: "報告を保存できませんでした。少し待って、もう一度「地図に報告」を押してください。" };
   }
-  after(() => notifyRoadReport(report).catch((e) => console.error("[road] 通知できませんでした:", e instanceof Error ? e.message : e)));
+  after(keepWorld(() => notifyRoadReport(report).catch((e) => console.error("[road] 通知できませんでした:", e instanceof Error ? e.message : e))));
 
   // 羽とチームの点（1日1回）。写真は Claude が確認する
   const r = await withStateLock("solo:reportRoad", () => completeSolo(id, "report_snow", { photo, note: `${h.label}${note ? `: ${note}` : ""}`, now }));

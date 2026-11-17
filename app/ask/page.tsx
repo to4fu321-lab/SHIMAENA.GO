@@ -15,12 +15,14 @@ import { loadMorning } from "@/lib/morning/store";
 import { loadRoster } from "@/lib/morning/roster";
 import { isNight } from "@/lib/night";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 
 export const metadata: Metadata = { title: "雪かきをお願いする ・ シマエナGO" };
 
 async function Ask({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, record, jar] = await Promise.all([loadRoster(), loadMorning(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(jar.get(VIEWER_COOKIE)?.value);

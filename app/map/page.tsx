@@ -18,6 +18,7 @@ import { listRoadReportsSince } from "@/lib/road/store";
 import { destinationsFor } from "@/lib/nav";
 import { emojiGrid } from "@/lib/share";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 
 // v1.24: 完了でカードが出たあと、返事のあとで Claude が絵を描く（after()）。その時間まで関数を止めない
 export const maxDuration = 300;
@@ -27,6 +28,7 @@ export const metadata: Metadata = { title: "地図 ・ シマエナGO" };
 async function MapContent({ searchParams }: { searchParams: Promise<{ as?: string; road?: string; view?: string; fin?: string }> }) {
   await connection(); // 毎回いまの状態を読む
   const { as, road: focusRoad, view, fin } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [record, roster, cookieStore] = await Promise.all([loadMorning(), loadRoster(), cookies()]);
   // 誰の画面か: ?as=h3（デモで3台のスマホに別の人を出す）→ ログインした本人（cookie）→ 既定の人
   const demoAs = as && isDemoViewer(as) ? as : undefined;

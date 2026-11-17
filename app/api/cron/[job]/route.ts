@@ -6,6 +6,8 @@
 //   weekly:   日曜の「今週の群れ」（announce が日曜なら先に行う。単独で呼ぶ用）
 import { checkForecastAndAnnounce, deliverDueCards, laterShift, morningAuto, plan, weeklyRecap } from "@/lib/morning/ops";
 import { withStateLock } from "@/lib/ops/lock";
+import { demoEnabled } from "@/lib/env";
+import { inWorld } from "@/lib/world";
 import { recordProblem } from "@/lib/ops/problems";
 import { nudgeInactive } from "@/lib/nudge/ops";
 import { flushRoadAlerts } from "@/lib/road/notify";
@@ -29,7 +31,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ job: string }> 
   if (req.headers.get("authorization") !== `Bearer ${secret}`) return new Response("Unauthorized", { status: 401 });
 
   const { job } = await ctx.params;
-  return withStateLock(`cron:${job}`, () => run(job));
+  // 定期実行は、本番の町（本当の天気）だけを動かす（spec v1.70）。サンプルの町は、人をえらんだときに雪の朝を用意する
+  return inWorld("real", () => withStateLock(`cron:${job}`, () => run(job)));
 }
 
 async function run(job: string): Promise<Response> {
@@ -39,6 +42,8 @@ async function run(job: string): Promise<Response> {
       job === "announce" || job === "rollcall"
         ? await deliverDueCards().catch(async (e) => (await recordProblem("cron/cards", e), { houses: 0, cards: 0 }))
         : undefined;
+    // サンプルの町のカードも、今までどおり夜に届ける（架空の人のカード帳用。失敗しても本番の仕事は進める）
+    if (cards && demoEnabled()) await inWorld("demo", () => deliverDueCards()).catch((e) => recordProblem("cron/cards-sample", e));
     // 警報の日はお休み（spec v1.11）: 予告・点呼・作戦・お昼／夕方の出番を送らず、全員にお休みを1日1回だけ知らせる
     if (STORM_JOBS.has(job)) {
       const storm = await stormStatus();

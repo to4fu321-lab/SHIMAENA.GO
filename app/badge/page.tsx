@@ -19,6 +19,7 @@ import { isNight, NIGHT_TEXT } from "@/lib/night";
 import { teamTerm, teamTheme } from "@/lib/team-theme";
 import { TOWN } from "@/lib/town";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "雪かき中の印 ・ シマエナGO" };
@@ -28,6 +29,7 @@ const TODAY_LABEL = new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", m
 async function BadgeView({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) && demoEnabled() ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);

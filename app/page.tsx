@@ -22,6 +22,7 @@ import { progress } from "@/lib/morning/view";
 import { listShort } from "@/lib/morning/watch";
 import { teamTheme } from "@/lib/team-theme";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, isRealWorld, worldOf } from "@/lib/world";
 import { demoMorning } from "@/lib/env";
 import { isClockNight } from "@/lib/night";
 import { captainLine, captainRotation, captainState } from "@/lib/captain";
@@ -53,6 +54,7 @@ export const metadata: Metadata = { title: "シマエナGO ・ 10分の雪かき
 async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sky?: string }> }) {
   await connection();
   const { as, sky: skyParam } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [record, roster, cookieStore, wx] = await Promise.all([
     loadMorning(),
     loadRoster(),
@@ -61,7 +63,8 @@ async function Today({ searchParams }: { searchParams: Promise<{ as?: string; sk
   ]);
   const m = record.morning;
   // デモの夜は「雪の朝 7:10」として見せる（11/10 本人「デモは雪が積もった朝から」）。昼は時計どおり
-  const demoDawn = demoMorning() && isClockNight();
+  // 本番の町（ログインした本人）は、夜も時計と本当の天気のまま（spec v1.70）
+  const demoDawn = !isRealWorld() && demoMorning() && isClockNight();
   const nowMin = demoDawn ? 7 * 60 + 10 : jstMinutes();
   // 背景の空: いまの天気と時間（デモでは ?sky=night-snow のように上書きできる）
   const sky = parseSkyParam(skyParam) ?? {

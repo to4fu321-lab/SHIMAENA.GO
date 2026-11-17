@@ -3,6 +3,7 @@
 // ソロ台帳の日付・連続出動日数・応援の日付・週の範囲・公開ページの集計は、すべてここを通す。
 import { jstDate } from "../jst";
 import type { MorningRecord } from "./flow";
+import { isRealWorld } from "../world";
 
 /** 2つの日付（YYYY-MM-DD）の差（日） */
 export function dayDiff(a: string, b: string): number {
@@ -11,6 +12,7 @@ export function dayDiff(a: string, b: string): number {
 
 export function appToday(record: Pick<MorningRecord, "morning">, now: Date = new Date()): string {
   const real = jstDate(now);
+  if (isRealWorld()) return real; // 本番の町は、いつでも本当の日付（spec v1.70）
   const rc = record.morning.rollcall.date;
   return Math.abs(dayDiff(rc, real)) <= 1 ? real : rc;
 }

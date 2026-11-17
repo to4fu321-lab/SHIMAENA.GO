@@ -9,6 +9,7 @@ import { PENDING_COOKIE } from "@/lib/auth/pending";
 import { deleteParticipantData } from "@/lib/repo";
 import { withStateLock } from "@/lib/ops/lock";
 import { isDemoViewer, readViewer, trustedViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld } from "@/lib/world";
 
 export async function setNudgeAction(viewerId: string, on: boolean): Promise<{ ok: boolean; on: boolean }> {
   const id = await trustedViewer(viewerId);
@@ -23,6 +24,7 @@ export async function setNudgeAction(viewerId: string, on: boolean): Promise<{ o
 export async function withdrawAction(): Promise<void> {
   const jar = await cookies();
   const id = readViewer(jar.get(VIEWER_COOKIE)?.value);
+  enterWorld("real"); // ログインした本人は、本番の町（spec v1.70）
   if (!id || isDemoViewer(id)) redirect("/settings"); // デモの架空の人は退会できない（みんなで使う見本のため）
   await withStateLock("withdraw", () => deleteParticipantData(id));
   jar.delete(VIEWER_COOKIE);

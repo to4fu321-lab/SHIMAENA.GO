@@ -11,6 +11,7 @@ import { storyOf } from "@/lib/kikigaki/store";
 import { toView } from "@/lib/kikigaki/view";
 import { repo } from "@/lib/repo";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 
 // お話と絵を Claude が書いて描く（1〜3分）。その時間まで関数を止めない
 export const maxDuration = 300;
@@ -20,6 +21,7 @@ export const metadata: Metadata = { title: "雪の聞き書き ・ シマエナG
 async function Kikigaki({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
   await connection();
   const { as } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const jar = await cookies();
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(jar.get(VIEWER_COOKIE)?.value);

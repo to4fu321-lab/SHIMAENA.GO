@@ -5,6 +5,7 @@ import { memoClear, memoRead } from "../db/memo";
 import { demoParticipantId } from "../inbox/key";
 import type { RegSession } from "../line/registration";
 import { TOWN } from "../town";
+import { currentWorld, isDemoId } from "../world";
 import type { Base, Card, FamilyLink, Participant, SoloLog, TeamId } from "../types";
 
 export interface Repo {
@@ -553,7 +554,14 @@ export const dbRepo: Repo = {
 };
 
 export function repo(): Repo {
-  return hasDb() ? dbRepo : memoryRepo;
+  const base = hasDb() ? dbRepo : memoryRepo;
+  // 全員ぶんの台帳（今日の人数・週の集計）は、その町の人だけに（spec v1.70）。町を決めていなければ全員（今までどおり）
+  const w = currentWorld();
+  if (!w) return base;
+  return {
+    ...base,
+    listSoloLogsBetween: async (from, to) => (await base.listSoloLogsBetween(from, to)).filter((l) => isDemoId(l.participantId) === (w === "demo")),
+  };
 }
 
 /**

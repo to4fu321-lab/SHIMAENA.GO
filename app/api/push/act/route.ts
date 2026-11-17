@@ -7,12 +7,14 @@ import { listThread } from "@/lib/inbox/store";
 import { textOf } from "@/lib/line/flex";
 import { repo } from "@/lib/repo";
 import { readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld } from "@/lib/world";
 
 const ALLOWED = /^(rc:ans=[a-z0-9]+|help:go=[\w-]{1,60}|help:no)$/;
 
 export async function POST(req: Request): Promise<Response> {
   const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });
   const viewerId = readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
+  enterWorld("real"); // ログインした本人は、本番の町（spec v1.70）
   if (!viewerId) return json({ ok: false, text: "ログインしてから答えてください。" }, 401);
   let data = "";
   let label = "";

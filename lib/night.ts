@@ -3,6 +3,7 @@
 // よその家の手伝い・見回り・雪の報告に出かけるのは、明るい時間に。決めるのは時計だけ（AI は使わない）。
 import { demoMorning } from "./env";
 import { jstHourMinute } from "./jst";
+import { isRealWorld } from "./world";
 
 /** 夜の始まりと終わり（時。日本時間）。エリア会と決めて変えてよい */
 export const NIGHT_FROM = 19; // 本人の答え「19時以降は NG」（11/4）
@@ -14,8 +15,9 @@ export function isClockNight(now: Date = new Date()): boolean {
   return h >= NIGHT_FROM || h < NIGHT_UNTIL;
 }
 
-/** 夜か（よその家の手伝いを止めるか）。デモの間はいつでも朝として扱う（lib/env.ts の demoMorning） */
+/** 夜か（よその家の手伝いを止めるか）。サンプルの町はいつでも朝として扱う（lib/env.ts の demoMorning）。本番の町は時計どおり（spec v1.70） */
 export function isNight(now: Date = new Date()): boolean {
+  if (isRealWorld()) return isClockNight(now);
   return !demoMorning() && isClockNight(now);
 }
 

@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { appSecret } from "./auth/secret";
 import { demoEnabled } from "./env";
+import { enterWorld, worldOf } from "./world";
 
 export const VIEWER_COOKIE = "viewer";
 
@@ -44,6 +45,8 @@ export function isDemoViewer(id: string): boolean {
  * 本当にエリアで使うとき（DEMO_MODE=off）は、架空の人として押すことはできない（見るだけ）。
  */
 export async function trustedViewer(viewerId: string): Promise<string | null> {
+  // このボタンの処理を、その人の町で動かす（架空の人ならサンプル、本人なら本番。spec v1.70）。最初の await より前に
+  enterWorld(worldOf(viewerId));
   if (isDemoViewer(viewerId)) return demoEnabled() ? viewerId : null;
   const fromCookie = readViewer((await cookies()).get(VIEWER_COOKIE)?.value);
   return fromCookie === viewerId ? viewerId : null;

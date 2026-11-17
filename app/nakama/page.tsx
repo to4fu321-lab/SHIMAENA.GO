@@ -8,6 +8,7 @@ import NakamaScreen from "@/components/NakamaScreen";
 import StormBanner from "@/components/StormBanner";
 import { nakamaView } from "@/lib/nakama/ops";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 import Bgm from "@/components/Bgm";
 
 export const metadata: Metadata = { title: "なかま ・ シマエナGO" };
@@ -15,6 +16,7 @@ export const metadata: Metadata = { title: "なかま ・ シマエナGO" };
 async function Content({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   await connection();
   const { as, tab } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const initialTab = tab && /^[0-2]$/.test(tab) ? Number(tab) : undefined;
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer((await cookies()).get(VIEWER_COOKIE)?.value);

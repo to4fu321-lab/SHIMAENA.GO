@@ -13,12 +13,15 @@ import { loadMorning } from "@/lib/morning/store";
 import { voiceThanksTarget } from "@/lib/morning/ops";
 import { canListen, findThanksVoice } from "@/lib/thanks/voice";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 
 export const metadata: Metadata = { title: "声のありがとう ・ シマエナGO" };
 
 async function Thanks({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ as?: string }> }) {
   await connection();
-  const [{ id }, { as }, jar, roster, record] = await Promise.all([params, searchParams, cookies(), loadRoster(), loadMorning()]);
+  const [{ id }, { as }] = await Promise.all([params, searchParams]);
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
+  const [jar, roster, record] = await Promise.all([cookies(), loadRoster(), loadMorning()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(jar.get(VIEWER_COOKIE)?.value);
   const q = demoAs ? `?as=${demoAs}` : "";

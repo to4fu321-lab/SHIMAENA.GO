@@ -10,6 +10,7 @@ import type { Registration } from "@/lib/line/registration";
 import { repo } from "@/lib/repo";
 import type { ClearArea, HelpStyle, LatLng, MorningMinutes, SoloMinutes } from "@/lib/types";
 import { readViewer, signViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld } from "@/lib/world";
 
 export interface StartForm {
   /** both = 手伝うし、うちも頼みたい（11/7 本人の指示「どちらも登録できるように」） */
@@ -45,6 +46,7 @@ async function who(): Promise<{ lineUserId: string; displayName: string } | unde
 }
 
 export async function registerAction(f: StartForm): Promise<StartResult> {
+  enterWorld("real"); // 登録するのは本物の人 → 本番の町（spec v1.70）
   try {
     const me = await who();
     if (!me) return { ok: false, text: "ログインが切れています。もう一度「LINE でログイン」を押してください。" };
@@ -99,6 +101,7 @@ export async function registerAction(f: StartForm): Promise<StartResult> {
 
 /** 連携コード（6桁）で、本人か家族として、お願いする側の家に紐づく */
 export async function linkCodeAction(code: string, whoAmI: "self" | "family"): Promise<StartResult> {
+  enterWorld("real");
   const me = await who();
   if (!me) return { ok: false, text: "ログインが切れています。もう一度「LINE でログイン」を押してください。" };
   const c = code.replace(/\D/g, "");

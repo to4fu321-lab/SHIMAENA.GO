@@ -21,6 +21,7 @@ import { shareTextsFor } from "@/lib/sns/refresh";
 import { mockShareText } from "@/lib/sns/text";
 import { baseUrl } from "@/lib/url";
 import { isDemoViewer, readViewer, VIEWER_COOKIE } from "@/lib/viewer";
+import { enterWorld, worldOf } from "@/lib/world";
 
 export const metadata: Metadata = { title: "つなぐ ・ シマエナGO" };
 
@@ -29,6 +30,7 @@ const TABS = ["post", "invite", "baton", "nakama"];
 async function ConnectContent({ searchParams }: { searchParams: Promise<{ as?: string; tab?: string }> }) {
   await connection();
   const { as, tab } = await searchParams;
+  enterWorld(worldOf(as)); // 架空の人ならサンプルの町、本人なら本番の町（spec v1.70）
   const [roster, cookieStore] = await Promise.all([loadRoster(), cookies()]);
   const demoAs = as && isDemoViewer(as) ? as : undefined;
   const viewerId = demoAs ?? readViewer(cookieStore.get(VIEWER_COOKIE)?.value);
