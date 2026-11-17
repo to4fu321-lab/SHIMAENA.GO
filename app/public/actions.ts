@@ -7,6 +7,7 @@ import { loadMorning } from "@/lib/morning/store";
 import { appToday } from "@/lib/morning/today";
 import { CHEER_COOKIE, CHEER_DAILY_MAX, cheeredToday } from "@/lib/public/cheer";
 import { repo } from "@/lib/repo";
+import { enterWorld } from "@/lib/world";
 import { INVITE_COOKIE, isInviteCode, recordInviteCheer, recordInviteOpen } from "@/lib/invite";
 
 export interface CheerResult {
@@ -18,6 +19,7 @@ export interface CheerResult {
 
 /** 町を応援する（1日1回）。得点・羽には入れない */
 export async function cheerTownAction(): Promise<CheerResult> {
+  enterWorld("real"); // 公開ページは本番の町（spec v1.71）
   const today = appToday(await loadMorning());
   const jar = await cookies();
   const r = repo();

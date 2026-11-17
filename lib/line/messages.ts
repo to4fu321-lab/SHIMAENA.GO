@@ -462,6 +462,15 @@ export const MSG = {
   nowNothing: () =>
     bubbles(["今近くに仕事はありません。", "ありがとうえな〜！次の雪の朝に、またお知らせします。", "ひとりでできる10分（自分の家の雪かき・道の危険の報告）もあります。"], [B.solo, B.map]),
   // ---- 雪かきを頼む（spec v1.10）: お願いする側が 6〜19時いつでも。返事は返信なので通数0（知らせは別） ----
+  /** 雪のない朝、前の雪かきが終わっていない家へ（spec v1.71）。家族の代理の家は、家族に */
+  leftoverAsk: (baseNumber: number | string, dateText: string, baseId: string, forFamily = false): LineMessage[] => [
+    text(`おはようございます。${dateText}の雪かきで、${forFamily ? "ご家族の家（" : ""}拠点${baseNumber}${forFamily ? "）" : ""}がまだ終わっていません。`),
+    ask("今朝は雪が積もっていません。いまも雪かきは必要ですか？", [
+      { label: "まだ必要です", data: `left:yes=${baseId}` },
+      { label: "もう大丈夫", data: `left:no=${baseId}`, tone: "soft" },
+    ]),
+  ],
+  leftoverFine: () => bubbles(["わかりました。お知らせしてよかったです。", "また雪が積もったら、朝 6:30 に近所へお知らせします。"]),
   askNight: () => bubbles(["夜（19時〜朝6時）は、よその人に雪かきを頼めません。", "明日の朝6時から頼めます。"], [say("隊長に相談")]),
   askHelperOnly: () =>
     bubbles(["頼めるのは、お願いする側として登録した家です。", "ご自分の家も「雪かきを頼む」から、頼める家にできます（手伝う側のままで）。"], [open("頼める家にする", "/ask"), say("隊長に相談")]),

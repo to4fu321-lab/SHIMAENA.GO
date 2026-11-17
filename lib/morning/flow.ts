@@ -40,6 +40,8 @@ export interface MorningRecord {
   recap?: { text: string; at: string; allDone: boolean };
   /** 「全軒 完了！」を知らせた朝の日付（spec v1.66）。同じ朝に2回は知らせない */
   allClearFor?: string;
+  /** 雪のない朝に、前の雪かきが終わっていない家へ「まだ必要ですか？」を聞いた日（spec v1.71。1日1回） */
+  leftoverAskedOn?: string;
   /** ありがとう点呼（v1.1）: ミッション ID ごとに、お願いした人の3択と、Claude が整えた一文 */
   thanks?: Record<string, ThanksRecord>;
   /** 声のありがとう（v1.29）: ミッション ID ごと。音そのものは lib/thanks/voice.ts */

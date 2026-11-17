@@ -2,11 +2,13 @@
 // 会話のルールは registration.ts（純粋な関数）。ここは保存・レベル判定・チーム配属・返信という「副作用」だけ。
 import { randomBytes } from "node:crypto";
 import { judgeLevel } from "../claude/level";
-import { assignTeam, makeLinkCode } from "../game/team";
+import { makeLinkCode } from "../game/team";
+import { teamForNewMember } from "../game/near-team";
 import { sniffImageType } from "../image";
 import {
   answerByWords,
   answerRollcall,
+  answerLeftover,
   completeManually,
   completeWithPhoto,
   escalateHelpIfDue,
@@ -73,7 +75,7 @@ export async function finishRegistration(lineUserId: string, reg: Registration, 
   if (reg.role === "helper") {
     const existing = await r.findParticipantByLineUserId(lineUserId);
     const teamId =
-      existing?.role === "helper" && existing.teamId ? existing.teamId : assignTeam(await r.countHelpersByTeam());
+      existing?.role === "helper" && existing.teamId ? existing.teamId : await teamForNewMember(reg.location, existing?.id);
     const p: Participant = {
       id: existing?.id ?? newId("p"),
       nickname: name,
@@ -114,7 +116,7 @@ export async function finishRegistration(lineUserId: string, reg: Registration, 
 
   // お互いさま（v1.10）: 本人の登録ならチームに入る（家族の代理はまだ本人の LINE がないので入れない）
   if (!reg.proxy) {
-    p.teamId = existing?.teamId ?? assignTeam(await r.countHelpersByTeam());
+    p.teamId = existing?.teamId ?? (await teamForNewMember(p.location, p.id));
     await r.upsertParticipant(p);
   }
   const messages: LineMessage[] = MSG.requesterDone(level.message, level.level, level.requiredPeople);
@@ -173,7 +175,7 @@ function startsGame(ev: LineEvent): boolean {
   }
   if (ev.type === "postback" && "postback" in ev) {
     const d = ev.postback.data;
-    return d.startsWith("now:") || d.startsWith("help:go=") || d === "go:yes";
+    return d.startsWith("now:") || d.startsWith("help:go=") || d === "go:yes" || d.startsWith("left:yes=");
   }
   return false;
 }
@@ -201,6 +203,14 @@ export async function handleEvent(ev: LineEvent): Promise<void> {
       await reply(lineUserId, MSG.stormStop(stormHeadline(storm), STORM_LINES));
       return;
     }
+  }
+
+  // 雪のない朝の「まだ必要ですか？」の答え（spec v1.71）
+  if (ev.type === "postback" && "postback" in ev && ev.postback.data.startsWith("left:")) {
+    const messages = await answerLeftover(lineUserId, ev.postback.data);
+    if (ev.replyToken) await reply(lineUserId, messages);
+    afterReply();
+    return;
   }
 
   // 点呼の答え（rc:ans=...）は登録の会話とは別に扱う

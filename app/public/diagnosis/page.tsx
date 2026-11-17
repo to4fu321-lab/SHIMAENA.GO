@@ -9,6 +9,7 @@ import { quizComment } from "@/lib/claude/quiz";
 import { lineJoinUrl } from "@/lib/line/join";
 import { loadMorning } from "@/lib/morning/store";
 import { appToday } from "@/lib/morning/today";
+import { enterWorld } from "@/lib/world";
 import { isQuizType, QUIZ_TYPES } from "@/lib/public/quiz";
 import { baseUrl } from "@/lib/url";
 import Bgm from "@/components/Bgm";
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
 
 async function Diagnosis({ searchParams }: { searchParams: Promise<{ r?: string }> }) {
   await connection();
+  enterWorld("real"); // 公開ページは本番の町（spec v1.71）
   const { r } = await searchParams;
   if (!isQuizType(r)) return <Quiz />;
   const t = QUIZ_TYPES[r];
