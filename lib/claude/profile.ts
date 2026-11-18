@@ -15,6 +15,7 @@ import {
   type ProfileTurn,
 } from "../mypage/rules";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 const Schema = z.object({
   /** ひとこと（40字まで。本人の口調で、ですます） */
@@ -42,9 +43,10 @@ export interface TidyProfile {
 export async function tidyProfile(turns: ProfileTurn[]): Promise<TidyProfile> {
   const tpl = { ...templateProfile(turns), by: "program" as const };
   const answered = turns.filter((t) => t.a.trim());
-  if (!hasClaudeKey() || answered.length === 0) return tpl;
+  if (!hasClaudeKey() || !(await underBudget()) || answered.length === 0) return tpl;
   try {
     const res = await askJson({
+      rubric: ["profile"],
       task:
         "シマエナ隊長のインタビュー（5問）の答えから、雪かき仲間に見せる短いプロフィールを整えてください。採点表 profile の規則に従います。" +
         "intro は本人が言っているような「ひとこと」（40字まで、ですます。答えのことばを活かし、作り話を足さない）。" +

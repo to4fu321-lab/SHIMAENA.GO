@@ -3,6 +3,7 @@
 // v1.30: 白いもの（大福・ソフトクリーム・シマエナガ・オコジョ…）で、毎朝ちがう名前に。
 import { z } from "zod";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const SNOW_NAME_MAX = 10;
 
@@ -78,8 +79,9 @@ export function trimSnowName(name: string, forecastCm: number, seed = ""): strin
 }
 
 export async function announceText(input: AnnounceInput): Promise<Announcement> {
-  if (!hasClaudeKey()) return mockAnnounce(input);
+  if (!hasClaudeKey() || !(await underBudget())) return mockAnnounce(input);
   const res = await askJson({
+    rubric: ["snowName"],
     task:
       "前夜の予告を書いてください。snowName は採点表 snowName の規則で、明朝の雪につける名前（10文字まで）。input.hints の候補から雪の量に合うものを選ぶか、同じ考え方（白いもの＋手ごたえのことば）で新しく作ります。" +
       "text は採点表 voice のシマエナ隊長の口調で4文以内、やさしい日本語。最初に「シマエナ隊長だしま〜！」と名乗り、10cm 以上積もったら明朝 6:30 に近所の雪かき応援をお知らせすること、予想の降雪量（cm）、相手の名前（「相手は『名前』」の形）、持ち物（長靴・手袋など）を入れます。体調の話はしません。",

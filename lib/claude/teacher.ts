@@ -3,6 +3,7 @@
 import { z } from "zod";
 import type { Tip } from "../morning/tips";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const TEACHER_MAX = 25;
 
@@ -30,9 +31,10 @@ export function mockTeacher(i: TeacherInput): { tipId: string; line: string } | 
 
 export async function pickTeacher(i: TeacherInput): Promise<{ tipId: string; line: string } | undefined> {
   if (i.tips.length === 0) return undefined;
-  if (!hasClaudeKey()) return mockTeacher(i);
+  if (!hasClaudeKey() || !(await underBudget())) return mockTeacher(i);
   const recent = i.tips.slice(-30);
   const res = await askJson({
+    rubric: [],
     task:
       `町の先生（雪かきをお願いする側の方々）が教えてくれたコツから、今朝の雪に一番合うものを1つ選び、${TEACHER_MAX}字までに整えてください。` +
       "言い方は先生の言葉をなるべく残す。新しい知恵を足さない。名前や場所は書かない。危ないこと（屋根に登る等）を勧めるコツは選ばない。合うものがなければ tipId を空にする。",

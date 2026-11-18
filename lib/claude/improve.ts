@@ -4,6 +4,7 @@ import { z } from "zod";
 import { MOTIVE_LABEL, type Motive } from "../concierge/profile";
 import { VOICE_LABEL, type Proposal, type VoiceCategory } from "../voice/store";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const ProposalSchema = z.object({
   title: z.string(),
@@ -56,9 +57,10 @@ export function tidyProposals(ps: Proposal[], input: ImproveInput): Proposal[] {
 
 export async function improveProposals(input: ImproveInput): Promise<{ proposals: Proposal[]; byClaude: boolean }> {
   if (input.total === 0) return { proposals: [], byClaude: false };
-  if (!hasClaudeKey()) return { proposals: mockProposals(input), byClaude: false };
+  if (!hasClaudeKey() || !(await underBudget())) return { proposals: mockProposals(input), byClaude: false };
   try {
     const res = await askJson({
+      rubric: ["improve"],
       task:
         "1週間に隊長トークへ届いた相談から読み取った「声」（要約だけ）を読み、採点表 improve の規則で、シマエナGO の改善の提案を3〜5件書いてください。" +
         `種類: ${Object.entries(VOICE_LABEL).map(([k, v]) => `${k}=${v}`).join("・")}。方向: ${Object.entries(MOTIVE_LABEL).map(([k, v]) => `${k}=${v}`).join("・")}。` +

@@ -1,6 +1,5 @@
-// ソロ出動のひとこと（spec v1.3）: 完了の演出と個人の活動カードに出す 30 字。本当の数字だけを渡す。キーなしは定型。
+// ソロ出動のひとこと（spec v1.3）: 完了の演出と個人の活動カードに出す 30 字。11/18 本人の指示「不要な API をプログラムに」で、定型だけにした（Claude は呼ばない）。
 import { z } from "zod";
-import { askJson, hasClaudeKey } from "./client";
 
 export const HITOKOTO_MAX = 30;
 
@@ -28,16 +27,7 @@ export function mockSoloHitokoto(i: SoloHitokotoInput): { text: string } {
   return { text: "ひとりの10分が、町の冬を少し軽くしました。" };
 }
 
+/** ひとこと（11/18 本人の指示でプログラムの定型に。Claude は呼ばない） */
 export async function soloHitokoto(input: SoloHitokotoInput): Promise<{ text: string }> {
-  if (!hasClaudeKey()) return mockSoloHitokoto(input);
-  const res = await askJson({
-    task:
-      "ソロ出動を終えた人へのひとことを書いてください。採点表 solo の規則に従います: 30字まで、やさしい日本語、入力の数字だけを使う。" +
-      "人の名前は出さない。体調や医療の話はしない。ほめる言葉を先に。口調は採点表 voice だが名乗らない。",
-    input,
-    schema: SoloHitokotoSchema,
-    effort: "low",
-    model: "light", // 短い文なので安いモデル（spec v1.6）
-  });
-  return { text: trimHitokoto(res.text) || mockSoloHitokoto(input).text };
+  return mockSoloHitokoto(input);
 }

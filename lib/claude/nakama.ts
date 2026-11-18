@@ -2,6 +2,7 @@
 // 書き込みのとき（誘ったとき・バトンを渡したとき）だけ呼ぶ。点検に通らなければ決まった文に戻す。
 import { z } from "zod";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 import { aiLineOk, templateInvite, templateStory, type Baton, type MeetKind, type MeetWindow } from "../nakama/rules";
 
 const LineSchema = z.object({ text: z.string() });
@@ -12,9 +13,10 @@ export const STORY_MAX = 70;
 /** 合流の誘いの一文（相手の LINE と画面に出す）。名前は渡さない */
 export async function meetupInviteLine(input: { kind: MeetKind; window: MeetWindow; baseNumber?: number; areaPeople: number }): Promise<string> {
   const fallback = templateInvite(input.kind, input.window, input.baseNumber);
-  if (!hasClaudeKey()) return fallback;
+  if (!hasClaudeKey() || !(await underBudget())) return fallback;
   try {
     const res = await askJson({
+      rubric: ["nakama"],
       task:
         "雪かきの「ゆるく合流」の誘いを1文で書いてください。採点表 nakama の規則に従います: 45字まで、やさしい日本語、シマエナ隊長の明るい口調（名乗らない）。" +
         "kind は相手との関係（reunion=前回一緒だった仲間、welcome=初参加の人を迎える、senior=初参加の人へ経験者、new=はじめて会う近くの人、nearby=近くの人）。" +
@@ -36,7 +38,7 @@ export async function meetupInviteLine(input: { kind: MeetKind; window: MeetWind
 /** バトンのつながりの一文（その地域の前のバトンと、今日の参加人数から） */
 export async function batonStoryLine(input: { previous: Pick<Baton, "at" | "status" | "source">[]; now: string; areaPeople: number }): Promise<string> {
   const fallback = templateStory(input.previous, input.now, input.areaPeople);
-  if (!hasClaudeKey()) return fallback;
+  if (!hasClaudeKey() || !(await underBudget())) return fallback;
   try {
     const facts = {
       previous: input.previous.map((b) => ({ hourJst: (new Date(b.at).getUTCHours() + 9) % 24, status: b.status, where: b.source })),
@@ -44,6 +46,7 @@ export async function batonStoryLine(input: { previous: Pick<Baton, "at" | "stat
       areaPeople: input.areaPeople,
     };
     const res = await askJson({
+      rubric: ["nakama"],
       task:
         "雪かきバトン（同じ地域で、時間をずらして雪かきをつなぐ）のつながりを1〜2文で書いてください。採点表 nakama の規則に従います: 70字まで、やさしい日本語。" +
         "例「朝の活動者がここまで雪かきをしました。午後のあなたがバトンを受け取りました。」。時刻は「朝・お昼・午後」で言い、数字の時刻は書かない。" +

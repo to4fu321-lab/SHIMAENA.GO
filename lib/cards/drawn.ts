@@ -8,8 +8,12 @@ import { recordProblem } from "../ops/problems";
 import { repo } from "../repo";
 import { renderCardSvg, type CardArt } from "./svg";
 
-/** Claude が描けるか（キーがあるか）。描けるならカードは「描いています」で出す */
-export const willDraw = () => hasClaudeKey();
+/**
+ * Claude が描くか。描くならカードは「描いています」で出す。
+ * 11/18 本人の指示「不要な API をプログラムに」: 1枚で最大6万4千トークンと一番高いので、ふだんはプログラムの絵（lib/cards/svg.ts）。
+ * Vercel の環境変数 CARD_ART_AI=on のときだけ Claude が描く（1日のトークン上限の中で）
+ */
+export const willDraw = () => hasClaudeKey() && process.env.CARD_ART_AI === "on";
 
 /**
  * 絵を描くのに使ってよい時間（頼んだ時から）。Vercel の関数は 300 秒で打ち切られ、打ち切られると下の「型の絵に戻す」も動かず、

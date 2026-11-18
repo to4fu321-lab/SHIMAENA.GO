@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { MAX_TURNS, answered, fallbackQuestion, scrub, templateStory, tidyStory, type Turn } from "../kikigaki/core";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 const NextSchema = z.object({
   /** 前の答えへの短い相づち（30字まで。最初は空） */
@@ -32,9 +33,10 @@ const RULES = "採点表 kikigaki の規則に従います。体調・病気・�
 export async function nextTurn(turns: Turn[]): Promise<NextTurn> {
   const fallback = (): NextTurn => ({ aizuchi: turns.length ? "ありがとうございます。" : "", question: fallbackQuestion(turns) });
   if (turns.length >= MAX_TURNS) return { aizuchi: "たくさん、ありがとうございました。", question: undefined };
-  if (!hasClaudeKey()) return fallback();
+  if (!hasClaudeKey() || !(await underBudget())) return fallback();
   try {
     const res = await askJson({
+      rubric: ["kikigaki"],
       task:
         "あなたはシマエナ隊長として、雪かきを頼んだお年寄りから「雪の思い出」を聞き書きしています。" +
         "直前の答えを受けて、心のこもった短い相づち（aizuchi、30字まで、話の中の具体的なことばを1つ拾う）と、次の質問を1つ（question、50字まで）書いてください。" +
@@ -58,9 +60,10 @@ export async function nextTurn(turns: Turn[]): Promise<NextTurn> {
 /** お話にする（題名・本文・絵の場面）。by は Claude が書いたか */
 export async function writeStory(turns: Turn[]): Promise<{ title: string; story: string; scene: string; by: "claude" | "program" }> {
   const tpl = templateStory(turns);
-  if (!hasClaudeKey()) return { ...tpl, scene: "", by: "program" };
+  if (!hasClaudeKey() || !(await underBudget())) return { ...tpl, scene: "", by: "program" };
   try {
     const res = await askJson({
+      rubric: ["kikigaki"],
       task:
         "聞き書きのやりとりから、その人が自分で語っているような短いお話を書いてください（本人の一人称、「わたし」。180〜240字）。" +
         "答えにあることだけを使い、作り話を足さない。音・色・手ざわりなど、答えの中の具体的なことばを大事に残す。最後は、雪かきに来てくれる人へのあたたかい一文で結ぶ（答えにあれば、その言葉で）。" +

@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { adminGate } from "@/lib/admin-auth";
 import { hasClaudeKey } from "@/lib/claude/client";
+import { tokensPerDay, usedToday } from "@/lib/claude/budget";
 import { dbStatus } from "@/lib/db";
 import { demoEnabled } from "@/lib/env";
 import { countOutSince } from "@/lib/inbox/store";
@@ -84,7 +85,7 @@ async function SettingsTab() {
 }
 
 async function StatusTab() {
-  const [db, notices, subs] = await Promise.all([dbStatus(), countOutSince(monthStartIso()).catch(() => 0), countSubscriptions().catch(() => ({ devices: 0, people: 0 }))]);
+  const [db, notices, subs, used] = await Promise.all([dbStatus(), countOutSince(monthStartIso()).catch(() => 0), countSubscriptions().catch(() => ({ devices: 0, people: 0 })), usedToday().catch(() => 0)]);
   return (
     <>
       <section className={box}>
@@ -113,6 +114,9 @@ async function StatusTab() {
         <p className="text-base">
           DB: <b>{db.kind === "ready" ? `OK（${db.participants} 人）` : db.kind === "none" ? "メモリ" : db.kind === "unprepared" ? "未準備" : "エラー"}</b> ・ 隊長:{" "}
           <b>{hasClaudeKey() ? "Claude" : "モック"}</b> ・ デモ操作: <b>{demoEnabled() ? "オン" : "オフ"}</b>
+        </p>
+        <p className="text-base">
+          今日の Claude: <b className="tabular-nums">{used.toLocaleString()}</b> / {tokensPerDay().toLocaleString()} トークン{used >= tokensPerDay() ? "（上限。今日は決まった文）" : ""}
         </p>
         <p className="text-sm text-ink-soft">鍵は Vercel の環境変数で入れます。</p>
       </section>

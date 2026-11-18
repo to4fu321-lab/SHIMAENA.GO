@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { MOTIVE_LABEL, type Motive } from "../concierge/profile";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const NudgeSchema = z.object({
   /** 2文（1文ずつ） */
@@ -40,9 +41,10 @@ export function tidyNudge(lines: string[], i: NudgeInput): string[] {
 }
 
 export async function nudgeLines(i: NudgeInput): Promise<string[]> {
-  if (!hasClaudeKey()) return mockNudge(i);
+  if (!hasClaudeKey() || !(await underBudget())) return mockNudge(i);
   try {
     const res = await askJson({
+      rubric: ["nudge"],
       task:
         "しばらく活動のない人への、シマエナ隊長の声かけを書いてください（採点表 nudge）。lines は2文（1文50字まで）。" +
         "1文目は呼び名と「雪の便り」（今週の町の数字か、その人のカード・羽など input の事実だけ）。2文目は option を、その人の方向（motives）に結びつけてやさしくすすめる。来てほしいと頼まない。参加しないことを責めない。体調に触れない。口調は採点表 voice。",

@@ -8,7 +8,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { COLORS } from "../brand";
-import { CLAUDE_LIGHT_MODEL, CLAUDE_MODEL, getClaudeClient, hasClaudeKey, SYSTEM_PROMPT } from "../claude/client";
+import { underBudget } from "../claude/budget";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_MODEL, getClaudeClient, guardBudget, hasClaudeKey, recordUsage, SYSTEM_PROMPT } from "../claude/client";
 import { conciergeContext, conciergeWeather } from "../concierge/run";
 import { optionAction } from "../concierge/messages";
 import { buildOptions, BODY_WORDS } from "../concierge/options";
@@ -289,6 +290,7 @@ export async function gatherFacts(p: Participant, now: Date): Promise<Record<str
 
 /** 隊長エージェントで答える。失敗したら例外（呼ぶ側が今までのコンシェルジュに切りかえる） */
 export async function captainAgent(p: Participant, text: string, now = new Date()): Promise<AgentResult> {
+  await guardBudget();
   const client = getClaudeClient();
   const [history, facts] = await Promise.all([recentTalk(p, text), gatherFacts(p, now)]);
   const model = captainChatModel();
@@ -309,6 +311,7 @@ export async function captainAgent(p: Participant, text: string, now = new Date(
       },
     ],
   });
+  await recordUsage(res.usage);
   if (res.stop_reason === "refusal") throw new Error("Claude がこの依頼を断りました");
   const call = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use" && b.name === "answer");
   const a = AnswerSchema.safeParse(call?.input);
@@ -401,7 +404,7 @@ export async function captainReply(
   now = new Date(),
 ): Promise<LineMessage[] | null> {
   const p = await repo().findParticipantByLineUserId(lineUserId);
-  if (!p || (p.role !== "helper" && p.role !== "requester") || !hasClaudeKey()) return fallback(lineUserId, text);
+  if (!p || (p.role !== "helper" && p.role !== "requester") || !hasClaudeKey() || !(await underBudget())) return fallback(lineUserId, text);
   try {
     return (await captainAgent(p, text, now)).messages;
   } catch (e) {

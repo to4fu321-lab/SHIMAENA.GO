@@ -2,6 +2,7 @@
 import { z } from "zod";
 import type { RecapInput } from "../morning/recap";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const RecapSchema = z.object({
   /** 3〜4文、やさしい日本語。渡された数字だけを使う */
@@ -37,8 +38,9 @@ export function mockRecap(i: RecapInput): Recap {
 }
 
 export async function recapText(input: RecapInput): Promise<Recap> {
-  if (!hasClaudeKey()) return mockRecap(input);
+  if (!hasClaudeKey() || !(await underBudget())) return mockRecap(input);
   const res = await askJson({
+    rubric: ["recap", "snowName"],
     task:
       "今朝のエリアの雪かきの実況を書いてください。採点表 recap の規則に従います: 3〜4文、やさしい日本語、入力の数字だけを使い、入力にない数字や出来事は書かない。" +
       "人の名前は出さない。体調や医療の話はしない。最後の1文はエリアへのねぎらい。口調は採点表 voice のシマエナ隊長で、最初に「シマエナ隊長だしま〜！」と名乗る。",

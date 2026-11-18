@@ -1,10 +1,7 @@
 // 休みのひとこと（11/4 本人の指示「AI がその日の天候やその人の出動数で、休みながらと伝える」）。
 // いまの天気・気温・風と、その人の今日の出動回数から、シマエナ隊長が1文だけ。短い文なので安いモデル。
 // 体調・病気の判断はしない（「休みながら」「水分」「手袋」など段取りの話だけ）。数字は渡したものだけ。おかしい文は定型。
-// 同じ条件（日付・回数・天気・時間帯）の文はサーバーのメモリで使い回す（開くたびに呼ばない）。
-// 11/5: 画面を待たせない。まだ文がなければ定型をすぐ返し、Claude の文は返事を返したあとで書く（ホームは8秒ごとに取り直すので、次からその文に）。
-import { z } from "zod";
-import { askJson, hasClaudeKey } from "./client";
+// 11/18 本人の指示「不要な API をプログラムに」: ホームを開くたびに呼ぶ回数が多いので、Claude をやめて定型（下の mockRestLine）だけにした。
 
 export interface RestInput {
   /** 今日この人が動いた回数（ソロの活動・家の手伝い） */
@@ -38,52 +35,7 @@ export function restLineOk(line: string, i: RestInput): boolean {
   return (t.match(/\d+/g) ?? []).map(Number).every((n) => allowed.includes(n));
 }
 
-const cache = globalThis as { __shimaenaRest?: Map<string, string>; __shimaenaRestPending?: Set<string> };
-const WARM_TIMEOUT_MS = 15000;
-
-export async function restLine(date: string, i: RestInput): Promise<string> {
-  const key = `${date}|${i.todayCount}|${i.weather}|${i.timeOfDay}|${Math.round((i.tempC ?? 0) / 3)}|${Math.round((i.windMs ?? 0) / 4)}`;
-  const memo = (cache.__shimaenaRest ??= new Map());
-  const hit = memo.get(key);
-  if (hit) return hit;
-  const line = mockRestLine(i);
-  if (!hasClaudeKey()) {
-    memo.set(key, line);
-    return line;
-  }
-  // Claude の文は裏で1回だけ書く（同じ条件で同時に何人開いても呼び出しは1回）。書けなければ定型のまま
-  const pending = (cache.__shimaenaRestPending ??= new Set());
-  if (!pending.has(key)) {
-    pending.add(key);
-    const warm = () =>
-      Promise.race([
-        askJson({
-          task:
-            "シマエナ隊長（シマエナガの隊長）として、雪かきをする人へ、いまの天気・気温・風と今日の出動回数をふまえて『休みながら』を伝える一文を書いてください。" +
-            `${REST_MAX}字まで・やさしい日本語。語尾『しま〜』か『えな〜』を1つだけ。体調や病気のことは書かない・判断しない（休む・手を温める・水分・ひとりでやらない、の段取りだけ）。` +
-            "もっとやれ、とは言わない。数字は input にあるものだけ使ってよい。名前は書かない。",
-          input: i,
-          schema: z.object({ line: z.string() }),
-          effort: "low",
-          model: "light",
-        }),
-        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), WARM_TIMEOUT_MS)),
-      ])
-        .then(
-          (res) => memo.set(key, restLineOk(res.line, i) ? res.line.trim() : line),
-          (e) => {
-            memo.set(key, line);
-            console.error("[rest] 休みのひとことを書けませんでした（定型を使います）:", e instanceof Error ? e.message : e);
-          },
-        )
-        .finally(() => pending.delete(key));
-    // 返事を返したあとで動かす（Vercel では next/server の after。リクエストの外ではそのまま裏で）
-    try {
-      const { after } = await import("next/server");
-      after(warm);
-    } catch {
-      void warm();
-    }
-  }
-  return line;
+/** 休みのひとこと（11/18 本人の指示でプログラムの定型に。Claude は呼ばない。天気・気温・風・回数で文が変わる） */
+export async function restLine(_date: string, i: RestInput): Promise<string> {
+  return mockRestLine(i);
 }

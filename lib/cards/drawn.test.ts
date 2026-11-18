@@ -6,7 +6,16 @@ vi.mock("../claude/art", async (orig) => ({
   drawPicture: vi.fn(async () => ({ svg: '<rect width="540" height="560" fill="#123456"/>', why: "見直した絵", rounds: 2, seconds: 1 })),
 }));
 
+process.env.CARD_ART_AI = "on"; // ふだんはプログラムの絵（11/18）。このテストは Claude が描くときの動き
+
 describe("Claude の絵を、あとから差しかえる（v1.24）", () => {
+  it("CARD_ART_AI が on でなければ描かない（プログラムの絵）", async () => {
+    const { willDraw } = await import("./drawn");
+    process.env.CARD_ART_AI = "";
+    expect(willDraw()).toBe(false);
+    process.env.CARD_ART_AI = "on";
+    expect(willDraw()).toBe(true);
+  });
   it("発行は「描いています」→ 描き上がったら同じカードの表が Claude の絵に", async () => {
     const { repo } = await import("../repo");
     const { renderCardSvg, renderCardBackSvg, isPendingSvg } = await import("./svg");

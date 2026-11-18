@@ -4,6 +4,7 @@ import { z } from "zod";
 import { STYLE_NAME } from "../cards/rarity";
 import type { CardStyle, ClearArea, SnowType } from "../types";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 import { SNOW_TYPE_LABEL } from "./photo";
 import { estimateDepth, kgBasis, snowKgOf, type PhotoDepth } from "../snow-estimate";
 import { mockSceneChoice, MOODS, PROP_LABEL, SCENE_PROPS, sceneCode, sceneFacts, tidySceneChoice, type CardScene } from "../cards/scene";
@@ -142,9 +143,10 @@ export function mockCardText(input: CardTextInput): CardText {
 }
 
 export async function cardText(input: CardTextInput): Promise<CardText> {
-  if (!hasClaudeKey()) return mockCardText(input);
+  if (!hasClaudeKey() || !(await underBudget())) return mockCardText(input);
   const snow = cardSnow(input);
   const res = await askJson({
+    rubric: ["cardArt", "cardScene", "snowName"],
     task:
       "ありがとうカードの文字を作ってください。designName は日本語 6〜12 文字で、その時の状況（時刻・人数・雪の量・雪質・チームの混成）が伝わる詩的だが分かりやすい名前。" +
       "designNameEn は英語の副題。flavor は絵の中に入れる英語のひとこと（5語まで）。数字は input にあるものだけ。" +
