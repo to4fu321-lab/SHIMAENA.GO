@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { AREA_LABEL, requestLabel } from "../request-note";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export { AREA_LABEL, requestLabel };
 
@@ -78,8 +79,9 @@ export function tidyWords(w: Words, role: WordsInput["role"]): Words {
 }
 
 export async function readWords(input: WordsInput): Promise<Words> {
-  if (!hasClaudeKey()) return mockWords(input);
+  if (!hasClaudeKey() || !(await underBudget())) return mockWords(input);
   const res = await askJson({
+    rubric: [],
     task:
       `LINE に送られた文から、今朝の点呼の答えと雪かきの段取りを取り出してください。送ったのは「${input.role === "requester" ? "雪かきをお願いする側" : "雪かきを手伝う側"}」の人です。` +
       "お願いする側の answer: 自分で出られる・来なくていい → yes、来てほしい → no、一緒ならやれる → together。手伝う側の answer: 動ける分（5・15・30・60 のうち、言った分以下で一番近いもの）、休む → 0。" +

@@ -4,6 +4,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { z } from "zod";
 import rubric from "@/data/rubric.json";
+import { budgetSpentKnown, recordUsage, underBudget } from "./budget";
 
 export const CLAUDE_MODEL = "claude-opus-5-5";
 /** 短い文・簡単な言葉の仕事に使う安いモデル（spec v1.6、本人の了承済み） */
@@ -22,19 +23,49 @@ export function withMockClaude<T>(fn: () => Promise<T>): Promise<T> {
   return mockOnly.run(true, fn);
 }
 
-/** 鍵はあるのに、上限を超えてモック応答になっているか（町の人への文を「鍵がない」と分けるため） */
+/** 鍵はあるのに、上限（1人1日・町全体の1日のトークン）を超えてモック応答になっているか（町の人への文を「鍵がない」と分けるため） */
 export function isQuotaMock(): boolean {
-  return Boolean(mockOnly.getStore()) && Boolean(process.env.ANTHROPIC_API_KEY);
+  if (!process.env.ANTHROPIC_API_KEY) return false;
+  return Boolean(mockOnly.getStore()) || budgetSpentKnown();
 }
 
-// 毎回同じ文面にして、キャッシュが効くようにする（日時や ID を入れない）
-const SYSTEM = `あなたは札幌の住宅地で使う雪かきゲーム「シマエナGO」の司令官「シマエナ隊長」です。
+/**
+ * いま Claude を呼んでよいか: 鍵があって、町全体の1日のトークン上限（lib/claude/budget.ts）が残っているか。
+ * 各機能はこれが false のとき、決まった文（モック）で答える
+ */
+export async function canUseClaude(): Promise<boolean> {
+  return hasClaudeKey() && (await underBudget());
+}
+
+/** 1日のトークン上限を使い切ったときの例外（呼ぶ側は決まった文に切りかえる） */
+export class ClaudeBudgetError extends Error {}
+
+async function guardBudget(): Promise<void> {
+  if (!(await underBudget())) throw new ClaudeBudgetError("今日の Claude のトークン上限を使い切りました（決まった文にします）");
+}
+
+/** 採点表のうち、どの仕事にも渡す共通の項目（口調・安全など） */
+const RUBRIC_COMMON = ["version", "about", "voice", "tone", "safety"] as const;
+export type RubricKey = keyof typeof rubric;
+
+/**
+ * 前置き（採点表つき）。rubric を渡すと、共通の項目＋その仕事の項目だけを渡す（11/18 本人の了承: 毎回 32KB を丸ごと渡さない）。
+ * 毎回同じ文面にして、キャッシュが効くようにする（日時や ID を入れない）
+ */
+export function systemPrompt(keys?: readonly RubricKey[]): string {
+  const picked = keys
+    ? Object.fromEntries([...RUBRIC_COMMON, ...keys].filter((k, i, all) => all.indexOf(k) === i).map((k) => [k, rubric[k as RubricKey]]))
+    : rubric;
+  return `${SYSTEM_HEAD}
+
+採点表（JSON${keys ? "・この仕事に関係する項目だけ" : ""}）:
+${JSON.stringify(picked)}`;
+}
+
+const SYSTEM_HEAD = `あなたは札幌の住宅地で使う雪かきゲーム「シマエナGO」の司令官「シマエナ隊長」です。
 雪の朝、ひとり暮らしの高齢者の家の雪かきを、エリアの3チーム（サルビア・マリーゴールド・ルピナス）に割り振ります。
 次の採点表に必ず従って判定してください。採点表にないことは、小さく安全なほうを選びます。
-文章の口調は採点表の voice に従います（口調は判定に影響しません）。
-
-採点表（JSON）:
-${JSON.stringify(rubric, null, 2)}`;
+文章の口調は採点表の voice に従います（口調は判定に影響しません）。`;
 
 let client: Anthropic | undefined;
 function getClient(): Anthropic {
@@ -56,6 +87,8 @@ export interface AskJsonOptions<S extends z.ZodType> {
   effort?: "low" | "medium" | "high";
   /** main = Opus（判断・写真・ことばの読み取り）、light = Haiku（短い文）。既定は main */
   model?: "main" | "light";
+  /** 採点表のどの項目を渡すか（共通の項目は必ず入る）。省くと全部 */
+  rubric?: readonly RubricKey[];
   /** 写真（完了写真の確認などで使う） */
   images?: { mediaType: "image/jpeg" | "image/png" | "image/webp"; base64: string }[];
 }
@@ -64,7 +97,8 @@ export interface AskJsonOptions<S extends z.ZodType> {
  * Web 検索つきで、文で答えてもらう（spec v1.23 今日の話題）。検索は Anthropic のサーバーで動く（web_search）。
  * 長い検索で止まった（pause_turn）ときは、2回まで続きを頼む。答えの文だけを返す
  */
-export async function askWithWebSearch(task: string, opts: { maxUses?: number } = {}): Promise<string> {
+export async function askWithWebSearch(task: string, opts: { maxUses?: number; rubric?: readonly RubricKey[] } = {}): Promise<string> {
+  await guardBudget();
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: task }];
   for (let turn = 0; turn < 3; turn++) {
     const res = await getClient().beta.messages.create({
@@ -72,7 +106,7 @@ export async function askWithWebSearch(task: string, opts: { maxUses?: number } 
       max_tokens: 16000,
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+      system: [{ type: "text", text: systemPrompt(opts.rubric ?? []), cache_control: { type: "ephemeral" } }],
       output_config: { effort: "low" },
       tools: [
         {
@@ -84,6 +118,7 @@ export async function askWithWebSearch(task: string, opts: { maxUses?: number } 
       ],
       messages,
     });
+    await recordUsage(res.usage);
     if (res.stop_reason === "refusal") throw new ClaudeRefusalError("Claude がこの依頼を断りました");
     if (res.stop_reason === "pause_turn") {
       messages.push({ role: "assistant", content: res.content });
@@ -99,13 +134,14 @@ export async function askWithWebSearch(task: string, opts: { maxUses?: number } 
  * model を渡すとそのモデル（例: 環境変数 CARD_ART_MODEL）。形は schema で確かめる
  */
 export async function askJsonLong<S extends z.ZodType>(opts: AskJsonOptions<S> & { maxTokens?: number; modelId?: string }): Promise<z.infer<S>> {
+  await guardBudget();
   const model = opts.modelId ?? CLAUDE_MODEL;
   const stream = getClient().beta.messages.stream({
     model,
     max_tokens: opts.maxTokens ?? 64000,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: systemPrompt(opts.rubric), cache_control: { type: "ephemeral" } }],
     output_config: { effort: opts.effort ?? "high", format: betaZodOutputFormat(opts.schema) },
     messages: [
       {
@@ -121,6 +157,7 @@ export async function askJsonLong<S extends z.ZodType>(opts: AskJsonOptions<S> &
     ],
   });
   const res = await stream.finalMessage();
+  await recordUsage(res.usage);
   if (res.stop_reason === "refusal") throw new ClaudeRefusalError("Claude がこの依頼を断りました");
   if (res.stop_reason === "max_tokens") throw new Error("Claude の答えが長すぎて途中で切れました");
   const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
@@ -129,13 +166,14 @@ export async function askJsonLong<S extends z.ZodType>(opts: AskJsonOptions<S> &
 
 /** Claude に JSON で答えてもらう。形は schema で保証される */
 export async function askJson<S extends z.ZodType>(opts: AskJsonOptions<S>): Promise<z.infer<S>> {
+  await guardBudget();
   const light = opts.model === "light";
   const res = await getClient().beta.messages.parse({
     model: light ? CLAUDE_LIGHT_MODEL : CLAUDE_MODEL,
     max_tokens: 16000,
     // 安全のための自動判定で断られたときは、サーバー側で別のモデルに切り替えて続ける（Haiku にはこの仕組みがない）
     ...(light ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }),
-    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: systemPrompt(opts.rubric), cache_control: { type: "ephemeral" } }],
     output_config: { effort: opts.effort ?? "low", format: betaZodOutputFormat(opts.schema) },
     messages: [
       {
@@ -150,6 +188,7 @@ export async function askJson<S extends z.ZodType>(opts: AskJsonOptions<S>): Pro
       },
     ],
   });
+  await recordUsage(res.usage);
   if (res.stop_reason === "refusal") {
     throw new ClaudeRefusalError("Claude がこの依頼を断りました");
   }
@@ -161,5 +200,7 @@ export async function askJson<S extends z.ZodType>(opts: AskJsonOptions<S>): Pro
 
 /** 道具を使う会話（隊長エージェント、spec v1.25）で、自分でやり取りを回すための入口 */
 export const getClaudeClient = (): Anthropic => getClient();
-/** 毎回同じ前置き（採点表つき）。キャッシュが効くよう、そのまま使う */
-export const SYSTEM_PROMPT = SYSTEM;
+/** 隊長エージェントの前置き（採点表のうち、隊長トークに関係する項目だけ） */
+export const SYSTEM_PROMPT = systemPrompt(["agent", "concierge", "profile", "area", "snowName", "nakama"]);
+/** 道具を使う会話でも、呼ぶ前に上限を確かめ、使った分を数える */
+export { guardBudget, recordUsage };

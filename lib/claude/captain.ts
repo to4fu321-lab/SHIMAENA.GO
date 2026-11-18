@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { CAPTAIN_STATES, CAPTAIN_TEMPLATES, captainLineOk, type CaptainState } from "../captain";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 const CaptainSchema = z.object(Object.fromEntries(CAPTAIN_STATES.map((s) => [s, z.string()])) as Record<CaptainState, z.ZodString>);
 
@@ -25,8 +26,9 @@ const STATE_GUIDE: Record<CaptainState, string> = {
 
 /** 定型と同じ形で返す（キーがないときは定型そのまま） */
 export async function captainLines(input: CaptainInput): Promise<Record<CaptainState, string>> {
-  if (!hasClaudeKey()) return { ...CAPTAIN_TEMPLATES };
+  if (!hasClaudeKey() || !(await underBudget())) return { ...CAPTAIN_TEMPLATES };
   const res = await askJson({
+    rubric: ["snowName"],
     task:
       "アプリのホームで、シマエナ隊長が状態ごとにかける一言を書いてください。それぞれ1〜2文で24字まで・やさしい日本語。" +
       "語尾『しま〜』『えな〜』は、語尾を付けてよい状態だけ、1つまで。数字は input の積雪と、5・15・1 だけ使ってよい。" +

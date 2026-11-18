@@ -3,6 +3,7 @@ import { z } from "zod";
 import { decompose, levelFromAnswers } from "../game/mission";
 import type { ClearArea, SoloMinutes } from "../types";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const LevelResultSchema = z.object({
   level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
@@ -39,8 +40,9 @@ export function mockLevel(input: LevelInput): LevelResult {
 }
 
 export async function judgeLevel(input: LevelInput): Promise<LevelResult> {
-  if (!hasClaudeKey()) return mockLevel(input);
+  if (!hasClaudeKey() || !(await underBudget())) return mockLevel(input);
   return askJson({
+    rubric: ["level", "requiredPeople", "subtasks"],
     task:
       "依頼者が登録の2問に答えました。採点表の level・requiredPeople・subtasks の規則で判定し、登録した人への一言（2文以内）を添えてください。",
     input,

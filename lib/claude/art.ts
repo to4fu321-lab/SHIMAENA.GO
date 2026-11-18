@@ -7,6 +7,7 @@ import { cleanSvg } from "../cards/svg-clean";
 import { svgToPng } from "../cards/png";
 import type { CardStyle } from "../types";
 import { askJsonLong, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const PIC_W = 540;
 export const PIC_H = 560;
@@ -81,7 +82,7 @@ const RULES =
 
 /** その時の材料から、Claude に1枚の絵をゼロから描いてもらう（見直し1回つき）。キーがなければ undefined */
 export async function drawPicture(input: ArtInput, opts: { review?: boolean; until?: number } = {}): Promise<DrawnArt | undefined> {
-  if (!hasClaudeKey()) return undefined;
+  if (!hasClaudeKey() || !(await underBudget())) return undefined;
   const started = Date.now();
   const modelId = process.env.CARD_ART_MODEL?.trim() || undefined;
   const lot = lottery(input.seed);
@@ -96,6 +97,7 @@ export async function drawPicture(input: ArtInput, opts: { review?: boolean; unt
     birds: input.members.length,
   };
   const first = await askJsonLong({
+    rubric: ["cardArt"],
     task:
       "雪かきのお礼のカードに入れる絵を、ゼロから1枚描いてください。この1枚のためだけの、ほかと似ていない絵にします。" +
       "主役は、耳あてをしたシマエナガ（白くて丸い小鳥。小さな黒い目とくちばし、黒っぽい翼と長い尾）たち。数は birds、耳あての色は members の teamColor。スコップを持って雪かきをしている。" +
@@ -120,6 +122,7 @@ export async function drawPicture(input: ArtInput, opts: { review?: boolean; unt
     try {
       const png = await svgToPng(wrapPicture(draft.svg), { width: PIC_W });
       const second = await askJsonLong({
+        rubric: ["cardArt"],
         task:
           "画像は、あなたがいま描いた絵を実際に表示したものです。カードの絵として見直して、もっと良い最終版を描き直してください。" +
           "確かめること: 主役のシマエナガが小さすぎないか・数と耳あての色が合っているか／はみ出し・切れ・不自然な重なり／何もない空白／今日の話題が伝わるか／構図とタッチが指示どおりか／色の調和と奥行き。" +

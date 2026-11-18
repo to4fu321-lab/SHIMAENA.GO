@@ -1,8 +1,7 @@
-// SNS の投稿文の下書き（spec v1.3）。集計の数字だけを Claude に渡す。数字を作っていたら定型に戻す。キーなしは定型。
+// SNS の投稿文の下書き（spec v1.3）。11/18 本人の指示「不要な API をプログラムに」で、集計の数字を入れた定型だけにした（Claude は呼ばない）。
 import { z } from "zod";
 import type { PublicStats } from "../public/stats";
 import { clampShareText, mockShareText, type ShareKind } from "../sns/text";
-import { askJson, hasClaudeKey } from "./client";
 
 export const ShareTextSchema = z.object({ text: z.string() });
 
@@ -49,20 +48,7 @@ export function finishShareText(raw: string): string {
   return clampShareText(t);
 }
 
+/** 投稿文（11/18 本人の指示でプログラムの定型に。Claude は呼ばない。数字は集計のものだけ） */
 export async function shareText(kind: TownShareKind, st: PublicStats): Promise<{ text: string; byClaude: boolean }> {
-  const mock = { text: mockShareText(kind, st), byClaude: false };
-  if (!hasClaudeKey()) return mock;
-  const input = shareInput(kind, st);
-  const res = await askJson({
-    task:
-      "エリアの雪かきゲームの、SNS に投稿する文の下書きを書いてください。採点表 share の規則に従います: 115字以内、2〜4行、入力の数字だけ、名前や家は書かない、" +
-      "最後は #シマエナGO と #10分だけ出動 か #雪解け。名乗らない。読んだ人が10分だけ参加したくなる一文で終える。",
-    input,
-    schema: ShareTextSchema,
-    effort: "low",
-    model: "light", // 短い文なので安いモデル（spec v1.6）
-  });
-  const text = finishShareText(res.text);
-  if (!text || !usesOnlyGivenNumbers(text, input)) return mock;
-  return { text, byClaude: true };
+  return { text: mockShareText(kind, st), byClaude: false };
 }

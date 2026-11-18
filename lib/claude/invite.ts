@@ -4,6 +4,7 @@
 // 短い文なので安いモデル。キーなし・おかしい文は定型。
 import { z } from "zod";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export const INVITE_MAX = 70;
 export { INVITE_AUDIENCES } from "../invite-audiences";
@@ -56,9 +57,10 @@ function fit(t: string): string {
 
 export async function inviteDrafts(i: InviteInput): Promise<string[]> {
   const fallback = mockInvites(i).map(fit);
-  if (!hasClaudeKey()) return fallback;
+  if (!hasClaudeKey() || !(await underBudget())) return fallback;
   try {
     const res = await askJson({
+      rubric: ["solo", "snowName"],
       task:
         `雪かきを終えたばかりの人が、誘う LINE の文を3案書いてください。本人の目線で、それぞれ${INVITE_MAX}字まで。` +
         "1案目は友だちへ（くだけた言い方）、2案目は家族へ（あたたかく）、3案目は職場・学校の人へ（ていねいに軽く）。" +

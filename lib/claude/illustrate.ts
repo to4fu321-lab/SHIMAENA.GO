@@ -6,6 +6,7 @@ import { z } from "zod";
 import { cleanSvg } from "../cards/svg-clean";
 import { svgToPng } from "../cards/png";
 import { askJsonLong, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 const IllustrationSchema = z.object({ svg: z.string() });
 
@@ -34,7 +35,7 @@ export function wrapIllustration(inner: string, w: number, h: number): string {
 
 /** 1枚のさし絵をゼロから描く（見直し1回つき）。キーがなければ undefined */
 export async function drawIllustration(input: IllustrationInput, opts: { review?: boolean; budgetMs?: number } = {}): Promise<{ svg: string; rounds: number } | undefined> {
-  if (!hasClaudeKey()) return undefined;
+  if (!hasClaudeKey() || !(await underBudget())) return undefined;
   const started = Date.now();
   const modelId = process.env.CARD_ART_MODEL?.trim() || undefined;
   const rules =
@@ -44,6 +45,7 @@ export async function drawIllustration(input: IllustrationInput, opts: { review?
     TAGS;
   const facts = { ...input, idPrefix: undefined };
   const first = await askJsonLong({
+    rubric: ["book"],
     task:
       "週刊絵本のさし絵を、ゼロから1枚描いてください。scene のとおりの場面を、絵本の1ページとして見ごたえのある絵に。" +
       "グラデーションとやさしい影で奥行き（遠景・中景・近景）を出し、図形は 150〜500 個、合わせて 60KB まで。文字や数字は描きません。" +
@@ -59,6 +61,7 @@ export async function drawIllustration(input: IllustrationInput, opts: { review?
   try {
     const png = await svgToPng(wrapIllustration(draft.svg, input.width, input.height), { width: input.width });
     const second = await askJsonLong({
+      rubric: ["book"],
       task:
         "画像は、あなたがいま描いたさし絵を表示したものです。絵本の1ページとして見直して、もっと良い最終版を描き直してください。" +
         "確かめること: 決めごと（色・主役の姿・町の姿・タッチ）を守っているか／主役が小さすぎないか／はみ出し・不自然な重なり・何もない空白／scene と text が絵から伝わるか。" +

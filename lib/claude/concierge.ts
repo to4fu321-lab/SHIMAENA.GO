@@ -8,6 +8,7 @@ import { MOTIVES, motivesFromText, SUMMARY_MAX, tidyMotives, type Motive } from 
 import { isVoiceCategory, VOICE_CATEGORIES, VOICE_LABEL, type VoiceCategory } from "../voice/store";
 import { CAPTION_MAX, cleanCaption, SKIES, type Sky } from "../line/you-image";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 /** 会話の往復の上限（spec v1.17: 上限なしに。コストの保険で 30。最後の往復は必ず1つ選ぶ） */
 export const MAX_TURNS = 30;
@@ -271,9 +272,10 @@ export function guardedAnswer(input: ConciergeInput, options: ConciergeOption[])
 export async function askConcierge(input: ConciergeInput, options: ConciergeOption[]): Promise<ConciergeResult> {
   const guarded = guardedAnswer(input, options);
   if (guarded) return guarded;
-  if (!hasClaudeKey()) return tidyConcierge(mockConcierge(input), input, options);
+  if (!hasClaudeKey() || !(await underBudget())) return tidyConcierge(mockConcierge(input), input, options);
   try {
     const res = await askJson({
+      rubric: ["concierge", "nakama", "profile"],
       task:
         "あなたは参加コンシェルジュとしてのシマエナ隊長です。隊長トークに届いた文を読み、採点表 concierge の規則で答えます。" +
         "いちばん大事なこと: reply では、まずその人の文そのものに答えてください（質問には答える・雑談には返す・気持ちは受け止める。決まり文句で質問を返さない）。" +

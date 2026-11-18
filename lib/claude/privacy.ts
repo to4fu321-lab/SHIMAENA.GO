@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { MAX_IMAGE_BYTES } from "../image";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 import type { PhotoInput } from "./photo";
 
 export const PRIVACY_KINDS = ["plate", "nameplate", "face", "house", "address"] as const;
@@ -75,9 +76,10 @@ export function tidyPrivacy(res: z.infer<typeof PrivacySchema>): PrivacyResult {
 export const WHOLE: PrivacyResult = { boxes: [], whole: true };
 
 export async function findPrivateAreas(image: PhotoInput): Promise<PrivacyResult> {
-  if (!hasClaudeKey() || image.bytes.byteLength > MAX_IMAGE_BYTES) return WHOLE;
+  if (!hasClaudeKey() || !(await underBudget()) || image.bytes.byteLength > MAX_IMAGE_BYTES) return WHOLE;
   try {
     const res = await askJson({
+      rubric: ["privacy"],
       task:
         "人に見せる前にぼかす場所を探します。採点表の privacy の規則で、ナンバープレート（plate）・表札（nameplate）・人の顔（face）・家の外観（house）・住所の表示（address）の場所を、すべて箱で返してください。" +
         "座標は 0〜1000（左上が 0,0、右下が 1000,1000）。そのもの全体が入るように少し大きめに囲みます。迷ったら入れます。" +

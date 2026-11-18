@@ -4,6 +4,7 @@ import { distanceM } from "../game/help";
 import { importance, requiredPeople } from "../game/mission";
 import type { HelperAnswer, LatLng, RequesterAnswer, TeamId } from "../types";
 import { askJson, hasClaudeKey } from "./client";
+import { underBudget } from "./budget";
 
 export interface CommanderInput {
   date: string; // YYYY-MM-DD
@@ -174,8 +175,9 @@ export function sanitizePlan(plan: PlanInput, input: CommanderInput): Plan {
 }
 
 export async function planMorning(input: CommanderInput): Promise<Plan> {
-  if (!hasClaudeKey()) return mockPlan(input);
+  if (!hasClaudeKey() || !(await underBudget())) return mockPlan(input);
   const plan = await askJson({
+    rubric: ["level", "requiredPeople", "importance", "subtasks", "assignment"],
     task:
       "雪の朝の点呼が終わりました。採点表の importance・requiredPeople・assignment の規則で、家ごとの重要度・必要人数・割り当てを決めてください。" +
       "「はい」と答えた家はミッションにしません。家ごとに reason（30字まで）を書きます: なぜその重要度・人数・その人たちなのかを、レベル・答え・距離・人数などの事実だけで。体調や医療の話は書きません。" +
