@@ -1,29 +1,32 @@
-シマエナGO
-Copyright (c) 2026 エゾシルベ（to4fu321-lab）. All rights reserved.
+MIT License
 
-このリポジトリのコード・文章・画像・音のデータ（以下「本作品」）の著作権は、
-エゾシルベ（to4fu321-lab）にあります。
+Copyright (c) 2026 エゾシルベ / Ezo-Shirube (to4fu321-lab)
 
-閲覧と、個人での学習・研究のために読むことはできます。
-次のことは、書面での許可なくできません。
-- 本作品の全部または一部を複製・改変・再配布すること
-- 本作品を使って、サービス・アプリ・製品を公開・提供すること（無料・有料を問いません）
-- 本作品を商用で利用すること
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-地図（OpenStreetMap）、フォント（Zen Maru Gothic）、音声（Aivis Cloud API・VOICEVOX）など
-外部のデータやサービスは、それぞれのライセンス・利用規約に従います。
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-利用のご相談: エゾシルベ
-- ホームページ: https://ezo-shirube.com
-- メール: info@ezo-shirube.com
-- GitHub の Issues: https://github.com/to4fu321-lab/shimaena.go/issues
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ---
 
-Copyright (c) 2026 Ezo-Shirube (to4fu321-lab). All rights reserved.
+The MIT License above covers the program code in this repository.
+It does NOT cover the name "シマエナGO / SHIMAENA GO", the logo and app icon,
+the character "シマエナ隊長", the card artwork, or the images and videos under
+docs/. Those remain the property of Ezo-Shirube. See NOTICE.md.
 
-You may view this repository and read it for personal learning.
-No permission is granted to copy, modify, redistribute, deploy, or use
-any part of this work commercially without prior written permission.
-Third-party data and services keep their own licenses.
-Contact: Ezo-Shirube — https://ezo-shirube.com / info@ezo-shirube.com
+上の MIT ライセンスは、このリポジトリのプログラム（コード）に適用されます。
+「シマエナGO」の名前・ロゴ・アイコン、キャラクター「シマエナ隊長」、カードの絵、
+docs/ の画像と動画は対象外で、エゾシルベのものです。くわしくは NOTICE.md へ。
