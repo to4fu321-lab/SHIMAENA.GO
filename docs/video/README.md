@@ -15,3 +15,5 @@
 | `demo3min.html`・`demo3min.mp4`・`bgm.mp3` | **作り置き・古い流れ**。11/5 以前の「6:30 の点呼に答える」流れで作ったアニメ動画。今は点呼はなく、頼む家は事前登録で、10cm 積もった朝に自動で作戦が始まる（`docs/spec.md` v1.20）。提出するデモ動画ではない。**最初の構想の記念として残している**（11/6 本人の決定） | ⚠️ 古い流れ（記念） |
 
 11/8 に提出した動画は README の「デモ動画」の URL（YouTube）。11/10 に作り直した版が `shimaena-go-3min.mp4`（`v3.md`）。`demo3min-v2.mp4` は 11/8 の朝に自動で組み立てた下書き（`howto.md`）。`stage.html` は手で収録するときの道具。URL は `README.md` の「デモ動画」に書く。
+
+**11/23 追記**: `shimaena-go-3min.mp4`（v3）と `demo3min-v2.mp4`（11/8 版）は、作者紹介の言い方を変えたため、リポジトリから外しました。台本は直してあるので、`node scripts/video-v3/make.cjs`・`node scripts/demo-video/compose.cjs all` で作り直せます。いまの紹介動画は `shimaena-go-taicho.mp4`（v4）です。

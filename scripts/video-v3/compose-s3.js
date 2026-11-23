@@ -35,7 +35,7 @@ SC.maker = (root, s, H) => {
     </div><div class="ph-label">本人の指示と、コミットの記録（どちらも本物）</div></div>`);
   const list = panel.querySelector("#list");
   const X = RX + 90;
-  const t1 = add(root, `<div class="abs h1" style="left:${X}px;top:118px;font-size:74px;line-height:1.3">作ったのは、<span class="lampc">学生服の営業。</span></div>`);
+  const t1 = add(root, `<div class="abs h1" style="left:${X}px;top:118px;font-size:74px;line-height:1.3">作ったのは、<span class="lampc">教育関係の営業。</span></div>`);
   const t1b = add(root, `<div class="abs h3" style="left:${X + 4}px;top:232px;font-size:42px;color:#fff">プログラミングは、初心者です。</div>`);
   const zero = add(root, `<div class="abs" style="left:${X}px;top:356px;display:flex;align-items:flex-end;gap:26px;line-height:1"><span style="font-size:58px;font-weight:900;padding-bottom:36px">自分で書いたコード</span><span id="z" style="font-size:300px;font-weight:900;color:var(--lamp-light);letter-spacing:-.03em;line-height:.82">0</span><span style="font-size:76px;font-weight:900;padding-bottom:30px">行</span></div>`);
   const t2 = add(root, `<div class="abs h2" style="left:${X}px;top:668px;font-size:54px;line-height:1.4">スマホから <span class="lampc">Claude Code</span> に、<br>日本語で頼んだだけ。</div>`);
